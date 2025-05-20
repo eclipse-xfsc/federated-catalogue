@@ -1,0 +1,1455 @@
+openapi: 3.0.1
+info:
+  title: Eclipse XFSC Federated Catalogue
+  description: REST API of the XFSC catalogue
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: https://fc-server.xfsc.org
+    description: some future test environment
+components:
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: >-
+        Forbidden. The user does not have the permission to execute this
+        request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: >-
+        May contain hints how to solve the error or indicate what went wrong at
+        the server. Must not outline any information about the internal
+        structure of the server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ClientError:
+      description: >-
+        May contain hints how to solve the error or indicate what was wrong in
+        the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: HTTP Conflict 409
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessible:
+      description: HTTP Unprocessible Entity 422
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    Statement:
+      type: object
+      properties:
+        statement:
+          type: string
+          example: Match (m:Movie) where m.released > 2000 RETURN m
+        parameters:
+          $ref: '#/components/schemas/Parameters'
+      required:
+        - statement
+#      discriminator:
+#        propertyName: type
+#        mapping:
+#          as: "#/components/schemas/AnnotatedStatement"  
+    Parameters: 
+      type: object
+      additionalProperties:
+        type: object
+      example:
+        name: "John"
+        limit: 10
+        offset: 5
+    Result:
+      type: object
+      additionalProperties:
+        type: object
+    QueryLanguage:
+      type: string
+      enum:
+        - OPENCYPHER
+        - SPARQL
+        - GRAPHQL
+      default: OPENCYPHER
+    AnnotatedStatement:
+      allOf:
+        - $ref: '#/components/schemas/Statement'
+        - type: object
+          properties:
+            servers:
+              type: array
+              uniqueItems: true
+              items:
+                type: string
+                description: known catalog servers already queried in distributed search scenario
+            annotations:
+              type: object
+              additionalProperties:
+                type: object
+                description: additional properties to tune query execution
+              example:
+                queryLanguage: SPARQL
+                timeout: 30
+                withTotalCount: false
+    VerificationResult:
+      type: object
+      properties:
+        verificationTimestamp:
+          type: string
+          format : date-time
+        lifecycleStatus: #!! is not known when verifying external SDs -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
+          type: string # does the self-description have a lifecycle status in this catalogue?
+          description: Lifecycle-state an SD would get, if it would be added to the catalogue.
+        issuer: #!! Is this the participant? -> Julius: Yes, the participant that created the SD
+          type: string # contains the id of the issuers self-description if available  #!! NOT FURTHER SPECIFIED
+          description: ID of the issues Self-Description, if available.
+        issuedDateTime:
+          type: string
+          format: date-time
+        validatorDids:
+          type: array
+          items:
+            type: string
+            description: The dids of validators, having signed parts of the Self-Description
+      required:
+        - verificationTimestamp
+        - lifecycleStatus #!! is not known when verifying external SDs. Remove from required -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
+        - issuer #!! Comment on issuer: if available, but still required?? Remove from required -> Julius: required
+        - issuedDateTime
+        - validatorDids
+    Participant:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Global ID of the participant
+        name:
+          type: string
+        publicKey: #!! Can this be changed? If it is changed, are all SDs signed by the old key invalid? -> Julius: For the first version you can assume that SD go invalid when the TrustAnchor or participant key change
+          type: string
+        selfDescription:
+          type: string
+    User:
+      type: object
+      properties:
+        participantId:
+          type: string
+          description: Global ID of the associated participant
+          example: ExampleCompany
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+        roleIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+      required:
+        - participantId
+        - firstName
+        - lastName
+        - email
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            id:
+              type: string
+              description: Internal catalogue user id
+              example: ExampleCompany-John-Doe
+            username:
+              type: string
+              example: John Doe
+          required:
+            - id
+            - username
+    Role: #!! Changed Role from an object with a single String property to simply a String
+      type: string
+      example: Ro-MU-CA
+    Session:
+      type: object
+      properties:
+        userId:
+          type: string
+        creationDatetime:
+          type: string
+          format: date-time
+        status: #!! What is a status?
+          type: string
+#        seed: #!! We must have a seed to do pagination, user must be able to set it? -> Julius: ok
+#          type: string
+        roleIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    SelfDescription:
+      type: object
+      properties:
+        sdHash:
+          type: string
+        id: #!! Added id / credentialSubject
+          type: string
+        status:
+          $ref: '#/components/schemas/SelfDescriptionStatus'
+        issuer:
+          type: string
+        validatorDids:
+          description: >-
+            The credentialSubjects of the parties that validated (parts of) the
+            Self-Description
+          type: array
+          items:
+            type: string
+        uploadDatetime:
+          type: string
+          format: date-time
+          example: '2022-03-01T13:00:00Z'
+          description: The time stamp (ISO8601) when the SD was uploaded.
+        statusDatetime:
+          type: string
+          format: date-time
+          example: '2022-05-11T15:30:00Z'
+          description: >-
+            The last time stamp (ISO8601) the status changed (for this
+            Catalogue)
+    SelfDescriptionStatus:
+      type: string
+      enum:
+        - active
+        - eol
+        - deprecated
+        - revoked
+    SelfDescriptionResult:
+      type: object
+      properties:
+        meta:
+          $ref: '#/components/schemas/SelfDescription'
+        content:
+          type: string
+    OntologySchema:
+      type: object
+      properties:
+        ontologies:
+          description: 'SchemaIds of ontologies, defining the terms of a schema'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        shapes:
+          description: 'SchemaIds of shapes (SHACL Shapes Constraint Language) used to validate instances against the schema.'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        vocabularies:
+          description: 'SchemaIds of controlled vocabularies used in the schema'
+          type: array
+          items:
+            type: string
+            example: schemaId
+    ResultPage:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+    SelfDescriptions:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items: 
+              type: array
+              items: 
+                $ref: '#/components/schemas/SelfDescriptionResult'
+    Participants:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items: 
+              type: array
+              items: 
+                $ref: '#/components/schemas/Participant'
+    UserProfiles:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items: 
+              type: array
+              items: 
+                $ref: '#/components/schemas/UserProfile'
+    Results:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items: 
+              type: array
+              items: 
+                $ref: '#/components/schemas/Result'
+
+  parameters:
+    OffsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      required: false
+      description: The number of items to skip before starting to collect the result set.
+    LimitParam:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 100
+      required: false
+      description: The number of items to return.
+    OrderByParam:
+      in: query
+      name: orderBy
+      schema:
+        type: string
+      required: false
+      description: Results will be sorted by this field.
+    AscendingParam:
+      in: query
+      name: ascending
+      schema:
+        type: boolean
+        default: true
+      required: false
+      description: Ascending/Descending ordering.
+    StatusParam:
+      in: query
+      name: statuses
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/SelfDescriptionStatus'
+      explode: false      
+      required: false
+      description: SelfDescription statuses
+  securitySchemes:
+    jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+  - name: SelfDescriptions
+    description: >-
+      Retrieving Self-Descriptions from the Catalogue. All Self-Descriptions are
+      JSON-LD files. They are referenced by their sha256 hash. Catalogues
+      synchronize by downloading changesets (lists of hashes) from known other
+      Catalogues and reading the full Self-Descriptions of entries that are
+      unknown to them.
+    externalDocs:
+      description: Find out more
+      url: http://gaiax.io
+  - name: Query
+    description: Send graph queries to this Catalogue.
+  - name: Schemas
+    description: >-
+      The format of the self-descriptions are defined by schemas in the
+      catalogue. Here you get information about the latest schema.
+  - name: Verification
+    description: The Catalogue provides a verification service for e.g. checking the syntax
+  - name: Participants
+    description: Participant Management operations
+  - name: Users
+    description: User Management operations
+  - name: Roles
+    description: Role Managemet operations
+  - name: Session
+    description: Management for auth sessions in the catalogue
+paths:
+  /self-descriptions:
+    get:
+      tags:
+        - SelfDescriptions
+      summary: Get the list of metadata of Self-Descriptions in the Catalogue
+      operationId: readSelfDescriptions
+      parameters: #!! Added filter parameters for all(?) metadata fields
+        - name: uploadTimerange
+          in: query
+          description: >-
+            Filter for the time range when the Self-Description was uploaded to
+            the catalogue. The time range has to be specified as start time and
+            end time as ISO8601 timestamp separated by a `/`.
+          required: false
+          example: 2022-03-01T13:00:00Z/2022-05-11T15:30:00Z
+          schema:
+            type: string
+        - name: statusTimerange
+          in: query
+          description: >-
+            Filter for the time range when the status of the Self-Description
+            was last changed in the catalogue. The time range has to be
+            specified as start time and end time as ISO8601 timestamp separated
+            by a `/`.
+          required: false
+          example: 2022-03-01T13:00:00Z/2022-05-11T15:30:00Z
+          schema:
+            type: string
+        - name: issuers
+          in: query
+          description: >-
+            Filter for the issuer of the Self-Description. This is the unique ID
+            of the Participant that has prepared the Self-Description.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false    
+        - name: validators
+          in: query
+          description: >-
+            Filter for a validator of the Self-Description. This is the unique
+            ID of the Participant that validated (part of) the Self-Description.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false    
+        - name: statuses
+          in: query
+          description: Filter for the status of the Self-Description.
+          required: false
+          schema:
+            type: array
+            items:
+                $ref: '#/components/schemas/SelfDescriptionStatus'
+          explode: false      
+        - name: ids
+          in: query
+          description: Filter for a id/credentialSubject of the Self-Description.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false    
+        - name: hashes
+          in: query
+          description: Filter for a hash of the Self-Description.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          explode: false
+        - name: withMeta
+          in: query
+          description: To add Self-Description Metadata to response or not.
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - name: withContent
+          in: query
+          description: To add Self-Description Content to response or not.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: List of meta data of available Self-Descriptions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelfDescriptions'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - SelfDescriptions
+      summary: Add a new Service-Offering, Participant or Resource SelfDescription to the catalogue
+      operationId: addSelfDescription
+      security:
+        - jwt: []
+      requestBody:
+        description: The new SelfDescription
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+      responses:
+        '201':
+          description: Created
+          headers:
+            location:
+              description: URL of the added Self-Description.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelfDescription'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /self-descriptions/{self_description_hash}:
+    get:
+      tags:
+        - SelfDescriptions
+      summary: >-
+        Read a Self-Description by its hash. This returns the content of the
+        self-description.
+      description: Returns a single Self-Description
+      operationId: readSelfDescriptionByHash
+      parameters:
+        - name: self_description_hash
+          in: path
+          description: Hash of the SelfDescription
+          required: true
+          schema:
+            type: string
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: The requested SelfDescription
+          content:
+            application/json:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - SelfDescriptions
+      summary: Completely delete a self-description
+      operationId: deleteSelfDescription
+      parameters:
+        - name: self_description_hash
+          in: path
+          description: Hash of the SelfDescription
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /self-descriptions/{self_description_hash}/revoke:
+    post:
+      tags:
+        - SelfDescriptions
+      summary: Change the lifecycle state of a SelfDescription to revoked.
+      operationId: updateSelfDescription
+      parameters:
+        - name: self_description_hash
+          in: path
+          description: Hash of the SelfDescription
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Revoked
+          headers:
+            location:
+              description: URL of the added SelfDescription
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelfDescription'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /query: #!! Suggestion: rename to query, and allow only a single query. If multiple queries are ever added in the future, add an endpoint queries. -> Julius: ok
+    get:
+      tags:
+        - Query
+      summary: Retrieve an HTML website to send openCypher queries to the Catalogue
+      operationId: querywebsite
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: HTML document that contains a query field for openCypher queries.
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - Query
+      summary: Send a query to the Catalogue
+      operationId: query
+      parameters:
+        - in: query
+          name: queryLanguage
+          schema:
+            $ref: '#/components/schemas/QueryLanguage'
+          required: false
+        - in: query
+          name: timeout
+          schema:
+            type: integer
+            default: 5
+          required: false
+        - in: query
+          name: withTotalCount
+          schema:
+            type: boolean
+            default: true
+          required: false
+      security:
+        - jwt: []
+      requestBody:
+        description: >-
+          JSON object to send queries. Use "application/json" for openCypher
+          queries. A Catalogue may also support the other content types
+          depending on its supported query languages but only "application/json"
+          is mandatory.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Statement'
+      responses:
+        '200':
+          description: successful query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Results'
+        '400': ## Malformed Message: The receveived request cannot be processed, either because its syntax is ## incorrect or forbidden query clauses are used. For instance, it is not allowed to manipulate data ## through the query endpoint
+          $ref: '#/components/responses/ClientError'
+        '408': ## Query Timeout: the query took longer than the configured timeout
+          ## interval. The client needs to rewrite the query so it can be
+          ## processed faster.
+          $ref: '#/components/responses/ServerError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /query/search:
+    post:
+      tags:
+        - Query
+      summary: Run distributed search query in the Catalogue
+      operationId: search
+      requestBody:
+        description: JSON object containing query with parameters and annotations
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotatedStatement'
+      responses:
+        '200':
+          description: successful query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Results'
+        '400': ## Wrong query 
+          $ref: '#/components/responses/ClientError'
+        '408': ## Query Timeout: 
+          $ref: '#/components/responses/ServerError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          
+  /schemas:
+    get:
+      tags:
+        - Schemas
+      summary: 'Get the full list of ontologies, shapes and vocabularies.'
+      description: 'The schema identifiers, returned by this endpoint can be used to download the schema files.'
+      operationId: getSchemas
+      responses:
+        '200':
+          description: 'References to ontologies, shapes and vocabularies.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OntologySchema'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'          
+    post:
+      tags:
+        - Schemas
+      summary: 'Add a new Schema to the catalogue.'
+      description: 'This endpoint accepts either an ontology (OWL file), shape (SHACL file) or controlled vocabulary (SKOS file), which is added to the schemas of the catalogue.'
+      operationId: addSchema
+      security:
+        - jwt: []
+      requestBody:
+        description: 'The file of the new schema. either an ontology (OWL file), shape (SHACL file) or controlled vocabulary (SKOS file).'
+        content:
+          application/rdf+xml:
+            schema:
+              type: string
+              description: 'OWL file describing the ontology of the schema or SKOS file describing the controlled vocabulary.'
+          application/ld+json:
+            schema:
+              type: string
+              description: 'OWL or SHACL file describing the ontology.'
+          application/json:
+              schema:
+                type: string
+                description: 'OWL or SHACL file describing the ontology.'
+          text/turtle:
+            schema:
+              type: string
+              description: 'SHACL file describing the ontology of the schema.'
+        required: true
+      responses:
+        '201':
+          description: 'Created'
+          headers:
+            location:
+              description: 'URL of the added Schema.'
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /schemas/{schemaId}:
+    get:
+      tags:
+        - Schemas
+      summary: Get a specific schema.
+      operationId: getSchema
+      parameters:
+        - name: schemaId
+          in: path
+          description: 'Identifier of the Schema.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'The schema for the given identifier. Depending on the type of the schema, either an ontology, shape graph or controlled vocabulary is returned.'
+          content:
+            application/rdf+xml:
+              schema:
+                type: string
+                description: 'OWL file describing the ontology of the schema or SKOS file describing the controlled vocabulary.'
+            text/turtle:
+              schema:
+                type: string
+                description: 'SHACL file describing the ontology of the schema.'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Schemas
+      summary: 'Replace a schema. This is only allowed for ontologies with the same IRI.'
+      operationId: updateSchema
+      parameters:
+        - name: schemaId
+          in: path
+          description: 'Identifier of the Schema.'
+          required: true
+          schema:
+            type: string
+      security:
+        - jwt: [ ]
+      requestBody:
+        description: 'The new ontology (OWL file).'
+        content:
+          application/rdf+xml:
+            schema:
+              type: string
+              description: 'OWL file describing the ontology.'
+          application/ld+json:
+            schema:
+              type: string
+              description: 'OWL or SHACL file describing the ontology.'
+          application/json:
+            schema:
+              type: string
+              description: 'OWL or SHACL file describing the ontology.'
+          text/turtle:
+            schema:
+              type: string
+              description: 'SHACL file describing the ontology of the schema.'
+        required: true
+      responses:
+        '200':
+          description: 'Updated.'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - Schemas
+      summary: 'Delete a Schema'
+      operationId: deleteSchema
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: schemaId
+          in: path
+          description: 'Identifier of the Schema'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Deleted Schema'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'          
+  /schemas/latest:
+    get: 
+      tags:
+        - Schemas
+      summary: 'Get the latest schema for a given type. If no term is specified, then the composite schema is returned.'
+      operationId: getLatestSchema
+      parameters:
+        - name: type
+          in: query
+          description: 'Type of the schema.'
+          required: true
+          schema:
+            type: string
+            enum:
+              - ontology
+              - shape
+              - vocabulary
+        - name: term
+          in: query
+          description: 'The URI of the term of the requested Self-Description schema e.g. `http://w3id.org/gaia-x/service#ServiceOffering`'
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'The latest schemas for the given type or term.'
+          content:
+            application/rdf+xml:
+              schema:
+                type: string
+                description: 'OWL file describing the ontology of the schema or SKOS file describing the controlled vocabulary.'
+            text/turtle:
+              schema:
+                type: string
+                description: 'SHACL file describing the ontology of the schema.'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /verification:
+    get:
+      tags:
+        - Verification
+      summary: Show a HTML page to verify (portions of) a signed Self-Description
+      operationId: verifyPage
+      responses:
+        '200':
+          description: >-
+            HTML document that contains a query field to verify (portions of)
+            Self-Descriptions.
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - Verification
+      summary: >-
+        Send a JSON-LD document to verify with the information from the
+        Catalogue
+      operationId: verify
+      parameters:
+        - name: verifySemantics
+          in: query
+          description: 'To verify SD semantics or not'
+          required: false
+          schema:
+            type: boolean
+            default: true
+        - name: verifySchema
+          in: query
+          description: 'To verify SD agains schema or not'
+          required: false
+          schema:
+            type: boolean
+            default: true  
+        - name: verifyVPSignature
+          in: query
+          description: 'To verify VP signature or not'
+          required: false
+          schema:
+            type: boolean
+            default: true  
+        - name: verifyVCSignature
+          in: query
+          description: 'To verify VC signature or not'
+          required: false
+          schema:
+            type: boolean
+            default: true  
+      requestBody:
+        description: >-
+          JSON-LD document to be verified object to send queries. Use
+          "application/json" for openCypher queries. A Catalogue may also
+          support the other content   types  depending   on   its   supported  
+          query  languages   but   only "application/json" is mandatory.
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationResult'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '422':
+          $ref: '#/components/responses/Unprocessible'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /participants:
+    get: #!! Needs pagination; Should this really include the entire Participant SD, or only the hash?
+      tags:
+        - Participants
+      summary: Get the registered participants
+      operationId: getParticipants
+      parameters: #!! Added pagination parameters
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+#        - $ref: '#/components/parameters/OrderByParam'
+#        - $ref: '#/components/parameters/AscendingParam'
+      responses:
+        '200':
+          description: List of registered participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participants'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - jwt: []
+    post:
+      tags:
+        - Participants
+      summary: Register a new participant in the catalogue
+      operationId: addParticipant
+      requestBody:
+        description: Participant Self-Description
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+      responses: #!! Should contain a Location header with the link to the new participant?
+        '201':
+          description: Created Participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+          headers: #!! Added location header with participant URL
+            location: 
+              description: 'URL of the added Participant'
+              schema: 
+                type: string
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - jwt: []
+  /participants/{participantId}:
+    get:
+      tags:
+        - Participants
+      summary: Get the registered participant
+      operationId: getParticipant
+      parameters:
+        - in: path
+          name: participantId
+          required: true
+          description: The participantId to get.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - jwt: []
+    put:
+      tags:
+        - Participants
+      summary: Update a participant in the catalogue
+      operationId: updateParticipant
+      parameters: #!! fehlt da nicht irgendwie das update?
+        - in: path
+          name: participantId
+          required: true
+          description: The participant to update.
+          schema:
+            type: string
+      requestBody: #!! Added participant as request body
+        description: Participant Self-Description
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Updated Participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - jwt: []
+    delete:
+      tags:
+        - Participants
+      summary: Delete a participant in the catalogue
+      operationId: deleteParticipant
+      parameters:
+        - in: path
+          name: participantId
+          required: true
+          description: The participant to delete.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted Participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - jwt: []
+  /participants/{participantId}/users:
+    get:
+      tags:
+        - Participants
+      summary: Get all users of the registered participant
+      operationId: getParticipantUsers
+      parameters:
+        - in: path
+          name: participantId
+          required: true
+          description: The participant Id
+          schema:
+            type: string
+        #!! Added pagination parameters
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Users of the participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfiles'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - jwt: []
+  /users: #!! This may conflict with an SSO setup using an external auth provider
+    get: #!! potentially long list needs pagination
+      tags:
+        - Users
+      summary: List the registered users
+      operationId: getUsers
+      parameters: #!! Added pagination parameters
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+#        - $ref: '#/components/parameters/OrderByParam'
+#        - $ref: '#/components/parameters/AscendingParam'
+      responses:
+        '200':
+          description: List of usernames
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfiles'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - Users
+      summary: Register a new user to the associated participant in the catalogue
+      operationId: addUser
+      requestBody:
+        description: User profile
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Created User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          headers: #!! Added location header with user URL
+            location: 
+              description: 'URL of the added User'
+              schema: 
+                type: string
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Get the user profile
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Users
+      summary: Update the user profile
+      operationId: updateUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: 'Updated user data, Participant ID will be ignored if provided.'
+        required: true
+        content: #!! Participant ID should be ignored if provided
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - Users
+      summary: Delete a user
+      operationId: deleteUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /users/{userId}/roles:
+    get:
+      tags:
+        - Users
+      summary: Get roles of the user
+      operationId: getUserRoles
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User roles
+          content:
+            application/json:
+              schema:
+                type: array #!! Changed to array, since roles implies plural
+                items:
+                  $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Users
+      summary: Update roles of the user
+      operationId: updateUserRoles
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: List of roles which should be assigned to the user
+        content:
+          application/json:
+            schema:
+              type: array #!! Changed to array, since roles implies plural
+              items:
+                $ref: '#/components/schemas/Role'
+      responses:
+        '200':
+          description: All assigned roles of the user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /roles:
+    get:
+      tags:
+        - Roles
+      summary: Get all registered roles in the catalogue
+      operationId: getAllRoles
+      responses:
+        '200':
+          description: All roles
+          content:
+            application/json:
+              schema:
+                type: array #!! Changed to array, since roles implies plural
+                items:
+                  $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /session: #!! Changed to singular, since a user has only 1 session, and the get response is only one session.
+    get:
+      tags:
+        - Session
+      operationId: getCurrentSession
+      responses:
+        '200':
+          description: Get information on the current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete: #!! This should be an implementation detail, logout is SSO-system dependent
+      tags:
+        - Session
+      operationId: logoutCurrentSession
+      responses:
+        '200':
+          description: The current session was closed
+        '500':
+          $ref: '#/components/responses/ServerError'

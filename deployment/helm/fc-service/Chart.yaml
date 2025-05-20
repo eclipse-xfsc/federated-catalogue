@@ -1,0 +1,27 @@
+apiVersion: v2
+name: fc-service
+home: https://gitlab.com/gaia-x/data-infrastructure-federation-services/cat/fc-service
+description: A Helm chart for GXFS Federated Catalogue service.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.4.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "2.1.0"
+
+dependencies:
+  - name: postgresql
+    version: 12.4.3
+    repository: "oci://registry-1.docker.io/bitnamicharts"
+  - name: neo4j
+    version: 5.18.0
+    repository: "https://neo4j.github.io/helm-charts/"
+  - name: keycloak
+    version: 26.0
+    repository: "oci://registry-1.docker.io/bitnamicharts"

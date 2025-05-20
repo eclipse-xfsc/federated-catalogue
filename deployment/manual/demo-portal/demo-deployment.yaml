@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fc-demo-portal
+  labels:
+    app: fc-demo-portal
+  namespace: federated-catalogue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fc-demo-portal
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: fc-demo-portal
+    spec:
+      containers:
+        - name: fc-demo-portal-image
+          image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-demo-portal:latest
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_FC_CLIENT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: fc-server-keys-secret
+                  key: keycloak_client_secret
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI
+              value: https://fc-key-server.gxfs.dev/realms/gaia-x
+            - name: FEDERATED_CATALOGUE_BASE_URI
+              value: http://fc-service:8081
+          ports:
+            - name: "http"
+              containerPort: 8088
+          readinessProbe:
+            httpGet:
+              path: "/actuator/health"
+              port: 8088
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources: { }
+      restartPolicy: Always

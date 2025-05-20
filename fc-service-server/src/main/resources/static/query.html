@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Query Self-Description</title>
+    <link href="css/jquery-ui.min.css" rel="stylesheet">
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .container {
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            /*align-items: center;*/
+        }
+
+        .query-parameter {
+            margin: 20px;
+            /*margin-bottom: 20px;*/
+        }
+
+        .query-parameter-block {
+            height: 250px;
+            width: 850px;
+            overflow: auto;
+            border: 2px dotted black;
+        }
+
+        .info-parameter-block {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: -46px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .query-parameter-added-element {
+            height: 34px;
+            margin-right: 24px;
+        }
+
+        .query-parameter-selection {
+            width: 100px;
+        }
+
+        .query-parameter-button {
+            margin-bottom: 2px;
+            border-radius: 30px;
+            margin-left: 14px;
+        }
+
+        .content-target {
+            margin-bottom: 16px;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .result-label {
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div>
+        <h2 style="margin-bottom: 20px;">Discover Self-Descriptions</h2>
+        <h4>Parameters: </h4>
+        <div class="info-parameter-block">
+            <button id="add-parameter-button" class="btn btn-danger query-parameter-button" onclick="addParameter()">+</button>
+        </div>
+        <div id="parameters" class="query-parameter-block">
+            <div id="parameter-0">
+            </div>
+        </div>
+        <br>
+        <h4>Please write your query statement in textarea:</h4>
+        <div class="content-target">
+            <textarea id="content-target" style="width:850px;height:180px;" placeholder="Please write your query statement"></textarea>
+        </div>
+        <div class="form-check form-check-inline">
+            <input checked class="form-check-input" id="totalCount" type="checkbox" value="" checked/>
+            <label class="form-check-label" for="totalCount"> TotalCount </label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input checked class="form-check-input" id="distributed" type="checkbox" value=""/>
+            <label class="form-check-label" for="distributed"> Distributed </label>
+        </div>
+        <div style="  display: flex;justify-content: flex-end;">
+            <button class="btn btn-primary" onclick="querySD()">Submit</button>
+        </div>
+        <div class="result">
+            <label id="result-status" for="result" class="result-label"></label>
+            <br>
+            <textarea id="result" style="width:850px;height:300px;" placeholder="Result of your query statement"></textarea>
+        </div>
+        <script>
+            let parameterCount = 0;
+
+            <!--Post call for query sd to server -->
+            function querySD() {
+                $('#result-status').text("");
+
+                if(!hasEmptyParams() && !hasEmptyQueryContent()) {
+                 var checkTotalCount = $("#totalCount").is(":checked") ? "true" : "false";
+                 var distributed = $("#distributed").is(":checked") ? true : false;
+                    $('#result').text("");
+                    var request;
+                    if (distributed) {
+                    	request = '/query/search'
+                    } else {
+                    	request = '/query?withTotalCount='+checkTotalCount;
+                    }
+                    $.ajax(request, {
+                        type: 'POST',  // http method
+                        contentType: "application/json;charset=utf-8",
+                      //  headers: {"query-language": "openCypher"},
+                        data: JSON.stringify({
+                            parameters: getRequestParams(),
+                            statement: document.getElementById('content-target').value
+                        }),  // data to submit
+                        success: function (data, status, xhr) {
+                            console.log("post verify success");
+                            $('#result-status').append('Status: ' + status);
+                            $('#result').append(JSON.stringify(data, null, 2));
+                        },
+                        error: function (error) {
+                            console.log("Query request failed. " + error.responseJSON.message);
+                            $('#result-status').append('Status: ' + error.status + '. Error code: ' + error.responseJSON.code + '.');
+                            $('#result').append(error.responseJSON.message);
+                        }
+                    });
+                }
+            }
+
+            function addParameter() {
+                let newParam =
+                    '<div id="parameter-' + parameterCount + '" name="parameter" class="query-parameter" itemid="' + parameterCount + '"> ' +
+                        '<input id="parameter-name-' + parameterCount + '" name="parameter-name" type="text" size="24" class="query-parameter-added-element" placeholder="Name">' +
+                        '<select id="parameter-selection-' + parameterCount + '" name="parameter-selection" class="query-parameter-added-element query-parameter-selection" name="parameter-type" onchange="changeParameterType(id, this)">' +
+                            '<option value="string-type" selected>String</option>' +
+                            '<option value="boolean-type">Boolean</option>' +
+                            '<option value="number-type">Number</option>' +
+                            '<option value="null-type">Null</option>' +
+                        '</select>' +
+                        '<input id="parameter-value-' + parameterCount + '" name="parameter-value" type="text" size="34" class="query-parameter-added-element" placeholder="Value">' +
+                        '<button id="remove-parameter-button-' + parameterCount + '"  class="btn btn-success query-parameter-button  pf-u-font-size-2xl" onclick="removeParameter(id)">−</button>' +
+                    '</div>' +
+                    '<div id="parameter-' + (parameterCount + 1) + '"></div>';
+
+                let isAddedNew = true;
+                document.getElementsByName("parameter").forEach(elem => {
+                    let name = elem.children.namedItem("parameter-name").value
+                    let value = elem.children.namedItem("parameter-value").value;
+                    let selection = elem.children.namedItem("parameter-selection").value;
+
+                    if ((name == null || name === '') || ((value == null || value === '') && selection !== 'null-type')) {
+                        isAddedNew = false;
+                        alert('Before adding a new parameter, fill in the previous ones or delete them!');
+                    }
+                });
+
+                if (isAddedNew) {
+                    document.getElementById('parameter-' + parameterCount).innerHTML = newParam;
+                    parameterCount++;
+                }
+            }
+
+            function removeParameter(removeButtonId) {
+                document.getElementById(removeButtonId).parentElement.remove();
+                parameterCount--;
+            }
+
+            function changeParameterType(selectionParamId, selectedObj) {
+                let id = selectionParamId.toString().substring('parameter-selection-'.length);
+                if (selectedObj.value === 'null-type') {
+                    document.getElementById("parameter-value-" + id).setAttribute("disabled", "");
+                } else {
+                    if (document.getElementById("parameter-value-" + id).hasAttribute("disabled")) {
+                        document.getElementById("parameter-value-" + id).removeAttribute("disabled")
+                    }
+                }
+            }
+
+            function getRequestParams() {
+                let params = {};
+                document.getElementsByName("parameter").forEach(elem => {
+                    let name = elem.children.namedItem("parameter-name").value
+                    let value = elem.children.namedItem("parameter-value").value;
+                    let selection = elem.children.namedItem("parameter-selection").value;
+
+                    if (selection === 'string-type') {
+                        params[name] = value;
+                    } else if (selection === 'boolean-type') {
+                        params[name] = Boolean(value);
+                    } else if (selection === 'number-type') {
+                        params[name] = Number(value);
+                    } else {
+                        params[name] = null;
+                    }
+                });
+                return params;
+            }
+
+            function hasEmptyParams() {
+                let result = false;
+                document.getElementsByName("parameter").forEach(elem => {
+                    let name = elem.children.namedItem("parameter-name").value
+                    let value = elem.children.namedItem("parameter-value").value;
+                    let selection = elem.children.namedItem("parameter-selection").value;
+
+                    if ((name == null || name === '') || ((value == null || value === '') && selection !== 'null-type')) {
+                        alert('Before sending the request, fill in the empty parameters or delete them!');
+                        result = true;
+                    }
+                });
+                return result;
+            }
+
+            function hasEmptyQueryContent() {
+                let result = false;
+                if (document.getElementById('content-target').value.trim() === "" || document.getElementById('content-target').value == null) {
+                    alert("Please add query");
+                    result = true;
+                }
+                return result;
+            }
+
+            window.onload = function() {
+                document.getElementById('content-target').value = document.getElementById('content-target').value.trim();
+            };
+        </script>
+    </div>
+</div>
+</body>
+</html>

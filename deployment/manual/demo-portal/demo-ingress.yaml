@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: cert-manager-webhook
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+  name: fc-demo-portal-ingress
+  namespace: federated-catalogue
+spec:
+  tls:
+    - hosts:
+        - fc-demo-server.gxfs.dev
+      secretName: wildcard-gxfs-dev
+  rules:
+    - host: fc-demo-server.gxfs.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fc-demo-portal-cluster-service
+                port:
+                  number: 8088

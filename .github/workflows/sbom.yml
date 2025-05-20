@@ -1,0 +1,14 @@
+name: Trigger Remote SBOM Workflow
+
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  call-remote-workflow:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/sbom-maven.yml@main
+    secrets:
+      GH_TOKEN: ${{ github.token }}

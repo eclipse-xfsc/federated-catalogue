@@ -1,0 +1,84 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+#  jpa:
+#    open-in-view: false
+   
+  liquibase:
+    change-log: classpath:/liquibase/master-changelog.xml
+    contexts: test 
+    
+datastore:
+  file-path: target
+  
+graphstore:
+  uri: bolt://localhost:7687
+  user: neo4j
+  password: 12345
+  query-timeout-in-seconds: 5
+  timeout-marker: The transaction has not completed within the timeout specified
+
+publisher:
+  impl: none #nats
+  url: nats://localhost:4222 
+  subject: fc.sd
+  instance: http://localhost:8081
+  send-content: false
+
+subscriber:
+  impl: none
+#  url: nats://localhost:4222
+#  subject: fc.sd.*
+#  instance: http://localhost:8082
+#  stream: fc-sd 
+#  queue: sd-processor
+#  group: sd-group
+#  impl: ces
+  instance: http://localhost:8082
+  url: https://ces-server.test.org
+  
+federated-catalogue:
+  scope: test
+  file-store:
+    cached: true
+    schema:
+      location: schemaFiles
+    context-cache:
+      location: contextCacheFiles
+  verification:
+    trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+    participant:
+      type: "http://w3id.org/gaia-x/participant#Participant"
+    resource:
+      type: "http://w3id.org/gaia-x/resource#Resource"
+    service-offering:
+      type: "http://w3id.org/gaia-x/service#ServiceOffering"
+    signature-verifier: local
+    did:
+      base-url: "https://dev.uniresolver.io/1.0/identifiers/"
+      cache:
+        size: 100
+        timeout: 1H
+    doc-loader:
+      # when http enabled then contixt will be loaded on the fly..      
+      additional-context: 
+        '[https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#
+        '[https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#
+      # plain content and file scheme are supported too   
+      #  '[https://schema.org]': '{"@context": {}}'
+      #  '[https://sample.net]': file:///opt/context-sample.jsonld 
+      cache-size: 100
+      cache-timeout: 8H
+      enable-file: true
+      enable-http: true
+      enable-local-cache: false
+            
+logging:
+  level:
+    root: INFO
+    liquibase: INFO
+#    org.hibernate: DEBUG
+#    org.neo4j.driver: DEBUG
+    eu.xfsc.fc: DEBUG
+

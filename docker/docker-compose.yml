@@ -1,0 +1,165 @@
+version: '3.7'
+
+services:
+  postgres:
+    container_name: "postgres"
+    image: library/postgres:14
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_MULTIPLE_DATABASES: fed_cat, keycloak
+    expose:
+      - "5432"
+    ports:
+      - "5432:5432"
+    networks:
+      - "gaia-x"
+    volumes:
+#      - pgdata:/var/lib/postgresql/data/
+      - ./postgres-initdb-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: pg_isready -d postgres -U postgres
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          
+  neo4j:
+    container_name: "neo4j"
+    image: neo4j:5.18.0
+    environment:
+      NEO4J_AUTH: "${GRAPH_STORE_USER}/${GRAPH_STORE_PASSWORD}"
+      NEO4J_server_http_listen__address: :7474
+      NEO4J_server_bolt_listen__address: :7687
+      NEO4J_PLUGINS: '["apoc", "graph-data-science", "n10s"]'
+      NEO4J_dbms_security_procedures_unrestricted: gds.*,apoc.*,n10s.*,semantics.*
+      NEO4J_dbms_security_procedures_allowlist: gds.*,apoc.*,n10s.*,semantics.*
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    networks:
+      - "gaia-x"
+    restart: always
+    command: neo4j
+    healthcheck:
+      test: ["CMD-SHELL", "/var/lib/neo4j/bin/neo4j status"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+#    volumes:
+#      - '$HOME/neo4j/data:/data'
+#      - '$HOME/neo4j/conf/:/conf/'
+
+  keycloak:
+    container_name: "keycloak"
+    environment:
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_DB_SCHEMA: public
+      KC_FEATURES: preview
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD}"
+      PROXY_ADDRESS_FORWARDING: "true"
+    image: quay.io/keycloak/keycloak:26.0
+    ports:
+      - "8080:8080"
+    networks:
+      - "gaia-x"
+    restart: unless-stopped
+    volumes:
+      - "../keycloak/providers:/opt/keycloak/providers"
+      - "../keycloak/realms:/opt/keycloak/data/import"
+    command: >
+      start --db postgres --hostname-strict false --http-enabled true --import-realm 
+      --log-level=DEBUG,io.quarkus:INFO,liquibase:INFO,org.hibernate:INFO,org.infinispan:INFO,org.keycloak.services.scheduled:INFO,org.keycloak.transaction:INFO,io.netty.buffer.PoolThreadCache:INFO,org.keycloak.models.sessions.infinispan:INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  nats:
+    image: nats:alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    restart: always
+    command: --js --sd /data -p 4222 -m 8222
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8222/healthz || exit 1
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks: 
+      - "gaia-x"
+      
+  server:
+    container_name: "fc-server"
+#    image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-service-server:2.0.0
+    build:
+      context: "${FC_SERVICE_SERVER_DOCKER_CONTEXT}"
+      dockerfile: Dockerfile
+      target: "${FC_SERVICE_SERVER_DOCKER_TARGET}"
+    environment:
+      KEYCLOAK_CREDENTIALS_SECRET: "${FC_CLIENT_SECRET}"
+      SPRING_DATASOURCE_URL: "${DB_URL}"
+      GRAPHSTORE_URI: "${GRAPH_STORE_URI}"
+      GRAPHSTORE_USER: "${GRAPH_STORE_USER}"
+      GRAPHSTORE_PASSWORD: "${GRAPH_STORE_PASSWORD}"
+      PUBLISHER_IMPL: nats
+      PUBLISHER_URL: ${NATS_URL}
+      SUBSCRIBER_IMPL: none
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    ports:
+      - "8081:8081"
+    networks:
+      - "gaia-x"
+    extra_hosts:
+      - "key-server:host-gateway"
+      - "localhost:127.0.0.1"
+    restart: always #unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+        
+  portal:
+    container_name: "demo-portal"
+#    image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-demo-portal:2.0.0
+    build:
+      context: "${FC_DEMO_PORTAL_DOCKER_CONTEXT}"
+      dockerfile: Dockerfile
+      target: "${FC_DEMO_PORTAL_DOCKER_TARGET}"
+    environment:
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_FC_CLIENT_OIDC_CLIENT_SECRET: "${FC_CLIENT_SECRET}"
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://key-server:8080/realms/gaia-x
+      FEDERATED_CATALOGUE_BASE_URI: http://fc-server:8081
+    ports:
+      - "8088:8088"
+    networks:
+      - "gaia-x"
+    extra_hosts:
+      - "key-server:host-gateway"
+      - "localhost:host-gateway"
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+
+networks:
+  gaia-x:
+    driver: "bridge"

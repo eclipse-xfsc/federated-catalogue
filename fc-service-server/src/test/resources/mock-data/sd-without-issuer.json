@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "type": "VerifiablePresentation",
+  "id": "presentationIDwoIssuer",
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "id": "http://example.edu/credentials/1872",
+      "type": "VerifiableCredential",
+      "issuanceDate": "2010-01-01T19:73:24Z",
+      "credentialSubject": {
+        "@type": "http://w3id.org/gaia-x/service#ServiceOffering",
+        "given_name": "Fredrik",
+        "family_name": "Str&#246;mberg",
+        "birthdate": "1949-01-22"
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-11-10T17:39:48Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..QK1kc2FKTLEzitUiev9ro9IANt99ZqkJwuhRv5HFW_9rvrUFYM4UBDherJywSrFu-miMlf-J78etLD0VIQHmrajl5Vjzgc_enqY5ueFh6xik6xO6h6rHUb7t31LHMU8zekGfwU7Z6-0SzN2KPg-qXiWF55SBmvWDWX3A2dSFo6xGCVjVIgPKgVwtK6kwmHm28V8XUNpFIMR9tIQRW3xQnlIIxjHPGUEq5PLOdRGm3ILjB-49k5bAf2_XbaQb3xFye6adogPveVn3lxA_Or8TyWoOT8Fn1PTNWxco7bhVgmKkZoKf1vnFUz4xbW69QgJtYkOqb8gAIIUXPpYSsVXPrVBh27_UThYxe312U5YepZzamyq9s5WBgRdyE8VThZ4ZXxLWJKGhb8xOYFmC8fyE4FB-TbkYjib0Pc_ZlUmFZxYnuJ_2GHcOexWtH1i0lfbvfG0VfDYaTZ2aKpnytqajqHVZzjI6qQOAAl45ViwIV4I34uO-irKPnBVGWDGWaCCQ2_ehMzLhCBQU7kPk6_oNjvTtPb1JzG-tpOPO-xrcPXMmTTGXINiHTX_9Pw3Jp6Myrrwv7rYNPCvx_yVD2DiKDyrHnpvFtfYK8wM88S-hbVvoCsKdBMgwqCw19UHRh43xcRkIYnkeB144V6N64Wd17pd6rGCfVUQQjqdxmH5Iysw"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-11-10T17:39:48Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..e2gMtEEtseVw93zv_jZ267XkgpH6dvdYC7crLWFXQcw_S1E49UsHcxOlNvfAUke-_2LLkdC_85H4jCKbQEK3lKDSKBykoBFaRs-aSSk2DObAPk-10pLOUEKz94j3yWz6Jn7DlZpKBk1H9jLcj4oQjqGW6x_DnFBBmTeycl7s9R-VzcMkl4grw20I91ujIPJEdH9ltuidEHX3-Z98E6NO0PIV93oD6b0LD5C_Ap2o4DSuWUixBMCuqhNppvk1P_KWjvFGjGlOEOyTf-CEs-X2FggnEZgu1Tt206orB52qYwKdX3U1GZYu8pS4sUlS2AvkX3KzIkkV5EuN1wfSkYg90otYEx2nRMCL7dqXq2mSr0UrhR8HoZsXXgSunzJwcBUif2empnR3vGraaqNIcDxVgtBP-9OA1XpYBTcjDUvs0_JWLUZDFRziDZhT5c4dRKXuyzDrVybi84c8m2W_QjuTCKYnibPwoqKespVqADEesC7q_wEWofG5dkg-LwdqvekoW9j3LS5voJ93fPa7Oiv_UPutIuAFwt6pVYf5aTApW9U8Fd1UnZJMIyqe6u9wd_Ea-T7qKtuLkSfYznZQ8KLfl5NV5PS2V8rkHc4Ve4IwTjCZJZSGH76fjgbQbT0pdw_QlFbJfRsG5XtFIBEXAwQGkcboWKIB5ERsz8vt2VnIAxs"
+  }
+}

@@ -1,0 +1,32 @@
+server:
+  port: 8088
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          fc-client-oidc:
+            provider: auth-server
+            client-id: demo-portal 
+            client-secret: demo-portal
+            scope: 
+              - openid
+#              - profile
+            authorization-grant-type: authorization_code
+#            redirect-uri: https://fc-demo-server.gxfs.dev
+        provider:
+          auth-server:
+            issuer-uri: https://auth-server.gxfs.dev
+
+federated-catalogue:
+#  base-uri: http://10.108.152.6:8081
+  base-uri: https://fc-server.gxfs.dev
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
+    org.keycloak.adapters.OAuthRequestAuthenticator: INFO

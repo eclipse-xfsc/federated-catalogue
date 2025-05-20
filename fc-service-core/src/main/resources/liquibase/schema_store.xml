@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="fhg" id="2022-09-14-schemafiles">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="schemafiles" />
+            </not>
+        </preConditions>
+        <createTable tableName="schemafiles">
+            <column name="schemaid" type="java.sql.Types.VARCHAR(200)">
+                <constraints primaryKey="true" primaryKeyName="schemafiles_pkey" nullable="false"/>
+            </column>
+            <column name="namehash" type="java.sql.Types.VARCHAR(64)">
+                <constraints nullable="false" />
+            </column>
+            <column name="uploadtime" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="now()">
+                <constraints nullable="false" />
+            </column>
+            <column name="updatetime" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="now()">
+                <constraints nullable="false" />
+            </column>
+            <column name="type" type="java.sql.Types.INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="content" type="java.sql.Types.CLOB">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        
+        <createTable tableName="schematerms">
+            <column name="term" type="java.sql.Types.VARCHAR(256)">
+                <constraints primaryKey="true" primaryKeyName="schematerms_pkey" nullable="false" />
+            </column>
+            <column name="schemaid" type="java.sql.Types.VARCHAR(200)">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            constraintName="schematerms_schemaid_fkey"
+            baseTableName="schematerms" baseColumnNames="schemaid"
+            referencedTableName="schemafiles" referencedColumnNames="schemaid"
+            onDelete="CASCADE" onUpdate="CASCADE"/>
+            <createIndex tableName="schemafiles" indexName="schemafiles_updatetime">
+                <column name="updatetime" />
+            </createIndex>
+    </changeSet>
+
+    <changeSet author="fhg" id="2022-10-28-revalidatorchunks">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="revalidatorchunks" />
+            </not>
+        </preConditions>
+        <createTable tableName="revalidatorchunks">
+            <column name="chunkid" type="java.sql.Types.INTEGER">
+                <constraints primaryKey="true" primaryKeyName="revalidatorchunks_pkey" nullable="false"/>
+            </column>
+            <column name="lastcheck" type="TIMESTAMP WITH TIME ZONE" defaultValueComputed="now()">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
+

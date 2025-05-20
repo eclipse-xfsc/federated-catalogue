@@ -1,0 +1,37 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: fc-demo-portal-app
+  mvc:
+    log-request-details: true
+  main:
+    allow-circular-references: true
+  security:
+    oauth2:
+      client:
+        registration:
+          fc-client-oidc:
+            provider: keycloak
+            client-id: federated-catalogue 
+            client-secret: "**********"
+            authorization-grant-type: authorization_code
+            scope:
+              - openid
+              - profile
+              - email
+        provider:
+          keycloak:
+            issuer-uri: http://key-server/realms/gaia-x
+
+federated-catalogue:
+  base-uri: http://fc-server
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web.client.RestTemplate: DEBUG
+

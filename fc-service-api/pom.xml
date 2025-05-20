@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.xfsc.cat</groupId>
+        <artifactId>fc-service</artifactId>
+        <version>1.0.0.local</version>
+    </parent>
+
+    <artifactId>fc-service-api</artifactId>
+    <version>${revision}</version>
+    <packaging>jar</packaging>
+    <name>fc-service-api</name>
+    <description>Eclipse XFSC Federated Catalogue shared domain model</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <!--scope>provided</scope-->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <configuration>
+                    <generateApis>false</generateApis>					
+				</configuration>
+                <executions>
+                    <execution>
+                        <id>generate-federated-catalogue-api-model</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <skipValidateSpec>true</skipValidateSpec>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <inputSpec>${project.parent.basedir}/openapi/fc_openapi.yaml</inputSpec>
+                            <generatorName>spring</generatorName>
+                            <packageName>eu.xfsc.fc.api.generated</packageName>
+                            <modelPackage>eu.xfsc.fc.api.generated.model</modelPackage>
+                            <generateModelTests>true</generateModelTests>
+                            <generateModelDocumentation>true</generateModelDocumentation>
+                            <configOptions>
+                                <additionalModelTypeAnnotations>@lombok.NoArgsConstructor @lombok.AllArgsConstructor</additionalModelTypeAnnotations>
+                                <performBeanValidation>true</performBeanValidation>
+                                <useBeanValidation>true</useBeanValidation>
+                                <useTags>true</useTags>
+                                <library>spring-boot</library>
+                                <openApiNullable>false</openApiNullable>
+                                <generateModelTests>true</generateModelTests>
+                                <generateModelDocumentation>true</generateModelDocumentation>
+                                <generatedConstructorWithRequiredArgs>false</generatedConstructorWithRequiredArgs>
+                            </configOptions>
+                            <typeMappings>
+                                <typeMapping>OffsetDateTime=Instant</typeMapping>
+                            </typeMappings>
+                            <importMappings>                                
+                                <importMapping>java.time.OffsetDateTime=java.time.Instant</importMapping>
+                            </importMappings>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

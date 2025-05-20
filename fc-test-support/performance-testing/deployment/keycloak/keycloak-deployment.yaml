@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fedcat-key-server
+  namespace: fedcat
+  labels:
+    app: fc-key-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedcat-key-server
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: fedcat-key-server
+    spec:
+      containers:
+        - name: fedcat-key-server-image
+          image: quay.io/keycloak/keycloak:17.0.1
+          args:
+            - "start-dev --auto-build"
+#            - "-Dkeycloak.migration.action=import"
+#            - "-Dkeycloak.migration.provider=dir"
+#            - "-Dkeycloak.migration.strategy=OVERWRITE_EXISTING"
+            - "-Dkeycloak.profile.feature.upload_scripts=enabled"
+            - "--log-level=DEBUG,io.quarkus:INFO,liquibase:INFO,org.hibernate:INFO,org.infinispan:INFO,org.keycloak.services.scheduled:INFO,org.keycloak.transaction:INFO,io.netty.buffer.PoolThreadCache:INFO,org.keycloak.models.sessions.infinispan:INFO"
+          env:
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: fc-key-server-pass-secret
+                  key: username
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fc-key-server-pass-secret
+                  key: password
+            - name: PROXY_ADDRESS_FORWARDING
+              value: "true"
+            - name: KEYCLOAK_FRONTEND_URL
+              value: http://fedcat-key-server.gxfs.dev/
+            - name: KEYCLOAK_ADMIN_URL
+              value: http://fedcat-key-server.gxfs.dev/admin/
+            - name: KC_PROXY
+              value: edge
+          ports:
+            - name: "http"
+              containerPort: 8080
+            - name: "https"
+              containerPort: 8443
+          readinessProbe:
+            httpGet:
+              path: "/realms/master"
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+          resources: {}
+#          volumeMounts:
+#            - mountPath: /fc-gaia-x-realm-volume-path
+#              name: fc-gaia-x-realm-volume
+
+      restartPolicy: Always
+#      serviceAccountName: keycloak
+#      serviceAccount: keycloak
+      volumes:
+        - configMap:
+            name: fedcat-gaia-x-realm-cm
+          name: fedcat-gaia-x-realm-volume

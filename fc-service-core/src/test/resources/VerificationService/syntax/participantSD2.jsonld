@@ -1,0 +1,71 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "holder": "did:example:holder",
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://delta-dao.com/.well-known/participant.json",
+      "issuer": "https://www.handelsregister.de/",
+      "issuanceDate": "2010-01-01T19:37:24Z",
+      "type": [
+        "VerifiableCredential"
+      ],
+      "credentialSubject": {
+        "@context": {
+          "gax-participant": "http://w3id.org/gaia-x/participant#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#"
+        },
+        "id": "http://example.org/test-issuer",
+        "@type": "gax-participant:LegalPerson",
+        "gax-participant:name": {
+          "@value": "deltaDAO AG",
+          "@type": "xsd:string"
+        },
+        "gax-participant:legalName": {
+          "@value": "deltaDAO AG",
+          "@type": "xsd:string"
+        },
+        "gax-participant:legalAddress": {
+          "@type": "gax-participant:Address",
+          "gax-participant:country": {
+            "@value": "DE",
+            "@type": "xsd:string"
+          },
+          "gax-participant:street-address": {
+            "@value": "Geibelstraße 46b",
+            "@type": "xsd:string"
+          },
+          "gax-participant:postal-code": {
+            "@value": "22303",
+            "@type": "xsd:string"
+          },
+          "gax-participant:locality": {
+            "@value": "Hamburg",
+            "@type": "xsd:string"
+          }
+        }
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-11-10T07:47:46Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..mU6TkTSK2aNkfaENGMmZ8CElhs5uM02nDz0kF2q_tLjSX8JSj59SOWaiwIlreqKVxYxGRX1kGw5ZSDw-ZEM1bvY7iWerGWSRQnft4vdDO1NFTwNlo3whK43s-tUfdcDZrxnosMysZ2rgFUy35wVAgZ6JJ8UsPpHy9lBfD_EFxL_03FV0wqF2O6c5ob91soJ8GUo7yceTu1dSvQL7advNemkMStLGRhBEQUlQbBaKVSTd-dPXRQPUuc-FBQUX2eSEIXDb2jMH65QGFW0Z-UVKhhCz74D8sy8QP7irbn_watFdO3GgKs1LT6TuG2XwJzGDo0p6WxrPNZ1GSL5wWi_F4e8kBHtsidXCb8Q90gfaov7Fdi72twLJFmttawpUfppnBvj3NInkipNW-Jc_o6mRCqjdoYTTQZvN2vQSJaIvc06QG3KT4LHh157hQ7BE_eKbKjRE3EWGXmWKz2onztWauzdW5nrEDfTXtrQcbtYHL4IJQytloTWu9AS7Oy9VmHIE_XWexGulJv3-sBU0Boz8k3TVqJsu3rGuGi0Leso3yKCWUiJkXtwaX8IrTOmou-J3nKjgSDAgZ7GFp4JBGdriX9OxbX6j5vA2eXESIELvC0APt3YMsU7nBeD84lso2BNO-XePnVjTE45ju-1s558N02h9E3W-u9vb9qrSCZnNZ34"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-11-10T07:47:46Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..oldaYOkNrUfsXmbSQeU5Wpr0opYhN-P253K92R3QCCWH_xmOXBuIRTIT_-sTKxJnSqJ6RjcN34DxhzPZ5hohURvbdki_pqIhz4b-mUtZvQCZo0CmGiAbCuhZxSZQeeS9NcqC8XywURXscO2gSCLCIpukj1h8G2Tm7yPLUr1FSL97PmhvnPqOgLMsn-1MV0r9tZ92pXdDbRK6kR1N67bGDbuKymtXo9S7Ui7ZveA6fMROkVFcEQANtaOtW9HptYxMl_jLf5Y0qB0lArDQq28YKaE5bogPUeoojdkyRMw-7ust3DTNRu_D2MQi8vjTglOI6bzGhuN5_dBikwwki28WxQClYSdJS-_lcYLPeFQrJX-RRhpZaJMxTdFgzZLRfsbywFY2RSX0yoYb3uqgHnbNGSp163j5WwqSkEvDvZ-Aw2aTBLV1EUPT0U9b4N6qds-NgipVFQUBk5w2uM98vGjmwDni1xIxmKz1rb7BpRX6AYAWXHbWf1VvsATuEgdgXmzx26mxI8lsysrf9ycLKfq63-JI99D7WXTPkWlJ-0tqOqKC8Seq6FSC1JhMp57-lLefPuURJNlykHrQIZPBqo1RNBVO0pqwgCbA5CVH10cBPqIKpWJklCAxi91k1yxsKTruPrIqsabOJYexGOXxcCO5rJ3Wf5o0UzHYYWOzlrEaCS0"
+  }
+}

@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: cert-manager-webhook
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+  name: fedcat-service-ingress
+  namespace: fedcat
+spec:
+  tls:
+    - hosts:
+        #    - 10.104.3.140
+        - fedcat-server.gxfs.dev
+      secretName: wildcard-gxfs-dev
+  rules:
+    #  - host: 10.104.3.140
+    - host: fedcat-server.gxfs.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fedcat-service
+                port:
+                  number: 8081

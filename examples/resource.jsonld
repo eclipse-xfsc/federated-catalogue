@@ -1,0 +1,65 @@
+{
+  "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
+  "holder" : "did:web:compliance.lab.gaia-x.eu",
+  "id" : "http://example.org/presentations/3731",
+  "type" : [ "VerifiablePresentation" ],
+  "verifiableCredential" : [ {
+    "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://www.w3.org/2018/credentials/examples/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
+    "credentialSubject" : {
+      "@context" : {
+        "cc" : "http://creativecommons.org/ns#",
+        "cred" : "https://www.w3.org/2018/credentials#",
+        "dcat" : "http://www.w3.org/ns/dcat#",
+        "dct" : "http://purl.org/dc/terms/",
+        "did" : "https://www.w3.org/TR/did-core/#",
+        "foaf" : "http://xmlns.com/foaf/0.1/",
+        "gax-core" : "https://w3id.org/gaia-x/core#",
+        "gax-trust-framework" : "https://w3id.org/gaia-x/gax-trust-framework#",
+        "gax-validation" : "http://w3id.org/gaia-x/validation#",
+        "ids" : "https://w3id.org/idsa/core/",
+        "owl" : "http://www.w3.org/2002/07/owl#",
+        "rdf" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs" : "http://www.w3.org/2000/01/rdf-schema#",
+        "schema" : "http://schema.org/",
+        "sh" : "http://www.w3.org/ns/shacl#",
+        "skos" : "http://www.w3.org/2004/02/skos/core#",
+        "vann" : "http://purl.org/vocab/vann/",
+        "vcard" : "http://www.w3.org/2006/vcard/ns#",
+        "voaf" : "http://purl.org/vocommons/voaf#",
+        "void" : "http://rdfs.org/ns/void#",
+        "xsd" : "http://www.w3.org/2001/XMLSchema#"
+      },
+      "@id" : "did:example:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2",
+      "@type" : "gax-trust-framework:Resource",
+      "dct:description" : {
+        "@type" : "xsd:string",
+        "@value" : "This is an example of a resource self description."
+      },
+      "gax-core:operatedBy" : {
+        "@id" : "did:example:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd3"
+      },
+      "gax-trust-framework:name" : {
+        "@type" : "xsd:string",
+        "@value" : "ExampleResourceForFederatedCatalogue"
+      }
+    },
+    "expirationDate" : "2024-01-23T11:29:40Z",
+    "issuanceDate" : "2023-08-08T11:29:40Z",
+    "issuer" : "did:web:compliance.lab.gaia-x.eu",
+    "type" : [ "VerifiableCredential" ],
+    "proof" : {
+      "type" : "JsonWebSignature2020",
+      "created" : "2023-09-01T14:12:44Z",
+      "proofPurpose" : "assertionMethod",
+      "verificationMethod" : "did:web:compliance.lab.gaia-x.eu",
+      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..JMe8xwhovldol2YOc1pDEoyNK1g4Y3_VWaVbUTLRtXQGYOiZ7r4xhLW8lRad3ZD_WLbmPDjhTSlzSraawnwmY6Rak7sFZHeSqjj7NKax779SWTVInFIVc0x_SIU1dufHwW_o4NEECItIbKOOiJeuOJVJhm4qFX3DmPiMpDiig3Bop5qasOEBV-JGuXz_3StZH_PQe-McY-1m4G4J6cfMbDJHNvY5ljOoowY727bWAVuBh2zRZ2IPw4k1uVzbbgHL9hXPI_4MoA7s3v5UdMYqENK1HktCFckJGN11L0QZt6dDw8MQPpcUopr6NntFFp8Q6_q5XHsIiMT_YLas5hMjMUmQyIjKNnNz7NkCS3ZZck8acWgvzprj5Y7ogD1uvyWlVkMyDqSbnBmixVUiScoj_nxfsn0dyIdhpI_gjmxAsDK-ODFON7EZ9PbpiUGpzPBS6M1CdsTRaRZBAu1BEAF3W4bqtOmVaaOMiLenLkrPTf5f2Y3Zgn0qLrA7AzxsC4QCcDNVoPjoZm_FQnJSVE-Jidmv3k4pjg8lIAwaTzRKoMqDUzRdfcRFBHoTri2WsEiy2QSY0tWVb6OaN6utpqBNbanTWOR54FxNGLGAfxoKS5IahrXWkyof9yN-dCohTcTeoDWkuRvHTOsUZALEbkxOIePST0bafoQcL4AnteA9JNQ"
+    }
+  } ],
+  "proof" : {
+    "type" : "JsonWebSignature2020",
+    "created" : "2023-09-01T14:12:44Z",
+    "proofPurpose" : "assertionMethod",
+    "verificationMethod" : "did:web:compliance.lab.gaia-x.eu",
+    "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..c-PFraily54iNopEeZFXLwEYCvAA48JqOFoK0zE2aoo1pOpPKMa6vR6RqdXFvUlkPn9MDU_ufGJCT8NJpcs59-lrFj6zeEQ89iA5XWEUz_ursVUC4lWBAqKgarJv1i8E-dMhFfMqLzfJr1O2oRq4tADlSWUl_vI9jHviUo_xUFOxTaYPYHwsZMz9T9nbo53RLB82-lv21CzJqGe8jro_nydZeC-y7p7iWlHIzxpN84uHRabfK5AbjT2VnwOz-N3FuDNNKlydbD1tscDk4KqJjq6YCKKTSWtZZlMiYXH9HB5xWN0wdt57uFe0f2sEYxo2OzVYL4KJNONc8IP8g8L4w9PSWdfYje5DWgFGgIEMEWy0hS4byNHLrfjc_264tVz28V5ZBR3gYVVHqiapXzgvANZ5uacPOZpNaJep-2ttcOhAzDF1i4-odoXZgJbD4Zkyd87HW8_CC37ye2AS-1liDEjePoA1A48hKH-UC29HQOg8c-2SYAWyh60DLXWa-WaoYM_15RhpEi8_cl7gJvB95QCYBrpjLpVUXeMWMbmdbiMbVlewB8AlscNJ-oaxbhCvqG8_BlQIAYaCC0aNG6WeGCW_lcshQjuYKFEOjBPwiRYi07F9cVk-lkz_eAqIzjysRokiIwBKg_kV1KJBrYbM5xwaUwxW-Em4J-BF2p58M_4"
+  }
+}

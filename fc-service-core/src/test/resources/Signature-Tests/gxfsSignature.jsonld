@@ -1,0 +1,151 @@
+{
+	"@context": [
+		"https://www.w3.org/2018/credentials/v1",
+		"http://schema.org"
+	],
+	"@id": "urn:test:5b3ae6d8-90d0-4060-8636-5515bcb0057d",
+	"type": [
+		"VerifiablePresentation"
+	],
+	"verifiableCredential": {
+		"issuanceDate": "2023-03-28T07:52:25.431Z",
+		"issuer": "did:web:integration.gxfs.dev:api:dynamic:did:cloudService1",
+		"@type": [
+			"VerifiableCredential",
+			"ServiceCatalogDescriptionCredential"
+		],
+		"credentialSubject": {
+			"@context": {
+				"dcat": "http://www.w3.org/ns/dcat#",
+				"gax-core": "https://w3id.org/gaia-x/core#",
+				"xsd": "http://www.w3.org/2001/XMLSchema#",
+				"gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+				"cc": "http://creativecommons.org/ns#",
+				"dct": "http://purl.org/dc/terms/",
+				"did": "https://www.w3.org/TR/did-core/#",
+				"foaf": "http://xmlns.com/foaf/0.1/",
+				"gax-validation": "http://w3id.org/gaia-x/validation#",
+				"ids": "https://w3id.org/idsa/core/",
+				"owl": "http://www.w3.org/2002/07/owl#",
+				"rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+				"rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+				"schema": "http://schema.org/",
+				"sh": "http://www.w3.org/ns/shacl#",
+				"skos": "http://www.w3.org/2004/02/skos/core#",
+				"trusted-cloud": "http://w3id.org/gaia-x/trusted-cloud#",
+				"vann": "http://purl.org/vocab/vann/",
+				"vcard": "http://www.w3.org/2006/vcard/ns#",
+				"voaf": "http://purl.org/vocommons/voaf#",
+				"void": "http://rdfs.org/ns/void#"
+			},
+			"@id": "did:web:registry.gaia-x.eu:ServiceOffering:Ht1On4T6bv-vXqVuGWv6fiTa7l-3MZ1APD3E",
+			"@type": "gax-trust-framework:ServiceOffering",
+			"gax-core:offeredBy": [
+				{
+					"@id": "did:web:integration.gxfs.dev:api:dynamic:did:provider"
+				},
+				{
+					"@id": "did:web:integration.gxfs.dev:api:dynamic:did:provider"
+				}
+			],
+			"gax-trust-framework:policy": "list of policy",
+			"gax-trust-framework:serviceTitle": "Software Title",
+			"gax-trust-framework:dataAccountExport": {
+				"gax-trust-framework:formatType": "application/gzip",
+				"@type": "gax-trust-framework:DataAccountExport",
+				"gax-trust-framework:accessType": "digital",
+				"gax-trust-framework:requestType": "API"
+			},
+			"gax-trust-framework:termsAndConditions": {
+				"gax-trust-framework:content": {
+					"@value": "http://example.org/tac",
+					"@type": "xsd:anyURI"
+				},
+				"@type": "gax-trust-framework:TermsAndConditions",
+				"gax-trust-framework:hash": "1234"
+			},
+			"trusted-cloud:certificates": {
+				"@type": "trusted-cloud:CertificateScope",
+				"trusted-cloud:certificate": {
+					"@id": "did:web:integration.gxfs.dev:api:dynamic:did:certificate1"
+				},
+				"trusted-cloud:scope": {
+					"@type": "xsd:string",
+					"@value": "TÜV"
+				}
+			},
+			"trusted-cloud:contracts": {
+				"@id": "TBD"
+			},
+			"trusted-cloud:dataCentres": [
+				{
+					"@id": "did:web:integration.gxfs.dev:api:dynamic:did:datacentre1"
+				},
+				{
+					"@id": "did:web:integration.gxfs.dev:api:dynamic:did:datacentre2"
+				}
+			],
+			"trusted-cloud:dataProtection": {
+				"@id": "TBD"
+			},
+			"trusted-cloud:functionalDescription": {
+				"@type": "trusted-cloud:FunctionalDescriptionService",
+				"trusted-cloud:briefDescription": {
+					"@type": "xsd:string",
+					"@value": "IONOS Trusted Cloud Provider provides trusted cloud services. "
+				},
+				"trusted-cloud:description": {
+					"@type": "xsd:string",
+					"@value": "IONOS Trusted Cloud Provider"
+				}
+			},
+			"trusted-cloud:generalInformation": {
+				"@type": "trusted-cloud:GeneralInformationService",
+				"trusted-cloud:name": {
+					"@type": "xsd:string",
+					"@value": "IONOS"
+				},
+				"trusted-cloud:provisionType": "public",
+				"trusted-cloud:serviceLogo": {
+					"@type": "xsd:anyURI",
+					"@value": "https://www.ionos.de/newsroom/wp-content/uploads/2022/03/LOGO_IONOS_Blue_RGB-1.png"
+				},
+				"trusted-cloud:serviceModel": "IaaS",
+				"trusted-cloud:website": {
+					"@type": "xsd:anyURI",
+					"@value": "https://www.ionos.de/pro/ionos/cloud"
+				}
+			},
+			"trusted-cloud:interoperability": {
+				"@id": "TBD"
+			},
+			"trusted-cloud:operativeProcesses": {
+				"@id": "TBD"
+			},
+			"trusted-cloud:security": {
+				"@id": "TBD"
+			},
+			"trusted-cloud:serviceArchitecture": {
+				"@id": "TBD"
+			}
+		},
+		"@id": "https://www.example.org/SoftwareOffering.json",
+		"@context": [
+			"https://www.w3.org/2018/credentials/v1"
+		],
+		"proof": {
+			"created": "2023-03-28T07:52:25.998047975Z",
+			"jws": "eyJhbGciOiJKc29uV2ViU2lnbmF0dXJlMjAyMCIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEQCIE7dYm01bWVkcLjXNnN4fvRJMC3vlU7I0SpactrxMxk5AiAqKFR9t4ROtkUghTNYaVJ2x693IJ6X_Zei0-P06TylSg",
+			"proofPurpose": "assertionMethod",
+			"type": "JsonWebSignature2020",
+			"verificationMethod": "did:web:integration.gxfs.dev:api:dynamic:did:cloudService1#key-1"
+		}
+	},
+	"proof": {
+		"created": "2023-03-28T07:52:25.998047975Z",
+		"jws": "eyJhbGciOiJKc29uV2ViU2lnbmF0dXJlMjAyMCIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..MEQCIE7dYm01bWVkcLjXNnN4fvRJMC3vlU7I0SpactrxMxk5AiAqKFR9t4ROtkUghTNYaVJ2x693IJ6X_Zei0-P06TylSg",
+		"proofPurpose": "assertionMethod",
+		"type": "JsonWebSignature2020",
+		"verificationMethod": "did:web:integration.gxfs.dev:api:dynamic:did:cloudService1#key-1"
+	}
+}

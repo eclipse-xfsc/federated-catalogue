@@ -1,0 +1,168 @@
+management:
+  endpoint:
+    configprops:
+      show-values: ALWAYS
+    env:
+      show-values: ALWAYS  
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+
+server:
+  port: 8081
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    threads:
+      max: 200
+      min-spare: 20
+  shutdown: graceful
+
+spring:
+  application:
+    name: federated-catalogue-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres
+    platform: postgresql
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 600000
+      maxLifetime: 1800000
+      minimumIdle: 8
+      maximumPoolSize: 128
+  liquibase:
+    change-log: classpath:/liquibase/master-changelog.xml
+  main:
+    allow-bean-definition-overriding: true    
+  mvc:
+    log-request-details: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://key-server:8080/realms/gaia-x
+#          jwk-set-uri: http://key-server:8080/realms/gaia-x/protocol/openid-connect/certs
+  threads:
+    virtual:
+      enabled: true
+  transaction:
+    default-timeout: 10
+
+scheduler:
+  sd:
+    cron:
+      expression: 0 1 0 * * *
+  schema:
+    init-delay: 10000
+
+openapi:
+  gaiaXCatalogue:
+    base-path: ""
+
+springdoc:
+  api-docs:
+    path: /api/docs
+    enabled: true
+
+keycloak:
+  auth-server-url: http://key-server:8080
+  realm: gaia-x
+  resource: federated-catalogue
+  credentials:
+    secret: vZo1equicRl1UdxJDWCNNJWe6vJcm2Cg
+
+datastore:
+  file-path: target
+
+graphstore:
+  uri: bolt://localhost:7687
+  user: neo4j
+  password: neo12345
+  timeout-marker: The transaction has not completed within the timeout specified
+
+publisher:
+#  impl: none #nats
+#  url: nats://localhost:4222 
+  subject: fc.sd
+#  instance: http://localhost:8081
+  send-content: false
+  impl: none
+  instance: http://localhost:8081
+  url: https://ces-v1.lab.gaia-x.eu
+  comp-url: https://compliance.lab.gaia-x.eu/v1/api
+
+subscriber:
+#  impl: none
+#  url: nats://localhost:4222
+#  subject: fc.sd.*
+#  instance: http://localhost:8082
+#  stream: fc-sd 
+#  queue: sd-processor
+#  group: sd-group
+  impl: none #ces
+  instance: http://localhost:8081
+  url: https://ces-v1.lab.gaia-x.eu 
+  page-size: 20
+  fixed-rate: 30s
+  verify:
+    semantics: true
+    schema: true
+    vp-signature: false
+    vc-signature: false
+    integrity: true
+
+federated-catalogue:
+  scope: runtime
+  file-store:
+    cached: true
+    cache-size: 128
+    schema:
+      location: schemaFiles
+    context-cache:
+      location: contextCacheFiles
+  query:
+    partners:
+    self: "http://localhost:${server.port}"
+  verification:
+    trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+#    trust-anchor-url: "https://registry.lab.gaia-x.eu/development/api/trustAnchor/chain/file"
+    http-timeout: 3000 
+    validator-expire: 1D
+    participant:
+      type: "https://w3id.org/gaia-x/core#Participant"
+    resource:
+      type: "https://w3id.org/gaia-x/core#Resource"
+    service-offering:
+      type: "https://w3id.org/gaia-x/core#ServiceOffering"
+    semantics: true
+    schema: true
+    vp-signature: true
+    vc-signature: true
+    signature-verifier: uni-res #local
+    did: 
+      base-url: "https://dev.uniresolver.io/1.0" #/identifiers/
+      cache:
+        size: 100
+        timeout: 1H
+    doc-loader:
+      additional-context:
+        '[https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#
+        '[https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#
+      cache-size: 500
+      cache-timeout: 24H
+      enable-file: true
+      enable-http: true
+      enable-local-cache: false
+
+logging:
+  level:
+    root: INFO
+    eu.xfsc.fc: DEBUG
+#    org.neo4j.driver: DEBUG
+#    org.springframework: DEBUG
+    org.springframework.web: DEBUG #INFO
+#    org.springframework.security: DEBUG 
+

@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fedcat-service
+  labels:
+    app: fedcat-service
+  namespace: fedcat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fedcat-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 50%
+      maxUnavailable: 50%
+  template:
+    metadata:
+      labels:
+        app: fedcat-service
+    spec:
+      containers:
+        - name: fedcat-service-server-image
+          image: registry.gitlab.com/gaia-x/data-infrastructure-federation-services/cat/fc-service/fc-service-server:1.0.0
+          imagePullPolicy: Always
+          env:
+            - name: GRAPHSTORE_URI
+              value: bolt://10.101.96.240:7687
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://10.107.61.174:5432/postgres
+            - name: GRAPHSTORE_QUERY_TIMEOUT_IN_SECONDS
+              value: "5"
+            - name: DATASTORE_FILE_PATH
+              value: /var/lib/fc-service/filestore
+            - name: SERVER_TOMCAT_ACCESSLOG_ENABLED
+              value: "true"
+            - name: LOGGING_LEVEL_EU_GAIAX_DIFS_FC
+              value: INFO
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB
+              value: INFO
+            - name: LOGGING_LEVEL_ORG_NEO4J_DRIVER
+              value: INFO
+            - name: KEYCLOAK_AUTH_SERVER_URL
+              value: http://78.138.66.109:8080
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: http://78.138.66.109:8080/realms/gaia-x
+            - name: KEYCLOAK_CREDENTIALS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: fc-server-keys-secret
+                  key: keycloak_client_secret
+          ports:
+            - name: http
+              containerPort: 8081
+          volumeMounts:
+            - name: fc-file-store
+              mountPath: /var/lib/fc-service
+              subPath: filestore
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources: { }
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - fedcat-postgres
+                      - fedcat-neo4j-db
+              topologyKey: "kubernetes.io/hostname"
+      volumes:
+        - name: fc-file-store
+          persistentVolumeClaim:
+            claimName: fedcat-filestore-claim
+      restartPolicy: Always

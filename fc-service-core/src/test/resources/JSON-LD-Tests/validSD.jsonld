@@ -1,0 +1,47 @@
+{
+	"@id": "http://example.edu/verifiablePresentation/self-description1",
+	"type": [
+		"VerifiablePresentation"
+	],
+	"issuer": "https://example.edu/issuers/particiant1",
+	"issuanceDate": "2010-01-01T00:00:00Z",
+	"verifiableCredential": [{
+			"@id": "http://example.edu/verifiableCred/participantVC",
+			"type": [
+				"VerifiableCredential"
+			],
+			"issuer": "https://example.edu/issuers/particiant1",
+			"issuanceDate": "2010-01-01T00:00:00Z",
+			"credentialSubject": [{
+				"@id": "did:example:particiant1",
+				"type": "participant",
+				"registrationNumber": {
+					"@value": "3234566",
+					"@type": "xsd:string"
+				},
+				"headquarterAddress.countryCode": {
+					"@value": "DEU",
+					"@type": "xsd:string"
+				},
+				"legalAddress.countryCode": {
+					"@value": "DEU",
+					"@type": "xsd:string"
+				}
+			}],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-10-01T13:02:17.489Z",
+    "proofPurpose": "assertionMethod",
+    "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..YQAIjkqX6OL4U3efV0zumn8-l8c4wQo98SOSlzt53HOR8qlLu5L5lmwZJnAsR7gKW-6jv5GBT0X4ORQ1ozLvihFj6eaxxJNgzLFPoH5w9UEaEIO8mMGyeQ-YQYWBbET3IK1mcHm2VskEsvpLvQGnk6kYJCXJzmaHMRSF3WOjNq_JWN8g-SldiGhgfKsJvIkjCeRm3kCt_UVeHMX6SoLMFDjI8JVxD9d5AG-kbK-xb13mTMdtbcyBtBJ_ahQcbNaxH-CfSDTSN51szLJBG-Ok-OlMagHY_1dqViXAKl4T5ShoS9fjxQItJvFPGA14axkY6s00xKVCUusi31se6rxC9g",
+    "verificationMethod": "did:web:example"
+  }
+		}
+	],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-10-01T13:02:17.489Z",
+    "proofPurpose": "assertionMethod",
+    "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..YQAIjkqX6OL4U3efV0zumn8-l8c4wQo98SOSlzt53HOR8qlLu5L5lmwZJnAsR7gKW-6jv5GBT0X4ORQ1ozLvihFj6eaxxJNgzLFPoH5w9UEaEIO8mMGyeQ-YQYWBbET3IK1mcHm2VskEsvpLvQGnk6kYJCXJzmaHMRSF3WOjNq_JWN8g-SldiGhgfKsJvIkjCeRm3kCt_UVeHMX6SoLMFDjI8JVxD9d5AG-kbK-xb13mTMdtbcyBtBJ_ahQcbNaxH-CfSDTSN51szLJBG-Ok-OlMagHY_1dqViXAKl4T5ShoS9fjxQItJvFPGA14axkY6s00xKVCUusi31se6rxC9g",
+    "verificationMethod": "did:web:example"
+  }
+}

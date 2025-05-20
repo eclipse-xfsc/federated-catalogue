@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: fedcat
+  name: fedcat-filestore-volume
+  labels:
+    type: local
+    app: fedcat-service
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /mnt/shared-data/filestore
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: fedcat
+  name: fedcat-filestore-claim
+  labels:
+    app: fedcat-service
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,0 +1,59 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/SoftwareOffering.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": {
+        "@context": {
+          "dcat": "http://www.w3.org/ns/dcat#",
+          "gax-core": "https://w3id.org/gaia-x/core#",
+          "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#"
+        },
+        "@id": "https://www.example.org/mySoftwareOffering",
+        "@type": "https://w3id.org/gaia-x/core#ServiceOffering",
+        "gax-trust-framework:mySoftwareOffering": {
+          "@type": "gax-trust-framework:SoftwareOffering",
+          "gax-trust-framework:accessType": "access type",
+          "gax-trust-framework:formatType": "format type",
+          "gax-trust-framework:requestType": "request type"
+        },
+        "gax-trust-framework:providedBy": {
+          "@id": "gax-participant:Provider1"
+        },
+        "gax-trust-framework:termsAndConditions": {
+          "@type": "gax-core:TermsAndConditions",
+          "gax-trust-framework:content": {
+            "@type": "xsd:anyURI",
+            "@value": "http://example.org/tac"
+          },
+          "gax-trust-framework:hash": "1234"
+        },
+        "dcat:keyword": [
+          "Keyword1_1",
+          "Keyword1_2",
+          "Keyword1_3",
+          "Keyword1_4",
+          "Keyword1_5",
+          "Keyword1_6",
+          "Keyword1_7"
+        ],
+        "gax-trust-framework:serviceTitle": "Software Title"
+      }
+    }
+  ]
+}

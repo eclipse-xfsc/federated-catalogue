@@ -1,0 +1,77 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description1",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/SoftwareOffering.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": {
+        "@context": {
+          "dcat": "http://www.w3.org/ns/dcat#",
+          "gax-core": "https://w3id.org/gaia-x/core#",
+          "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#"
+        },
+        "@id": "https://www.example.org/mySoftwareOffering",
+        "@type": "gax-trust-framework:ServiceOffering",
+        "gax-core:providedBy": {
+          "@id": "gax-participant:Provider1"
+        },
+		"gax-core:offeredBy": {
+          "@id": "gax-participant:Provider1"
+        },
+		"gax-trust-framework:dataAccountExport": {
+		  "@type": "gax-trust-framework:DataAccountExport",
+		  "gax-trust-framework:requestType": "API",
+		  "gax-trust-framework:accessType": "digital",
+		  "gax-trust-framework:formatType": "application/gzip"
+		},
+        "gax-trust-framework:termsAndConditions": {
+          "@type": "gax-trust-framework:TermsAndConditions",
+          "gax-trust-framework:content": {
+            "@type": "xsd:anyURI",
+            "@value": "http://example.org/tac"
+          },
+          "gax-trust-framework:hash": "1234"
+        },
+		"gax-trust-framework:policy": "list of policy",
+        "dcat:keyword": [
+          "Keyword1_1",
+          "Keyword1_2",
+          "Keyword1_3",
+          "Keyword1_4",
+          "Keyword1_5",
+          "Keyword1_6",
+          "Keyword1_7"
+        ],
+        "gax-trust-framework:serviceTitle": "Software Title"
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-12-02T16:04:48Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..gqHw7BU2sLubTvLqf6CegEtLSeNYJfj2izkerEs-3DnFGRExjI6z0wiwza0VUXCRrek_ApNYhFiR-jmrq9mBv6qWwGUvpgVFc1oCLa6gZZ6tmw__3I7x5P9W_lkeL4Z8-NA94us2taOCckWDG3kMpye_4kynBdqUzB5ACn7ylpG9HTjzKZ0bA1Mkh49-EJE9SX6vkPeN87b8RRPxj26YYIzecLatldOqh0MHD2hRx-aM3khLRgcbJxj9zU0Cxoy4TOah0oZ33NLDi-UXz2HXAq4MGrdIRtAfLGvTr-XpEQ5LizMAeoVLk884Aag-rNnrBZZQVt_B-CLjtv3LmYJF9OaEtLvCFd9HsVeQw8uSpFVU93keL9m2T5PtxahIyznLsm0SQFmYWrVe7Pw-FoT25Rbc7RZOHQivP6NTiz9lD1HTuFXaGy8YheXhYkZ5nG79qx_-dUVJwau6W8or8deJzTmX48bv16GHWMMVW5zHWj-atpLjHAzc_guTOlP8JPX9ed2C4B32Fh12ZOin2RHC53PEjcdMp-4ZR70kTioQYJaPw2bt8QAV9FBRfyFLiwYeC9nbYUMPNtg78PNf5QgNzg__EOpHcloA5eTRQP3sz09HsYaS8Qwu-CjYfE6cdPV0GZPkCVqLInUQ3hNwamX33brZypTsPV8gJzkSU5kxDZI"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-12-02T16:04:48Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..EZXMjh9hgg1BCeUayzvjVSXNIbAVn9pFSyoU477S84TYVxOEzkjs1UDDHgcxhqEx2q9aqr8G0tGvsyDS_e1LVTyzmGzY5b08k3wBwxrHTxY6u-qgYxE9Glx-3Dr-yv6KVQi70YFTChccb6VkkjXII9REKteVXavRB3jPgDNl6d-QtG8tE26rhOnp8y8QfdbleJAR8al66WJgghfXvEcHLAhdsCRuwJRrLz33i1J-XrM6VDY53LhSoHNr-xrZ7cBUzR-ki1ukL-ajUxsx67vxAKgOBvvp26GZi0Rc2lnw6cf-eIn9ZRwjp_RN6k6UWN5xNIhTxZ4IWZMxHdQk-D1Ib1JXdNzCHHcxkr0Njyr2LlS-nHxLBPcYUutlQoxzNBjHforJpAQeCd-s5wk2xBAAag8LP4kqWIekbJN0nuGAOV7wWbPJi7BbIcXLfktS8DnEDoBiUUoZkMZzOwEWv8-UIVZoYhlzhx7sAMH0T-QwpL-4PJyjN6hvZWJxBWY9fyL388pudb1XFakovqmULcXjsqGnG_rXEE7S28rD8qNBJDSgp6tAXK4kN7JPE2sh3FI9Yk5ytc9RPq38I9tez4U9cKNvL3OPykEm6fautCmCGpWPuVNE8ukQ9Q31QRcDg53bxwLryPNphTfAK8d3sIZRY5rhWc2A_RqKSssPrJeClf4"
+  }
+}

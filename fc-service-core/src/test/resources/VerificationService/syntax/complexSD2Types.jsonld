@@ -1,0 +1,134 @@
+{
+	"@context": [
+		"https://www.w3.org/2018/credentials/v1"
+	],
+	"@id": "http://example.edu/verifiablePresentation/self-description1",
+	"type": [
+		"VerifiablePresentation"
+	],
+	"verifiableCredential": [
+		{
+			"@context": [
+				"https://www.w3.org/2018/credentials/v1",
+				"https://w3id.org/security/suites/jws-2020/v1",
+				"https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+			],
+			"type": [
+				"VerifiableCredential"
+			],
+			"id": "https://www.riphixel.fr/workshop/demo2023/b2808871-26ae-4b1e-8ccb-463e359fa661.json",
+			"issuer": "did:web:www.riphixel.fr",
+			"issuanceDate": "2024-01-05T09:13:46.261Z",
+			"credentialSubject": {
+				"id": "https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json",
+				"gx:legalName": "Riphixel",
+				"gx:headquarterAddress": {
+					"gx:countrySubdivisionCode": "FR-59"
+				},
+				"gx:legalRegistrationNumber": {
+					"id": "https://www.riphixel.fr/workshop/demo2023/743ad60a-431c-4f45-bf15-e7bf19d64b10.json"
+				},
+				"gx:legalAddress": {
+					"gx:countrySubdivisionCode": "FR-59"
+				},
+				"type": "gx:LegalParticipant"
+			},
+			"proof": {
+				"type": "JsonWebSignature2020",
+				"proofPurpose": "assertionMethod",
+				"verificationMethod": "did:web:www.riphixel.fr#key-0",
+				"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..sQV-khdOVmytYtAxoR4mnfRQB9zvWqI9gmwQBMphXXV74Bc52bts3RUtdJycyZ0E84FMPXon5TydBkJBN2Wup7h8IbTqRnsg5JQZHfl57NimMLem_YGVqytI5xaYr8HooCYE7afexnfMBjNcoomtZeU4GHo29PcX0fHRh6xJHSpmM5xM3FaZRS1pAARFHs6lnoGS7frejRoYS4hxf53TBgeyrfKpvRZUjysvQTThr6TYr2fYQ2qJtdUyKMx4KJq1GC44JMxbkplR2QQwINR2vYodt8_wW0emHPpJpt05c5hsyhXNFFG0qBgaEjPGbnU8ktkWImOEh65fsILwjb-rRg"
+			}
+		},
+		{
+			"@context": [
+				"https://www.w3.org/2018/credentials/v1",
+				"https://w3id.org/security/suites/jws-2020/v1",
+				"https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+			],
+			"id": "https://www.riphixel.fr/workshop/demo2023/654af4fb-efb8-4bed-aa45-07252416d847.json",
+			"issuer": "did:web:www.riphixel.fr",
+			"issuanceDate": "2024-01-05T09:13:46.261Z",
+			"type": "VerifiableCredential",
+			"credentialSubject": {
+				"gx:termsAndConditions": "The PARTICIPANT signing the Self-Description agrees as follows:\n- to update its descriptions about any changes, be it technical, organizational, or legal - especially but not limited to contractual in regards to the indicated attributes present in the descriptions.\n\nThe keypair used to sign Verifiable Credentials will be revoked where Gaia-X Association becomes aware of any inaccurate statements in regards to the claims which result in a non-compliance with the Trust Framework and policy rules defined in the Policy Rules and Labelling Document (PRLD).",
+				"type": "gx:GaiaXTermsAndConditions",
+				"id": "https://www.riphixel.fr/workshop/demo2023/be662688-2a48-48ea-bf23-43a4e83ee6e5.json"
+			},
+			"proof": {
+				"type": "JsonWebSignature2020",
+				"proofPurpose": "assertionMethod",
+				"verificationMethod": "did:web:www.riphixel.fr#key-0",
+				"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..u4wYbNqFY1thE_tYGP83V60Ff5l_oOr_nqDqVs-JFuSPgZKk6q8mf_trpsAcZSwLRbHjLZpiNDl3doENJQWPLhhRRo4GQbjrVd-GYNf-QlzI8NHWDttcW00o8rs8Ya0WvwA9EfLtBs99ROiXzTgPNZ-0pl-nDqxOGgFxpTAwcAfEZVjjQp_JGjHtDc2hNxyrnnHYOE8_1pFIb-7BN8FZE4u5aTIC4HPIpwjLQX8aKAKpbwaCqo9O6PHFcToaxHp1MkvVpt54wAgh77Di1oz-kB7-cqsv3rXQUCIm8-1mumilTlRTSP601gu_XGOgqp4O4M7QbTeO60xTSpPk5cE--w"
+			}
+		},
+		{
+			"@context": [
+				"https://www.w3.org/2018/credentials/v1",
+				"https://w3id.org/security/suites/jws-2020/v1"
+			],
+			"type": [
+				"VerifiableCredential"
+			],
+			"id": "https://www.riphixel.fr/workshop/demo2023/e338e345-90c6-41f4-a9f5-bc253d0df240.json",
+			"issuer": "did:web:gx-notary.aruba.it:v1",
+			"issuanceDate": "2024-01-05T09:13:46.261Z",
+			"credentialSubject": {
+				"@context": "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#",
+				"type": "gx:legalRegistrationNumber",
+				"id": "https://www.riphixel.fr/workshop/demo2023/743ad60a-431c-4f45-bf15-e7bf19d64b10.json",
+				"gx:vatID": "FR52899103360",
+				"gx:vatID-countryCode": "FR"
+			},
+			"evidence": [
+				{
+					"gx:evidenceURL": "http://ec.europa.eu/taxation_customs/vies/services/checkVatService",
+					"gx:executionDate": "2024-01-05T09:13:46.260Z",
+					"gx:evidenceOf": "gx:vatID"
+				}
+			],
+			"proof": {
+				"type": "JsonWebSignature2020",
+				"created": "2024-01-05T09:13:46.280Z",
+				"proofPurpose": "assertionMethod",
+				"verificationMethod": "did:web:gx-notary.aruba.it:v1#X509-JWK2020",
+				"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..dy09U6bFHeTs-7qd_YW5TJFUZ-Il-kNu_9aKs6QXfB4mgW-e46WZHzZ4JxbHd6qwZZgYMpHB_SUhQ7TsDeTXCCfWaGk6z5u_9hwEigGpqOs7giZQDKOLDErZTnyHpsIX3aWnfmN-t1uT0bDJc2ZJYkEgHUqhpGWKHJzJouFoQtzuZjmNNPyRkPW9ptC2XbcSPu3IRH_O5r5r-of0ZobhZu2fupWSr1B06aJ-FZaS4g5DhJp4h_Xm3-wsPMuSXrpsiONAOz1h1z1xkH-y5EzuvhKSfShCeHX9RX9AvLuAGn-GbL-HIbyrlWC1CC1VmfQqQXjCLFaTEavYd2bapSwdLg"
+			}
+		},
+		{
+			"@context": [
+				"https://www.w3.org/2018/credentials/v1",
+				"https://w3id.org/security/suites/jws-2020/v1",
+				"https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+			],
+			"type": "VerifiableCredential",
+			"id": "https://www.riphixel.fr/workshop/demo2023/3e1f9c65-40d6-48b2-b779-2e88a2045e04.json",
+			"issuer": "did:web:www.riphixel.fr",
+			"issuanceDate": "2024-01-05T09:13:46.261Z",
+			"credentialSubject": {
+				"id": "https://www.riphixel.fr/workshop/demo2023/e62c1071-b2b6-46b6-9b79-dda9736fce54.json",
+				"type": "gx:ServiceOffering",
+				"gx:providedBy": {
+					"id": "https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json"
+				},
+				"gx:serviceOffering:serviceEndpoint": "https://gronlier.fr/alive",
+				"gx:termsAndConditions": {
+					"gx:URL": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.txt",
+					"gx:hash": "sha256-a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+				},
+				"gx:policy": "default allow = true",
+				"gx:dataAccountExport": {
+					"gx:requestType": "API",
+					"gx:accessType": "digital",
+					"gx:formatType": "application/json"
+				}
+			},
+			"proof": {
+				"type": "JsonWebSignature2020",
+				"proofPurpose": "assertionMethod",
+				"verificationMethod": "did:web:www.riphixel.fr#key-0",
+				"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..nDp8AeBNse9-g_1E14wGL9AAVFH7ZWhBn19xMw_7CX-0CO8_Y6KXdckj199Tw5N-eIZ6JiK-i8syxG8Q8PoXmBgIYOddO2NYbAQv8X8OnHgoZeN0k3t4q1r6pqoJ4aW2E7c4IHUdAOTIZt9UT1Np0XJ9MkC_XoTJlZ0XpFNN44f_cLLuPQ6NGQBMN8fMht20U2_-Pb0PCNvG_RmFRetdbK_2Zi-v42mq5c1vxyUQPgH9sCJRgVksU3q6H-u2WzMGdMiKHf2SkVKUD7-hWaH_PLcN55d1zMRTOWkl_tfpt3RmsoCXngMMoRUebIedEz3sd7qDr6zP9U1Yq36RhFO41g"
+			}
+		}
+	]
+}

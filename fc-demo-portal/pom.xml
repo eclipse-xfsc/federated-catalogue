@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>eu.xfsc.cat</groupId>
+        <artifactId>fc-service</artifactId>
+        <version>1.0.0.local</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <artifactId>fc-demo-portal</artifactId>
+    <version>${revision}</version>
+    <packaging>jar</packaging>
+    <name>fc-demo-portal</name>
+    <description>Eclipse XFSC Federated Catalogue Demo Application</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.xfsc.cat</groupId>
+            <artifactId>fc-service-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>eu.xfsc.cat</groupId>
+            <artifactId>fc-service-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                            <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <skip>false</skip>
+                    <to>
+                        <image>${ci-registry}/${project.artifactId}:${tag.version}</image>
+                        <auth>
+                            <username>${env.HARBOR_USERNAME}</username>
+                            <password>${env.HARBOR_PASSWORD}</password>
+                        </auth>
+                    </to>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

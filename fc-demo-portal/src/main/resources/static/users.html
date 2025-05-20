@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Users</title>
+
+</head>
+<body>
+<div class="adapt_area" id="page-content-wrapper">
+    <div class="container">
+        <div>
+            <button class="btn btn-success" id="addButton" type="button">Add</button>
+        </div>
+        <br>
+
+        <table class="table table-striped table-bordered table-light" id="usersTable" style="width:100%">
+            <thead>
+            <tr>
+                <th>Id</th>
+                <th>ParticipantId</th>
+                <th>FirstName</th>
+                <th>LastName</th>
+                <th>Email</th>
+                <th>RoleIds</th>
+                <th>UserName</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+            </thead>
+        </table>
+
+        <div aria-hidden="true" aria-labelledby="addModalLabel" class="modal" id="addModal" role="dialog"
+             tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addModalLabel">Add New Users</h5>
+                        <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group">
+                                <label class="col-form-label" for="editData">Details :</label>
+                                <textarea class="form-control" style="min-width: 100%" rows="12" id="addData" required></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary close" data-dismiss="modal" type="button">Close</button>
+                        <button class="btn btn-primary" type="button" id="submitAddButton">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div aria-hidden="true" aria-labelledby="editModalLabel" class="modal" id="editModal" role="dialog"
+             tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">Edit Details</h5>
+                        <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group">
+                                <label class="col-form-label" for="editData">Edit :</label>
+                                <textarea class="form-control" style="min-width: 100%" rows="12" id="editData" required></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary close" data-dismiss="modal" type="button">Close</button>
+                        <button class="btn btn-primary" type="button" id="submitEditButton">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+
+<script src="js/users.js"></script>
+</html>

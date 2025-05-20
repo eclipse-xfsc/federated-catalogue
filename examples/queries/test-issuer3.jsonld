@@ -1,0 +1,69 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description2",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1"
+    ],
+    "@id": "https://www.example.org/legalPerson.json",
+    "@type": [
+      "VerifiableCredential"
+    ],
+    "issuer": "http://gaiax.de",
+    "issuanceDate": "2022-10-19T18:48:09Z",
+    "credentialSubject": {
+      "@context": {
+        "ex": "http://example.org/",
+        "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "vcard": "http://www.w3.org/2006/vcard/ns#"
+      },
+      "@id": "ex:test-issuer3",
+      "@type": "gax-trust-framework:LegalPerson",
+      "gax-trust-framework:registrationNumber": "1236",
+      "gax-trust-framework:legalAddress": {
+        "@type": "vcard:Address",
+        "vcard:country": "DE",
+        "vcard:locality": "Dresden",
+        "vcard:postal-code": "01069",
+        "vcard:street-address": "Fried str 46b"
+      },
+      "gax-trust-framework:headquarterAddress": {
+        "@type": "vcard:Address",
+        "vcard:country": "DE",
+        "vcard:locality": "Dresden",
+        "vcard:postal-code": "01069",
+        "vcard:street-address": "Fried str 46b"
+      },
+      "gax-trust-framework:termsAndConditions": {
+        "@type": "gax-trust-framework:TermsAndConditions",
+        "gax-trust-framework:content": {
+          "@type": "xsd:anyURI",
+          "@value": "http://example.org/tac"
+        },
+        "gax-trust-framework:hash": "1234"
+      },
+      "gax-trust-framework:legalName": "deltaDAO AGEF",
+      "gax-trust-framework:name": "deltaDAO AGEF"
+    },
+    "proof": {
+      "type": "JsonWebSignature2020",
+      "created": "2022-12-05T07:46:02Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:web:foo.bar",
+      "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..XGbiWr4Y4njU4svmmzaZvONiD1S4xdTUzfREy37nQUddECTonS58KUiDPvOJqZmVOINMfvZE0tQE97kjKyPsecMml0Uj8efIEqaUf2FsbFvhSyVKFlj6rDoIX4FOKknm1U3JASb33i61ikRb6Bsq3hlnLypXA5qQAlLD0D72DkyF7f58EpkDdJ9yPbYlkPwfpy_fNr8DnA99MJG3mNEFiBQEArN_sJa_pZ4xSbrhi4yO1JTTAIzfO1koWMLEdzHm67R1UWCoDgdm5w4zaWHd15LaXCYT6_OolK3dQR7KEOqxAppzvqPm4ukHFy_5MlAtKO5diLtuKwMkblcLp7oY89GYROBcHReHmXJHuJ5nFQOAOclbHaMqcscyJoRNh4r4A_rM59J2-tlsa9CgOcgm4nKNnqKo8690sEa8SqEtz0nhFOMLJcsoP4kLqD8o_sYTwq01yq_tK6ioJDrMS_80kWo2VmFVBLmghHSblD3IKcPHULtop5srH43hMbN2p5vfJ2aVAA-zuq5JowxnEzerMM3NSzoraNvrTrRvtcEZBDsrkk6E0BEOHOqYW8IOPUWYelVaxwhkRUOWUtJaEWsfbey7HuMEVlbyFS5Fp7kNeDyAPH15IQTl6UIL772otHvTAyG6iTn5FztSSwzasHZK3wnuKo6DWBftZWh1FBOHy4Q"
+    }
+  },
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-12-05T07:46:02Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:foo.bar",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..N6rLA0412deVGvQoYHQ5oOuYbDORbNs14KWAs-fERnroN7isjs_iiR_HUYaHiPx1OlEQqVLJO3Z67xPlx62ICgfqVhA4_3Rx6nKrIfhezj18r7--qkPkgeq4wyo7uAb5XlVUicL2jZORKl_4NY_2trrxS0UkXe-qkgqWYRPuy80BzyMeVA-C7SMDLeIHlkeyfGlmVZRpgEuDH__pqtHNNa6aDRSeo1aW-FO-s0eINi4htzRSOI-HjKfFhZ8ro2VPXNORHtiCr7OHEPPthiJ6bY6i2nP2unaVHShmlaEjQXTNrduqmUkM4xUA8vyLCUcZUfv6KG91CKPbToqo_Mj1hZsy1OL2WarvcaP-OElr94qRw-zPsFQnSAWS5wURRDqpzDaxRauexpVH12R5rD8fKbcyoPoP4-OoyUDjkdtlLwvi0pAknl8nDafGhF4Ud0kAG0qkKCFoY4D90sFb-qEKTbCKrB5xlJ-PT4MJoe_54jOjZWYzM6gYUryvoYJua8LJlKhC9GJ--5MmJ2j071GLy_HoiAEUtleV2de3jyq42KWta5eExZLXZP69Q-wTYWWmChWJYA_hHYjBM5cGLVBddHH387CfVfUcW9thN8_tQcdUetmYJtHT0f8pGl4Y-fA-btl8PnVpHoyhnHyQawqCtBopm7O_ISN6QUQzEo2O88g"
+  }
+}

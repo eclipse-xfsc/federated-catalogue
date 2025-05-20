@@ -1,0 +1,72 @@
+{
+  "@graph" : [ {
+    "@id" : "_:b0",
+    "@type" : "sh:ValidationResult",
+    "focusNode" : "ex:DataCenter",
+    "resultMessage" : "Property needs to have at least 1 value",
+    "resultPath" : "gax-resource:maintainedBy",
+    "resultSeverity" : "sh:Violation",
+    "sourceConstraintComponent" : "sh:MinCountConstraintComponent",
+    "sourceShape" : "_:b1"
+  }, {
+    "@id" : "_:b2",
+    "@type" : "sh:ValidationReport",
+    "sh:conforms" : false,
+    "result" : "_:b0"
+  } ],
+  "@context" : {
+    "resultMessage" : {
+      "@id" : "http://www.w3.org/ns/shacl#resultMessage"
+    },
+    "resultPath" : {
+      "@id" : "http://www.w3.org/ns/shacl#resultPath",
+      "@type" : "@id"
+    },
+    "focusNode" : {
+      "@id" : "http://www.w3.org/ns/shacl#focusNode",
+      "@type" : "@id"
+    },
+    "sourceShape" : {
+      "@id" : "http://www.w3.org/ns/shacl#sourceShape",
+      "@type" : "@id"
+    },
+    "sourceConstraintComponent" : {
+      "@id" : "http://www.w3.org/ns/shacl#sourceConstraintComponent",
+      "@type" : "@id"
+    },
+    "resultSeverity" : {
+      "@id" : "http://www.w3.org/ns/shacl#resultSeverity",
+      "@type" : "@id"
+    },
+    "conforms" : {
+      "@id" : "http://www.w3.org/ns/shacl#conforms",
+      "@type" : "http://www.w3.org/2001/XMLSchema#boolean"
+    },
+    "result" : {
+      "@id" : "http://www.w3.org/ns/shacl#result",
+      "@type" : "@id"
+    },
+    "schema" : "http://schema.org/",
+    "gax-service" : "http://w3id.org/gaia-x/service#",
+    "owl" : "http://www.w3.org/2002/07/owl#",
+    "tosh" : "http://topbraid.org/tosh#",
+    "xsd" : "http://www.w3.org/2001/XMLSchema#",
+    "gax-validation" : "http://w3id.org/gaia-x/validation#",
+    "rdfs" : "http://www.w3.org/2000/01/rdf-schema#",
+    "vcard" : "http://www.w3.org/2006/vcard/ns#",
+    "gax-core" : "http://w3id.org/gaia-x/core#",
+    "gax-participant" : "http://w3id.org/gaia-x/participant#",
+    "ex" : "http://example.org/",
+    "dct" : "http://purl.org/dc/terms/",
+    "rdf" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "sh" : "http://www.w3.org/ns/shacl#",
+    "ids" : "https://w3id.org/idsa/core/",
+    "gax-node" : "http://w3id.org/gaia-x/node#",
+    "gax-resource" : "http://w3id.org/gaia-x/resource#",
+    "dcat" : "http://www.w3.org/ns/dcat#",
+    "dash" : "http://datashapes.org/dash#",
+    "graphql" : "http://datashapes.org/graphql#",
+    "swa" : "http://topbraid.org/swa#",
+    "did" : "https://www.w3.org/TR/did-core/#"
+  }
+}

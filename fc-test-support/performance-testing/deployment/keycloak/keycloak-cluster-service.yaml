@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fedcat-key-server-cluster-service
+  namespace: fedcat
+  labels:
+    app: fedcat-key-server
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: https
+      port: 8443
+      targetPort: 8443
+  selector:
+    app: fedcat-key-server
+  type: ClusterIP

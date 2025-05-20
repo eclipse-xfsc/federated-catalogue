@@ -1,0 +1,14 @@
+@prefix gax-core: <https://w3id.org/gaia-x/core#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix gx: <https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#> .
+
+
+gx:
+    a   owl:Ontology ; .
+
+gx:LegalParticipant
+    a               owl:Class;
+    rdfs:label      "Legal Participant"@en ;
+    rdfs:subClassOf  gax-core:Participant ;
+.

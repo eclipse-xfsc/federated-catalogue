@@ -1,0 +1,50 @@
+{
+	"@context": ["https://www.w3.org/2018/credentials/v1"],
+	"@id": "http://example.edu/verifiablePresentation/self-description1",
+	"type": ["VerifiablePresentation"],
+	"verifiableCredential": {
+		"@context": ["https://www.w3.org/2018/credentials/v1"],
+		"@id": "https://www.example.org/Service.json",
+		"@type": ["VerifiableCredential"],
+		"issuer": "http://gaiax.de",
+		"issuanceDate": "2022-10-19T18:48:09Z",
+		"credentialSubject": {
+			"@context": {
+				"dcat": "http://www.w3.org/ns/dcat#",
+				"gax-core": "http://w3id.org/gaia-x/core#",
+				"gax-participant": "http://w3id.org/gaia-x/participant#",
+				"gax-service": "http://w3id.org/gaia-x/service#",
+				"xsd": "http://www.w3.org/2001/XMLSchema#"
+			},
+			"@id": "https://www.example.org/Service1",
+			"@type": "gax-service:ServiceOffering",
+			"gax-service:dataExport": {
+				"@type": "gax-service:DataExport",
+				"gax-core:accessType": "access type",
+				"gax-core:formatType": "format type",
+				"gax-core:requestType": "request type"
+			},
+			"gax-service:providedBy": {
+				"@id": "gax-participant:Provider1"
+			},
+			"gax-service:termsAndConditions": {
+				"@type": "gax-core:TermsAndConditions",
+				"gax-core:content": {
+					"@type": "xsd:anyURI",
+					"@value": "http://example.org/tac"
+				},
+				"gax-core:hash": "1234"
+			},
+			"dcat:keyword": [
+				"Keyword1_1",
+				"Keyword1_2",
+				"Keyword1_3",
+				"Keyword1_4",
+				"Keyword1_5",
+				"Keyword1_6",
+				"Keyword1_7"
+			],
+			"gax-service:serviceTitle": "Service Title"
+		}
+	}
+}

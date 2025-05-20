@@ -1,0 +1,57 @@
+{
+	"specversion": "1.0",
+	"type": "eu.gaia-x.credential",
+	"source": "sagresearch.de_gaia-x-101",
+	"subject": null,
+	"id": "12a257ca-903c-4de6-a546-d1622bdbdf12",
+	"time": "2024-03-26T12:42:19.428756Z",
+	"cesreceiveddate": "2024-03-26T12:42:20.707532Z",
+	"datacontenttype": "application/json",
+	"data": {
+		"@context": [
+			"https://www.w3.org/2018/credentials/v1",
+			"https://w3id.org/security/suites/jws-2020/v1",
+			"https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+		],
+		"type": [
+			"VerifiableCredential"
+		],
+		"id": "https://sagresearch.de/.well-known/compliance.json",
+		"issuer": "did:web:compliance.lab.gaia-x.eu:v1",
+		"issuanceDate": "2024-03-26T12:41:19.747Z",
+		"expirationDate": "2024-06-24T12:41:19.747Z",
+		"credentialSubject": [
+			{
+				"type": "gx:compliance",
+				"id": "https://sagresearch.de/.well-known/lrn.json",
+				"gx:integrity": "sha256-04da7f5d39dae9aa382187221ed28c2855de05db99144d9984c7df6469a83878",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:legalRegistrationNumber"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://sagresearch.de/.well-known/tsandcs.json",
+				"gx:integrity": "sha256-2ebe9187caf5f9907ab26959f8b31e28b6c75737c82b1b0cf2d3efff16ac29c8",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:GaiaXTermsAndConditions"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://sagresearch.de/.well-known/participantSoftwareAG.json",
+				"gx:integrity": "sha256-02df1cac5df604162e4070f3a1fc6e72a86421083b8e33b56e1bc3facf3cb417",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:LegalParticipant"
+			}
+		],
+		"proof": {
+			"type": "JsonWebSignature2020",
+			"created": "2024-03-26T12:41:20.215Z",
+			"proofPurpose": "assertionMethod",
+			"verificationMethod": "did:web:compliance.lab.gaia-x.eu:v1#X509-JWK2020",
+			"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..bKaPA5UDaad_2tVH9ZXuBdSJDsD4f_eS8PYVOr0spcagYTfH4Pn_QD62y8T7CUaZiAcoSSNgqUitv_rEOImPg9VXra3BpnOa2SOmEbJdOuRVgPp_LpNhUWnhZFdxJ32IW-_V4lNEKIzTga-d1bsi2pa0M1JC4dvwNSFWYTvmEWygRV1O6-fCMCTb19vHAXe6rDQ7sVT0AFPWWr4VjjkyS8cLQi9WsolWjmb6qwr8gLfF9yl9MhcAHB0jzrhOdlnBCt357ppYcY38ivF3OOtUSNCkBmgm2CTbJdVCI3JThWTiKDbWZbJgWYLOL_TXUFbIXyX4_xzhqYESAQ6WB0OzNQ"
+		}
+	}
+}

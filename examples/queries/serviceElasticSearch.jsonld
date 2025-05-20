@@ -1,0 +1,71 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description1",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1"
+    ],
+    "@id": "https://www.example.org/serviceOffering.json",
+    "@type": [
+      "VerifiableCredential"
+    ],
+    "issuer": "http://gaiax.de",
+    "issuanceDate": "2022-10-19T18:48:09Z",
+    "credentialSubject": {
+      "@context": {
+        "dcat": "http://www.w3.org/ns/dcat#",
+        "ex": "http://example.org/",
+        "gax-core": "https://w3id.org/gaia-x/core#",
+        "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
+      },
+      "@id": "http://w3id.org/gaia-x/indiv#serviceElasticSearch.json",
+      "@type": "gax-trust-framework:ServiceOffering",
+      "gax-trust-framework:dataAccountExport": {
+        "@type": "gax-trust-framework:DataAccountExport",
+        "gax-trust-framework:accessType": "access type",
+        "gax-trust-framework:formatType": "format type",
+        "gax-trust-framework:requestType": "request type"
+      },
+      "gax-core:offeredBy": {
+        "@id": "https://www.example.org/participant.json",
+        "@type": "gax-trust-framework:LegalPerson"
+      },
+      "gax-trust-framework:termsAndConditions": {
+        "@type": "gax-trust-framework:TermsAndConditions",
+        "gax-trust-framework:content": {
+          "@type": "xsd:anyURI",
+          "@value": "ex:tac"
+        },
+        "gax-trust-framework:hash": "1234"
+      },
+      "gax-trust-framework:policy": "ex:ServicePolicy",
+      "ex:some_property": {
+        "ex:some_other_property": {
+          "@value": "ex:some_service",
+          "@type": "gax-trust-framework:ServiceOffering"
+        }
+      },
+      "gax-trust-framework:name": "Elastic Search DB"
+    },
+    "proof": {
+      "type": "JsonWebSignature2020",
+      "created": "2022-12-05T07:57:43Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:web:foo.bar",
+      "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..pYyLNx6RYlFdbfhCpcsnCiAUoJwqLsGOW6wamrkJAYbX_i0hFoAXuNRcpUhA3kfTKi-myc0pHf0SAw82iK2cdj5bt9C-Ut7GDiVLYWTktmqwiMUH4uotaLGi-zLi1JCp3AyFHRLRmt7g3y1lr-nGVxX_6kFbCLLB_VEoRKOZnnyraduZU6D43odd8xdVXuO4v3Pk9vCJG_FCKlE4lNxDqV1G90ig2UyK5CpYOrMDx9MtB-DRVaiYFCmhWPCM-uM1sL-jVoxavN4Sscso3Obijzvkl7Irv4Vgiz502yAjmUpu_ITxA0SiTh5n7KBQvidYR1x2j0FfhkSVU-Zkz4U79-Hz0M2RfTMkmxffmAT6vfaX1BVUXXxxkC_4hvqASnfXhZUo7JRcDpLMN_sjwkfMAnwoYNr2KmlMMNK2i9Su_t0PnnXUUJ8Q7mfvE2zm1OhKJecO7O39x2qLst0bxf_5adGTLHD9U6k0-I30ARGagsJef5JwUM9206sfQL6UWsE1JRr2cs6I1aYrLq2KvvnuKupnbZfnGykXb9dDY7-8eyMuqmEyjnSv-wLgd78Tle-p0k23PndzI3MzopvpPF5G81jD29cWC3FaaA2xR97v0ANVKOznbZwouGafj9M2-IwNkTBKl2yhJ5KGdQD4tXovxG0fn87wSlaea-IKsUfrNFE"
+    }
+  },
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-12-05T07:57:44Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:foo.bar",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..aI8VZHwjHGK-K_Slt-rfJHJHWyri8QAK-pRNubAcuTxXFkW21BSG2v-240bm26HX3ic7ll1uFOiw4tC7Iv2yPM43DBNBA2kVTh0ZAvJEso7ZEMc3bAcrkxCBt2z3g8YyhGmUM9tfXqHRo9PJVeUO5HykF9d3gIJm5LtaKOxjA7S7Fwf5WmSW5s0pxsUgk-sZ0DcMeHDlmrdjM1L11hQKqfeWTgInuVd3JAR4kE2l4N7ZMqgD-q3LiyUcK85zy0L1K04VNZzAIGah7RkrIBy1crnhMnLdFqOgqKzT7YvLDamb8QJI-tMMYH5pOWPCqKV-0bsrg0vkJQTtmx0g1JGzLC9JjLyuDqGFl-YmkV6bWlyKPwP5a7LOPAu7DKtoZQNHxUyogrF4nDunvhXhYUdhG_9UEnekcONh50MrjFt1jXvqLZuteP4ifBQEIE99wzlj884DK6_i_9IbqB_FfVOsraIDFMrykD_9y1wATSDHRFqwIhTBkrIDV9wyHWN_kkRt5hdrR6fADnK2WKmE2LPyZgxxalTKEVt-6noOGG9SrI5ApxulBCQRbmp4859BhHIkE9iqSF-sW1-X2sarJ6suLMNotIk6RjQ7B2lXD2xQA8Lw_B30hYTwvdw06I-zvhfvpg-20_ddten-BcW1FGbPIBkVX2rBAtzGB79qiv7ds80"
+  }
+}

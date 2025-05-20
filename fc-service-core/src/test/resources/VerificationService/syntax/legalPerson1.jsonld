@@ -1,0 +1,69 @@
+{
+	"@context": ["https://www.w3.org/2018/credentials/v1"],
+	"@id": "http://example.edu/verifiablePresentation/self-description1",
+	"type": ["VerifiablePresentation"],
+	"verifiableCredential": {
+		"@context": ["https://www.w3.org/2018/credentials/v1"],
+		"@id": "https://www.example.org/legalPerson.json",
+		"@type": ["VerifiableCredential"],
+		"issuer": "http://gaiax.de",
+		"issuanceDate": "2022-10-19T18:48:09Z",
+		"credentialSubject": {
+			"@context": {
+				"gax-core": "http://w3id.org/gaia-x/core#",
+				"gax-participant": "http://w3id.org/gaia-x/participant#",
+				"xsd": "http://www.w3.org/2001/XMLSchema#",
+				"vcard": "http://www.w3.org/2006/vcard/ns#"
+			},
+			"@id": "gax-participant:Participant1",
+			"@type": "gax-participant:LegalPerson",
+			"gax-participant:registrationNumber": "1234",
+			"gax-participant:legalAddress": {
+				"@type": "vcard:Address",
+				"vcard:country-name": "Country",
+				"vcard:locality": "Town Name",
+				"vcard:postal-code": "1234",
+				"vcard:street-address": "Street Name"
+			},
+			"gax-participant:headquarterAddress": {
+				"@type": "vcard:Address",
+				"vcard:country-name": "Country",
+				"vcard:locality": "Town Name",
+				"vcard:postal-code": "1234",
+				"vcard:street-address": "Street Name"
+			},
+			"gax-core:termsAndConditions": {
+				"@type": "gax-core:TermsAndConditions",
+				"gax-core:content": {
+					"@type": "xsd:anyURI",
+					"@value": "http://example.org/tac"
+				 },
+				"gax-core:hash": "1234"
+			},
+			"gax-participant:subOrganisation": [
+				{
+					"@id": "http://example.org/Provider1_1"
+				},
+				{
+					"@id": "http://example.org/Provider1_2"
+				},
+				{
+					"@id": "http://example.org/Provider1_3"
+				},
+				{
+					"@id": "http://example.org/Provider1_4"
+				},
+				{
+					"@id": "http://example.org/Provider1_5"
+				},
+				{
+					"@id": "http://example.org/Provider1_6"
+				},
+				{
+					"@id": "http://example.org/Provider1_7"
+				}
+			],
+			"gax-participant:legalName": "Provider Name"
+		}
+	}
+}

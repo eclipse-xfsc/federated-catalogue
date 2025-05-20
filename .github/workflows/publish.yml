@@ -1,0 +1,29 @@
+name: Docker and Helm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+  
+jobs:
+  dockerbuild-service:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/docker-maven.yml@main
+    secrets: inherit
+    with:
+      repo_name: fc-service-server
+      java_version: '18'
+      deploy_mode: 'jib'
+    
+  dockerbuild-portal:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/docker-maven.yml@main
+    secrets: inherit
+    with:
+      repo_name: fc-demo-portal
+      java_version: '18'
+      deploy_mode: 'jib'
+      folder: ./fc-demo-portal
+  helm:
+    uses: eclipse-xfsc/dev-ops/.github/workflows/helm.yml@main
+    secrets: inherit
+    with:
+      buildContext:  "deployment/helm"

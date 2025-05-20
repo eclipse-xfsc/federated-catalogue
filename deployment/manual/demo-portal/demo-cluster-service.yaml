@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fc-demo-portal-cluster-service
+  namespace: federated-catalogue
+  labels:
+    app: fc-demo-portal
+spec:
+  ports:
+    - name: http
+      port: 8088
+      targetPort: 8088
+  selector:
+    app: fc-demo-portal
+  type: ClusterIP

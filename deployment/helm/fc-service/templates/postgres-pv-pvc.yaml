@@ -1,0 +1,32 @@
+{{- if .Values.storage.enabled -}}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "fc-service.name" . }}-postgres-volume
+  labels:
+#    app: fc-service
+    {{- include "fc-service.labels" . | nindent 4 }}
+spec:
+  storageClassName: manual
+  capacity:
+    storage: {{ .Values.storage.size }}
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: {{ .Values.storage.path }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fc-service.name" . }}-postgres-claim
+  labels:
+#    app: fc-service
+    {{- include "fc-service.labels" . | nindent 4 }}
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}
+{{- end }}      

@@ -1,0 +1,276 @@
+# Default values for fc-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+name: fc-service
+replicaCount: 1
+
+image:
+  repository: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-service-server
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+#imagePullSecrets: []
+#nameOverride: ""
+fullnameOverride: "fc-service"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: 
+  allowPrivilegeEscalation: false
+  # fsGroup: 2000
+
+securityContext: {} 
+#  # capabilities:
+#  #   drop:
+#  #   - ALL
+#  # readOnlyRootFilesystem: true
+#  # runAsNonRoot: true
+#  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8081
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: 
+    # kubernetes.io/tls-acme: "true"
+    kubernetes.io/ingress.allow-http: "true"
+#    cert-manager.io/cluster-issuer: cert-manager-webhook
+    nginx.ingress.kubernetes.io/ssl-redirect: "false" #true"
+    nginx.ingress.kubernetes.io/affinity: cookie
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+#    nginx.ingress.kubernetes.io/server-snippet: |
+#        location /actuator {
+#          deny all;
+#          return 403;
+#        }
+  hosts:
+    - host: fc-server
+      paths:
+        - path: /
+          pathType: Prefix
+#  tls:
+#    - secretName: wildcard-gxfs-dev
+#      hosts:
+#        - fc-server
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+probes:
+  path: /actuator/health
+  initialDelaySeconds: 60
+  periodSeconds: 30             
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: 
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - fc-service
+          topologyKey: "kubernetes.io/hostname"
+          
+restartPolicy: Always
+
+hostAliases:
+  - ip: "10.97.11.112" #use ClusterIP of your Ingress Controller here
+    hostnames:
+      - key-server
+    
+storage:
+  enabled: false
+  size: 2Gi
+  path: /mnt/data/postgresql
+
+env:
+  - name: DATASTORE_FILE_PATH
+    value: /var/lib/fc-service/filestore
+  - name: FEDERATED_CATALOGUE_VERIFICATION_SIGNATURES
+    value: "true"
+  - name: GRAPHSTORE_URI
+    value: bolt://fc-neo4j:7687
+  - name: GRAPHSTORE_QUERY_TIMEOUT_IN_SECONDS
+    value: "5"
+  - name: GRAPHSTORE_PASSWORD
+    value: neo12345
+#    valueFrom:
+#      secretKeyRef:
+#        name: fc-neo4j-secret
+#        key: password   
+  - name: KEYCLOAK_AUTH_SERVER_URL
+    value: http://fc-keycloak-headless.fed-cat.svc.cluster.local:8080
+  - name: KEYCLOAK_CREDENTIALS_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: fc-keycloak-client-secret
+        key: keycloak_client_secret   
+  - name: SPRING_DATASOURCE_URL
+    value: jdbc:postgresql://fc-postgres:5432/postgres
+  - name: SPRING_DATASOURCE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: fc-postgres
+        key: postgres-password
+  - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+    value: http://key-server/realms/gaia-x
+#  - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
+#    value: DEBUG  
+
+postgresql:
+  fullnameOverride: fc-postgres
+  nameOverride: fc-postgres
+  auth:
+    postgresPassword: postgres
+    username: keycloak
+    password: keycloak
+    database: keycloak
+  primary:
+    persistence:
+      enabled: true
+    initdb:
+      user: postgres
+      password: postgres
+      scripts:
+        00_init_keycloak.sql: |  
+          CREATE USER keycloak WITH PASSWORD 'keycloak';
+          CREATE DATABASE "keycloak" WITH OWNER keycloak;
+          GRANT ALL PRIVILEGES ON DATABASE keycloak TO $POSTGRES_USER;
+  
+keycloak:
+  fullnameOverride: fc-keycloak
+  image:
+    tag: 26.0
+  auth:
+    adminUser: admin
+    adminPassword: admin
+  extraEnvVars:
+    - name: KEYCLOAK_EXTRA_ARGS
+      value: "--import-realm"
+    - name: PROXY_ADDRESS_FORWARDING
+      value: "true"
+    - name: KEYCLOAK_FRONTEND_URL
+      value: "http://key-server/"
+    - name: KEYCLOAK_ADMIN_URL
+      value: "http://key-server/admin/"
+  extraVolumeMounts:
+    - name: config
+      mountPath: "/opt/bitnami/keycloak/data/import"
+      readOnly: true
+  extraVolumes:
+    - name: config
+      configMap:
+        name: fc-keycloak-realm-configmap
+        items:
+        - key: "gaia-x-realm.json"
+          path: "gaia-x-realm.json"
+  logging:
+    level: "DEBUG,io.quarkus:INFO,freemarker.cache:INFO,liquibase:INFO,org.hibernate:INFO,org.infinispan:INFO,org.keycloak.services.scheduled:INFO,org.keycloak.transaction:INFO,io.netty.buffer.PoolThreadCache:INFO,org.keycloak.models.sessions.infinispan:INFO"
+#  proxy: edge
+  postgresql:
+    enabled: false
+    auth:
+      existingSecret: fc-postgres
+  externalDatabase:
+    host: fc-postgres
+    database: keycloak
+    user: keycloak
+    #password: keycloak
+    existingSecret: fc-postgres
+    existingSecretPasswordKey: "password"
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+#      kubernetes.io/ingress.allow-http: "true"
+##      cert-manager.io/cluster-issuer: cert-manager-webhook
+#      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
+    pathType: Prefix
+    path: /
+    hostname: key-server
+    servicePort: 8080
+#    tls: true
+  serviceAccount:
+    create: false
+  service:
+    ports:
+      http: 8080  
+    
+neo4j:
+  fullnameOverride: fc-neo4j
+  neo4j:
+    name: fc-neo4j-db
+    password: "neo12345"
+  volumes:
+    data:
+      mode: defaultStorageClass
+  env:
+    NEO4J_PLUGINS: '["apoc", "graph-data-science", "n10s"]'
+  additionalVolumes: 
+    - name: fc-neo4j-data
+      emptyDir: {}
+  additionalVolumeMounts: 
+    - name: fc-neo4j-data
+      mountPath: "/var/lib/neo4j/plugins"
+  config:
+    dbms.security.procedures.unrestricted: gds.*,apoc.*,n10s.*,semantics.*
+    dbms.security.procedures.allowlist: gds.*,apoc.*,n10s.*,semantics.*
+  initContainers:
+    - name: init-plugins
+      image: appropriate/curl:latest
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - name: fc-neo4j-data
+          mountPath: /var/lib/neo4j/plugins
+      securityContext:
+        allowPrivilegeEscalation: false    
+      command:
+        - "/bin/sh"
+        - "-c"
+        - |
+          curl -L https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/download/5.18.0/apoc-5.18.0-extended.jar -O
+          curl -L https://github.com/neo4j-labs/neosemantics/releases/download/5.18.0/neosemantics-5.18.0.jar -O
+          curl -L https://graphdatascience.ninja/neo4j-graph-data-science-2.6.6.jar -O
+          cp -R apoc-5.18.0-extended.jar /var/lib/neo4j/plugins
+          cp -R neosemantics-5.18.0.jar /var/lib/neo4j/plugins
+          cp -R neo4j-graph-data-science-2.6.6.jar /var/lib/neo4j/plugins

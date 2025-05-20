@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initialscale=1.0">
+    <title>Verify Self-Description</title>
+    <link href="css/jquery-ui.min.css" rel="stylesheet">
+    <script src="js/jquery-3.6.3.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style>
+
+    html,body {
+        height: 100%;
+    }
+
+    .container {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+<!--    align-items: center;-->
+}
+
+
+
+    </style>
+</head>
+
+<body>
+ <div class="container">
+    <div>
+        <h2>Verify Self-Description</h2>
+        <br>
+        Please upload SD file or copy/paste SD content in textarea:<br>
+        <br>
+        <input accept="application/json" class="btn btn-info" id="sdFile" name="datafile" size="40" type="file">
+        </p>
+
+        <textarea id="content-target" placeholder="Please upload or copy paste"
+                  style="width:800px;height:500px;"></textarea>
+
+        <br>
+        <div class="form-check form-check-inline">
+            <input checked class="form-check-input" id="verifySemantics" type="checkbox" value="true"/>
+            <label class="form-check-label" for="verifySemantics"> Verify Semantics </label>
+        </div>
+
+        <div class="form-check form-check-inline">
+            <input checked class="form-check-input" id="verifySchema" type="checkbox" value="true"/>
+            <label class="form-check-label" for="verifySchema"> Verify Schema </label>
+        </div>
+
+        <div class="form-check form-check-inline">
+            <input checked class="form-check-input" id="verifyVPSignature" type="checkbox" value="true"/>
+            <label class="form-check-label" for="verifyVPSignature"> Verify VP Signature </label>
+        </div>
+
+        <div class="form-check form-check-inline">
+            <input checked class="form-check-input" id="verifyVCSignature" type="checkbox" value="true"/>
+            <label class="form-check-label" for="verifyVCSignature"> Verify VC Signature </label>
+        </div>
+
+        <br>
+        <!--<br><br><br>-->
+        <button class="btn btn-primary" onclick="verifySD()">Verify</button>
+        <br>
+        <br><div><label>Verification result :</label> <br>
+          <textarea id="result" placeholder="Verification result" style="padding:5px; font-weight:bold; float:left; width: 800px; height:auto ">
+         </textarea></div>
+        <br> <br>
+
+        <script>
+
+            <!--Event for fileUpload and getFile is triggered -->
+            document.getElementById('sdFile').addEventListener('change', getFile)
+
+            function getFile(event) {
+                $('#result').html("");
+                const input = event.target
+              if ('files' in input && input.files.length > 0) {
+                  placeFileContent(
+                  document.getElementById('content-target'),
+                  input.files[0])
+              }
+            }
+
+            function placeFileContent(target, file) {
+                readFileContent(file).then(content => {
+                target.value = content
+              }).catch(error => console.log(error))
+            }
+
+            function readFileContent(file) {
+                const reader = new FileReader()
+
+                return new Promise((resolve, reject) => {
+                     reader.onload = event => resolve(event.target.result)
+                     reader.onerror = error => reject(error)
+                     reader.readAsText(file)
+                })
+            }
+
+            <!--Post call for verify sd to server -->
+            function verifySD(){
+
+                $('#result').html("");
+                if(document.getElementById('content-target').value=="" || document.getElementById('content-target').value==null){
+                     alert("Please add Self-Description");
+                     return;
+                }
+                var checkVerifySemantics = $("#verifySemantics").is(":checked") ? "true" : "false";
+                var checkVerifySchema = $("#verifySchema").is(":checked") ? "true" : "false";
+                var checkVerifyVPSignature = $("#verifyVPSignature").is(":checked") ? "true" : "false";
+                var checkVerifyVCSignature = $("#verifyVCSignature").is(":checked") ? "true" : "false";
+                var urlWithParam = "verification?verifySemantics=" + checkVerifySemantics + "&verifySchema=" + checkVerifySchema +
+                	"&verifyVPSignature=" + checkVerifyVPSignature + "&verifyVCSignature=" + checkVerifyVCSignature;
+
+                $.ajax(urlWithParam,{
+                    type: 'POST',
+                    contentType: "application/json;charset=utf-8",
+                    data: document.getElementById('content-target').value,
+                    success: function (data, status, xhr) {
+                         $('#result').html('Status : ' + status + ', Result: '  + JSON.stringify(xhr.responseJSON).replace(/\\n|\\r/g, '\r\n'));
+                         $("#result").height( $("#result")[0].scrollHeight );
+                    },
+                    error: function (jqXhr, textStatus, errorMessage) {
+                          $('#result').html('Status : ' + textStatus + ', Error : ' + JSON.stringify(jqXhr.responseJSON).replace(/\\n|\\r/g, '\r\n'));
+                          $("#result").height( $("#result")[0].scrollHeight );
+                    }
+                });
+            }
+
+        </script>
+     </div>
+    </div>
+  </body>
+</html>

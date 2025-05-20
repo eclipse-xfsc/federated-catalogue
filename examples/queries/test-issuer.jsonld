@@ -1,0 +1,69 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description2",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": {
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1"
+    ],
+    "@id": "https://www.example.org/legalPerson.json",
+    "@type": [
+      "VerifiableCredential"
+    ],
+    "issuer": "http://gaiax.de",
+    "issuanceDate": "2022-10-19T18:48:09Z",
+    "credentialSubject": {
+      "@context": {
+        "ex": "http://example.org/",
+        "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "vcard": "http://www.w3.org/2006/vcard/ns#"
+      },
+      "@id": "ex:test-issuer",
+      "@type": "gax-trust-framework:LegalPerson",
+      "gax-trust-framework:registrationNumber": "1234",
+      "gax-trust-framework:legalAddress": {
+        "@type": "vcard:Address",
+        "vcard:country": "DE",
+        "vcard:locality": "Hamburg",
+        "vcard:postal-code": "22303",
+        "vcard:street-address": "Geibelstraße 46b"
+      },
+      "gax-trust-framework:headquarterAddress": {
+        "@type": "vcard:Address",
+        "vcard:country": "DE",
+        "vcard:locality": "Hamburg",
+        "vcard:postal-code": "22303",
+        "vcard:street-address": "Geibelstraße 46b"
+      },
+      "gax-trust-framework:termsAndConditions": {
+        "@type": "gax-trust-framework:TermsAndConditions",
+        "gax-trust-framework:content": {
+          "@type": "xsd:anyURI",
+          "@value": "http://example.org/tac"
+        },
+        "gax-trust-framework:hash": "1234"
+      },
+      "gax-trust-framework:legalName": "deltaDAO AG",
+      "gax-trust-framework:name": "deltaDAO AG"
+    },
+    "proof": {
+      "type": "JsonWebSignature2020",
+      "created": "2022-12-05T07:48:45Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:web:foo.bar",
+      "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..nA0PPnznVgQrg3pRekkT4avu1aNG_FPTD8AoK_oLXCsIub8DR1SZpw86ylgQe3_ov8fxCNFKTT6gBGfAP4OAHfQkRdhGNZGjkHsZ3tt5KGpIhu6N5FG1rMYKe8wZ5su7ICVvJcPcO5u-PPvf52A9JuUqUdkRljirDGycbMXcULFo1rKc7kLrHSo8YzdTPuI7XmI5xTBhDk8wnLOQVVfVHWi8XQqlt4aI4skVx-tCkvQRUDl6tfhP62IMtlJKl7AkefCVLcpel6CNe8AOk-8Fw5PISJhY05gWB5VevR-VA2_Vjz2j1YqIIn9Sok4AfDDAgVcMGr9F-UQ8PGy_984N9m6_u9M1KsUpQ7pd_FGO9TMS0d_xSfKvjGrt-7WQD6DYXBUVEj3jQ3Yl5AUH8fHimjsraaapNNmdqCR3V03zF9FNPbYwFOm3mG8AhgsClGYyALlpbM9S04q0HzFFhJZrZzCR7LxQuZxlQHHDu9P-JnkKzAcPgcNFbr58Yrfuh8WqioZcBTpfffKn5sjaQB3ifgnr6co4w7w_0Zop4dYia2In4XQqIms1kZD5T8UrK5yCZ2VvRkyqaKWucFPtqNH6uPLLbmiD8CG4OcwmZhMv3P5mMtpbWul0tVcpIvbS12nc0rkWwIG2fE_4CBF1Egli0GXUJ1TKSW0r9hR8V8_6ZqU"
+    }
+  },
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-12-05T07:48:46Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:foo.bar",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..ahsV9N7NKwgVYl2dl46txUfdn1HpUcUpIF4P_PK8DxEJdKFROab8dCtOr28jQQnaJ92mhpiqFT56xRiB9zAoy8j8fJoqcgjEu1PNeafEd6he4nr6UXTDgkw9bCUC2zPvAyK_p_TLQ0zPzLZcF4xEqGmIVCbTQJ5W42n8V5_NvuBJU-tzd1_vFgEj82Nn04OoRG-ErTRAenHUvpZXBW39nOTaLyI4mVvKmT3BuNWyTz8BnbBuH9w926n5iX1ohkKFNzNjZSauD-Gd-0Ckn1BAU5iSLjJ-KeN11G4BKFfwV-V11AhieHqaHGs3e4dwCBUhgMprf64yNf9AZ70eZIcoqcZqyADCvlG63Kb1Sos5Gs3txIv42Ts7cdlmMSSe7k6NakXoPI-xcSAjtkvy-Zt62RheF86FeUVgJ20jNrUc4pFVKP0G-2h_TvtLJYgzIS0cLsWHeV6J8h2zD-py6SJWbmUgyyIRoipxBFUq_xa-0eeap6Fkg5jDCvrp1LAsAyCRc_83kdWF5tBa1Xjwa9yU8DbW_nADS8l38XyBAk05dLQeYShdMC1fp-FxDG-lApGkiNHH1nFd7eYwMf-oTTwVmhSfomKe2xuX7GxLiI_VlZtEr1ZRdDIpdrZ1NhbOeplaJh5566N0Il95KqgHnV6U6DrxUdQ5oDJPp5cDn_RKU4o"
+  }
+}

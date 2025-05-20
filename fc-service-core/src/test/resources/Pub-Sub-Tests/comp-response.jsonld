@@ -1,0 +1,65 @@
+{
+	"specversion": "1.0",
+	"type": "gx:compliance",
+	"source": "/workshop2023",
+	"subject": null,
+	"id": "b08b7ac0-374c-435a-b6f1-8bcb7f7be095",
+	"time": "2024-01-05T09:14:01.144212Z",
+	"cesreceiveddate": "2024-01-05T09:14:01.58Z",
+	"datacontenttype": "application/json",
+	"data": {
+		"@context": [
+			"https://www.w3.org/2018/credentials/v1",
+			"https://w3id.org/security/suites/jws-2020/v1",
+			"https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+		],
+		"type": [
+			"VerifiableCredential"
+		],
+		"id": "https://www.riphixel.fr/workshop/demo2023/08ddbf81-7a49-4e0d-b2eb-901c16233a2c.json",
+		"issuer": "did:web:gx-compliance.gxdch.dih.telekom.com:v1",
+		"issuanceDate": "2024-01-05T09:13:59.190Z",
+		"expirationDate": "2025-01-04T09:13:59.190Z",
+		"credentialSubject": [
+			{
+				"type": "gx:compliance",
+				"id": "https://www.riphixel.fr/workshop/demo2023/e338e345-90c6-41f4-a9f5-bc253d0df240.json",
+				"gx:integrity": "sha256-60d9c030cf3bc1743ea9aa488d5840683c1aeaa5fa3335fa9ea724f69f00b1c4",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:legalRegistrationNumber"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://www.riphixel.fr/workshop/demo2023/b2808871-26ae-4b1e-8ccb-463e359fa661.json",
+				"gx:integrity": "sha256-eab4d915a08f69e33be4bde0d949ee06298f930ead6203818210e11cbfaecb77",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:LegalParticipant"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://www.riphixel.fr/workshop/demo2023/654af4fb-efb8-4bed-aa45-07252416d847.json",
+				"gx:integrity": "sha256-d974514402a23abf875406ecc64c1e5da9c65e522dea0f60418ad24e9f98cff0",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:GaiaXTermsAndConditions"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://www.riphixel.fr/workshop/demo2023/3e1f9c65-40d6-48b2-b779-2e88a2045e04.json",
+				"gx:integrity": "sha256-a9607bcefb3b4d79f3ab34419038f88d8ae9e3546d96ed1b06e59687dfd019f0",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:ServiceOffering"
+			}
+		],
+		"proof": {
+			"type": "JsonWebSignature2020",
+			"created": "2024-01-05T09:13:59.206Z",
+			"proofPurpose": "assertionMethod",
+			"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..RDyQZILWIGgvxApxFcW2sEq27sOVMliO7lUeeJEdMC0LrsbJOfPAW4a_jvBN6o5q1buAqWf3EWa-fvp8PNkb_lOcMKj-qox_bdl_csjKaxttZwjG95FnVw-cZaOSPEQaIfj1lgaRJjR3vqSRYqdVTIwY3WnAPt1gF0qPWhky9qGguEarBdrFdoYXH8l_L-LWJpXvQKwROqzOOVeWShih8jgji4vXfxFGVHrON_TZTJJb1UFd3EQdF7NwH9l0FEmHo7r6KjA2_5DhJmJBjT-qRLdrjQ89XtZMy4a30lv2b9A43_m9OjNVaueeWgKfH_LBQOPRrSwnqXkOk92iD0bmD3y0UhWT_zUbpSwL1ChfpC8vpfPRCktchUIN8b5Ak-Aw3aWfmzGHzBnGs94KxSh3zzJav7SRfSGJmd_lJrPwKARCFowvN5gn2rHLWzvfneNCVBBiG5xK8oJBXzzxOI8fcgbPZp95QASc1RU_zge3Lbrn9n2aEf6isC92ze9ejhN2TTTrPbQpfLI7inyL4iAAdWaQBMPyNrLXKILeJQsBcS9nEuds5ziJH52VnAfkVptBSThFnKratICi6sKXlBMmTPKWSuh3CsQksZ7yIsyo6izUeLj-dbJfq4oJee4dIbazEwxhl5ZFsmTQ-1ep8cxNu7EJS9U8MV0XwRhPE1K75zc",
+			"verificationMethod": "did:web:gx-compliance.gxdch.dih.telekom.com:v1#X509-JWK2020"
+		}
+	}
+}

@@ -1,0 +1,73 @@
+{
+  "id":"aaa1aaa2",
+  "holder":"participant1",
+  "@id": "http://example.edu/verifiablePresentation/self-description1",
+  "type": [
+    "VerifiablePresentaßtion"
+  ],
+  "issuer": "https://example.edu/issuers/particiant1",
+  "issuanceDate": "2010-01-01T00:00:00Z",
+  "verifiableCredential": [{
+    "@id": "http://example.edu/verifiableCred/participantVC",
+    "type": [
+      "VerifiableCredential"
+    ],
+    "issuer": "https://example.edu/issuers/particiant1",
+    "issuanceDate": "2010-01-01T00:00:00Z",
+    "credentialSubject": [{
+      "@id": "did:example:particiant1",
+      "type": "participant",
+      "registrationNumber": {
+        "@value": "3234566",
+        "@type": "xsd:string"
+      },
+      "headquarterAddress.countryCode": {
+        "@value": "DEU",
+        "@type": "xsd:string"
+      },
+      "legalAddress.countryCode": {
+        "@value": "DEU",
+        "@type": "xsd:string"
+      }
+    }],
+    "proof": {
+      "type": "JsonWebSignature2020",
+      "created": "2022-02-25T14:58:43Z",
+      "verificationMethod": "https://example.edu/issuers/565049#key-1",
+      "proofPurpose": "assertionMethod",
+      "jws": "XXX"
+    }
+  },
+    {
+      "@id": "http://example.edu/verifiableCred/complianceOutput1",
+      "type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "https://example.edu/issuers/complianceService",
+      "issuanceDate": "2010-01-01T00:00:00Z",
+      "credentialSubject": {
+        "ids": ["http://example.edu/verifiableCred/participantVC"],
+        "type": "gaiaxCompliance",
+        "hash": {
+          "@value": "0f5ced733003d11798006639a5200db78206e43c85aa0386d7909c3e6c8ed535",
+          "@type": "xsd:string",
+          "@checksumtype": "SHA-256"
+        }
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-06-12T19:38:26.853Z",
+        "proofPurpose": "assertionMethod",
+        "jws": "XXX",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-02-25T14:58:43Z",
+    "verificationMethod": "https://example.edu/issuers/565049#key-1",
+    "proofPurpose": "assertionMethod",
+    "jws": "XXX"
+  }
+}

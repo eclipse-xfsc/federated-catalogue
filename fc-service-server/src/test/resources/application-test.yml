@@ -1,0 +1,20 @@
+federated-catalogue:
+  scope: test
+  verification:
+    participant:
+      type: "http://w3id.org/gaia-x/participant#Participant"
+    resource:
+      type: "https://w3id.org/gaia-x/gax-trust-framework#Resource"
+    service-offering:
+      type: "http://w3id.org/gaia-x/service#ServiceOffering"
+  query:
+    partners:
+      - "http://localhost:9090"
+      - "http://localhost:9091"
+
+graphstore:
+  query-timeout-in-seconds: 5
+
+spring:
+  liquibase:
+    contexts: test

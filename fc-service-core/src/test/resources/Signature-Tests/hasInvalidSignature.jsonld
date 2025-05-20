@@ -1,0 +1,47 @@
+{
+	"@id": "http://example.edu/verifiablePresentation/self-description1",
+	"type": [
+		"VerifiablePresentation"
+	],
+	"issuer": "https://example.edu/issuers/particiant1",
+	"issuanceDate": "2010-01-01T00:00:00Z",
+	"verifiableCredential": [{
+			"@id": "http://example.edu/verifiableCred/participantVC",
+			"type": [
+				"VerifiableCredential"
+			],
+			"issuer": "https://example.edu/issuers/particiant1",
+			"issuanceDate": "2010-01-01T00:00:00Z",
+			"credentialSubject": [{
+				"@id": "did:example:particiant1",
+				"type": "participant",
+				"registrationNumber": {
+					"@value": "3234566",
+					"@type": "xsd:string"
+				},
+				"headquarterAddress.countryCode": {
+					"@value": "DEU",
+					"@type": "xsd:string"
+				},
+				"legalAddress.countryCode": {
+					"@value": "DEU",
+					"@type": "xsd:string"
+				}
+			}],
+			"proof": {
+				"type": "JsonWebSignature2020",
+				"created": "2022-02-25T14:58:43Z",
+				"verificationMethod": "did:web:example",
+				"proofPurpose": "assertionMethod",
+				"jws": "XXX"
+			}
+		}
+	],
+	"proof": {
+		"type": "JsonWebSignature2020",
+		"created": "2022-02-25T14:58:43Z",
+		"verificationMethod": "did:web:example",
+		"proofPurpose": "assertionMethod",
+		"jws": "XXX"
+	}
+}

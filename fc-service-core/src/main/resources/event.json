@@ -1,0 +1,65 @@
+{
+	"specversion": "1.0",
+	"type": "eu.gaia-x.credential",
+	"source": "https://www.pontus-x.eu/asset/did:op:ac74139fa102d32f326ccdab3727a95299f1c2b6add9158385439e5b06810833",
+	"subject": null,
+	"id": "4ba166de-018b-4e91-ac89-ff28badb42e9",
+	"time": "2023-09-14T14:31:00Z",
+	"cesreceiveddate": "2023-09-19T19:26:38.056Z",
+	"datacontenttype": "application/json",
+	"data": {
+		"@context": [
+			"https://www.w3.org/2018/credentials/v1",
+			"https://w3id.org/security/suites/jws-2020/v1",
+			"https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+		],
+		"type": [
+			"VerifiableCredential"
+		],
+		"id": "https://storage.gaia-x.eu/credential-offers/b3e0a068-4bf8-4796-932e-2fa83043e203",
+		"issuer": "did:web:compliance.lab.gaia-x.eu:v1",
+		"issuanceDate": "2023-09-14T13:55:54.287Z",
+		"expirationDate": "2023-12-13T13:55:54.287Z",
+		"credentialSubject": [
+			{
+				"type": "gx:compliance",
+				"id": "https://www.delta-dao.com/.well-known/2210_gx_participant.json",
+				"gx:integrity": "sha256-131a82c14adb2b3d5b05ab7455418d38a93fbf53d4d4b0969b8a4bc9a6537fea",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:LegalParticipant"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://www.delta-dao.com/.well-known/2210_gx_registrationnumber.json",
+				"gx:integrity": "sha256-02ee6faea38c9db600cda40e49a549daa918bbed5b7f1a12a84fa0bf8f611ead",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:legalRegistrationNumber"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "https://www.delta-dao.com/.well-known/2210_gx_tandc.json",
+				"gx:integrity": "sha256-6249cd8f23f0e986e1ceca17874fbaf0d72836947c3ce0aa7c778bd65dde5139",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:GaiaXTermsAndConditions"
+			},
+			{
+				"type": "gx:compliance",
+				"id": "did:op:ac74139fa102d32f326ccdab3727a95299f1c2b6add9158385439e5b06810833",
+				"gx:integrity": "sha256-9fb661b38bcf70cbb7bb6fda23523de44526a81a5eb3ef8c897df0c4417e66d5",
+				"gx:integrityNormalization": "RFC8785:JCS",
+				"gx:version": "22.10",
+				"gx:type": "gx:ServiceOffering"
+			}
+		],
+		"proof": {
+			"type": "JsonWebSignature2020",
+			"created": "2023-09-14T13:55:54.303Z",
+			"proofPurpose": "assertionMethod",
+			"jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..hhHNFOz4Eusui0OBCqViXTJXH4buHz44set4K3kFhJ2AurmGllmTlxnO07Isqncjx9-mpvV1vpSJcI429Oiu_uv1byUrItvz9DS6y0PPce7qSiVpASYUWubArbdY2sLicVZHCDZg28Nwrus0u4fi09ap84aNPeAcXceDkkWkrfbZs_-cEXJnQezwQC9AlIDEjTvPGYHxfV2DbN2-sheTGy6MvKUQPTlFvuxHQa959_hOMpx2MZIYYXTQaFYqDNlZEh0vA4SC46IZNbJ72U6NXiHxL7OvvhWSiHZhhfXZMRiNyn1Uwb8LCZtNVDW292tOeuH0WAgUMSCMAb_vXrbIFw",
+			"verificationMethod": "did:web:compliance.lab.gaia-x.eu:v1#X509-JWK2020"
+		}
+	}
+}

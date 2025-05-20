@@ -1,0 +1,120 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description1",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/legalPerson1.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": {
+        "@id": "http://w3id.org/gaia-x/participant#Provider1",
+        "@type": [
+          "http://w3id.org/gaia-x/participant#LegalPerson"
+        ],
+        "http://w3id.org/gaia-x/participant#headquarterAddress": [
+          {
+            "@type": [
+              "http://www.w3.org/2006/vcard/ns#Address"
+            ],
+            "http://www.w3.org/2006/vcard/ns#country-name": [
+              {
+                "@value": "Country"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#locality": [
+              {
+                "@value": "Town Name"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#postal-code": [
+              {
+                "@value": "1234"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#street-address": [
+              {
+                "@value": "Street Name"
+              }
+            ]
+          }
+        ]
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-10-28T10:57:50Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..eyylXA1u0jSyiNeNv9PzL7fuXZphEsjhPjxdP45YV-OF3oSZ-Hs8JaBwIDakdvEvx83n1XNc9-MvAqPU8RQ26Hrcvz11fatFdpo6uY8hq_UOKCT3jdS5gwMCJbN-BMUf4hM8NuseRKYMVuh4WqKGJKuQSDhJJUJPlZVzZamFYVyeQdC6wJyhQX2KC4dr_YJcH9Tn7_t1o8J1EndN7onKohzbXUUmHgzBaFbn-8w32XiD4KhtLw7wAUABPWXTRsybjPKhJtKCkBlnA9hUxzCI9utoz3YfEXfVyZ_mBixfg6Ve-2RaUBuVSyYcy-6tgM06IpJwBaIdhFQfhlV11t3fiA4IDf3m3zv6y3mI1Aql_PLG6ZesTEOfw3xusyopr7yOfX5odGB4kPm_x9FyFzVWWPUNOtlMvkM2J6eIInFc0jRayoF2TiGxtHBSHEq6SIpRVsYuLwoQl9d5ULj2cBdaSuDxz35kD5sM8mCKqe4AyYrx8hUABwKjv3_4NM-Lj3TrAJuTjrLX_c_ozjUxdE5ylO-QpxKN-Lg4iHtnMpCZRZwx9R4HbwWR-srtdAiGlNAO_HcsOO_KwBu5ul5fhUtKkuV6-VaaT62afO_3Jzd8xmVGvs9qY46hR8YV5dT15NhD92h2o3bzBBKSobXM7fzQXYxiMjNi4yKhXUfiHMdL9X0"
+      }
+    },
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/legalPerson2.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": {
+        "@id": "http://w3id.org/gaia-x/participant#Provider1",
+        "@type": [
+          "http://w3id.org/gaia-x/participant#LegalPerson"
+        ],
+        "http://w3id.org/gaia-x/participant#legalAddress": [
+          {
+            "@type": [
+              "http://www.w3.org/2006/vcard/ns#Address"
+            ],
+            "http://www.w3.org/2006/vcard/ns#country-name": [
+              {
+                "@value": "Country"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#locality": [
+              {
+                "@value": "Town Name"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#postal-code": [
+              {
+                "@value": "1234"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#street-address": [
+              {
+                "@value": "Street Name"
+              }
+            ]
+          }
+        ]
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-10-28T10:57:50Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..gATV_sl9i__lZjvpHzmMgYP-qkGm25bmsWGLAJRQ3cdC-rrGNnMQcxnEDw5KjeB5GWuBU1f588e1fk4ZP3FY1AQ2mwi9BleDf4VVnV9nBASm1Rj1Byt5CBjl3KxTYnNcx_E7yh3CBqDmqNilzRu7kzbzv6O3Y40nfxF09TI2MY9FLJfquaIFeLwK7cTRNwvghD3HSbbhB4IRcHKqRqBxLue_-Flfco45EKCZMsWX2dpZVschcP8q5Pc5bJ8wAE7pRQ4a0e8riPZSH6fdg_Bi-d1k27B-99qdFwpI-LOH4cCyfmYHnocGhfrUkCZ964hg3ihAR8UPi-pXPqQZPNKTsmwAuELx48s09Ebpx1igV-_AW2My2rdIZHbRetWbBoSw_ssWaf9HvPHhirUr6c6MlGXhNrByEE8J0ArxO_vemZ_7-4l3M6Aoq5LHnZ3pUJzcEdlpLks7nh3esFOr1vNbVoGGkujm8IWQz0L01oPQsQIMqHnnK2DjIPlMQQaaCAKELTaLdTs_EVoFQq_dpnXJ2UbZzilnveI2eU_pb9PAkky6W2YmeCSQX1LJsOXM40KpmtIE4Z82jGU1wJWHFTv6yF1s3_XbwdMIhq7Eajc-Y06Qsb6fmtwngBfOYqCMS5ygYkI7AJmrkPl0ooqOVz7T3hyZODh-22a2PEnBxdDYnpQ"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-10-28T10:57:50Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..eb0U22Fpt_G3l4v4F7-K2zdOrrlispbgMUPTXPcJcSoZe60-Kzq43gd9k9LLqKMUjxCBDLpJvIXoEsYct43otjt8cyqmBAwMhS9k3uz6AbIKfyOQq8ginukWAq_FJMzKqzivienXeMvBMqF_LaEmcPg2Xg2gHiTnGKuO3hr2D_Fxs_H6yJjt8cfmfgge9Er7oVo-IIOkR8kWgBD281dumR7RY4uuCR9PuF7-gtbno2M2LwL8OdnSQBtKuP9Injr810CvhJ2GxJKJFAG3FUrCo_iSnZQ3Yqj3JcLScgpLOQDo8WIzFzKo5zGJlePZYVRLy7nkP_Re4Nx8aImWeI9hehCgOhBaPDo6jVClw28iUNecHNb1xiB0wI_XsFFVC4tEDMRiOWJyZikBU4XjELSVMmAikk5qQUaPsCtcBO2kREuW1PiOjvKWTDHfI9RGDUzj1VGtZW9AbyhqhAWaKw2fatVQX4kuifWEw34aznIBc-reCrdNh7eqpYvX8ZbGyWWOSWJLzdiCYAoi-_Hqke9YahY6o03fN_z49nXfxKi34ofRJjgq55CbW2gaD8CVlWJaU48ksloRd-w9ejdXUUGp-5FRjoQa2FKqjPF7p7KZUu73YGzyOpn2rlTTHRF2gdhJdfMYfUxwxpMT-YV0IjLM16JYnD3igzeu9KsWMqFpmq8"
+  }
+}

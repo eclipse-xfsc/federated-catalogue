@@ -1,0 +1,65 @@
+{
+  "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
+  "@id" : "http://example.edu/verifiablePresentation/SAG-Research",
+  "type" : [ "VerifiablePresentation" ],
+  "verifiableCredential" : [ {
+    "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1", "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#" ],
+    "type" : [ "VerifiableCredential" ],
+    "id" : "https://sagresearch.de/participant.json",
+    "issuer" : "did:web:sagresearch.de",
+    "issuanceDate" : "2024-03-18T12:46:24Z",
+    "credentialSubject" : {
+      "type" : "gx:LegalParticipant",
+      "gx:legalName" : "Software Aktiengesellschaft",
+      "gx:legalRegistrationNumber" : {
+        "id" : "https://wizard.lab.gaia-x.eu/api/credentials/2d37wbGvQzbAQ84yRouh2m2vBKkN8s5AfH9Q75HZRCUQmJW7yAVSNKzjJj6gcjE2mDNDUHCichXWdMH3S2c8AaDLm3kXmf5R8AXKw33TC8VEjVZMVWyMEyQS6rB5PzJx7DU6me1QRxreT9HCe6aMxWdhGMYzaLTFW4Gbr9gFnK3fVm7PfCPMKaxFRerjRxoXpBoWE1WH6J15Y2v39HG3ka3LBtamdY3DohniKRQHB3iXkXeNmf1garTAF8P6EVZYTBefx9kCXo5bQj8k5Ru4m5qZUB8qT2AVGxWmFpR2tpGzoKHa455eBfT765Hoa9kS6SQz8a1UZeWrrRzh6RzKTig9G16sZU1QFpxMYK52QwkgrHPHnyeDkTKCRXHBsaJX6LGtjHL23apKumEuttEPwmV3wYZHVqVV5kkaPXsdFbYgHQsqBzWe4UgJFd86tEff4b3bi1oUjySnCXu9rsAK2QjhDAbRe3LkpWmFvsKAPJmsVP3RXjGsSgrCUYcVjLQCVpnnhgzbeqX9bRD5j4f2Bj74tguzdCADSBxGAC2Eoc6AveGdx66NgWufHyeiGnrtYzvrFS2VsZ5SMr6ULt3EdPxkLAZojspZfvFsosJ#2a7fb8bfa0b48077d048946758c9da48384a093df44d2373217c4f6ad6a28b94"
+      },
+      "gx:headquarterAddress" : {
+        "gx:countrySubdivisionCode" : "DE-HE"
+      },
+      "gx:legalAddress" : {
+        "gx:countrySubdivisionCode" : "DE-HE"
+      },
+      "id" : "https://sagresearch.de/participant.json"
+    },
+    "proof" : {
+      "type" : "JsonWebSignature2020",
+      "created" : "2024-03-27T15:20:08Z",
+      "proofPurpose" : "assertionMethod",
+      "verificationMethod" : "did:web:sagresearch.de#cert_2024-01-12",
+      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..U5TOsMxZtGpr6zmzQBKDaC4a5t-pexAGmScFRlCAgxqEB3KDReE44EQTih2M6taIev2zidJez0pydmv128cRaaX29bpHf3qIKHtLvWsBc-tg81gpPAo8VsUox4wR7bjWWX9R3mJFX6kI0GdublGATNYnw_UHag8fUuw3y7oHKjA3rjA03FD3cx12pUhJUa38b7m4C9jS08abAQWx5PDbNEutdOMIDU5p3wifBLJYVi-2avQO9xa5qmBEegm2Tg_cwLFRVk-06nm78JWYY0Xrr6GlI4DBdOWnFU1Vlpb7s1xur9tYoEI5imFL8SPgoNHE4V4iAinVcLtLfXRvxZkBZA"
+    }
+  }, {
+    "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1", "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#" ],
+    "type" : [ "VerifiableCredential" ],
+    "id" : "https://wizard.lab.gaia-x.eu/api/credentials/2d37wbGvQzbAQ84yRouh2m2vBKkN8s5AfH9Q75HZRCUQmJW7yAVSNKzjJj6gcjE2mDNDUHCichXWdMH3S2c8AaDLm3kXmf5R8AXKw33TC8VEjVZMVWyMEyQS6rB5PzJx7DU6me1QRxreT9HCe6aMxWdhGMYzaLTFW4Gbr9gFnK3fVm7PfCPMKaxFRerjRxoXpBoWE1WH6J15Y2v39HG3ka3LBtamdY3DohniKRQHB3iXkXeNmf1garTAF8P6EVZYTBefx9kCXo5bQj8k5Ru4m5qZUB8qT2AVGxWmFpR2tpGzoKHa455eBfT765Hoa9kS6SQz8a1UZeWrrRzh6RzKTig9G16sZU1QFpxMYK52QwkgrHPHnyeDkTKCRXHBsaJX6LGtjHL23apKumEuttEPwmV3wYZHVqVV5kkaPXsdFbYgHQsqBzWe4UgJFd86tEff4b3bi1oUjySnCXu9rsAK2QjhDAbRe3LkpWmFvsKAPJmsVP3RXjGsSgrCUYcVjLQCVpnnhgzbeqX9bRD5j4f2Bj74tguzdCADSBxGAC2Eoc6AveGdx66NgWufHyeiGnrtYzvrFS2VsZ5SMr6ULt3EdPxkLAZojspZfvFsosJ?uid=05318f22-9d63-47f4-bcb8-1703c9266eee#0afb18b66ce7a45c604cb3673756cb0453a06d71ca1ffc557e7432c0a12369e1",
+    "issuer" : "did:web:registrationnumber.notary.lab.gaia-x.eu:development",
+    "issuanceDate" : "2024-03-27T15:18:36.554+00:00",
+    "credentialSubject" : {
+      "id" : "https://wizard.lab.gaia-x.eu/api/credentials/2d37wbGvQzbAQ84yRouh2m2vBKkN8s5AfH9Q75HZRCUQmJW7yAVSNKzjJj6gcjE2mDNDUHCichXWdMH3S2c8AaDLm3kXmf5R8AXKw33TC8VEjVZMVWyMEyQS6rB5PzJx7DU6me1QRxreT9HCe6aMxWdhGMYzaLTFW4Gbr9gFnK3fVm7PfCPMKaxFRerjRxoXpBoWE1WH6J15Y2v39HG3ka3LBtamdY3DohniKRQHB3iXkXeNmf1garTAF8P6EVZYTBefx9kCXo5bQj8k5Ru4m5qZUB8qT2AVGxWmFpR2tpGzoKHa455eBfT765Hoa9kS6SQz8a1UZeWrrRzh6RzKTig9G16sZU1QFpxMYK52QwkgrHPHnyeDkTKCRXHBsaJX6LGtjHL23apKumEuttEPwmV3wYZHVqVV5kkaPXsdFbYgHQsqBzWe4UgJFd86tEff4b3bi1oUjySnCXu9rsAK2QjhDAbRe3LkpWmFvsKAPJmsVP3RXjGsSgrCUYcVjLQCVpnnhgzbeqX9bRD5j4f2Bj74tguzdCADSBxGAC2Eoc6AveGdx66NgWufHyeiGnrtYzvrFS2VsZ5SMr6ULt3EdPxkLAZojspZfvFsosJ#2a7fb8bfa0b48077d048946758c9da48384a093df44d2373217c4f6ad6a28b94",
+      "type" : "gx:legalRegistrationNumber",
+      "gx:leiCode" : "529900M1LIO0SLOBAS50",
+      "gx:leiCode-countryCode" : "DE",
+      "gx:leiCode-subdivisionCountryCode" : "DE-HE"
+    },
+    "evidence" : [ {
+      "gx:evidenceOf" : "LEI_CODE",
+      "gx:evidenceURL" : "https://api.gleif.org/api/v1/lei-records/529900M1LIO0SLOBAS50",
+      "gx:executionDate" : "2024-03-27T15:18:36.537+00:00"
+    } ],
+    "proof" : {
+      "type" : "JsonWebSignature2020",
+      "created" : "2024-03-27T15:18:36.567+00:00",
+      "proofPurpose" : "assertionMethod",
+      "verificationMethod" : "did:web:registrationnumber.notary.lab.gaia-x.eu:development#X509-JWK2020",
+      "jws" : "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..t09HvcVLfIvxrYkkLG2HVLnnJnXGF4TPMjsnjUX9U7y0Oz9mKVaziKOsQZzOXjXuPWfRmw62DMOm4lkymd5Aw-agmCwJqzf53ivmrAhCW5sHDWU0wcoRPeAEbz55lVqxf7darRk4G5wWgvyN8-SNqb0kzyUu52LZSQB4zxqWRxNvOkPeCe4COlt_CfWBKMRRjLsQHHM2PG5SfmrU84WMjF2TdXXccP-u_dgtvvJODGcSbVYWbOWfoKgrK_4sEIgF1qCpFxzE00ps8HHHWMURoMgV34mm1Brve93M3ZhnPraixhXppdN9Hm6xw2IuB8Pe_e8x4eG9xifU5k7JNqD7lA"
+    }
+  } ],
+  "proof" : {
+    "type" : "JsonWebSignature2020",
+    "created" : "2024-03-27T15:20:08Z",
+    "proofPurpose" : "assertionMethod",
+    "verificationMethod" : "did:web:sagresearch.de#cert_2024-01-12",
+    "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..fIXkHDkIVJ_I19a31YaFjyfiV8EdJ5sn0JweGZ4kteoF-ykOnur1bS4Aw2aXxy4yyv3lP25-CWjGw_YmumRw3QTo4Ku9Ih7aY_QMqRwNWkfgSm3RRJUMN5GLglNBkHb9y86YkCglWhQSGK01QyZISXbJsl9rYnJV9OBTM38T4GeYVC0z2MrWx122lTXFFVIVBCFCBZyQJnrT5MeCqUu0kwCpvzgI-ap441PzSKAsYJgMdv8t7-Ap9T8lhfsjw_NeQlYKrTgh_IF8tMzYYk-7LhpJP-CCxB-iVZM8mL6I3ddNdHgck6qW27VV49acfKztm9O0nrQ09EAk_5qciyIwjw"
+  }
+}

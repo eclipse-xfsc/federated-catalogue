@@ -1,0 +1,62 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://identity.foundation/presentation-exchange/submission/v1"
+  ],
+  "type": [
+    "VerifiablePresentation",
+    "PresentationSubmission"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "http://example.edu/credentials/1872",
+      "type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "did:example:extra-issuer",
+      "issuanceDate": "2010-01-01T19:23:24Z",
+      "credentialSubject": {
+        "@context": {
+          "gax": "http://w3id.org/gaia-x/participant#",
+          "foaf": "http://xmlns.com/foaf/0.1/",
+          "schema": "http://schema.org/"
+        },
+        "@id": "did:example:credSub",
+        "@type": [
+          "http://w3id.org/gaia-x/participant#LegalPerson"
+        ],
+        "foaf:givenname": "Fredrik",
+        "foaf:family_name": "Str&#246;mberg",
+        "schema:birthdate": "1949-01-22"
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-11-10T22:18:26Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..BnL_LZUIchLMRPkKJEWRNeCx2VecY7avdkCzHKplh4YuQUhw09E5m5wOm3AYrge8Wn9mNBguhpunZ28a66S3MrbpZ9xLiRSINcaWgPiVF32-5aFQ3T7qCA6a_gDR0LIG0KNvFc01h_iVE8wzh1MD2Pq9AJbJU-1-Qkro_qNwUNSEK5b1dxxMw_UCsZJLhDANNjgRv_UlJLrIAn2i_wAqiiQkJZP2LNPdSsOrGsTYkRLO2Yjx7LwMTjAgDx4_tOxpfKXxMftp_rzZKc8l5J0i_ShZKWlKhawxMHuw4iog-xpKZ16ratjGOv9jOrrwBuGWeMrmdd0rAOyBFB-9IMIkoHUbxqTOZAPJaJoWP6Vf4nZIOlobLDDzKoVwF729j_SJRV8WZ414Iuh5quPd6puoPpA55UWfSlj0Qb4iA4Hv_bt4urTNrR9LxaDWaKWfej-D-HEYH30sJ0xy0seFDE2tcLaTb4JbU2eAFCUiahQjBwu0cRqHfZ8G_WzOqFQcK2YYpDoV-udsXVcqEHzI_hj4m31JUBngQCn_Xj4W60NPxUMlHUf1TAem18VtHiTfETZgDDPR4k_xyMvVFzvc3UJgbjS9QOT9jZZnKuRs55XQu5H9ObAjdkR7qP9CNKy6s1mwsiWF2YMdf3D3F1gRxIQRSDQJK7cGhQm3Ezob2eAZdOM"
+      }
+    }
+  ],
+  "@id": "ebc6f1c2vp",
+  "holder": "did:example:holder",
+  "presentation_submission": {
+    "definition_id": "Selective disclosure example",
+    "descriptor_map": [
+      {
+        "format": "ldp_vc",
+        "path": "$.verifiableCredential[0]"
+      }
+    ]
+  },
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-11-10T22:18:26Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..cBy1GD6O3KZ9A4w66lnj9Gtuy1_9NXY7tgNKzVXHaLAxndgPH_yi9El2nPw1Wj1eNMpveLcZZSSxeSRMCnErmg4ffA_u0wn1SpjlPs4oSVVKvdEOt6E6kNAWKfEE7PW8ZPkTZ1Js-AMec9PiPBpFz37Ar7R8XkhQh8gfkjJhcoQr6Dk2F9McGyE0UnKJfl1RB5bImgLTM9TBU53CactsT6hom98zcsUvwvhi2sT_hnCktFxF9NcFd6bsK2cbhpV7LVN1KbRmO61NJ9mcRfyFGPjNSoI-kWH1CjnNiY0WvFc5C6lSX8qhhvr7ehHA1C50oGYnrCUYAsQqlt-aYit8vFvndv_qtf6M-E-s-S0yjfTgH5KiWy-fLrra3Py6TGiONPSfA4VE3LCWMR7yGeZxpqiflpiAwjg-cMlVs-meDIdkFl5jlH2swAvcMJ-EAq2DbOFGBhLBzSTLTdt1UtjrS1EL7fTjSmpt2GkJlMKtrth-JoLQWHhPBNruj3tasAl8lJmMOh1zarxRU2YfolLy705WW0wlbURMGxdsTW9nZQ-jQYSIeMT7sfml9xzmeHz5ojtN8IMJvhUXEYzt01nc6T-gW7UbfN1lSE6XiV5wcbfeFp3-VdXkmNZl93S8-hEM9WfUarUstmCOtlXheN4X3SdfghLu5wT3cj1rqKka4Mc"
+  }
+}

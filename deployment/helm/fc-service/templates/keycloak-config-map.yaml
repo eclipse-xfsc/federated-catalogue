@@ -1,0 +1,9 @@
+{{- if .Values.keycloak.extraVolumes -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.keycloak.fullnameOverride }}-realm-configmap
+data:
+  gaia-x-realm.json: |-
+{{ .Files.Get "gaia-x-realm.json" | indent 4}}
+{{- end }}      

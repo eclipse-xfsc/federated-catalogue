@@ -1,0 +1,32 @@
+{
+    "@context": "https://www.w3.org/2018/credentials/v1",
+    "type":  "VerifiablePresentation",
+    "verifiableCredential": [
+        {
+            "@context": [
+                "https://www.w3.org/2018/credentials/v1",
+                "https://w3id.org/security/suites/jws-2020/v1",
+                "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
+            ],
+            "credentialSubject": {
+                "@context": {
+                    "dct": "http://purl.org/dc/terms/",
+                    "xsd": "http://www.w3.org/2001/XMLSchema#",
+                    "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#"
+                },
+                "id": "did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2",
+                "type": "gax-trust-framework:Resource",
+                "dct:description": {
+                    "@type": "xsd:string",
+                    "@value": "\n \\ Test with </\"s>pecial\" \\ \/ characters \b </\f \n \r \t 🔥"
+                }
+            },
+            "expirationDate": "3024-03-12T11:29:40Z",
+            "issuanceDate": "2024-03-12T11:29:40Z",
+            "issuer": "did:web:example.com",
+            "type": [
+                "VerifiableCredential"
+            ]
+        }
+    ]
+}

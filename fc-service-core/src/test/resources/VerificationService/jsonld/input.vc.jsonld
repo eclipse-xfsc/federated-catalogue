@@ -1,0 +1,32 @@
+{
+	"@context": [
+		"https://www.w3.org/2018/credentials/v1",
+		{
+			"schema": "http://schema.org/",
+			"ex": "https://example.org/examples#",
+            "UniversityDegreeCredential": "ex:UniversityDegreeCredential",
+			"givenName": "schema:givenName",
+			"familyName": "schema:familyName",
+			"college": "ex:college"
+		}
+	],
+	"id": "http://example.edu/credentials/1872",
+	"type": ["VerifiableCredential", "UniversityDegreeCredential"],
+	"issuer": "https://example.edu/issuers/565049",
+	"issuanceDate": "2010-01-01T19:73:24Z",
+	"credentialSubject": {
+		"id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+		"givenName": "Manu",
+		"familyName": "Sporny",
+		"college": {
+			"id": "did:example:c276e12ec21ebfeb1f712ebc6f1"
+		}
+	},
+	"proof": {
+            "type": "JsonWebSignature2020",
+            "created": "2022-06-20T13:37:29.081Z",
+            "proofPurpose": "assertionMethod",
+            "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..000O000000Pqq8RHK87iZBZsbhWzClPTXElpd_oR8wQbPVxJ8jQiRiryVcIWJpgPZTK2pyRXzP5hfw-ZH1ccFNQ03Rai2-BCaprBJDPq5zOGvJ0vI5FnjgcmIr-GKT7yyS4s6ms6oszjKkA-j2BklqpXxzPZdnbswWJfCkC2fy6OyM47s_0qk9wRwEFgdt_Wn70KN-XJYh_zN2OqjlGr0WHO1kKYRtiugNFp6d_kCQihZi2LQYaYowEJiWq3teWK0gbT4PeCj21lIuqTMoe7bP9bnHE4-84DAhsW1er4J6XGi-UHrfkK1Nvr21dYY1We-Oe2vnFbMyyUCPWhxXyPug",
+            "verificationMethod": "did:web:example"
+          }
+}

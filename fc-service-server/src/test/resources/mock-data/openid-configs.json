@@ -1,0 +1,12 @@
+{
+  "issuer": "keycloakBaseUrl/auth/realms/gaia-x",
+  "authorization_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/auth",
+  "token_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/token",
+  "token_introspection_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/token/introspect",
+  "userinfo_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/userinfo",
+  "end_session_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/logout",
+  "jwks_uri": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/certs",
+  "check_session_iframe": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/login-status-iframe.html",
+  "registration_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/clients-registrations/openid-connect",
+  "introspection_endpoint": "keycloakBaseUrl/auth/realms/gaia-x/protocol/openid-connect/token/introspect"
+}
