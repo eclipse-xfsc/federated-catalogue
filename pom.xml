@@ -103,7 +103,7 @@
         <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
         <jose4j.version>0.9.4</jose4j.version>
         <!-- plugins -->
-        <plugin.jacoco.version>0.8.11</plugin.jacoco.version>
+        <plugin.jacoco.version>0.8.13</plugin.jacoco.version>
         <plugin.jib.version>3.4.0</plugin.jib.version>
         <plugin.openapi-generator.version>7.1.0</plugin.openapi-generator.version>
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
