@@ -11,7 +11,7 @@ jobs:
     secrets: inherit
     with:
       repo_name: fc-service-server
-      java_version: '18'
+      java_version: '21'
       deploy_mode: 'jib'
     
   dockerbuild-portal:
@@ -19,11 +19,12 @@ jobs:
     secrets: inherit
     with:
       repo_name: fc-demo-portal
-      java_version: '18'
+      java_version: '21'
       deploy_mode: 'jib'
       folder: ./fc-demo-portal
+      harbor_config: ../harbor.config
   helm:
     uses: eclipse-xfsc/dev-ops/.github/workflows/helm.yml@main
     secrets: inherit
     with:
-      buildContext:  "deployment/helm"
+      buildContext:  "deployment/helm/fc-service"
