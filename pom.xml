@@ -95,7 +95,7 @@
         <xmlunit2.version>2.10.0</xmlunit2.version>
         <!-- test libs -->
         <junit-platform.version>1.10.0</junit-platform.version>
-        <spring-cloud-contract-wiremock.version>4.1.0</spring-cloud-contract-wiremock.version>
+        <spring-cloud-contract-wiremock.version>4.2.1</spring-cloud-contract-wiremock.version>
         <security.test-addons.version>4.5.1</security.test-addons.version>
         <embedded.postgres.version>2.0.6</embedded.postgres.version>
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
