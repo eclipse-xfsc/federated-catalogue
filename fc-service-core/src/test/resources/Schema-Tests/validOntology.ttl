@@ -1,3 +1,133 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:3f32ff62d8e96fe882a6cbf64e869c9abf7fd8c9886eb037eeed3294c7c70493
-size 4929
+@prefix cc: <http://creativecommons.org/ns>.
+@prefix schema:	<http://schema.org>.
+@prefix gax-service: <http://w3id.org/gaia-x/service>.
+@prefix void: <http://rdfs.org/ns/void>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix  xsd: <http://www.w3.org/2001/XMLSchema>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+@prefix voaf: <http://purl.org/vocommons/voaf>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix vcard: <http://www.w3.org/2006/vcard/ns>.
+@prefix gax-core: <http://w3id.org/gaia-x/core>.
+@prefix gax-participant: <http://w3id.org/gaia-x/participant>.
+@prefix dct: <http://purl.org/dc/terms>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix xml: <http://www.w3.org/XML/1998/namespace>.
+@prefix ids: <https://w3id.org/idsa/core>.
+@prefix gax-node: <http://w3id.org/gaia-x/node>.
+@prefix dcat: <http://www.w3.org/ns/dcat>.
+@prefix vann: <http://purl.org/vocab/vann>.
+@prefix gax-resource: <http://w3id.org/gaia-x/resource>.
+@prefix foaf: <http://xmlns.com/foaf/0.1>.
+@prefix gax: <http://w3id.org/gaia-x/core#>.
+
+gax: a voaf:Vocabulary, owl:Ontology ;
+    rdfs:label "Gaia-X Ontology"@en ;
+    cc:license <http://www.apache.org/licenses/LICENSE-2.0> ;
+    dct:creator "Gaia-X Open Work Package 'Self-Description'" ;
+    dct:created "2020-07-06T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    dct:modified "2020-04-13T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    owl:versionInfo "0.1" ;
+    vann:preferredNamespaceUri "http://w3id.org/gaia-x/core#" ;
+    vann:preferredNamespacePrefix "gax" ;
+    void:vocabulary vann:, void:, voaf:, dct:, foaf: .
+#############
+# Core Classes from the Conceptual Model
+#############
+gax:Provider
+    a owl:Class ;
+    rdfs:subClassOf gax:Participant ;
+    rdfs:label "Provider"@en ;
+    rdfs:comment "A Participant who provides Resources in the Gaia-X ecosystem."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:provides ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:providesResourcesFrom ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:owns ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:operates ;
+            owl:minCardinality 1 ;
+        ] ;
+.
+gax:Consumer
+    a rdfs:Class ;
+    rdfs:subClassOf gax:Participant ;
+    rdfs:label "Consumer"@en ;
+    rdfs:comment "A Participant who consumes and leverages Service Instance in the Gaia-X ecosystem to enable digital offerings for End Users."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:consumes ;
+            owl:minCardinality 1 ;
+        ] ;
+.
+gax:ServiceOffering
+    a owl:Class ;
+    rdfs:label "Service Offering"@en ;
+    rdfs:comment  "A Service Offering is a set of Assets and Resources,  which a Provider bundles into an offering."@en .
+#############
+# Core Classes from the Conceptual Model (without own SDs)
+#############
+gax:AssetOwner
+    a owl:Class ;
+    rdfs:label "Asset Owner"@en ;
+    rdfs:comment  "A natural or legal person who is in legal possession of  the Asset."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:owns ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:legallyEnablesResourceProvision ;
+            owl:minCardinality 1 ;
+        ] ;
+
+.
+gax:Contract
+    a owl:Class ;
+    rdfs:label "Contract"@en ;
+    rdfs:comment "Contract means the binding legal agreement describing a  Service Instance and includes all rights and obligations."@en .
+#############
+# Extended Classes from the Conceptual Model
+#############
+gax:Interconnection
+    a owl:Class ;
+    rdfs:subClassOf gax:Asset ;
+    rdfs:label "Interconnection"@en ;
+    rdfs:comment "Interconnection is a dedicated category of Assets. An Interconnection is a connection between two or multiple nodes. These nodes  are usually located at different locations and owned by different  stakeholders, such as customers and/or providers. The Interconnection  between the nodes can be seen as a path, which exhibits special characteristics, such as latency and bandwidth guarantees, that go beyond  the characteristics of a path over the public Internet."@en .
+#############
+# Properties
+#############
+gax:providesResourcesFrom
+    a owl:ObjectProperty ;
+    rdfs:label "provides resources from"@en ;
+    rdfs:domain gax:Provider ;
+    rdfs:range gax:AssetOwner .
+
+#################
+# Meta Ontology #
+#################
+gax:MustCriterion
+    rdfs:subClassOf rdf:Property ;
+    rdfs:label "must criterion"@en ;
+    rdfs:comment "a property for which a value must be provided"@en ;
+.
+

@@ -64,7 +64,7 @@
             <groupId>org.neo4j.gds</groupId>
             <artifactId>open-model-catalog</artifactId>
             <scope>test</scope>
-   		</dependency>
+   	</dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>apache-jena-libs</artifactId>
@@ -88,7 +88,7 @@
         </dependency>
         <dependency>
             <groupId>decentralized-identity</groupId>
-	        <artifactId>uni-resolver-client</artifactId>
+            <artifactId>uni-resolver-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.nats</groupId>

@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.5</version>
+        <version>3.4.5</version>
         <relativePath/>
     </parent>
     
@@ -66,10 +66,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
-        <spring.version>6.1.6</spring.version>
-        <spring-boot.version>3.2.5</spring-boot.version>
-        <spring.security.version>6.2.4</spring.security.version>
-        <springdoc.version>2.5.0</springdoc.version>
+        <spring.version>6.2.6</spring.version>
+        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring.security.version>6.4.6</spring.security.version>
+        <springdoc.version>2.8.8</springdoc.version>
         <keycloak.version>26.0.3</keycloak.version>
         <liquibase.version>4.27.0</liquibase.version>
         <jena.version>4.10.0</jena.version>
@@ -102,10 +102,14 @@
         <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
         <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
         <jose4j.version>0.9.4</jose4j.version>
+        <okhttp.version>4.12.0</okhttp.version>
         <!-- plugins -->
-        <plugin.jacoco.version>0.8.11</plugin.jacoco.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven.compiler.proc>full</maven.compiler.proc>
+        <plugin.jacoco.version>0.8.13</plugin.jacoco.version>
+        <plugin.git-commit.version>4.9.10</plugin.git-commit.version>
+        <plugin.openapi-generator.version>7.12.0</plugin.openapi-generator.version>
         <plugin.jib.version>3.4.0</plugin.jib.version>
-        <plugin.openapi-generator.version>7.1.0</plugin.openapi-generator.version>
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
         <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
         <plugin.checkstyle.puppycrawl.version>10.3.1</plugin.checkstyle.puppycrawl.version>
@@ -355,6 +359,38 @@
                 <version>${ipaddress.version}</version>
             </dependency>
 
+            <!-- fixing vulnerabilities -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.17.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xmlunit</groupId>
+                <artifactId>xmlunit-core</artifactId>
+                <version>2.10.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>4.1.118.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>4.1.118.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>net.minidev</groupId>
+                <artifactId>json-smart</artifactId>
+                <version>2.5.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>3.25.6</version>
+            </dependency>
+
             <!-- Test dependencies -->
             <dependency>
                 <groupId>org.junit.platform</groupId>
@@ -374,11 +410,11 @@
                 <version>${spring-boot.version}</version>
                 <scope>test</scope>
                 <exclusions>
-					<exclusion>
+		    <exclusion>
                         <groupId>com.vaadin.external.google</groupId>
                         <artifactId>android-json</artifactId>
-					</exclusion>
-				</exclusions>
+		    </exclusion>
+		</exclusions>
             </dependency>
             <dependency>
                 <groupId>com.c4-soft.springaddons</groupId>
@@ -489,7 +525,7 @@
                     <version>${plugin.jib.version}</version>
                     <configuration>
                         <container>
-						    <!-- ${maven.build.timestamp} should work also -->
+			    <!-- ${maven.build.timestamp} should work also -->
                             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
                         </container>
                         <from>

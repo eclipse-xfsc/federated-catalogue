@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:04821a9760750dd6eb377407181c2403dc04c3b57fa87ba780db2a0b4f095993
-size 20
+_:Alice a _:Person .

@@ -1,3 +1,295 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1ad2f5198e66d594ac8c4cc26181cd9c66d725e936a3a015dc3e192fc8c6b87a
-size 10999
+@prefix cc: <http://creativecommons.org/ns>.
+@prefix schema:	<http://schema.org>.
+@prefix gax-service: <http://w3id.org/gaia-x/service>.
+@prefix void: <http://rdfs.org/ns/void>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix  xsd: <http://www.w3.org/2001/XMLSchema>.
+@prefix skos: <http://www.w3.org/2004/02/skos/core#>.
+@prefix voaf: <http://purl.org/vocommons/voaf>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix vcard: <http://www.w3.org/2006/vcard/ns>.
+@prefix gax-core: <http://w3id.org/gaia-x/core>.
+@prefix gax-participant: <http://w3id.org/gaia-x/participant>.
+@prefix dct: <http://purl.org/dc/terms>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix xml: <http://www.w3.org/XML/1998/namespace>.
+@prefix ids: <https://w3id.org/idsa/core>.
+@prefix gax-node: <http://w3id.org/gaia-x/node>.
+@prefix dcat: <http://www.w3.org/ns/dcat>.
+@prefix vann: <http://purl.org/vocab/vann>.
+@prefix gax-resource: <http://w3id.org/gaia-x/resource>.
+@prefix foaf: <http://xmlns.com/foaf/0.1>.
+@prefix gax: <http://w3id.org/gaia-x/core#>.
+
+gax: a voaf:Vocabulary, owl:Ontology ;
+    rdfs:label "Gaia-X Ontology"@en ;
+    cc:license <http://www.apache.org/licenses/LICENSE-2.0> ;
+    dct:creator "Gaia-X Open Work Package 'Self-Description'" ;
+    dct:created "2020-07-06T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    dct:modified "2020-04-13T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    owl:versionInfo "0.1" ;
+    vann:preferredNamespaceUri "http://w3id.org/gaia-x/core#" ;
+    vann:preferredNamespacePrefix "gax" ;
+    void:vocabulary vann:, void:, voaf:, dct:, foaf: .
+
+gax:SecondOntology a voaf:Vocabulary, owl:Ontology ;
+    rdfs:label "Gaia-X Ontology"@en ;
+    cc:license <http://www.apache.org/licenses/LICENSE-2.0> ;
+    dct:creator "Gaia-X Open Work Package 'Self-Description'" ;
+    dct:created "2020-07-06T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    dct:modified "2020-04-13T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    owl:versionInfo "0.1" ;
+    vann:preferredNamespaceUri "http://w3id.org/gaia-x/core#" ;
+    vann:preferredNamespacePrefix "gax" ;
+    void:vocabulary vann:, void:, voaf:, dct:, foaf: .
+#############
+# Core Classes from the Conceptual Model
+#############
+gax:Participant
+    a owl:Class ;
+    rdfs:label "Participant"@en ;
+    rdfs:comment "A Participant is a natural or legal person who is identified, authorized and has a Gaia-X Self-Description."@en ;
+.
+gax:Provider
+    a owl:Class ;
+    rdfs:subClassOf gax:Participant ;
+    rdfs:label "Provider"@en ;
+    rdfs:comment "A Participant who provides Resources in the Gaia-X ecosystem."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:provides ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:providesResourcesFrom ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:owns ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:operates ;
+            owl:minCardinality 1 ;
+        ] ;
+.
+gax:Federator
+    a owl:Class ;
+    rdfs:subClassOf gax:Participant ;
+    rdfs:label "Federator"@en ;
+    rdfs:comment "A Federator is a Participant who enables a Federation Service."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:provides ;
+            owl:minCardinality 1 ;
+        ] ;
+.
+gax:Consumer
+    a rdfs:Class ;
+    rdfs:subClassOf gax:Participant ;
+    rdfs:label "Consumer"@en ;
+    rdfs:comment "A Participant who consumes and leverages Service Instance in the Gaia-X ecosystem to enable digital offerings for End Users."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:consumes ;
+            owl:minCardinality 1 ;
+        ] ;
+.
+gax:FederationService
+    a owl:Class ;
+    rdfs:label "Federation Service"@en ;
+    rdfs:comment "Federation Services provide the foundation for the operational implementation of the Gaia-X model. An Open-Source communitybased reference implementation of them will be provided by the Federation Services projects under specification and oversight by Gaia-X AISBL."@en
+;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:definesSchemas ;
+            owl:minCardinality 1 ;
+        ] ;
+.
+gax:ServiceOffering
+    a owl:Class ;
+    rdfs:label "Service Offering"@en ;
+    rdfs:comment  "A Service Offering is a set of Assets and Resources,  which a Provider bundles into an offering."@en .
+gax:Resource
+    a owl:Class ;
+    rdfs:label "Resource"@en ;
+    rdfs:comment  "Behavior element used by the Service Instance via the Service Offering composition."@en .
+gax:Asset
+    a owl:Class ;
+    rdfs:label "Asset"@en ;
+    rdfs:comment  "Static structural element, used to compose the Service Offering."@en .
+#############
+# Core Classes from the Conceptual Model (without own SDs)
+#############
+gax:AssetOwner
+    a owl:Class ;
+    rdfs:label "Asset Owner"@en ;
+    rdfs:comment  "A natural or legal person who is in legal possession of  the Asset."@en ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:owns ;
+            owl:minCardinality 1 ;
+        ] ;
+    rdfs:subClassOf
+        [
+            a owl:Restriction ;
+            owl:onProperty gax:legallyEnablesResourceProvision ;
+            owl:minCardinality 1 ;
+        ] ;
+
+.
+gax:EndUser
+    a owl:Class ;
+    rdfs:label "End User"@en ;
+    rdfs:comment    "A natural person not being Principal, using digital  offering from a Consumer. End-Users own an identity within the Consumer context."@en .
+gax:ServiceInstance
+    a owl:Class ;
+    rdfs:label "Service Instance"@en ;
+    rdfs:comment "Realisation by the Provider of the Service Offering."@en
+.
+gax:Contract
+    a owl:Class ;
+    rdfs:label "Contract"@en ;
+    rdfs:comment "Contract means the binding legal agreement describing a  Service Instance and includes all rights and obligations."@en .
+#############
+# Extended Classes from the Conceptual Model
+#############
+gax:DataAsset
+    a owl:Class ;
+    rdfs:subClassOf gax:Asset ;
+    rdfs:label "Data Asset"@en ;
+    rdfs:comment "Data Asset is a subclass of Asset and consist of data in any form and necessary information for data sharing."@en .
+gax:Interconnection
+    a owl:Class ;
+    rdfs:subClassOf gax:Asset ;
+    rdfs:label "Interconnection"@en ;
+    rdfs:comment "Interconnection is a dedicated category of Assets. An Interconnection is a connection between two or multiple nodes. These nodes  are usually located at different locations and owned by different  stakeholders, such as customers and/or providers. The Interconnection  between the nodes can be seen as a path, which exhibits special characteristics, such as latency and bandwidth guarantees, that go beyond  the characteristics of a path over the public Internet."@en .
+gax:Node
+    a owl:Class ;
+    rdfs:subClassOf gax:Asset ;
+    rdfs:label "Node"@en ;
+    rdfs:comment  "A Node is a sub class of Assets. A Node represents a computational or physical entity that hosts, manipulates, or interacts with other computational or physical resources."@en .
+gax:SoftwareAsset
+    a owl:Class ;
+    rdfs:subClassOf gax:Asset ;
+    rdfs:label "Software Asset"@en ;
+    rdfs:comment "Software Assets are a form of Assets that consist of non-physical functions."@en .
+#############
+# Properties
+#############
+gax:providesResourcesFrom
+    a owl:ObjectProperty ;
+    rdfs:label "provides resources from"@en ;
+    rdfs:domain gax:Provider ;
+    rdfs:range gax:AssetOwner .
+gax:legallyEnablesResourceProvision
+    a owl:ObjectProperty ;
+    rdfs:label "legally enables resource provision"@en ;
+    rdfs:domain gax:AssetOwner ;
+    rdfs:range gax:Provider .
+gax:owns
+    a owl:ObjectProperty ;
+    rdfs:label "owns"@en ;
+    rdfs:domain [ owl:unionOf ( gax:Provider gax:AssetOwner ) ] ;
+    rdfs:range gax:Asset .
+gax:operates
+    a owl:ObjectProperty ;
+    rdfs:label "operates"@en ;
+    rdfs:domain gax:Provider ;
+    rdfs:range gax:Resource .
+gax:provides
+    a owl:ObjectProperty ;
+    rdfs:label "provides"@en ;
+    rdfs:domain [ owl:unionOf ( gax:Provider gax:Federator ) ] ;
+    rdfs:range [ owl:unionOf ( gax:ServiceInstance gax:FederationService ) ]
+.
+gax:definesSchemas
+    a owl:ObjectProperty ;
+    rdfs:label "defines schemas"@en ;
+    rdfs:domain gax:FederationService ;
+    rdfs:range gax:ServiceOffering .
+gax:usesAndConforms
+    a owl:ObjectProperty ;
+    rdfs:label "uses and conforms"@en ;
+    rdfs:domain gax:ServiceOffering ;
+    rdfs:range gax:FederationService .
+gax:composes
+    a owl:ObjectProperty ;
+    rdfs:label "composes"@en ;
+    rdfs:domain gax:ServiceOffering ;
+    rdfs:range [ owl:unionOf ( gax:Resource gax:Asset ) ] .
+gax:realizesBy
+    a owl:ObjectProperty ;
+    rdfs:label "realized by"@en ;
+    rdfs:domain gax:ServiceOffering ;
+    rdfs:range gax:ServiceInstance .
+gax:offersTo
+    a owl:ObjectProperty ;
+    rdfs:label "offers to"@en ;
+    rdfs:domain gax:Consumer ;
+    rdfs:range gax:EndUser .
+gax:usesDigitalOfferingBy
+    a owl:ObjectProperty ;
+    rdfs:label "uses digital offering by"@en ;
+    rdfs:domain gax:EndUser ;
+    rdfs:range gax:Consumer .
+gax:consumes
+    a owl:ObjectProperty ;
+    rdfs:label "consumes"@en ;
+    rdfs:domain gax:Consumer ;
+    rdfs:range gax:ServiceInstance .
+gax:uses
+    a owl:ObjectProperty ;
+    rdfs:label "uses"@en ;
+    rdfs:domain gax:EndUser ;
+    rdfs:range gax:ServiceInstance .
+gax:reliesOn
+    a owl:ObjectProperty ;
+    rdfs:label "relies on"@en ;
+    rdfs:domain gax:ServiceInstance ;
+    rdfs:range gax:Contract .
+gax:managedBy
+    a owl:ObjectProperty ;
+    rdfs:label "managed by"@en ;
+    rdfs:comment  "Declares a Gaia-X participant that manages /  maintains this asset."@en ;
+    skos:note   "Should be used to link Gaia-X asset to their respective Participant, as they cannot exist without one."@en ;
+    rdfs:domain gax:Asset ;
+    rdfs:range gax:Participant .
+gax:providedBy
+    a owl:ObjectProperty ;
+    rdfs:label "provided by"@en ;
+    rdfs:domain [ owl:unionOf ( gax:Node gax:Service ) ] ;
+    rdfs:range gax:Provider .
+gax:ownedBy
+    a owl:ObjectProperty ;
+    rdfs:label "owned by"@en ;
+    rdfs:range gax:Participant .
+#################
+# Meta Ontology #
+#################
+gax:MustCriterion
+    rdfs:subClassOf rdf:Property ;
+    rdfs:label "must criterion"@en ;
+    rdfs:comment "a property for which a value must be provided"@en ;
+.
+gax:OverridableCriterion
+    rdfs:subClassOf rdf:Property ;
+    rdfs:label "overridable criterion"@en ;
+    rdfs:comment  "a property whose value can be inherited, but may be  overridden"@en ;
+.
+gax:HiddenCriterion
+    rdfs:subClassOf rdf:Property ;
+    rdfs:label "hidden criterion"@en ;
+    rdfs:comment  "a property that should be hidden when generating  visualizations of an entity"@en ;
+.

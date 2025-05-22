@@ -1,3 +1,18 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:32e82e8b795eef868ae49134566f6ce4facf67f33cd014b70e7a684cc8620d88
-size 661
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix ex: <http://www.example.com/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+ex:animals rdf:type skos:ConceptScheme;
+    .
+ex:cat rdf:type skos:Concept;
+  skos:prefLabel "cat"@en;
+  skos:prefLabel "Katze"@de;
+  skos:altLabel "kitten"@en;
+  skos:hiddenLabel "katze"@de;
+  skos:definition "A small carnivorous mammal with soft fur, a short snout, and retractable claws."@en;
+  skos:editorialNote "Review this term after merge."@en;
+  skos:changeNote "Added hidden label."@en.
+
+  ex:dog rdf:type ex:animal;
+    rdfs:label "dog".
+
