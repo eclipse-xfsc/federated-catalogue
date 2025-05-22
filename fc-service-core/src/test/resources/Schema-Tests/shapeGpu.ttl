@@ -1,3 +1,66 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4fc33bcde8017514fccdb904004bf5198221d18ebe2b270176c8c801382f5e43
-size 2049
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
+
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix gax-core: <http://w3id.org/gaia-x/core#> .
+@prefix gax-node: <http://w3id.org/gaia-x/node#> .
+@prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
+@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
+@prefix gax-service: <http://w3id.org/gaia-x/service#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix did: <https://www.w3.org/TR/did-core/#> .
+
+gax-validation:GPUShape
+	a sh:NodeShape ;
+	sh:targetClass gax-core:GPU ;
+	sh:property [ sh:path gax-core:gpuGeneration ;
+				  sh:name "gpu generation" ;
+				  sh:order 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-core:memorySize ;
+				  sh:name "memory size" ;
+				  sh:order 2 ;
+				  sh:maxCount 1 ;
+				  sh:node gax-validation:MeasureShape ] ;
+	sh:property [ sh:path gax-core:memoryType ;
+				  sh:name "memory type" ;
+				  sh:order 3 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-resource:connection ;
+				  sh:name "connection" ;
+				  sh:order 4 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-core:name ;
+				  sh:name "name" ;
+				  sh:order 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-core:vendor ;
+				  sh:name "vendor" ;
+				  sh:order 2 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+.
+
+gax-validation:MeasureShape
+	a sh:NodeShape ;
+	sh:targetClass gax-core:Measure ;
+	sh:property [ sh:path gax-core:value ;
+				  sh:name "value" ;
+				  sh:order 1 ;
+				  sh:minCount 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:float ] ;
+	sh:property [ sh:path gax-core:unit ;
+				  sh:name "unit" ;
+				  sh:order 2 ;
+				  sh:minCount 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+.

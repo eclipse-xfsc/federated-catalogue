@@ -1,3 +1,44 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:45705d52ad1dd6e28ee528c6449a4996862ed3e18df9fad4a70645de1ba42184
-size 1047
+@prefix gax-core: <https://w3id.org/gaia-x/core#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix gx: <https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#> .
+
+
+gx:
+    a   owl:Ontology ; .
+
+gx:LegalParticipant
+    a               owl:Class;
+    rdfs:label      "LegalParticipant"@en ;
+    rdfs:subClassOf  gax-core:Participant ;
+.
+
+gx:ServiceOffering
+	a		 		owl:Class;
+	rdfs:label		"ServiceOffering"@en ;
+	rdfs:subClassOf	 gax-core:ServiceOffering ;
+.
+
+gx:DataResource
+	a		 		owl:Class;
+	rdfs:label		"DataResource"@en ;
+	rdfs:subClassOf	 gax-core:Resource ;
+.
+
+gx:PhysicalResource
+	a		 		owl:Class;
+	rdfs:label		"PhysicalResource"@en ;
+	rdfs:subClassOf	 gax-core:Resource ;
+.
+
+gx:SoftwareResource
+	a		 		owl:Class;
+	rdfs:label		"SoftwareResource"@en ;
+	rdfs:subClassOf	 gax-core:Resource ;
+.
+
+gx:InstantiatedVirtualResource
+	a		 		owl:Class;
+	rdfs:label		"InstantiatedVirtualResource"@en ;
+	rdfs:subClassOf	 gax-core:Resource ;
+.

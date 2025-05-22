@@ -1,3 +1,99 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0c7e6330e2ff101bdb72dec3f8d6599a1b7b1549f377f480a9ccc66a5dbb60ce
-size 4741
+@prefix gax-core: <https://w3id.org/gaia-x/core#> .
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix ids: <https://w3id.org/idsa/core/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix voaf: <http://purl.org/vocommons/voaf#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix schema: <http://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+
+
+gax-core: 
+a		voaf:Vocabulary, owl:Ontology ;
+rdfs:label		"Gaia-X Core Ontology"@en ;
+dct:title		"Gaia-X Core Ontology"@en ;
+dct:abstract		"The Gaia-X core ontology contains the components needed to model an efficient, competitive, secure and trustworthy federation of data infrastructure and service providers.\n\nThe different ontology modules can be found here: \n\nCore: <a href=\"https://www.w3id.org/gaia-x/core\">https://www.w3id.org/gaia-x/core</a> \n\nResource: <a href=\"https://www.w3id.org/gaia-x/resource\">https://www.w3id.org/gaia-x/resource</a> \n\nParticipant: <a href=\"https://www.w3id.org/gaia-x/participant\">https://www.w3id.org/gaia-x/participant</a> \n\nService Offering: <a href=\"https://www.w3id.org/gaia-x/service\">https://www.w3id.org/gaia-x/service</a> \n\nCompliance: <a href=\"https://www.w3id.org/gaia-x/compliance\">https://www.w3id.org/gaia-x/compliance</a> \n\nAll underlying information for this documentation page can be found on the landing page of the Gaia-X Service Characteristics repository: <a href=\"https://gaia-x.gitlab.io/technical-committee/service-characteristics\">https://gaia-x.gitlab.io/technical-committee/service-characteristics</a>.\n\nAdditional information on the constraints that have to be fulfilled be the self descriptions can be found here: <a href=\"https://gaia-x.gitlab.io/technical-committee/service-characteristics/yaml2shacl\">https://gaia-x.gitlab.io/technical-committee/service-characteristics/yaml2shacl</a>." ;
+cc:license		<http://www.apache.org/licenses/LICENSE-2.0> ;
+dct:creator		"Working Group Service Characteristics" ;
+dct:contributor		"Akyürek, Haydar", "Bader, Sebastian", "Baum, Hannes", "Blanch, Josep", "Frömberg, Jan", "Gronlier, Pierre", "Hermsen, Felix", "Lange, Christoph", "Langkau, Jörg", "Leberecht, Markus", "Meinke, Kai", "Moosmann, Paul", "Niessen, Thomas", "Ogel, Frederic", "Ottradovetz, Klaus", "Qin, Chang", "Rubina, Alina", "Staginus, Judith", "Strunk, Anja", "Theissen-Lipp, Johannes" ;
+dct:created		"2021-10-18T12:00:00+01:00"^^xsd:dateTimeStamp ;
+owl:versionInfo		"22.04" ;
+vann:preferredNamespaceUri		"http://w3id.org/gaia-x/core#" ;
+vann:preferredNamespacePrefix		"gax-core" ;
+void:vocabulary 		vann:, void:, voaf:, dct: ;
+dct:modified		"2022-11-22T17:09:09+01:00"^^xsd:dateTimeStamp ;
+.
+
+################## 
+##ServiceOffering
+##################
+
+gax-core:ServiceOffering
+	a		 owl:Class;
+	rdfs:label		 "Service Offering"@en ;
+. 
+
+gax-core:offeredBy
+	a		 owl:ObjectProperty ;
+	rdfs:label		 "offered by"@en ;
+	rdfs:domain		 gax-core:ServiceOffering ;
+	rdfs:range		 gax-core:Participant ;
+	rdfs:comment		 "DID of participant self-descrription, who is offering this service offering." ;
+. 
+
+gax-core:aggregationOf
+	a		 owl:ObjectProperty ;
+	rdfs:label		 "aggregation of"@en ;
+	rdfs:domain		 gax-core:ServiceOffering ;
+	rdfs:range		 gax-core:Resource ;
+	rdfs:comment		 "DID of resource self-escription related to the service and that can exist independently of it." ;
+. 
+
+gax-core:dependsOn
+	a		 owl:ObjectProperty ;
+	rdfs:label		 "depends on"@en ;
+	rdfs:domain		 gax-core:ServiceOffering ;
+	rdfs:range		 gax-core:ServiceOffering ;
+	rdfs:comment		 "DID of the service offering self-description related to the service and that can exist independently of it." ;
+. 
+
+################## 
+##Resource
+##################
+
+gax-core:Resource
+	a		 owl:Class;
+	rdfs:label		 "Resource"@en ;
+. 
+
+gax-core:aggregationOf
+	a		 owl:ObjectProperty ;
+	rdfs:label		 "aggregation of"@en ;
+	rdfs:domain		 gax-core:Resource ;
+	rdfs:range		 gax-core:Resource ;
+	rdfs:comment		 "DID of resources self-description related to the resource and that can exist independently of it." ;
+. 
+
+gax-core:operatedBy
+	a		 owl:ObjectProperty ;
+	rdfs:label		 "operated by"@en ;
+	rdfs:domain		 gax-core:Resource ;
+	rdfs:range		 gax-core:Participant ;
+	rdfs:comment		 "DID of participant self-description related to the participant, who operates this resource." ;
+. 
+
+################## 
+##Participant
+##################
+
+gax-core:Participant
+	a		 owl:Class;
+	rdfs:label		 "Participant"@en ;
+. 
+

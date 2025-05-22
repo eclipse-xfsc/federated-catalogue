@@ -1,3 +1,178 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2fc396431ec868face25b5ce935b3b2b785dee246670da2073cf1dab25ef6153
-size 8417
+@prefix dcat:            <http://www.w3.org/ns/dcat#> .
+@prefix dct:             <http://purl.org/dc/terms/> .
+@prefix did:             <https://www.w3.org/TR/did-core/#> .
+@prefix gax-core:        <http://w3id.org/gaia-x/core#> .
+@prefix gax-node:        <http://w3id.org/gaia-x/node#> .
+@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
+@prefix gax-resource:    <http://w3id.org/gaia-x/resource#> .
+@prefix gax-service:     <http://w3id.org/gaia-x/service#> .
+@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
+@prefix sh:              <http://www.w3.org/ns/shacl#> .
+@prefix vcard:           <http://www.w3.org/2006/vcard/ns#> .
+@prefix xsd:             <http://www.w3.org/2001/XMLSchema#> .
+
+gax-validation:DataConnectorShape
+        a               sh:NodeShape ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:maxCount  1 ;
+                          sh:minCount  0 ;
+                          sh:name      "service title" ;
+                          sh:order     5 ;
+                          sh:path      gax-service:serviceTitle
+                        ] ;
+        sh:property     [ sh:name      "standard conformity" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     6 ;
+                          sh:path      gax-service:standardConformity
+                        ] ;
+        sh:property     [ sh:minCount  1 ;
+                          sh:name      "physical resource" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     1 ;
+                          sh:path      gax-resource:physicalResource
+                        ] ;
+        sh:property     [ sh:datatype  xsd:anyURI ;
+                          sh:minCount  1 ;
+                          sh:name      "policies" ;
+                          sh:order     3 ;
+                          sh:path      gax-resource:policies
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:maxCount  1 ;
+                          sh:minCount  0 ;
+                          sh:name      "provision type" ;
+                          sh:order     8 ;
+                          sh:path      gax-service:provisionType
+                        ] ;
+        sh:property     [ sh:datatype  xsd:dateTimeStamp ;
+                          sh:name      "creation time" ;
+                          sh:order     5 ;
+                          sh:path      gax-service:creationTime
+                        ] ;
+        sh:property     [ sh:minCount  1 ;
+                          sh:name      "virtual resource" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     2 ;
+                          sh:path      gax-resource:virtualResource
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:name      "type" ;
+                          sh:order     4 ;
+                          sh:path      gax-service:type
+                        ] ;
+        sh:property     [ sh:datatype  xsd:anyURI ;
+                          sh:minCount  1 ;
+                          sh:name      "terms and conditions" ;
+                          sh:order     3 ;
+                          sh:path      gax-service:termsAndConditions
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:minCount  0 ;
+                          sh:name      "policies" ;
+                          sh:order     4 ;
+                          sh:path      gax-service:policies
+                        ] ;
+        sh:property     [ sh:minCount  0 ;
+                          sh:name      "aggregation of" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     2 ;
+                          sh:path      gax-service:aggregationOf
+                        ] ;
+        sh:property     [ sh:maxCount  1 ;
+                          sh:minCount  1 ;
+                          sh:name      "provided by" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     1 ;
+                          sh:path      gax-service:providedBy
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:minCount  0 ;
+                          sh:name      "keyword" ;
+                          sh:order     7 ;
+                          sh:path      dcat:keyword
+                        ] ;
+        sh:property     [ sh:name      "depends on" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     9 ;
+                          sh:path      gax-service:dependsOn
+                        ] ;
+        sh:property     [ sh:name   "endpoint" ;
+                          sh:node   gax-validation:EndpointShape ;
+                          sh:order  7 ;
+                          sh:path   gax-service:endpoint
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:maxCount  1 ;
+                          sh:minCount  0 ;
+                          sh:name      "description" ;
+                          sh:order     6 ;
+                          sh:path      dct:description
+                        ] ;
+        sh:targetClass  gax-resource:DataConnector .
+
+gax-validation:PhysicalResourceShape
+        a               sh:NodeShape ;
+        sh:property     [ sh:minCount  1 ;
+                          sh:name      "maintained by" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     1 ;
+                          sh:path      gax-resource:maintainedBy
+                        ] ;
+        sh:property     [ sh:minCount  0 ;
+                          sh:name      "owned by" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     2 ;
+                          sh:path      gax-resource:ownedBy
+                        ] ;
+        sh:property     [ sh:minCount  0 ;
+                          sh:name      "manufactured by" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     3 ;
+                          sh:path      gax-resource:manufacturedBy
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:minCount  1 ;
+                          sh:name      "location address" ;
+                          sh:order     4 ;
+                          sh:path      gax-resource:locationAddress
+                        ] ;
+        sh:property     [ sh:minCount  0 ;
+                          sh:name      "aggregation of" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     1 ;
+                          sh:path      gax-resource:aggregationOf
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:maxCount  1 ;
+                          sh:minCount  0 ;
+                          sh:name      "name" ;
+                          sh:order     2 ;
+                          sh:path      gax-resource:name
+                        ] ;
+        sh:property     [ sh:datatype  xsd:string ;
+                          sh:maxCount  1 ;
+                          sh:minCount  0 ;
+                          sh:name      "description" ;
+                          sh:order     3 ;
+                          sh:path      dct:description
+                        ] ;
+        sh:targetClass  gax-resource:PhysicalResource .
+
+gax-validation:EndpointShape
+        a               sh:NodeShape ;
+        sh:property     [ sh:datatype  xsd:anyURI ;
+                          sh:name      " end point u r l" ;
+                          sh:order     1 ;
+                          sh:path      gax-service:EndPointURL
+                        ] ;
+        sh:property     [ sh:name      " standard conformity" ;
+                          sh:nodeKind  sh:IRI ;
+                          sh:order     2 ;
+                          sh:path      gax-service:StandardConformity
+                        ] ;
+        sh:property     [ sh:datatype  xsd:anyURI ;
+                          sh:name      " endpoint description" ;
+                          sh:order     3 ;
+                          sh:path      gax-service:EndpointDescription
+                        ] ;
+        sh:targetClass  gax-service:Endpoint .

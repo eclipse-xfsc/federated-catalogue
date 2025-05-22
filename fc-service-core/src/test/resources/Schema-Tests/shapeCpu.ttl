@@ -1,3 +1,95 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:db668917a51716ee7fe5079546184923b07c4dfd0bb5885e13a762abb26a2a04
-size 2990
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
+
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix gax-core: <http://w3id.org/gaia-x/core#> .
+@prefix gax-node: <http://w3id.org/gaia-x/node#> .
+@prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
+@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
+@prefix gax-service: <http://w3id.org/gaia-x/service#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix did: <https://www.w3.org/TR/did-core/#> .
+
+gax-validation:CPUShape
+	a sh:NodeShape ;
+	sh:targetClass gax-core:CPU ;
+	sh:property [ sh:path gax-core:cpuArchitecture ;
+				  sh:name "cpu architecture" ;
+				  sh:order 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-core:cpuGeneration ;
+				  sh:name "cpu generation" ;
+				  sh:order 2 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-service:cpuFlag ;
+				  sh:name "cpu flag" ;
+				  sh:order 3 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-service:smtIsEnabled ;
+				  sh:name "smt is enabled" ;
+				  sh:order 4 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:boolean ] ;
+	sh:property [ sh:path gax-core:numberOfCores ;
+				  sh:name "number of cores" ;
+				  sh:order 5 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:integer ] ;
+	sh:property [ sh:path gax-core:numberOfThreads ;
+				  sh:name "number of threads" ;
+				  sh:order 6 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:integer ] ;
+	sh:property [ sh:path gax-core:frequency ;
+				  sh:name "frequency" ;
+				  sh:order 7 ;
+				  sh:maxCount 1 ;
+				  sh:node gax-validation:MeasureShape ] ;
+	sh:property [ sh:path gax-core:boostFrequency ;
+				  sh:name "boost frequency" ;
+				  sh:order 8 ;
+				  sh:maxCount 1 ;
+				  sh:node gax-validation:MeasureShape ] ;
+	sh:property [ sh:path gax-core:cacheSize ;
+				  sh:name "cache size" ;
+				  sh:order 9 ;
+				  sh:maxCount 1 ;
+				  sh:node gax-validation:MeasureShape ] ;
+	sh:property [ sh:path gax-core:allowedSocket ;
+				  sh:name "allowed socket" ;
+				  sh:order 10 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-core:name ;
+				  sh:name "name" ;
+				  sh:order 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-core:vendor ;
+				  sh:name "vendor" ;
+				  sh:order 2 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+.
+
+gax-validation:MeasureShape
+	a sh:NodeShape ;
+	sh:targetClass gax-core:Measure ;
+	sh:property [ sh:path gax-core:value ;
+				  sh:name "value" ;
+				  sh:order 1 ;
+				  sh:minCount 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:float ] ;
+	sh:property [ sh:path gax-core:unit ;
+				  sh:name "unit" ;
+				  sh:order 2 ;
+				  sh:minCount 1 ;
+				  sh:maxCount 1 ;
+				  sh:datatype xsd:string ] ;
+.

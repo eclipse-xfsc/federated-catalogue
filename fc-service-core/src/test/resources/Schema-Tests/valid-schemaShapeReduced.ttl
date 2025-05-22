@@ -1,3 +1,44 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0318c43e47b941b039db5a716d3effc6e9bc5ef959d3bdcaba839cc8d7b35924
-size 1511
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
+
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+
+@prefix gax-core: <http://w3id.org/gaia-x/core#> .
+@prefix gax-node: <http://w3id.org/gaia-x/node#> .
+@prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
+@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
+@prefix gax-service: <http://w3id.org/gaia-x/service#> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix did: <https://www.w3.org/TR/did-core/#> .
+
+gax-validation:PhysicalResourceShape
+	a sh:NodeShape ;
+	sh:targetClass gax-resource:PhysicalResource ;
+	sh:property [ sh:path gax-resource:maintainedBy ;
+				  sh:name "maintained by" ;
+				  sh:order 1 ;
+				  sh:minCount 1 ;
+				  sh:nodeKind sh:IRI ] ;
+	sh:property [ sh:path gax-resource:ownedBy ;
+				  sh:name "owned by" ;
+				  sh:order 2 ;
+				  sh:minCount 0 ;
+				  sh:nodeKind sh:IRI ] ;
+	sh:property [ sh:path gax-resource:manufacturedBy ;
+				  sh:name "manufactured by" ;
+				  sh:order 3 ;
+				  sh:minCount 0 ;
+				  sh:nodeKind sh:IRI ] ;
+	sh:property [ sh:path gax-resource:locationAddress ;
+				  sh:name "location address" ;
+				  sh:order 4 ;
+				  sh:minCount 1 ;
+				  sh:datatype xsd:string ] ;
+	sh:property [ sh:path gax-resource:aggregationOf ;
+				  sh:name "aggregation of" ;
+				  sh:order 1 ;
+				  sh:minCount 0 ;
+				  sh:nodeKind sh:IRI ] ;
+.

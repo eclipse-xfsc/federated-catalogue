@@ -1,3 +1,65 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:792a2f1e648d7fccef9fe11a68a43c4a1fa57e56de8507c427084996aa0f0936
-size 1914
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix gax-core: <http://w3id.org/gaia-x/core#> .
+@prefix gax-node: <http://w3id.org/gaia-x/node#> .
+@prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
+@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
+@prefix gax-service: <http://w3id.org/gaia-x/service#> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix did: <https://www.w3.org/TR/did-core/#> .
+
+gax-validation:InfrastructureShape
+a sh:NodeShape ;
+sh:targetClass gax-service:Infrastructure ;
+sh:property [ sh:path gax-service:providedBy ;
+sh:name "provided by" ;
+sh:order 1 ;
+sh:minCount 1 ;
+sh:maxCount 1 ;
+sh:nodeKind sh:IRI ] ;
+sh:property [ sh:path gax-service:aggregationOf ;
+sh:name "aggregation of" ;
+sh:order 2 ;
+sh:minCount 0 ;
+sh:nodeKind sh:IRI ] ;
+sh:property [ sh:path gax-service:termsAndConditions ;
+sh:name "terms and conditions" ;
+sh:order 3 ;
+sh:minCount 1 ;
+sh:datatype xsd:anyURI ] ;
+sh:property [ sh:path gax-service:policies ;
+sh:name "policies" ;
+sh:order 4 ;
+sh:minCount 0 ;
+sh:datatype xsd:string ] ;
+sh:property [ sh:path gax-service:serviceTitle ;
+sh:name "service title" ;
+sh:order 5 ;
+sh:minCount 0 ;
+sh:maxCount 1 ;
+sh:datatype xsd:string ] ;
+sh:property [ sh:path dct:description ;
+sh:name "description" ;
+sh:order 6 ;
+sh:minCount 0 ;
+sh:maxCount 1 ;
+sh:datatype xsd:string ] ;
+sh:property [ sh:path dcat:keyword ;
+sh:name "keyword" ;
+sh:order 7 ;
+sh:minCount 0 ;
+sh:datatype xsd:string ] ;
+sh:property [ sh:path gax-service:provisionType ;
+sh:name "provision type" ;
+sh:order 8 ;
+sh:minCount 0 ;
+sh:maxCount 1 ;
+sh:datatype xsd:string ] ;
+sh:property [ sh:path gax-service:dependsOn ;
+sh:name "depends on" ;
+sh:order 9 ;
+sh:nodeKind sh:IRI ] ;
+.
