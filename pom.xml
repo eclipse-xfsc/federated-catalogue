@@ -108,7 +108,7 @@
         <maven.compiler.proc>full</maven.compiler.proc>
         <plugin.jacoco.version>0.8.13</plugin.jacoco.version>
         <plugin.git-commit.version>4.9.10</plugin.git-commit.version>
-        <plugin.openapi-generator.version>7.12.0</plugin.openapi-generator.version>
+        <plugin.openapi-generator.version>7.13.0</plugin.openapi-generator.version>
         <plugin.jib.version>3.4.0</plugin.jib.version>
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
         <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
