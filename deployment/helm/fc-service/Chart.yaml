@@ -20,7 +20,7 @@ dependencies:
     version: 12.4.3
     repository: "oci://registry-1.docker.io/bitnamicharts"
   - name: neo4j
-    version: 5.18.0
+    version: 5.18.1
     repository: "https://neo4j.github.io/helm-charts/"
   - name: keycloak
     version: 26.0
