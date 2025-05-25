@@ -5,8 +5,13 @@ on:
   pull_request:
   push:
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   maven-build:
     uses: eclipse-xfsc/dev-ops/.github/workflows/maven-build.yml@main
+    secret: inherit
     with:
       java_version: '21'
