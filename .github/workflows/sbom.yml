@@ -7,6 +7,10 @@ on:
     - cron: '0 0 1 * *'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   call-remote-workflow:
     uses: eclipse-xfsc/dev-ops/.github/workflows/sbom-maven.yml@main
