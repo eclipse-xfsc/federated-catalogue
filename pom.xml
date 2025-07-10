@@ -73,7 +73,7 @@
         <keycloak.version>26.0.3</keycloak.version>
         <liquibase.version>4.27.0</liquibase.version>
         <jena.version>4.10.0</jena.version>
-        <topbraid.version>1.4.2</topbraid.version>
+        <topbraid.version>1.4.4</topbraid.version>
         <vc.version>1.9.0</vc.version>
         <key-format.version>1.15.0</key-format.version>
         <did.version>1.11.0</did.version>
