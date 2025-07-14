@@ -97,7 +97,7 @@
         <junit-platform.version>1.10.0</junit-platform.version>
         <spring-cloud-contract-wiremock.version>4.3.0</spring-cloud-contract-wiremock.version>
         <security.test-addons.version>4.5.1</security.test-addons.version>
-        <embedded.postgres.version>2.0.6</embedded.postgres.version>
+        <embedded.postgres.version>2.1.0</embedded.postgres.version>
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
         <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
         <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
