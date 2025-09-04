@@ -96,14 +96,14 @@ components:
     Result:
       type: object
       additionalProperties:
-        type: object
+        type: string
     QueryLanguage:
       type: string
       enum:
         - OPENCYPHER
         - SPARQL
         - GRAPHQL
-      default: OPENCYPHER
+      default: SPARQL
     AnnotatedStatement:
       allOf:
         - $ref: '#/components/schemas/Statement'
@@ -710,31 +710,31 @@ paths:
           $ref: '#/components/responses/ServerError'
         '500':
           $ref: '#/components/responses/ServerError'
-  /query/search:
-    post:
-      tags:
-        - Query
-      summary: Run distributed search query in the Catalogue
-      operationId: search
-      requestBody:
-        description: JSON object containing query with parameters and annotations
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnnotatedStatement'
-      responses:
-        '200':
-          description: successful query
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Results'
-        '400': ## Wrong query 
-          $ref: '#/components/responses/ClientError'
-        '408': ## Query Timeout: 
-          $ref: '#/components/responses/ServerError'
-        '500':
-          $ref: '#/components/responses/ServerError'
+#  /query/search:
+#    post:
+#      tags:
+#        - Query
+#      summary: Run distributed search query in the Catalogue
+#      operationId: search
+#      requestBody:
+#        description: JSON object containing query with parameters and annotations
+#        content:
+#          application/json:
+#            schema:
+#              $ref: '#/components/schemas/AnnotatedStatement'
+#      responses:
+#        '200':
+#          description: successful query
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/Results'
+#        '400': ## Wrong query
+#          $ref: '#/components/responses/ClientError'
+#        '408': ## Query Timeout:
+#          $ref: '#/components/responses/ServerError'
+#        '500':
+#          $ref: '#/components/responses/ServerError'
           
   /schemas:
     get:

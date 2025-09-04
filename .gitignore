@@ -40,3 +40,8 @@ fc-service-server/logs/
 
 ### vim ###
 *.swp
+
+### Maven Shade Plugin Output ###
+fc-fuseki-server/dependency-reduced-pom.xml
+docker/fuseki/Data-*
+**/tdb.lock

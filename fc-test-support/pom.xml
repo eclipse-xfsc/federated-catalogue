@@ -25,52 +25,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j.driver</groupId>
-            <artifactId>neo4j-java-driver</artifactId>
-        </dependency>       
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neosemantics</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.gds</groupId>
-            <artifactId>proc</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.collections</groupId>
-                    <artifactId>eclipse-collections-api</artifactId>            
-				</exclusion>
-   		    </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.gds</groupId>
-            <artifactId>open-model-catalog</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.collections</groupId>
-                    <artifactId>eclipse-collections-api</artifactId>            
-				</exclusion>
-   		    </exclusions>
-   		</dependency>        
-        <dependency>
-            <groupId>org.neo4j.procedure</groupId>
-            <artifactId>apoc-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.test</groupId>
-            <artifactId>neo4j-harness</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-nop</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j-slf4j-provider</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
     </dependencies>
 </project>

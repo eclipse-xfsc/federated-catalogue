@@ -21,7 +21,7 @@ public class QueryClient extends ServiceClient {
         super(baseUrl, client);
     }
 
-    public List<Map<String, Object>> query(String query, Map<String, Object> params) {
+    public List<Map<String, String>> query(String query, Map<String, Object> params) {
         Statement stmt = new Statement();
         stmt = stmt.parameters(params).statement(query);
         Results results = doPost("/query", stmt, Map.of(), Map.of(), Results.class);
