@@ -71,7 +71,7 @@
         <spring.security.version>6.4.6</spring.security.version>
         <springdoc.version>2.8.8</springdoc.version>
         <keycloak.version>26.0.3</keycloak.version>
-        <liquibase.version>4.27.0</liquibase.version>
+        <liquibase.version>4.33.0</liquibase.version>
         <jena.version>4.10.0</jena.version>
         <topbraid.version>1.4.4</topbraid.version>
         <vc.version>1.9.0</vc.version>
