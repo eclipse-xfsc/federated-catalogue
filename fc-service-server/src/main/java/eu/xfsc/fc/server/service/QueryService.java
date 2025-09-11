@@ -102,7 +102,7 @@ public class QueryService implements QueryApiDelegate {
     if (checkIfLimitAbsent(statement.getStatement())) {
       addDefaultLimit(statement);
     }
-    PaginatedResults<Map<String, Object>> queryResultList = graphStore.queryData(new GraphQuery(statement.getStatement(), 
+    PaginatedResults<Map<String, String>> queryResultList = graphStore.queryData(new GraphQuery(statement.getStatement(),
             statement.getParameters(), queryLanguage, timeout, withTotalCount));
     Results result = new Results((int) queryResultList.getTotalCount(), queryResultList.getResults());
     log.debug("query.exit; returning results: {}", result);
@@ -137,21 +137,21 @@ public class QueryService implements QueryApiDelegate {
   /**
    * performs distributed search
    */
-  @Override
+  //@Override
   public ResponseEntity<Results> search(AnnotatedStatement statement) {
-	log.debug("search.enter; got statement: {}", statement);
+/*log.debug("search.enter; got statement: {}", statement);
 	if (checkIfLimitAbsent(statement.getStatement())) {
 	  statement.setStatement(statement.getStatement() + " limit $limit");
 	  statement.putParametersItem("limit", DEFAULT_LIMIT);
 	}
 	boolean first = statement.getServers() == null || statement.getServers().isEmpty();
 	Mono<List<Results>> extra = searchPartners(statement);
-	    
-	String queryLanguage = getAnnotation(statement, "queryLanguage", QueryLanguage.OPENCYPHER.name());
+
+	String queryLanguage = getAnnotation(statement, "queryLanguage", QueryLanguage.SPARQL.name());
 	Integer timeout = getAnnotation(statement, "timeout", GraphQuery.QUERY_TIMEOUT);
 	Boolean withTotalCount = getAnnotation(statement, "withTotalCount", true);
-	    
-	PaginatedResults<Map<String, Object>> queryResultList = graphStore.queryData(new GraphQuery(statement.getStatement(), 
+
+	PaginatedResults<Map<String, Object>> queryResultList = graphStore.queryData(new GraphQuery(statement.getStatement(),
 	        statement.getParameters(), QueryLanguage.valueOf(queryLanguage), timeout, withTotalCount));
 	Results result = new Results((int) queryResultList.getTotalCount(), queryResultList.getResults());
 	if (extra != null) {
@@ -159,7 +159,8 @@ public class QueryService implements QueryApiDelegate {
 	  result = mergePartnerResults(first, result, extra.block());
 	}
 	log.debug("search.exit; returning results: {}", result);
-	return ResponseEntity.ok(result);
+	return ResponseEntity.ok(result);*/
+      throw new UnsupportedOperationException("method /query/search is not supported currently due to switch to {RDF,SPARQL}-star");
   }
   
   private <T> T getAnnotation(AnnotatedStatement statement, String name, T defaultValue) {
@@ -232,7 +233,7 @@ public class QueryService implements QueryApiDelegate {
   }
   
   private Results mergePartnerResults(boolean first, Results local, List<Results> extra) {
-	Results results = new Results(0, new ArrayList<>());	
+	/*Results results = new Results(0, new ArrayList<>());
 	if (!extra.isEmpty()) {
 	  Set<String> urls = new HashSet<>(extra.size());
 	  extra.stream().forEach(r -> {
@@ -251,7 +252,7 @@ public class QueryService implements QueryApiDelegate {
 				results.setTotalCount(results.getTotalCount() + total);
 			}
 		});
-	  }); 
+	  });
 	}
 	if (first) {
 		results.getItems().addAll(local.getItems());
@@ -259,7 +260,8 @@ public class QueryService implements QueryApiDelegate {
 		results.addItemsItem(Map.of("server", queryProps.getSelf(), "total", local.getTotalCount(), "items", local.getItems()));
 	}
 	results.setTotalCount(results.getTotalCount() + local.getTotalCount());
-    return results;
+    return results;*/
+    throw new UnsupportedOperationException("not implemented yet for SPARQL-star");
   }
     
 }

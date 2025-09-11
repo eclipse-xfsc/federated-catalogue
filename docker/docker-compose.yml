@@ -28,33 +28,6 @@ services:
       resources:
         limits:
           memory: 256M
-          
-  neo4j:
-    container_name: "neo4j"
-    image: neo4j:5.18.0
-    environment:
-      NEO4J_AUTH: "${GRAPH_STORE_USER}/${GRAPH_STORE_PASSWORD}"
-      NEO4J_server_http_listen__address: :7474
-      NEO4J_server_bolt_listen__address: :7687
-      NEO4J_PLUGINS: '["apoc", "graph-data-science", "n10s"]'
-      NEO4J_dbms_security_procedures_unrestricted: gds.*,apoc.*,n10s.*,semantics.*
-      NEO4J_dbms_security_procedures_allowlist: gds.*,apoc.*,n10s.*,semantics.*
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    networks:
-      - "gaia-x"
-    restart: always
-    command: neo4j
-    healthcheck:
-      test: ["CMD-SHELL", "/var/lib/neo4j/bin/neo4j status"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
-#    volumes:
-#      - '$HOME/neo4j/data:/data'
-#      - '$HOME/neo4j/conf/:/conf/'
 
   keycloak:
     container_name: "keycloak"
@@ -82,6 +55,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  fuseki:
+    container_name: "fuseki"
+    build:
+      context: '../fc-fuseki-server/'
+      dockerfile: Dockerfile
+    networks:
+      - "gaia-x"
+    restart: always
+    volumes:
+      - fusekidata:/fuseki_data/
+    #ports:
+    #  - "3330:3330"
 
   nats:
     image: nats:alpine
@@ -132,9 +118,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      neo4j:
-        condition: service_healthy
       nats:
+        condition: service_healthy
+      fuseki:
         condition: service_healthy
         
   portal:
@@ -163,3 +149,7 @@ services:
 networks:
   gaia-x:
     driver: "bridge"
+
+volumes:
+  fusekidata:
+    driver: "local"

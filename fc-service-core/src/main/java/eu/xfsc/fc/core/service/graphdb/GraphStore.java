@@ -37,7 +37,7 @@ public interface GraphStore {
      * @param sdQuery is the query to be executed
      * @return List of Maps
      */
-    PaginatedResults<Map<String, Object>> queryData(GraphQuery sdQuery);
+    PaginatedResults<Map<String, String>> queryData(GraphQuery sdQuery);
 
 }
 

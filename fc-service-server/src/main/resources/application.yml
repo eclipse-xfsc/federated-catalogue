@@ -78,10 +78,7 @@ datastore:
   file-path: target
 
 graphstore:
-  uri: bolt://localhost:7687
-  user: neo4j
-  password: neo12345
-  timeout-marker: The transaction has not completed within the timeout specified
+  uri: http://fuseki:3330/ds
 
 publisher:
 #  impl: none #nats

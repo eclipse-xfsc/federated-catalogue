@@ -90,16 +90,11 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
         </dependency>              
-        <dependency>
+        <!--<dependency>
             <groupId>eu.xfsc.cat</groupId>
             <artifactId>fc-test-support</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.gds</groupId>
-            <artifactId>open-model-catalog</artifactId>
-            <scope>test</scope>
-   		</dependency>                
+        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
