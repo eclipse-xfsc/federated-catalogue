@@ -105,7 +105,7 @@
         <okhttp.version>4.12.0</okhttp.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <maven.compiler.proc>full</maven.compiler.proc>
+       <!-- <maven.compiler.proc>full</maven.compiler.proc>-->
         <plugin.jacoco.version>0.8.13</plugin.jacoco.version>
         <plugin.git-commit.version>4.9.10</plugin.git-commit.version>
         <plugin.openapi-generator.version>7.12.0</plugin.openapi-generator.version>
