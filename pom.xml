@@ -91,7 +91,7 @@
         <commons-compress.version>1.26.0</commons-compress.version>
         <commons-config2.version>2.10.1</commons-config2.version>
         <mime4j.version>0.8.11</mime4j.version>
-        <ipaddress.version>5.4.2</ipaddress.version>
+        <ipaddress.version>5.5.1</ipaddress.version>
         <xmlunit2.version>2.10.0</xmlunit2.version>
         <!-- test libs -->
         <junit-platform.version>1.10.0</junit-platform.version>
