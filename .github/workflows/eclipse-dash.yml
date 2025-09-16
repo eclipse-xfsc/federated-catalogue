@@ -1,4 +1,4 @@
-name: Call Eclipse Dash License Scanner (Go)
+name: Call Eclipse Dash License Scanner
 
 on:
   workflow_dispatch:
