@@ -24,7 +24,8 @@ The project v1.0.0 was released in February 2023.
 If you want to contribute to the project - please request a membership at [Project Members](https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/project_members) section or drop an email to project maintainer [Denis Sukhoroslov](mailto:dsukhoroslov@gmail.com).
 
 ## Authors and acknowledgment
-The project is implemented by T-Systems International GmbH, direct project members are:
+
+The current direct project members are:
 - [Denis Sukhoroslov](https://gitlab.eclipse.org/dsukhoroslov)
 - [Peter Benko](https://gitlab.com/pebenko)
 - [Ladislav Jurcisin](https://gitlab.com/ladislav.jurcisin)
