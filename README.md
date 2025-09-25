@@ -1,31 +1,28 @@
 # Federated Catalogue
 
-
 ## Description
-The Gaia-X Catalogue Service makes Self-Descriptions of Providers and their Service Offerings available to Consumers.
+The Gaia-X Catalogue Service makes Self-Descriptions of Providers, their Service Offerings and Resources used by these services available to Consumers.
 
-This is a Reference Implementation of Gaia-X Federation Services Lot 5 [Federated Catalogue / Core Catalogue Features](https://www.gxfs.eu/core-catalogue-features/).
+This project was initiated as a Reference Implementation of Gaia-X Federation Services Lot 5 [Federated Catalogue / Core Catalogue Features](https://www.gxfs.eu/core-catalogue-features/).
 
 ## Documentation
-All service documentation, installation instructions and other materials can be found in the [FC documentation section](https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/wikis/home).
+All service documentation, installation instructions and other materials can be found in [our wiki](https://github.com/eclipse-xfsc/federated-catalogue/wiki).
 
 ## Support
-To get support you can open an issue in the project [Issues](https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/issues) section.
-
+To get support you can open an issue in the project [Issues](https://github.com/eclipse-xfsc/federated-catalogue/issues) section.
 
 ## Getting Started
 To start with FC project please follow the instructions: [Steps to build FC](./docker/README.md).
-
 
 ## Roadmap
 The project v1.0.0 was released in February 2023.
 
 ## Contributing
-If you want to contribute to the project - please request a membership at [Project Members](https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/project_members) section or drop an email to project maintainer [Denis Sukhoroslov](mailto:dsukhoroslov@gmail.com).
+If you want to contribute to the project, please see [the Eclipse XFSC contribution guidelines](https://github.com/eclipse-xfsc/federated-catalogue#contributing-ov-file).
 
 ## Authors and acknowledgment
 
-The current direct project members are:
+The initial version of this project was implemented by the following team:
 - [Denis Sukhoroslov](https://gitlab.eclipse.org/dsukhoroslov)
 - [Peter Benko](https://gitlab.com/pebenko)
 - [Ladislav Jurcisin](https://gitlab.com/ladislav.jurcisin)
@@ -55,4 +52,4 @@ The project implementation wouldn't have been possible without a great help of o
 - [Khalil Baydoun](https://gitlab.com/baydounkhalil), Fraunhofer FIT
 
 ## License
-Gaia-X Federated Catalogue Service is Open Source software released under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).
+The XFSC Federated Catalogue Service is Open Source software released under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).
