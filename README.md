@@ -20,9 +20,6 @@ To start with FC project please follow the instructions: [Steps to build FC](./d
 ## Roadmap
 The project v1.0.0 was released in February 2023.
 
-## Contributing
-If you want to contribute to the project - please request a membership at [Project Members](https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/project_members) section or drop an email to project maintainer [Denis Sukhoroslov](mailto:dsukhoroslov@gmail.com).
-
 ## Authors and acknowledgment
 
 The current direct project members are:
