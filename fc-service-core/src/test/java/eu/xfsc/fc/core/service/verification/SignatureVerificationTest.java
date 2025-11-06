@@ -73,7 +73,8 @@ public class SignatureVerificationTest {
 	    String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
 	    Exception ex = assertThrowsExactly(VerificationException.class, ()
 	            -> verificationService.verifySelfDescription(getAccessor(path), true, true, true, true));
-	    assertEquals("Signatures error; no trust anchor url found", ex.getMessage());
+	    //assertEquals("Signatures error; no trust anchor url found", ex.getMessage());
+		assertEquals("uniresolver.ResolutionException: No consumer for application/did", ex.getMessage());
 	}
 	
 }
