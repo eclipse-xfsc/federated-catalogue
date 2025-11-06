@@ -35,6 +35,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
+import com.danubetech.dataintegrity.DataIntegrityProof;
 import com.danubetech.keyformats.jose.JWK;
 import com.danubetech.verifiablecredentials.CredentialSubject;
 import com.danubetech.verifiablecredentials.VerifiableCredential;
@@ -787,13 +788,13 @@ public class VerificationServiceImpl implements VerificationService {
     }
 
     String getProofMethod() {
-      LdProof proof = null;	
+      DataIntegrityProof proof = null;	
       if (presentation == null) {
     	if (!credentials.isEmpty()) {
-    	  proof = credentials.keySet().iterator().next().getLdProof();
+    	  proof = credentials.keySet().iterator().next().getDataIntegrityProof();
     	}
       } else {
-        proof = presentation.getLdProof();
+        proof = presentation.getDataIntegrityProof();
       }
       URI method = proof == null ? null : proof.getVerificationMethod();
       return method == null ? null : method.toString();

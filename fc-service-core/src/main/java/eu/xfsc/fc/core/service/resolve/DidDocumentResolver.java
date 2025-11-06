@@ -12,7 +12,7 @@ import foundation.identity.did.DIDDocument;
 import lombok.extern.slf4j.Slf4j;
 import uniresolver.ResolutionException;
 import uniresolver.UniResolver;
-import uniresolver.result.ResolveRepresentationResult;
+import uniresolver.result.ResolveResult;
 
 @Slf4j
 @Component
@@ -36,9 +36,9 @@ public class DidDocumentResolver {
 		boolean cached = true;
 		if (diDoc == null) {
 			cached = false;
-			ResolveRepresentationResult didResult;
+			ResolveResult didResult;
 			try {
-				didResult = resolver.resolveRepresentation(did, RESOLVE_OPTIONS);
+				didResult = resolver.resolve(did); //, RESOLVE_OPTIONS);
 				log.trace("resolveDid; resolved to: {}", didResult.toJson());
 			} catch (ResolutionException ex) {
 				log.warn("resolveDidDocument; error processing did {}", did, ex);
@@ -48,9 +48,10 @@ public class DidDocumentResolver {
 				throw new VerificationException(didResult.getErrorMessage());
 			}
 
-			String docStream = didResult.getDidDocumentStreamAsString();
-			log.trace("resolveDidDocument; doc stream is: {}", docStream);
-			diDoc = DIDDocument.fromJson(docStream);
+			//String docStream = didResult.getDidDocumentStreamAsString();
+			//log.trace("resolveDidDocument; doc stream is: {}", docStream);
+			//diDoc = DIDDocument.fromJson(docStream);
+			diDoc = didResult.getDidDocument();
 			didDocumentCache.put(did, diDoc);
 		}
 		log.debug("resolveDidDocument.exit; returning doc: {}, from cache: {}", diDoc, cached);
