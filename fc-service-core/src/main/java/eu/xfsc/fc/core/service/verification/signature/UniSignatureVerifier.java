@@ -85,7 +85,7 @@ public class UniSignatureVerifier implements SignatureVerifier {
 	public boolean verify(JsonLDObject payload, LdProof proof, JWK jwk, String alg) {
 		log.debug("verify.enter; alg: {}, jwk: {}", alg, jwk);
 		LdVerifier<?> verifier = LdVerifierRegistry.getLdVerifierBySignatureSuiteTerm(proof.getType());
-		PublicKeyVerifier<?> pkVerifier = PublicKeyVerifierFactory.publicKeyVerifierForJWK(jwk, alg);
+		PublicKeyVerifier<?> pkVerifier = PublicKeyVerifierFactory.publicKeyVerifierForKey(jwk, alg);
 		verifier.setVerifier(pkVerifier);
 	    try {
 			return verifier.verify(payload);

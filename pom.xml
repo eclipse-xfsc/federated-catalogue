@@ -69,40 +69,35 @@
         <spring.version>6.2.12</spring.version>
         <spring-boot.version>3.5.7</spring-boot.version>
         <spring.security.version>6.5.6</spring.security.version>
-        <springdoc.version>2.8.8</springdoc.version>
+        <springdoc.version>2.8.14</springdoc.version>
         <keycloak.version>26.0.3</keycloak.version>
         <liquibase.version>4.33.0</liquibase.version>
         <jena.version>4.10.0</jena.version>
         <topbraid.version>1.4.4</topbraid.version>
-        <vc.version>1.9.0</vc.version>
-        <key-format.version>1.15.0</key-format.version>
-        <did.version>1.11.0</did.version>
-        <ld-signatures.version>1.9.0</ld-signatures.version>
-        <uni-resolver.version>0.17.0</uni-resolver.version>
-        <titanium.version>1.3.2</titanium.version>
-        <caffeine.version>3.1.8</caffeine.version>        
+        <vc.version>1.21.0</vc.version>
+        <key-format.version>1.23.0</key-format.version>
+        <did.version>1.20.0</did.version>
+        <ld-signatures.version>1.11.0</ld-signatures.version>
+        <uni-resolver.version>0.35.0</uni-resolver.version>
+        <titanium.version>1.7.0</titanium.version>
+        <caffeine.version>3.2.3</caffeine.version>        
         <neo4j.driver.version>5.18.0</neo4j.driver.version>
         <neo4j.gds.version>2.6.6</neo4j.gds.version>
         <neo4j.apoc.version>5.18.0</neo4j.apoc.version>
         <neo4j.neosemantics.version>5.18.0</neo4j.neosemantics.version>
-        <bcpkix-jdk18on.version>1.78.1</bcpkix-jdk18on.version>
-        <jnats.version>2.17.6</jnats.version>
-        <jackson-bom.version>2.16.0</jackson-bom.version>
-        <commons-compress.version>1.26.0</commons-compress.version>
-        <commons-config2.version>2.10.1</commons-config2.version>
-        <mime4j.version>0.8.11</mime4j.version>
-        <ipaddress.version>5.4.2</ipaddress.version>
-        <xmlunit2.version>2.10.0</xmlunit2.version>
+        <bcpkix-jdk18on.version>1.82</bcpkix-jdk18on.version>
+        <jnats.version>2.23.0</jnats.version>
+        <jackson-bom.version>2.20.1</jackson-bom.version>
         <!-- test libs -->
-        <junit-platform.version>1.10.0</junit-platform.version>
+        <junit-platform.version>1.14.1</junit-platform.version>
         <spring-cloud-contract-wiremock.version>4.3.0</spring-cloud-contract-wiremock.version>
         <security.test-addons.version>4.5.1</security.test-addons.version>
         <embedded.postgres.version>2.1.1</embedded.postgres.version>
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
         <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
         <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
-        <jose4j.version>0.9.4</jose4j.version>
-        <okhttp.version>4.12.0</okhttp.version>
+        <jose4j.version>0.9.6</jose4j.version>
+        <okhttp.version>5.3.0</okhttp.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
        <!-- <maven.compiler.proc>full</maven.compiler.proc>-->
@@ -343,43 +338,6 @@
                 <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${bcpkix-jdk18on.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-compress</artifactId>
-                <version>${commons-compress.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.james</groupId>
-                <artifactId>apache-mime4j-core</artifactId>
-                <version>${mime4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.seancfoley</groupId>
-                <artifactId>ipaddress</artifactId>
-                <version>${ipaddress.version}</version>
-            </dependency>
-
-            <!-- fixing vulnerabilities -->
-            <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>2.17.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.xmlunit</groupId>
-                <artifactId>xmlunit-core</artifactId>
-                <version>2.10.0</version>
-            </dependency>
-            <dependency>
-                <groupId>net.minidev</groupId>
-                <artifactId>json-smart</artifactId>
-                <version>2.5.2</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>3.25.6</version>
-            </dependency>
 
             <!-- Test dependencies -->
             <dependency>
@@ -515,7 +473,7 @@
                     <version>${plugin.jib.version}</version>
                     <configuration>
                         <container>
-			    <!-- ${maven.build.timestamp} should work also -->
+			                <!-- ${maven.build.timestamp} should work also -->
                             <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
                         </container>
                         <from>
