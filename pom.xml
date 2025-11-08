@@ -47,8 +47,9 @@
     <modules>
         <module>fc-service-api</module>
         <module>fc-service-client</module>
-        <module>fc-test-support</module>
         <module>fc-service-core</module>
+        <module>fc-graphdb-neo4j</module>
+        <module>fc-graphdb-fuseki</module>
         <module>fc-service-server</module>
         <module>fc-demo-portal</module>
         <module>fc-tools/signer</module>
@@ -72,7 +73,8 @@
         <springdoc.version>2.8.14</springdoc.version>
         <keycloak.version>26.0.3</keycloak.version>
         <liquibase.version>4.33.0</liquibase.version>
-        <jena.version>4.10.0</jena.version>
+        <!--jena.version>4.10.0</jena.version-->
+        <jena.version>5.3.0</jena.version>
         <topbraid.version>1.4.4</topbraid.version>
         <vc.version>1.21.0</vc.version>
         <key-format.version>1.23.0</key-format.version>
@@ -81,10 +83,6 @@
         <uni-resolver.version>0.35.0</uni-resolver.version>
         <titanium.version>1.7.0</titanium.version>
         <caffeine.version>3.2.3</caffeine.version>        
-        <neo4j.driver.version>5.18.0</neo4j.driver.version>
-        <neo4j.gds.version>2.6.6</neo4j.gds.version>
-        <neo4j.apoc.version>5.18.0</neo4j.apoc.version>
-        <neo4j.neosemantics.version>5.18.0</neo4j.neosemantics.version>
         <bcpkix-jdk18on.version>1.82</bcpkix-jdk18on.version>
         <jnats.version>2.23.0</jnats.version>
         <jackson-bom.version>2.20.1</jackson-bom.version>
@@ -94,8 +92,6 @@
         <security.test-addons.version>4.5.1</security.test-addons.version>
         <embedded.postgres.version>2.1.1</embedded.postgres.version>
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
-        <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
-        <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
         <jose4j.version>0.9.6</jose4j.version>
         <okhttp.version>5.3.0</okhttp.version>
         <!-- plugins -->
@@ -142,15 +138,21 @@
             </dependency>
             <dependency>
                 <groupId>eu.xfsc.cat</groupId>
-                <artifactId>fc-test-support</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>eu.xfsc.cat</groupId>
                 <artifactId>fc-service-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- do we need it here? -->
+            <dependency>
+                <groupId>eu.xfsc.cat</groupId>
+                <artifactId>fc-graphdb-neo4j</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>eu.xfsc.cat</groupId>
+                <artifactId>fc-graphdb-fuseki</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter</artifactId>
@@ -174,11 +176,6 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-                <version>${spring-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-data-neo4j</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
@@ -226,54 +223,7 @@
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
             </dependency>
-            
-            <dependency>
-                <groupId>org.neo4j.driver</groupId>
-                <artifactId>neo4j-java-driver</artifactId>
-                <version>${neo4j.driver.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j</groupId>
-                <artifactId>neosemantics</artifactId>
-                <version>${neo4j.neosemantics.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j.gds</groupId>
-                <artifactId>proc</artifactId>
-                <version>${neo4j.gds.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j.gds</groupId>
-                <artifactId>open-model-catalog</artifactId>
-                <version>${neo4j.gds.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j.procedure</groupId>
-                <artifactId>apoc-core</artifactId>
-                <version>${neo4j.apoc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j.driver</groupId>
-                <artifactId>neo4j-java-driver-test-harness-spring-boot-autoconfigure</artifactId>
-                <version>${neo4j.test-spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.neo4j.test</groupId>
-                <artifactId>neo4j-harness</artifactId>
-                <version>${neo4j.test-harness.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-nop</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.neo4j</groupId>
-                        <artifactId>neo4j-slf4j-provider</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            
+                        
             <dependency>
                 <groupId>org.apache.jena</groupId>
                 <artifactId>apache-jena-libs</artifactId>

@@ -30,10 +30,6 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-neo4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
@@ -56,15 +52,6 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j.driver</groupId>
-            <artifactId>neo4j-java-driver</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.gds</groupId>
-            <artifactId>open-model-catalog</artifactId>
-            <scope>test</scope>
-   	</dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>apache-jena-libs</artifactId>
@@ -105,11 +92,6 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency-->
-        <dependency>
-            <groupId>eu.xfsc.cat</groupId>
-            <artifactId>fc-test-support</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

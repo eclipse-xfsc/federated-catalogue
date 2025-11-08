@@ -11,7 +11,6 @@ import java.util.List;
 
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.ClientResource;
@@ -29,7 +28,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.annotation.BeforeTestClass;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -45,7 +43,6 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@ExtendWith(SpringExtension.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class RolesControllerTest {
     @Value("${keycloak.resource}")

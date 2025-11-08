@@ -35,13 +35,14 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
 import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.service.graphdb.Neo4jGraphStore;
+import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.util.GraphRebuilder;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +80,7 @@ public class SelfDescriptionStoreCompositeTest {
   private Neo4j embeddedDatabaseServer;
 
   @Autowired
-  private Neo4jGraphStore graphStore;
+  private GraphStore graphStore;
 
   @AfterEach
   public void storageSelfCleaning() {

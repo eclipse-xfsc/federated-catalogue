@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>eu.xfsc.cat</groupId>
+        <artifactId>fc-service</artifactId>
+        <version>1.0.0.local</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>fc-graphdb-neo4j</artifactId>
+    <version>${revision}</version>
+    <packaging>jar</packaging>
+    <name>fc-graphdb-neo4j</name>
+    <description>Eclipse XFSC Federated Catalogue graph DB: Neo4j implementation</description>
+
+    <properties>
+        <neo4j.driver.version>5.18.0</neo4j.driver.version>
+        <neo4j.gds.version>2.6.6</neo4j.gds.version>
+        <neo4j.apoc.version>5.18.0</neo4j.apoc.version>
+        <neo4j.neosemantics.version>5.18.0</neo4j.neosemantics.version>
+        <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
+        <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>eu.xfsc.cat</groupId>
+            <artifactId>fc-service-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-neo4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>${neo4j.driver.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neosemantics</artifactId>
+            <version>${neo4j.neosemantics.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.gds</groupId>
+            <artifactId>proc</artifactId>
+            <version>${neo4j.gds.version}</version>
+            <!--exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.collections</groupId>
+                    <artifactId>eclipse-collections-api</artifactId>            
+				</exclusion>
+   		    </exclusions-->
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.gds</groupId>
+            <artifactId>open-model-catalog</artifactId>
+            <version>${neo4j.gds.version}</version>
+            <!--scope>test</scope-->
+            <!--exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.collections</groupId>
+                    <artifactId>eclipse-collections-api</artifactId>            
+				</exclusion>
+   		    </exclusions-->
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.procedure</groupId>
+            <artifactId>apoc-core</artifactId>
+            <version>${neo4j.apoc.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver-test-harness-spring-boot-autoconfigure</artifactId>
+            <version>${neo4j.test-spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j.test</groupId>
+            <artifactId>neo4j-harness</artifactId>
+            <version>${neo4j.test-harness.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-nop</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-slf4j-provider</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-postgres</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-database-spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+</project>

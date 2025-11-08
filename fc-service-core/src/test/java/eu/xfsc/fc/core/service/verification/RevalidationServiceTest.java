@@ -22,7 +22,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.neo4j.harness.Neo4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -47,13 +46,12 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorFile;
 import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
 import eu.xfsc.fc.core.pojo.VerificationResult;
-import eu.xfsc.fc.core.service.graphdb.Neo4jGraphStore;
+import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,11 +59,11 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {RevalidationServiceTest.TestApplication.class, RevalidationServiceImpl.class, RevalidatorChunksDaoImpl.class, FileStoreConfig.class, Neo4jGraphStore.class,
+@ContextConfiguration(classes = {RevalidationServiceTest.TestApplication.class, RevalidationServiceImpl.class, RevalidatorChunksDaoImpl.class, FileStoreConfig.class, DummyGraphStore.class,
   VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, ValidatorCacheDaoImpl.class, SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class,
   DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, HttpDocumentResolver.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
-@Import(EmbeddedNeo4JConfig.class)
+//@Import(EmbeddedNeo4JConfig.class)
 public class RevalidationServiceTest {
 
   @SpringBootApplication
@@ -91,12 +89,12 @@ public class RevalidationServiceTest {
   @Autowired
   private SchemaStore schemaStore;
 
-  @Autowired
-  private Neo4j embeddedDatabaseServer;
+  //@Autowired
+  //private Neo4j embeddedDatabaseServer;
 
   @AfterAll
   void closeNeo4j() {
-    embeddedDatabaseServer.close();
+    //embeddedDatabaseServer.close();
   }
 
   @AfterEach

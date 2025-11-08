@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.service.graphdb;
+package eu.xfsc.fc.graphdb.service;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -22,6 +22,7 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +32,14 @@ import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Transactional
+@Transactional // not sure it is correct annotation 
+@ConditionalOnProperty(value = "graphstore.impl", havingValue = "neo4j")
 public class Neo4jGraphStore implements GraphStore {
 
     private static final String queryInsert = "CALL n10s.rdf.import.inline($payload, \"N-Triples\");"; 
@@ -229,6 +232,5 @@ public class Neo4jGraphStore implements GraphStore {
         }
         return sdQuery.getQuery();
     }
-
 
 }

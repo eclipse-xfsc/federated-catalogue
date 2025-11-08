@@ -1,0 +1,51 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "type": "VerifiablePresentation",
+  "id": "presentationID5",
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "id": "http://example.edu/credentials/1877",
+      "type": "VerifiableCredential",
+      "issuer": "http://example.org/test-issuer2",
+      "issuanceDate": "2010-01-01T19:73:24Z",
+      "credentialSubject": {
+        "@context": {
+          "gax": "http://w3id.org/gaia-x/service#",
+          "vcard": "http://www.w3.org/2006/vcard/ns#"
+        },
+        "@id": "http://example.org/test-issuer2",
+        "@type": "gax:ServiceOffering",
+        "gax:hasLegallyBindingName": "My example provider5",
+        "gax:hasLegallyBindingAddress": {
+          "id": "_:b0",
+          "type": "vcard:Address2",
+          "vcard:street-address": "Example street 2",
+          "vcard:postal-code": "99999",
+          "vcard:country-name": "Country Name 2",
+          "vcard:locality": "City Name 2"
+        }
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2017-06-18T21:19:10Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:example",
+        "jws": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..TCYt5XsITJX1Cx,PCT8yAV-TVkIEq_PbChOMqsLfRoPsnsgw5WEuts01mq-pQy7UJiN5mgRxD-WUcX16dUEMGlv50aqzpqh4Qktb3rk-BuQy72IFLOqV0G_zS245-kronKb78cPN25DGlcTwLtjPAYuNzVBAh4vGHSrQyHUdBBPM"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2018-09-14T21:19:10Z",
+    "proofPurpose": "authentication",
+    "verificationMethod": "did:web:example",
+    "challenge": "1f44d55f-f161-4938-a659-f8026467f126",
+    "domain": "4jt78h47fh47",
+    "jws": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..kTCYt5XsITJX1CxPCT8yAV-TVIw5WEuts01mqpQy7UJiN5mgREEMGlv50aqzpqh4Qq_PbChOMqsLfRoPsnsgxD-WUcX16dUOqV0G_zS245-kronKb78cPktb3rk-BuQy72IFLN25DYuNzVBAh4vGHSrQyHUGlcTwLtjPAnKb78"
+  }
+}

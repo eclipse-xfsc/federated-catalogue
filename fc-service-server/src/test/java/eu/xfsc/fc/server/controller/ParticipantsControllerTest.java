@@ -94,11 +94,11 @@ import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.ParticipantMetaData;
 import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
 import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.service.graphdb.Neo4jGraphStore;
+import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
 import eu.xfsc.fc.core.service.verification.VerificationService;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -122,7 +122,7 @@ public class ParticipantsControllerTest {
   @Autowired
   private Neo4j embeddedDatabaseServer;
   @Autowired
-  private Neo4jGraphStore graphStore;
+  private GraphStore graphStore;
   @Autowired
   private VerificationService verificationService;
   @Autowired

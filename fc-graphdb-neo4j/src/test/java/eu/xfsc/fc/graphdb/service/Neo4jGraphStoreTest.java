@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.service.graphdb;
+package eu.xfsc.fc.graphdb.service;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -28,13 +28,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.service.graphdb.Neo4jGraphStore;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)

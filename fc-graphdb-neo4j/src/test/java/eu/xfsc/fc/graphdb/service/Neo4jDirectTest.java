@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.service.graphdb;
+package eu.xfsc.fc.graphdb.service;
 
 import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
 
@@ -20,7 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

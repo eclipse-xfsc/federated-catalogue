@@ -1,0 +1,270 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description1",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/legalPerson1.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": {
+        "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider1",
+        "@type": [
+          "https://w3id.org/gaia-x/gax-trust-framework#LegalPerson"
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#headquarterAddress": [
+          {
+            "@type": [
+              "http://www.w3.org/2006/vcard/ns#Address"
+            ],
+            "http://www.w3.org/2006/vcard/ns#country-name": [
+              {
+                "@value": "Russia"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#locality": [
+              {
+                "@value": "Saint-Petersburg"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#postal-code": [
+              {
+                "@value": "123456"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#street-address": [
+              {
+                "@value": "pr. Sizova 22, 28"
+              }
+            ]
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#legalAddress": [
+          {
+            "@type": [
+              "http://www.w3.org/2006/vcard/ns#Address"
+            ],
+            "http://www.w3.org/2006/vcard/ns#country-name": [
+              {
+                "@value": "Russia"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#locality": [
+              {
+                "@value": "Saint-Petersburg"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#postal-code": [
+              {
+                "@value": "123456"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#street-address": [
+              {
+                "@value": "pr. Sizova 22, 28"
+              }
+            ]
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#legalName": [
+          {
+            "@value": "T-Systems RUS"
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#registrationNumber": [
+          {
+            "@value": "TSI:12345"
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#subOrganisation": [
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider2"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider3"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider4"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider5"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider6"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider7"
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#termsAndConditions": [
+          {
+            "@type": [
+              "https://w3id.org/gaia-x/gax-trust-framework#TermsAndConditions"
+            ],
+            "https://w3id.org/gaia-x/gax-trust-framework#content": [
+              {
+                "@type": "http://www.w3.org/2001/XMLSchema#anyURI",
+                "@value": "http://example.org/some-content"
+              }
+            ],
+            "https://w3id.org/gaia-x/gax-trust-framework#hash": [
+              {
+                "@value": "content:1234"
+              }
+            ]
+          }
+        ]
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-12-06T17:46:10Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..cPO6U83lIZy6VP7WIX_Usz_KJkr7STt5iA1UH-hDmkA9MmfraRxRW1my51PT8VHDvNvcIVIMUGG0VTNBZhsfZ0gfFMO5D1C28FJkyE9rn7vwuSIJSFiiOziD68zILqqGiOqKSdA2tpWCKk6qJ6uJcLaUW9EE2FePhXT_m9mBIPCfaoJT1it7Szq8oqayqVS-3hE7UWdBecwt-n_c2xtaDkyqiGO5V-HEUP5I_QL6Wry6dnPPim0OoZOfQMMwBuTeTVwbLpnKK2M8euZX46JKRbdmjoJ90HATrBhrWB7EtvkIv4qWZ58dNeMKELQ72Dm8wD8bGK90ZaXaHEtoBOsz1VgDEQNHdVJ1vCM5DL496u5UtWjMSBBLsFAyJqFEoCbAPBvcleED6ntvPoD7tMs0FRlkPJd5ilxC3ymxplImeP2gcwdwEvU_gUMGNWNoNU_ruE5DwREIVgW8MnY5uc6hyV92a2HCc27L-ob2MPxIJ8N6ZD7kRR4Alb54BaMhxlyA5tyvUEcehIJmoAKli2EBARvGuTlNRHN2i5ERHcjB6fqFhUmbipdWuvvqeI1Sz0NtyDVt3X2EWDAk2OyU2Wo_LXRQz0fIT5QbcbKUd-tsl_L70Qnr2gbu5vwRlE-jsF68ytvrT8CBwdEyf2puPPi8z1eIKadmgwQwgs3pIJoxepI"
+      }
+    },
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/legalPerson2.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": {
+        "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider1",
+        "@type": [
+          "https://w3id.org/gaia-x/gax-trust-framework#LegalPerson"
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#headquarterAddress": [
+          {
+            "@type": [
+              "http://www.w3.org/2006/vcard/ns#Address"
+            ],
+            "http://www.w3.org/2006/vcard/ns#country-name": [
+              {
+                "@value": "Greece"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#locality": [
+              {
+                "@value": "Thessaloniki"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#postal-code": [
+              {
+                "@value": "a7890"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#street-address": [
+              {
+                "@value": "Ministiry"
+              }
+            ]
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#legalAddress": [
+          {
+            "@type": [
+              "http://www.w3.org/2006/vcard/ns#Address"
+            ],
+            "http://www.w3.org/2006/vcard/ns#country-name": [
+              {
+                "@value": "Greece"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#locality": [
+              {
+                "@value": "Thessaloniki"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#postal-code": [
+              {
+                "@value": "a7890"
+              }
+            ],
+            "http://www.w3.org/2006/vcard/ns#street-address": [
+              {
+                "@value": "Ministiry"
+              }
+            ]
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#legalName": [
+          {
+            "@value": "DTIT Greece"
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#registrationNumber": [
+          {
+            "@value": "DTIT_1234"
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#subOrganisation": [
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider2"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider3"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider4"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider5"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider6"
+          },
+          {
+            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider7"
+          }
+        ],
+        "https://w3id.org/gaia-x/gax-trust-framework#termsAndConditions": [
+          {
+            "@type": [
+              "https://w3id.org/gaia-x/gax-trust-framework#TermsAndConditions"
+            ],
+            "https://w3id.org/gaia-x/gax-trust-framework#content": [
+              {
+                "@type": "http://www.w3.org/2001/XMLSchema#anyURI",
+                "@value": "http://example.org/other-content"
+              }
+            ],
+            "https://w3id.org/gaia-x/gax-trust-framework#hash": [
+              {
+                "@value": "content:7890"
+              }
+            ]
+          }
+        ]
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-12-06T17:46:11Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..cakxBrvR539Xd274MMtcQ-NIl1wBwyEtqseAW8UpMkP_lqDL2nxXdMR25e95exGMb6BFnhNSEmxiVU3cc0-cyliuJthzOG38IAXUpszKnwylRd2UfbJrlEl4uTGvA5SxB6N1ofutCKAEzneSUsRoAW_kugBUbIXe4U5fqFehNIkfrRlBl399z0GLttlS1RUwR0CORSN-v6BLydJExkOy4DmLncG2e0Zltq_PJYXt2uKi4s4kCSVepWGG0obhd7NE9cgq4705KW7JKoFKUhxiw15tdpoJoLbDr-zO00VnEOrdA7chFaUMAVDAGIj6DfNfPoZR4dPqlYeQcsmiylk-4bS2yQtIr-Koy4Rp8EpJwbJNms_AT160uITJfWtfkOqhvK5kHyRmQ5AJ_I0YngHpe3liXmx9mmLX6Q9nq1rh5YVSFCpsC7V3Mn_HJe5ivpR-gJ73KmIOlUGflbFw4P8RP2FIcKj5kTmBpXPRqmDwqM7Ccbx_Z8KmtYy6Zsbi4kEFK5FqceDzu6kZt49nYCVHlkbqz1VkU2hfjBraruAk1KxMxyyRD9EM8QqEoksT4IKYFIeP7P-ivjei-O6OmwtgzkdbeSNGh1mk6ZxnXPFfsQGUrW1rLH-ir5KVl0hoHzcQrjjW-9N-2K4B5Csyt1huvz5_D0LY2W2eoO0T2_jylA8"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-12-06T17:46:11Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..aiKoTcAqMy9iluel2OiKyxaIkp1rtpVZNJHez0VyoiC_nOwY52RHlZUpT5KqSsMVhHkyCzLSybfHbZ2YF9vfWLUDeWIttbPeucCjlLrRJnrGQp5bf_WMp3e8Leklh5v6x9Ta-my1tfK2GHJMewo9XEeya27L3Yck66LHk-_XwyIq-eY2R82dA1Td2cuZLoS_VKhh5EtZodGh7K8i09IqZPpSIteNKJKhkZuev2a4Vi9AT_FYoOJ2ODASohAismWmhv0tC63f-YcQz3BLWH3yJgAKmI3hJJm_MOq2qoBYBSHJgAj21haAbHLyFTa8Dslc2VwOR9EFOKeKu3b7VCnruaDPQGUGLDKc2us7fLhiP9U-vDuByPSQtOaY7kaeEQ6Ib12YREk2-YvmcIjDDkdiY9RO9ZRsS6OF_flB7uFN-ySuxh5wVDrVcgeU8A9IgEupVtljhUfZxt7kgEyOjwfA2H-vxDZmoDVXotMEGqJkgIbmCPi2e4m1gnfJgNc3SMiH6MOw5ZGfQgwIbfD2hoOfvHzx3TCtX-hetRL0qQLA9fDFQbrY8sAc0F7FEry3eFx7EF4ZzmtBrA6P-DsAC26Wi8Kml0kexDMtfoAR0DOr5USVSgYcQWMUl5_KLu1APO2ehBVyPR3TjrLqcFztwOvM6iOty3rRX_EjzWoyCZ7YS0M"
+  }
+}

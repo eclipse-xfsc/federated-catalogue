@@ -1,0 +1,120 @@
+{
+  "@graph": [
+    {
+      "@id": "_:b0",
+      "http://www.w3.org/ns/shacl#minCount": 1,
+      "http://www.w3.org/ns/shacl#name": "maintained by",
+      "http://www.w3.org/ns/shacl#nodeKind": {
+        "@id": "http://www.w3.org/ns/shacl#IRI"
+      },
+      "http://www.w3.org/ns/shacl#order": 1,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://w3id.org/gaia-x/resource#maintainedBy"
+      }
+    },
+    {
+      "@id": "_:b1",
+      "http://www.w3.org/ns/shacl#minCount": 0,
+      "http://www.w3.org/ns/shacl#name": "owned by",
+      "http://www.w3.org/ns/shacl#nodeKind": {
+        "@id": "http://www.w3.org/ns/shacl#IRI"
+      },
+      "http://www.w3.org/ns/shacl#order": 2,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://w3id.org/gaia-x/resource#ownedBy"
+      }
+    },
+    {
+      "@id": "_:b2",
+      "http://www.w3.org/ns/shacl#minCount": 0,
+      "http://www.w3.org/ns/shacl#name": "manufactured by",
+      "http://www.w3.org/ns/shacl#nodeKind": {
+        "@id": "http://www.w3.org/ns/shacl#IRI"
+      },
+      "http://www.w3.org/ns/shacl#order": 3,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://w3id.org/gaia-x/resource#manufacturedBy"
+      }
+    },
+    {
+      "@id": "_:b3",
+      "http://www.w3.org/ns/shacl#datatype": {
+        "@id": "http://www.w3.org/2001/XMLSchema#string"
+      },
+      "http://www.w3.org/ns/shacl#minCount": 1,
+      "http://www.w3.org/ns/shacl#name": "location address",
+      "http://www.w3.org/ns/shacl#order": 4,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://w3id.org/gaia-x/resource#locationAddress"
+      }
+    },
+    {
+      "@id": "_:b4",
+      "http://www.w3.org/ns/shacl#minCount": 0,
+      "http://www.w3.org/ns/shacl#name": "aggregation of",
+      "http://www.w3.org/ns/shacl#nodeKind": {
+        "@id": "http://www.w3.org/ns/shacl#IRI"
+      },
+      "http://www.w3.org/ns/shacl#order": 1,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://w3id.org/gaia-x/resource#aggregationOf"
+      }
+    },
+    {
+      "@id": "_:b5",
+      "http://www.w3.org/ns/shacl#datatype": {
+        "@id": "http://www.w3.org/2001/XMLSchema#string"
+      },
+      "http://www.w3.org/ns/shacl#maxCount": 1,
+      "http://www.w3.org/ns/shacl#minCount": 0,
+      "http://www.w3.org/ns/shacl#name": "name",
+      "http://www.w3.org/ns/shacl#order": 2,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://w3id.org/gaia-x/resource#name"
+      }
+    },
+    {
+      "@id": "_:b6",
+      "http://www.w3.org/ns/shacl#datatype": {
+        "@id": "http://www.w3.org/2001/XMLSchema#string"
+      },
+      "http://www.w3.org/ns/shacl#maxCount": 1,
+      "http://www.w3.org/ns/shacl#minCount": 0,
+      "http://www.w3.org/ns/shacl#name": "description",
+      "http://www.w3.org/ns/shacl#order": 3,
+      "http://www.w3.org/ns/shacl#path": {
+        "@id": "http://purl.org/dc/terms/description"
+      }
+    },
+    {
+      "@id": "http://w3id.org/gaia-x/validation#PhysicalResourceShape",
+      "@type": "http://www.w3.org/ns/shacl#NodeShape",
+      "http://www.w3.org/ns/shacl#property": [
+        {
+          "@id": "_:b0"
+        },
+        {
+          "@id": "_:b1"
+        },
+        {
+          "@id": "_:b2"
+        },
+        {
+          "@id": "_:b3"
+        },
+        {
+          "@id": "_:b4"
+        },
+        {
+          "@id": "_:b5"
+        },
+        {
+          "@id": "_:b6"
+        }
+      ],
+      "http://www.w3.org/ns/shacl#targetClass": {
+        "@id": "http://w3id.org/gaia-x/resource#PhysicalResource"
+      }
+    }
+  ]
+}

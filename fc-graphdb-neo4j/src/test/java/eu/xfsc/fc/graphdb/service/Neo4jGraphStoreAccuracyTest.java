@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.service.graphdb;
+package eu.xfsc.fc.graphdb.service;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,7 +30,6 @@ import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
-import eu.xfsc.fc.core.config.GraphDbConfig;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
 import eu.xfsc.fc.core.dao.impl.SelfDescriptionDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
@@ -43,7 +42,8 @@ import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.graphdb.config.GraphDbConfig;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 
