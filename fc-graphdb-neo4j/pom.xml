@@ -61,24 +61,12 @@
             <groupId>org.neo4j.gds</groupId>
             <artifactId>proc</artifactId>
             <version>${neo4j.gds.version}</version>
-            <!--exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.collections</groupId>
-                    <artifactId>eclipse-collections-api</artifactId>            
-				</exclusion>
-   		    </exclusions-->
         </dependency>
         <dependency>
             <groupId>org.neo4j.gds</groupId>
             <artifactId>open-model-catalog</artifactId>
             <version>${neo4j.gds.version}</version>
             <!--scope>test</scope-->
-            <!--exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.collections</groupId>
-                    <artifactId>eclipse-collections-api</artifactId>            
-				</exclusion>
-   		    </exclusions-->
         </dependency>
         <dependency>
             <groupId>org.neo4j.procedure</groupId>

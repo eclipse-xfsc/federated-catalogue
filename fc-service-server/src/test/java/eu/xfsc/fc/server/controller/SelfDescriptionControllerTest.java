@@ -54,11 +54,11 @@ import org.neo4j.harness.Neo4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -89,7 +89,7 @@ public class SelfDescriptionControllerTest {
     @Autowired
     private SelfDescriptionStore sdStorePublisher;
     // can't remove it for some reason, many tests fails with auth error
-    @SpyBean(name = "schemaFileStore") // "sdFileStore")
+    @MockitoSpyBean(name = "schemaFileStore") // "sdFileStore")
     private FileStore fileStore;
 
     @Autowired
