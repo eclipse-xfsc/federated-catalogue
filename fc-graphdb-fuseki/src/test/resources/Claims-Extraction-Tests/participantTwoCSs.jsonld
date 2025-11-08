@@ -1,0 +1,100 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/self-description1",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://www.example.org/legalPerson1.json",
+      "@type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "http://gaiax.de",
+      "issuanceDate": "2022-10-19T18:48:09Z",
+      "credentialSubject": [
+        {
+          "@id": "http://w3id.org/gaia-x/participant#Provider1",
+          "@type": [
+            "http://w3id.org/gaia-x/participant#LegalPerson"
+          ],
+          "http://w3id.org/gaia-x/participant#headquarterAddress": [
+            {
+              "@type": [
+                "http://www.w3.org/2006/vcard/ns#Address"
+              ],
+              "http://www.w3.org/2006/vcard/ns#country-name": [
+                {
+                  "@value": "Country"
+                }
+              ],
+              "http://www.w3.org/2006/vcard/ns#locality": [
+                {
+                  "@value": "Town Name"
+                }
+              ],
+              "http://www.w3.org/2006/vcard/ns#postal-code": [
+                {
+                  "@value": "1234"
+                }
+              ],
+              "http://www.w3.org/2006/vcard/ns#street-address": [
+                {
+                  "@value": "Street Name"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "http://w3id.org/gaia-x/participant#legalAddress": [
+            {
+              "@type": [
+                "http://www.w3.org/2006/vcard/ns#Address"
+              ],
+              "http://www.w3.org/2006/vcard/ns#country-name": [
+                {
+                  "@value": "Country"
+                }
+              ],
+              "http://www.w3.org/2006/vcard/ns#locality": [
+                {
+                  "@value": "Town Name"
+                }
+              ],
+              "http://www.w3.org/2006/vcard/ns#postal-code": [
+                {
+                  "@value": "1234"
+                }
+              ],
+              "http://www.w3.org/2006/vcard/ns#street-address": [
+                {
+                  "@value": "Street Name"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-10-28T11:14:04Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..ZA52O6p57X_XmaIguMD8QZ6bDn3ng6NYXvHUzRewEKrm4g_CI1f4WQNxLUDoLidJlKuweIgZorpjnfMiNHDS6U735bUZ6urhXNx_DJNBQaIZZpb240zAyuGuK5l4PrOkwN8bhaf97HFpdMGIbC2Cr22c7OyisbpTcmu9vXH9yRe2NHP6wqCr6rzkqmXJSqWMh6hkXVdwDA2wPGxCm6QVtTLD_p93qe84gQPnTy6y73bRXRobi1J6itc4K5mBqv5720oKmR9TSPiE2HAiVbGXgz93-WkGrcTGOsgqvzgjeCoPwjJCspKEBUUD846wR2en9rTr9doYyyholyl0d45IdRZAuiQjqlgacx-9t9QxAHbfhJnCJ0CAcBeUFIWq4--OWiCh8TtqRAP94cGxbH2lAYgGjwdzmKSKx8wMSug6dFCTMPrDVi1RYipNs0-Q1BPn6AJtpypr2PmsenMrxwGG-aTZwSQ1FMX_INY96XzHvLS-yiGkYQ-hq5HYKjJobbOq8_1G6mqYzjSpb7Hb_t3nf552vpMwvsgxdPPL3NOvAOAMulnGaVqrUefarc3D4KFPyaJTL2qZim7Sc8kz2h-IsNLEQ-v8pVn9d9i1FGbK2kNY4KbUhpofW6HynsO4G0bG8xhYOMs36k87dEl9c6qYEhBmmO8teKJAFENv3l37Nro"
+      }
+    }
+  ],
+  "proof": {
+    "type": "JsonWebSignature2020",
+    "created": "2022-10-28T11:14:04Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
+    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..pzZp62XmtreoQ913D-_A7YSsGZ3aVjwjP6oduEmm4Cpyqrgsrq7B6U1tEXeL18pIZ9HlUbFx1yvhFHGynNiTUltsD01Uu95I5_ozrdvED8M6jTBJidZJLYyc0MdS5u0URTHJM1BQTmjc4LGW_FFKKxgLrPe-KZ0Bd9agjUopb74yzYT9uUpaOvuqy7rlrCemKVah1N3Yq-bP_49RxmgLzSbJrBvEWdJSHPtpBrfKp5VO3iZ_t19awfOAi7l_8M7pEqfCjVMzJo1lV3SdLdfLqHsJyV4026OjIJQ6xP_rGDVwoCJ2pj3R-adhCdsY9kw6pJUyARVIdSBGXE59QfPDXIAJKj2ooytcXMOM6dZ7CqI8gUE5nOaevPXuqcLdJH4tFbgPN5xeCGfRFZjuJVuSu5DyFM75wQnnT89D8lKGfByofVI7A8DAGEYg-ajpuvZJ_qk_5VHPg66LOSB3830ugpstIxdIGf-J5VHB_S0xaDnR0XkXs1EeaQQGwyGWPV1_fhVj-09F2aOlAkjQdQLsYtqUHGBQW99HN3JmPcxTVESZ_ElsfCpvc7635E6qNwekFLSKbOIT9mxS_cNdhj4eLK1XaCrPCLORjOKXU8JX1Cu3TtGCcIAANrcp60remGJNIXCC1jY-XEuveWK4qZNHIfE09awEGXisz3-qpK5zA1k"
+  }
+}

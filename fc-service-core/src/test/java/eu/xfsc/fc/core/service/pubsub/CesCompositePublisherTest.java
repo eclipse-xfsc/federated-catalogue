@@ -18,7 +18,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.neo4j.harness.Neo4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -48,14 +47,14 @@ import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
 import eu.xfsc.fc.core.pojo.VerificationResult;
 import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.service.graphdb.Neo4jGraphStore;
+import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
+import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
 import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
-import eu.xfsc.fc.testsupport.config.EmbeddedNeo4JConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import okhttp3.mockwebserver.MockResponse;
@@ -66,9 +65,9 @@ import okhttp3.mockwebserver.MockWebServer;
 @SpringBootTest(properties = { "publisher.impl=ces", "publisher.url=http://localhost:9091", "publisher.comp-url=http://localhost:9090" })
 @ActiveProfiles({"test"}) 
 @ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, SelfDescriptionStoreConfig.class, SelfDescriptionDaoImpl.class,
-		Neo4jGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class, 
+		DummyGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class, 
 		DocumentLoaderConfig.class,	DocumentLoaderProperties.class, ValidatorCacheDaoImpl.class, CesTrackerDaoImpl.class})
-@Import(EmbeddedNeo4JConfig.class)
+//@Import(EmbeddedNeo4JConfig.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class CesCompositePublisherTest {
 
@@ -82,10 +81,10 @@ public class CesCompositePublisherTest {
 	
 	@Autowired
 	private SDPublisher cesPublisher;
+	//@Autowired
+	//private Neo4j embeddedDatabaseServer;
 	@Autowired
-	private Neo4j embeddedDatabaseServer;
-	@Autowired
-	private Neo4jGraphStore graphStore;
+	private GraphStore graphStore;
 	@Autowired
 	private SelfDescriptionStore sdStorePublisher;
 	@Autowired
@@ -110,7 +109,7 @@ public class CesCompositePublisherTest {
     void cleanUpStores() throws Exception {
         mockCompService.shutdown();
         mockCesService.shutdown();
-        embeddedDatabaseServer.close();
+        //embeddedDatabaseServer.close();
     }
 	
 	@AfterEach

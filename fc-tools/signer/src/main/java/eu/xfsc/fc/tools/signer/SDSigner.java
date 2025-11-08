@@ -1,6 +1,13 @@
 package eu.xfsc.fc.tools.signer;
 
 import com.apicatalog.jsonld.JsonLdError;
+import com.danubetech.dataintegrity.DataIntegrityProof;
+import com.danubetech.dataintegrity.jsonld.DataIntegrityKeywords;
+import com.danubetech.dataintegrity.signer.JsonWebSignature2020LdSigner;
+import com.danubetech.dataintegrity.signer.LdSigner;
+import com.danubetech.dataintegrity.suites.JsonWebSignature2020DataIntegritySuite;
+import com.danubetech.dataintegrity.verifier.JsonWebSignature2020LdVerifier;
+import com.danubetech.dataintegrity.verifier.LdVerifier;
 import com.danubetech.keyformats.crypto.PrivateKeySigner;
 import com.danubetech.keyformats.crypto.PrivateKeySignerFactory;
 import com.danubetech.keyformats.crypto.PublicKeyVerifier;
@@ -13,13 +20,7 @@ import com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords;
 
 import foundation.identity.jsonld.JsonLDException;
 import foundation.identity.jsonld.JsonLDObject;
-import info.weboftrust.ldsignatures.LdProof;
-import info.weboftrust.ldsignatures.jsonld.LDSecurityKeywords;
-import info.weboftrust.ldsignatures.signer.JsonWebSignature2020LdSigner;
-import info.weboftrust.ldsignatures.signer.LdSigner;
-import info.weboftrust.ldsignatures.suites.JsonWebSignature2020SignatureSuite;
-import info.weboftrust.ldsignatures.verifier.JsonWebSignature2020LdVerifier;
-import info.weboftrust.ldsignatures.verifier.LdVerifier;
+
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -95,7 +96,7 @@ public class SDSigner {
     	JsonLDObject ld = JsonLDObject.fromJson(json);
     	List<VerifiableCredential> vcs = new ArrayList<>();;
     	VerifiablePresentation vp = null;
-        System.out.println("SD types: " + ld.getTypes()); 
+        System.out.println("SD types: " + ld.getTypes());
     	
     	if (ld.isType(VerifiableCredentialKeywords.JSONLD_TERM_VERIFIABLE_PRESENTATION)) {
             vp = VerifiablePresentation.fromJsonLDObject(ld);
@@ -120,7 +121,7 @@ public class SDSigner {
         
     	for (VerifiableCredential vc: vcs) {
     		System.out.println("Signing VC");
-    		LdProof vc_proof = sign(vc);
+    		DataIntegrityProof vc_proof = sign(vc);
     		System.out.println("VC Signed");
     		if (check) {
     			check(vc, vc_proof);
@@ -130,7 +131,7 @@ public class SDSigner {
 
         if (vp != null) {
 	        System.out.println("Signing VP");
-	        LdProof vp_proof = sign(vp);
+	        DataIntegrityProof vp_proof = sign(vp);
 	        System.out.println("VP Signed");
 	        if (check) {
 	            check(vp, vp_proof);
@@ -152,7 +153,7 @@ public class SDSigner {
         Files.writeString(Path.of(PATH_TO_SIGNED_SELF_DESCRIPTION), ld.toJson(true));
     }
 
-    public static LdProof sign(JsonLDObject credential) throws IOException, GeneralSecurityException, JsonLDException, URISyntaxException, JsonLdError {
+    public static DataIntegrityProof sign(JsonLDObject credential) throws IOException, GeneralSecurityException, JsonLDException, URISyntaxException, JsonLdError {
     	String ext = PATH_TO_PRIVATE_KEY.substring(PATH_TO_PRIVATE_KEY.lastIndexOf(".") + 1);
     	FileReader reader = new FileReader(PATH_TO_PRIVATE_KEY);
         PrivateKeySigner<?> privateKeySigner;
@@ -180,17 +181,17 @@ public class SDSigner {
 		//ConfigurableDocumentLoader loader = (ConfigurableDocumentLoader) VerifiableCredentialContexts.DOCUMENT_LOADER;
 		//loader.getLocalCache().put(new URI("https://schema.org"), JsonDocument.of(new StringReader("{\"@context\": {}}")));
         
-        LdSigner<JsonWebSignature2020SignatureSuite> signer = new JsonWebSignature2020LdSigner(privateKeySigner);
+        LdSigner<JsonWebSignature2020DataIntegritySuite> signer = new JsonWebSignature2020LdSigner(privateKeySigner);
 
         signer.setCreated(new Date());
-        signer.setProofPurpose(LDSecurityKeywords.JSONLD_TERM_ASSERTIONMETHOD);
+        signer.setProofPurpose(DataIntegrityKeywords.JSONLD_TERM_ASSERTIONMETHOD);
         signer.setVerificationMethod(URI.create(VMETHOD));
 
-        LdProof ldProof = signer.sign(credential); 
+        DataIntegrityProof ldProof = signer.sign(credential); 
         return ldProof;
     }
 
-    public static void check(JsonLDObject credential, LdProof proof) throws IOException, GeneralSecurityException, JsonLDException {
+    public static void check(JsonLDObject credential, DataIntegrityProof proof) throws IOException, GeneralSecurityException, JsonLDException {
         //---extract Expiration Date--- https://stackoverflow.com/a/11621488
         String certString = readFile(PATH_TO_PUBLIC_KEY);
         ByteArrayInputStream certStream  =  new ByteArrayInputStream(certString.getBytes(StandardCharsets.UTF_8));
@@ -200,7 +201,7 @@ public class SDSigner {
         for(X509Certificate cert : certs) {
             PublicKey puk = cert.getPublicKey();
             PublicKeyVerifier<?> pkVerifier = new RSA_PS256_PublicKeyVerifier((RSAPublicKey) puk);
-            LdVerifier<JsonWebSignature2020SignatureSuite> verifier = new JsonWebSignature2020LdVerifier(pkVerifier);
+            LdVerifier<JsonWebSignature2020DataIntegritySuite> verifier = new JsonWebSignature2020LdVerifier(pkVerifier);
             boolean verified = verifier.verify(credential, proof);
             System.out.println("issuer: " + cert.getIssuerX500Principal() + "; verified: " + verified);
         }

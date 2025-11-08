@@ -31,9 +31,9 @@ import com.apicatalog.rdf.RdfTriple;
 import com.apicatalog.rdf.RdfValue;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
 import com.danubetech.verifiablecredentials.validation.Validation;
-import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
+//import com.github.jsonldjava.core.JsonLdOptions;
+//import com.github.jsonldjava.core.JsonLdProcessor;
+//import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SdClaim;
@@ -69,38 +69,38 @@ public class VerificationDirectTest {
 		assertEquals("https://integration.gxfs.dev/api/dynamic/did/cloudService1/did.json#key-1", durl.toString());
 	}
     
-    @Test
-    void parseJSONLDDirectly() throws Exception {
-        //String path = "Claims-Extraction-Tests/participantTest.jsonld";
-        String path = "Claims-Extraction-Tests/neo4jTest.jsonld";
-        //String path = "Claims-Extraction-Tests/providerTest.jsonld";
-        ContentAccessor content = getAccessor(VerificationDirectTest.class, path);
+    //@Test
+    //void parseJSONLDDirectly() throws Exception {
+    //    //String path = "Claims-Extraction-Tests/participantTest.jsonld";
+    //    String path = "Claims-Extraction-Tests/neo4jTest.jsonld";
+    //    //String path = "Claims-Extraction-Tests/providerTest.jsonld";
+    //    ContentAccessor content = getAccessor(VerificationDirectTest.class, path);
 
-        // Read the file into an Object (The type of this object will be a List, Map, String, Boolean,
-        // Number or null depending on the root object in the file).
-        Object jsonObject = JsonUtils.fromInputStream(content.getContentAsStream());
-        // Create a context JSON map containing prefixes and definitions
-        //Map context = new HashMap();
-        // Customise context...
-        // Create an instance of JsonLdOptions with the standard JSON-LD options
-        JsonLdOptions options = new JsonLdOptions();
-        options.setProcessingMode(JsonLdOptions.JSON_LD_1_1);
-        // Customise options...
-        // Call whichever JSONLD function you want! (e.g. compact)
-        //Object compact = JsonLdProcessor.compact(jsonObject, context, options);
-        Object rdf = JsonLdProcessor.toRDF(jsonObject);
-        // Print out the result (or don't, it's your call!)
-        log.debug("RDF: {}; {}", rdf, JsonUtils.toPrettyString(rdf));
-    }
+    //    // Read the file into an Object (The type of this object will be a List, Map, String, Boolean,
+    //    // Number or null depending on the root object in the file).
+    //    Object jsonObject = JsonUtils.fromInputStream(content.getContentAsStream());
+    //    // Create a context JSON map containing prefixes and definitions
+    //    //Map context = new HashMap();
+    //    // Customise context...
+    //    // Create an instance of JsonLdOptions with the standard JSON-LD options
+    //    JsonLdOptions options = new JsonLdOptions();
+    //    options.setProcessingMode(JsonLdOptions.JSON_LD_1_1);
+    //    // Customise options...
+    //    // Call whichever JSONLD function you want! (e.g. compact)
+    //    //Object compact = JsonLdProcessor.compact(jsonObject, context, options);
+    //    Object rdf = JsonLdProcessor.toRDF(jsonObject);
+    //    // Print out the result (or don't, it's your call!)
+    //    log.debug("RDF: {}; {}", rdf, JsonUtils.toPrettyString(rdf));
+    //}
     
     //@Test
-    void parseJSONLDDirectly3() throws Exception {
-        String path = "Claims-Extraction-Tests/providerTest.jsonld";
-        ContentAccessor content = getAccessor(VerificationDirectTest.class, path);
-        Object jsonObject = JsonUtils.fromInputStream(content.getContentAsStream());
-        Object rdf = JsonLdProcessor.toRDF(jsonObject, new LoggingTripleCallback());
-        log.debug("RDF: {}; {}", rdf, JsonUtils.toPrettyString(rdf));
-    }
+    //void parseJSONLDDirectly3() throws Exception {
+    //    String path = "Claims-Extraction-Tests/providerTest.jsonld";
+    //    ContentAccessor content = getAccessor(VerificationDirectTest.class, path);
+    //    Object jsonObject = JsonUtils.fromInputStream(content.getContentAsStream());
+    //    Object rdf = JsonLdProcessor.toRDF(jsonObject, new LoggingTripleCallback());
+    //    log.debug("RDF: {}; {}", rdf, JsonUtils.toPrettyString(rdf));
+    //}
     
     @Test
     void extractClaimsDirectly() throws Exception {

@@ -1,0 +1,1686 @@
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1> .
+@prefix gax-core: <http://w3id.org/gaia-x/core#> .
+@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
+@prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
+@prefix gax-service: <http://w3id.org/gaia-x/service#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+@prefix voaf: <http://purl.org/vocommons/voaf#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+gax-core: a voaf:Vocabulary,
+        owl:Ontology ;
+    rdfs:label "Gaia-X Core Ontology"@en ;
+    cc:license <http://www.apache.org/licenses/LICENSE-2.0> ;
+    dct:abstract """The Gaia-X core ontology contains the components needed to model an efficient, competitive, secure and trustworthy federation of data infrastructure and service providers.
+
+The different ontology modules can be found here: 
+
+Core: <a href="https://www.w3id.org/gaia-x/core">https://www.w3id.org/gaia-x/core</a> 
+
+Resource: <a href="https://www.w3id.org/gaia-x/resource">https://www.w3id.org/gaia-x/resource</a> 
+
+Participant: <a href="https://www.w3id.org/gaia-x/participant">https://www.w3id.org/gaia-x/participant</a> 
+
+Service Offering: <a href="https://www.w3id.org/gaia-x/service">https://www.w3id.org/gaia-x/service</a> 
+
+All underlying information for this documentation page can be found on the landing page of the Gaia-X Service Characteristics repository: <a href="https://gaia-x.gitlab.io/technical-committee/service-characteristics">https://gaia-x.gitlab.io/technical-committee/service-characteristics</a>.
+
+Additional information on the constraints that have to be fulfilled be the self descriptions can be found here: <a href="https://gaia-x.gitlab.io/technical-committee/service-characteristics/yaml2shacl">https://gaia-x.gitlab.io/technical-committee/service-characteristics/yaml2shacl</a>.""" ;
+    dct:contributor "Akyürek, Haydar",
+        "Bader, Sebastian",
+        "Baum, Hannes",
+        "Blanch, Josep",
+        "Frömberg, Jan",
+        "Gronlier, Pierre",
+        "Hermsen, Felix",
+        "Lange, Christoph",
+        "Langkau, Jörg",
+        "Leberecht, Markus",
+        "Meinke, Kai",
+        "Moosmann, Paul",
+        "Niessen, Thomas",
+        "Ogel, Frederic",
+        "Ottradovetz, Klaus",
+        "Qin, Chang",
+        "Rubina, Alina",
+        "Staginus, Judith",
+        "Strunk, Anja",
+        "Theissen-Lipp, Johannes" ;
+    dct:created "2021-10-18T12:00:00+01:00"^^xsd:dateTimeStamp ;
+    dct:creator "Working Group Service Characteristics" ;
+    dct:modified "2022-09-01T13:36:59+02:00"^^xsd:dateTimeStamp ;
+    dct:title "Gaia-X Core Ontology"@en ;
+    vann:preferredNamespacePrefix "gax-core" ;
+    vann:preferredNamespaceUri "http://w3id.org/gaia-x/core#" ;
+    void:vocabulary dct:,
+        vann:,
+        voaf:,
+        void: ;
+    owl:versionInfo "22.04" .
+
+
+gax-participant:alreadyAudited a owl:DatatypeProperty ;
+    rdfs:label "already audited"@en ;
+    rdfs:comment "Was the organisation already audited?" ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:auditableAfterUserRequest a owl:DatatypeProperty ;
+    rdfs:label "auditable after user request"@en ;
+    rdfs:comment "Is it possible for the user to request an audit?" ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:boolean .
+
+gax-participant:auditableRelatedToDataProtection a owl:DatatypeProperty ;
+    rdfs:label "auditable related to data protection"@en ;
+    rdfs:comment "Experience / knowledge of the organisation in the cloud service business." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:category a owl:DatatypeProperty ;
+    rdfs:label "category"@en ;
+    rdfs:comment "Specific category of the organisation." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:enum .
+
+gax-participant:countPublicCloudServices a owl:DatatypeProperty ;
+    rdfs:label "count public cloud services"@en ;
+    rdfs:comment "Publicly offered cloud services." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:dataProtectionContact a owl:ObjectProperty ;
+    rdfs:label "data protection contact"@en ;
+    rdfs:comment "A contact within an organisation to contact for data protection purposes." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range vcard:Agent .
+
+gax-participant:employeeCount a owl:DatatypeProperty ;
+    rdfs:label "employee count"@en ;
+    rdfs:comment "Employee count of the organisation." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:employeeCountForCloudServices a owl:DatatypeProperty ;
+    rdfs:label "employee count for cloud services"@en ;
+    rdfs:comment "Employee count of the organisation in the cloud service area." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:experienceCloudServices a owl:DatatypeProperty ;
+    rdfs:label "experience cloud services"@en ;
+    rdfs:comment "Experience / knowledge of the organisation in the cloud service business." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:headquarterAddress a owl:ObjectProperty ;
+    rdfs:label "headquarter address"@en ;
+    rdfs:comment "The full legal address of the organization." ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range vcard:Address .
+
+gax-participant:legalAddress a owl:ObjectProperty ;
+    rdfs:label "legal address"@en ;
+    rdfs:comment "The full legal address of the organization." ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range vcard:Address .
+
+gax-participant:leiCode a owl:DatatypeProperty ;
+    rdfs:label "lei code"@en ;
+    rdfs:comment "Unique LEI number as defined by https://www.gleif.org." ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range xsd:string .
+
+gax-participant:mainAddress a owl:ObjectProperty ;
+    rdfs:label "main address"@en ;
+    rdfs:comment "Address of the head office" ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range vcard:Address .
+
+gax-participant:mainContact a owl:ObjectProperty ;
+    rdfs:label "main contact"@en ;
+    rdfs:comment "Main contact of the organisation" ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range vcard:Agent .
+
+gax-participant:parentOrganisation a owl:ObjectProperty ;
+    rdfs:label "parent organisation"@en ;
+    rdfs:comment "A list of direct participant that this entity is a subOrganization of, if any." ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range gax-participant:Participant .
+
+gax-participant:registrationDate a owl:DatatypeProperty ;
+    rdfs:label "registration date"@en ;
+    rdfs:comment "Date of the legal registration." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:dateTimeStamp .
+
+gax-participant:registrationNumber a owl:DatatypeProperty ;
+    rdfs:label "registration number"@en ;
+    rdfs:comment "Country’s registration number which identifies one specific entity. Valid formats are local, EUID, EORI, vatID, leiCode." ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range xsd:string .
+
+gax-participant:salesVolume a owl:DatatypeProperty ;
+    rdfs:label "sales volume"@en ;
+    rdfs:comment "Sales volume of the organisation." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:string .
+
+gax-participant:sme a owl:DatatypeProperty ;
+    rdfs:label "sme"@en ;
+    rdfs:comment "Is the company a \"small or medium sized company\"." ;
+    rdfs:domain gax-participant:TrustedCloudProvider ;
+    rdfs:range xsd:boolean .
+
+gax-participant:subOrganisation a owl:ObjectProperty ;
+    rdfs:label "sub organisation"@en ;
+    rdfs:comment "A list of direct participant with an legal mandate on this entity, e.g., as a subsidiary." ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range gax-participant:Participant .
+
+gax-participant:termsAndConditions a owl:DatatypeProperty ;
+    rdfs:label "terms and conditions"@en ;
+    rdfs:comment "SHA512 of the Generic Terms and Conditions for Gaia-X Ecosystem as defined below" ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range gax-core:TermsAndConditions .
+
+gax-resource:PhysicalNode a owl:Class ;
+    rdfs:label "Physical Node"@en ;
+    rdfs:subClassOf gax-resource:Node,
+        gax-resource:PhyscialResource .
+
+gax-resource:aggregationOf a owl:ObjectProperty ;
+    rdfs:label "aggregation of"@en ;
+    rdfs:comment "Id of Resources (self-description) related to the resource and that can exist independently of it." ;
+    rdfs:domain gax-resource:Resource ;
+    rdfs:range gax-resource:Resource .
+
+gax-resource:architecture a owl:DatatypeProperty ;
+    rdfs:label "architecture"@en ;
+    rdfs:comment "CPU Architecture required to instantiate this image." ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range xsd:string .
+
+gax-resource:availability a owl:ObjectProperty ;
+    rdfs:label "availability"@en ;
+    rdfs:comment "Contractual availability of connection defined in the SLA agreement. If not specified, then best effort is assumed. Availability is measured in the pseudo-unit \"percent\"." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:bandwidth a owl:ObjectProperty ;
+    rdfs:label "bandwidth"@en ;
+    rdfs:comment "Contractual bandwidth defined in the service level agreement (SLA). Bandwidth is usually measured in dimension of bits per second." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:checkSum a owl:DatatypeProperty ;
+    rdfs:label "check sum"@en ;
+    rdfs:comment "Checksum of this image." ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range xsd:string .
+
+gax-resource:connectedNetwork_A a owl:DatatypeProperty ;
+    rdfs:label "connected network a"@en ;
+    rdfs:comment "autonomous system (AS) number (ASN) of the side A" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:decimal .
+
+gax-resource:connectedNetwork_Z a owl:DatatypeProperty ;
+    rdfs:label "connected network z"@en ;
+    rdfs:comment "autonomous system (AS) number (ASN) of the side Z" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:decimal .
+
+gax-resource:connectionPointA a owl:DatatypeProperty ;
+    rdfs:label "connection point a"@en ;
+    rdfs:comment "The ID of the source of the connection." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:connectionPointZ a owl:DatatypeProperty ;
+    rdfs:label "connection point z"@en ;
+    rdfs:comment "The ID of the destination of the connection." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:connectionType a owl:DatatypeProperty ;
+    rdfs:label "connection type"@en ;
+    rdfs:comment "the supported types of connection, preferably specified as a controlled vocabulary entry" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:consolePort a owl:DatatypeProperty ;
+    rdfs:label "console port"@en ;
+    rdfs:comment "A dedicated port for console tasks." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:string .
+
+gax-resource:containerFormat a owl:DatatypeProperty ;
+    rdfs:label "container format"@en ;
+    rdfs:comment "Container format. Default: BARE" ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range xsd:string .
+
+gax-resource:copyrightOwnedBy a owl:ObjectProperty ;
+    rdfs:label "copyright owned by"@en ;
+    rdfs:comment "The copyright owner(s), given as a Gaia-X Participant or as some other agent, possibly also a person outside of Gaia-X. A copyright owner is a person or organization, that has the right to exploit the resource. Copyright owner does not necessary refer to the author of the resource, who is a natural person and may differ from copyright owner. A simple name string can be referenced as a blank node whose foaf:name attribute has that string value." ;
+    rdfs:domain gax-resource:VirtualResource ;
+    rdfs:range foaf:Agent .
+
+gax-resource:cpu a owl:ObjectProperty ;
+    rdfs:label "cpu"@en ;
+    rdfs:comment "Description of CPU(s) of this node" ;
+    rdfs:domain gax-resource:Node ;
+    rdfs:range gax-core:CPU .
+
+gax-resource:cpuCount a owl:ObjectProperty ;
+    rdfs:label "cpu count"@en ;
+    rdfs:comment "Number of available CPUs." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:disk a owl:ObjectProperty ;
+    rdfs:label "disk"@en ;
+    rdfs:comment "Description of disk(s) of this nodes" ;
+    rdfs:domain gax-resource:Node ;
+    rdfs:range gax-core:Disk .
+
+gax-resource:diskFormat a owl:DatatypeProperty ;
+    rdfs:label "disk format"@en ;
+    rdfs:comment "Disk format. Default: RAW" ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range xsd:string .
+
+gax-resource:gpu a owl:ObjectProperty ;
+    rdfs:label "gpu"@en ;
+    rdfs:comment "Description of GPU(s) of this node." ;
+    rdfs:domain gax-resource:Node ;
+    rdfs:range gax-core:GPU .
+
+gax-resource:hostedOn a owl:ObjectProperty ;
+    rdfs:label "hosted on"@en ;
+    rdfs:comment "a resource where the instance of this virtual resource is being executed on." ;
+    rdfs:domain gax-resource:InstantiatedVirtualResource ;
+    rdfs:range gax-resource:Resource .
+
+gax-resource:imageType a owl:DatatypeProperty ;
+    rdfs:label "image type"@en ;
+    rdfs:comment "Type of this image. Default: virtual machine" ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range xsd:string .
+
+gax-resource:instanceOf a owl:ObjectProperty ;
+    rdfs:label "instance of"@en ;
+    rdfs:comment "a virtual resource (normally a software resource) this process is an instance of." ;
+    rdfs:domain gax-resource:InstantiatedVirtualResource ;
+    rdfs:range gax-resource:Resource .
+
+gax-resource:interface.type a owl:DatatypeProperty ;
+    rdfs:label "interface type"@en ;
+    rdfs:comment "a type of physical interface" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:jitter a owl:ObjectProperty ;
+    rdfs:label "jitter"@en ;
+    rdfs:comment "Contractual jitterdefined in the SLA. If not specified, then best effort is assumed. Jitter is measured in dimension of time." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:latency a owl:ObjectProperty ;
+    rdfs:label "latency"@en ;
+    rdfs:comment "Contractual latency defined in the SLA. If not specified, then best effort is assumed. Latency is usually measured in dimension of time." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:license a owl:DatatypeProperty ;
+    rdfs:label "license"@en ;
+    rdfs:comment "A list of SPDX license identifiers or URL to license document" ;
+    rdfs:domain gax-resource:VirtualResource ;
+    rdfs:range xsd:string .
+
+gax-resource:location a owl:DatatypeProperty ;
+    rdfs:label "location"@en ;
+    rdfs:comment "A list of physical GPS in ISO 6709:2008/Cor 1:2009 format.",
+        "a list of physical location in ISO 3166-1 alpha2, alpha-3 or numeric format with at least the both ends of the connection." ;
+    rdfs:domain gax-resource:Interconnection,
+        gax-resource:PhysicalResource ;
+    rdfs:range xsd:string .
+
+gax-resource:locationAddress a owl:DatatypeProperty ;
+    rdfs:label "location address"@en ;
+    rdfs:comment "A list of physical location in ISO 3166-1 alpha2, alpha-3 or numeric format." ;
+    rdfs:domain gax-resource:PhysicalResource ;
+    rdfs:range xsd:string .
+
+gax-resource:maintainedBy a owl:ObjectProperty ;
+    rdfs:label "maintained by"@en ;
+    rdfs:comment "Participant maintaining the resource in operational condition and thus have physical access to it.",
+        "a list of participants  maintaining the resource in operational condition." ;
+    rdfs:domain gax-resource:InstantiatedVirtualResource,
+        gax-resource:PhysicalResource ;
+    rdfs:range gax-participant:Participant .
+
+gax-resource:managementPort a owl:DatatypeProperty ;
+    rdfs:label "management port"@en ;
+    rdfs:comment "A dedicated port for management tasks." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:string .
+
+gax-resource:manufacturedBy a owl:ObjectProperty ;
+    rdfs:label "manufactured by"@en ;
+    rdfs:comment "Participant manufacturing the resource." ;
+    rdfs:domain gax-resource:PhysicalResource ;
+    rdfs:range gax-participant:Participant .
+
+gax-resource:minRamSize a owl:ObjectProperty ;
+    rdfs:label "min ram size"@en ;
+    rdfs:comment "Mininal size of ram required to instantiate this image." ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:name a owl:DatatypeProperty ;
+    rdfs:label "name"@en ;
+    rdfs:comment "Name of resource." ;
+    rdfs:domain gax-resource:Resource ;
+    rdfs:range xsd:string .
+
+gax-resource:networkAdress a owl:DatatypeProperty ;
+    rdfs:label "network adress"@en ;
+    rdfs:comment "IP address of the netowrking device" ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:float .
+
+gax-resource:nic a owl:ObjectProperty ;
+    rdfs:label "nic"@en ;
+    rdfs:comment "Description of network interface card(s) of this node" ;
+    rdfs:domain gax-resource:Node ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:ownedBy a owl:ObjectProperty ;
+    rdfs:label "owned by"@en ;
+    rdfs:comment "Participant owning the resource." ;
+    rdfs:domain gax-resource:PhysicalResource ;
+    rdfs:range gax-participant:Participant .
+
+gax-resource:packetLoss a owl:ObjectProperty ;
+    rdfs:label "packet loss"@en ;
+    rdfs:comment "Contractual packet loss of connection defined in the SLA agreement. If not specified, then best effort is assumed. PackageLoss s measured in the pseudo-unit \"percent\"-" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:physicalResource a owl:ObjectProperty ;
+    rdfs:label "physical resource"@en ;
+    rdfs:comment "a list of resource with information of where is the data located" ;
+    rdfs:domain gax-resource:DataConnector ;
+    rdfs:range gax-resource:PhysicalResource .
+
+gax-resource:policies a owl:DatatypeProperty ;
+    rdfs:label "policies"@en ;
+    rdfs:comment "a list of policy expressed using a DSL used by the data connector policy engine leveraging Gaia-X Self-descriptions as both data inputs and policy inputs" ;
+    rdfs:domain gax-resource:DataConnector ;
+    rdfs:range xsd:anyURI .
+
+gax-resource:portCapacity_A a owl:DatatypeProperty ;
+    rdfs:label "port capacity a"@en ;
+    rdfs:comment "The assigned capacity of ports." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:float .
+
+gax-resource:portCapacity_A_Count a owl:DatatypeProperty ;
+    rdfs:label "port capacity count"@en ;
+    rdfs:comment "The assigned number of ports." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:integer .
+
+gax-resource:prefixSet_A a owl:DatatypeProperty ;
+    rdfs:label "prefix set a"@en ;
+    rdfs:comment "CIDR Provider Identifier of network on the side A" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:prefixSet_Z a owl:DatatypeProperty ;
+    rdfs:label "prefix set z"@en ;
+    rdfs:comment "CIDR Provider Identifier of network on the side Z" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:ramSize a owl:ObjectProperty ;
+    rdfs:label "ram size"@en ;
+    rdfs:comment "Ram size of the networking device" ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:ramsize a owl:ObjectProperty ;
+    rdfs:label "ramsize"@en ;
+    rdfs:comment "Size of RAM of this node" ;
+    rdfs:domain gax-resource:Node ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:redundantPowerSupply a owl:DatatypeProperty ;
+    rdfs:label "redundant power supply"@en ;
+    rdfs:comment "Availability of redundant power supply for the cases of emergency." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:string .
+
+gax-resource:serviceAccessPoint a owl:ObjectProperty ;
+    rdfs:label "service access point"@en ;
+    rdfs:comment "a list of Service Access Point which can be an endpoint as a mean to access and interact with the resource" ;
+    rdfs:domain gax-resource:InstantiatedVirtualResource ;
+    rdfs:range vcard:Address .
+
+gax-resource:size a owl:ObjectProperty ;
+    rdfs:label "size"@en ;
+    rdfs:comment "Size of this image " ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:supportedProtocols a owl:DatatypeProperty ;
+    rdfs:label "supported protocols"@en ;
+    rdfs:comment "List of  supported protocols among used layers should be specified." ;
+    rdfs:domain gax-resource:NetworkingDevice ;
+    rdfs:range xsd:string .
+
+gax-resource:targetPercentile a owl:ObjectProperty ;
+    rdfs:label "target percentile"@en ;
+    rdfs:comment "Contractual percentile in the SLA. Usually referred to the nubmer of frames the SLA metrics such as availability, latency and jitter can bbe guaranteed." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:tenantOwnedBy a owl:ObjectProperty ;
+    rdfs:label "tenant owned by"@en ;
+    rdfs:comment "a list of participant with contractual relation with the resource." ;
+    rdfs:domain gax-resource:InstantiatedVirtualResource ;
+    rdfs:range gax-participant:Participant .
+
+gax-resource:type a owl:DatatypeProperty ;
+    rdfs:label "type"@en ;
+    rdfs:comment "Type of networking device",
+        "Type of virtual node" ;
+    rdfs:domain gax-resource:NetworkingDevice,
+        gax-resource:VirtualNode ;
+    rdfs:range xsd:string .
+
+gax-resource:version a owl:DatatypeProperty ;
+    rdfs:label "version"@en ;
+    rdfs:comment "Version of this image." ;
+    rdfs:domain gax-resource:Image ;
+    rdfs:range xsd:string .
+
+gax-resource:virtualResource a owl:ObjectProperty ;
+    rdfs:label "virtual resource"@en ;
+    rdfs:comment "a list of resource with information of who owns the data." ;
+    rdfs:domain gax-resource:DataConnector ;
+    rdfs:range gax-resource:VirtualResource .
+
+gax-resource:vlanEtherType a owl:DatatypeProperty ;
+    rdfs:label "vlan ether type"@en ;
+    rdfs:comment "The ethertype of the vlan in hexadecimal notation." ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-resource:vlanTag a owl:ObjectProperty ;
+    rdfs:label "vlan tag"@en ;
+    rdfs:comment "Vlan Tag ID that range between 1 and 4094. In case qinq connection type is chosen tow vlan tag, namely outer and innter should be provided" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range gax-core:Measure .
+
+gax-resource:vlanType a owl:DatatypeProperty ;
+    rdfs:label "vlan type"@en ;
+    rdfs:comment "the chosen types of vlan types" ;
+    rdfs:domain gax-resource:Interconnection ;
+    rdfs:range xsd:string .
+
+gax-service:BigData a owl:Class ;
+    rdfs:label "Big Data"@en ;
+    rdfs:subClassOf gax-service:Platform .
+
+gax-service:Database a owl:Class ;
+    rdfs:label "Database"@en ;
+    rdfs:subClassOf gax-service:Platform .
+
+gax-service:DigitalIdentitylWallet a owl:Class ;
+    rdfs:label "Digital Identityl Wallet"@en ;
+    rdfs:subClassOf gax-service:Wallet .
+
+gax-service:IdentityFederation a owl:Class ;
+    rdfs:label "Identity Federation"@en ;
+    rdfs:subClassOf gax-service:IdentityAccessManagement .
+
+gax-service:IdentityProvider a owl:Class ;
+    rdfs:label "Identity Provider"@en ;
+    rdfs:subClassOf gax-service:IdentityAccessManagement .
+
+gax-service:SoftwareOffering a owl:Class ;
+    rdfs:label "Software Offering"@en ;
+    rdfs:subClassOf gax-service:ServiceOffering .
+
+gax-service:aggregationOf a owl:ObjectProperty ;
+    rdfs:label "aggregation of"@en ;
+    rdfs:comment "Id of Resource (self-descrription) related to the service and that can exist independently of it." ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range gax-resource:Resource .
+
+gax-service:allContractConditionsMeetBySubContractor a owl:DatatypeProperty ;
+    rdfs:label "all contract conditions meet by sub contractor"@en ;
+    rdfs:comment "Are all contract conditions transferable to the sub contractors?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:allSubContractorsMentioned a owl:DatatypeProperty ;
+    rdfs:label "all sub contractors mentioned"@en ;
+    rdfs:comment "Are all involved sub contractors mentioned?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:applicableLaw a owl:DatatypeProperty ;
+    rdfs:label "applicable law"@en ;
+    rdfs:comment "Is there applicable law?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:assuredServiceAvailability a owl:DatatypeProperty ;
+    rdfs:label "assured service availability"@en ;
+    rdfs:comment "Assured Service Availability in Percent / Year" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:authKind a owl:DatatypeProperty ;
+    rdfs:label "auth kind"@en ;
+    rdfs:comment "Indicate, which kind of authentication is used. \"credentials\": Authentication with username and password. \"ssl-cert\": Authentication with X.509 certificates." ;
+    rdfs:domain gax-service:IdentityAccessManagement ;
+    rdfs:range xsd:string .
+
+gax-service:availabilityOfSupport a owl:DatatypeProperty ;
+    rdfs:label "availability of support"@en ;
+    rdfs:comment "What is the availability of the support?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:averageTimeUntilResolvanceOfMajorProblems a owl:DatatypeProperty ;
+    rdfs:label "average time until resolvance of major problems"@en ;
+    rdfs:comment "Whats the average time until major problems are resolved?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:averageTimeUntilResolvanceOfMinorProblems a owl:DatatypeProperty ;
+    rdfs:label "average time until resolvance of minor problems"@en ;
+    rdfs:comment "Whats the average time until minor problems are resolved?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:backupsSupported a owl:DatatypeProperty ;
+    rdfs:label "backups supported"@en ;
+    rdfs:comment "Default: False. True is storage service supports backus." ;
+    rdfs:domain gax-service:Storage ;
+    rdfs:range xsd:boolean .
+
+gax-service:certificateAuthority a owl:DatatypeProperty ;
+    rdfs:label "certificate authority"@en ;
+    rdfs:comment "Certificate authority for this service or its certificate" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:string .
+
+gax-service:certificateDocument a owl:DatatypeProperty ;
+    rdfs:label "certificate document"@en ;
+    rdfs:comment "Document that contains a certificate copy" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:string .
+
+gax-service:certificateName a owl:DatatypeProperty ;
+    rdfs:label "certificate name"@en ;
+    rdfs:comment "Relevant certificate for the service" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:string .
+
+gax-service:certificateType a owl:DatatypeProperty ;
+    rdfs:label "certificate type"@en ;
+    rdfs:comment "Type of the certificates" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:string .
+
+gax-service:companyCategory a owl:DatatypeProperty ;
+    rdfs:label "company category"@en ;
+    rdfs:comment "Category of the company" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:companyWebsite a owl:DatatypeProperty ;
+    rdfs:label "company website"@en ;
+    rdfs:comment "Website of the sub company or data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:completeSystemDocumentation a owl:DatatypeProperty ;
+    rdfs:label "complete system documentation"@en ;
+    rdfs:comment "Is there a complete system documentation?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:completeUserDocumentation a owl:DatatypeProperty ;
+    rdfs:label "complete user documentation"@en ;
+    rdfs:comment "Is there a complete user documentation?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:continuousGuaranteeOfPrivacy a owl:DatatypeProperty ;
+    rdfs:label "continuous guarantee of privacy"@en ;
+    rdfs:comment "Is there a contracted continuous guarantee of privacy, integrity and resilience of the systems?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractChangesCommunicatedToCustomer a owl:DatatypeProperty ;
+    rdfs:label "contract changes communicated to customer"@en ;
+    rdfs:comment "Are changes in the contract communicated to the customer beforehand?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:contractRuntimeSpecifications a owl:DatatypeProperty ;
+    rdfs:label "contract runtime specifications"@en ;
+    rdfs:comment "Specifications for the contract runtimes" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:contractedAccessToCustomerDataAfterBankruptcyOrServiceInterruption a owl:DatatypeProperty ;
+    rdfs:label "contracted access to customer data after bankruptcy or service interruption"@en ;
+    rdfs:comment "Is the access to customer data after the contract has ended, a bankruptcy occurred or other special cases, and is it bound by the contract?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:contractedAvailabilityForDataAfterTechnicalProblems a owl:DatatypeProperty ;
+    rdfs:label "contracted availability for data after technical problems"@en ;
+    rdfs:comment "Are there contracted availabilities for data after a physical or technical problem?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractedDeletionOfDataAndLinksInTheCloud a owl:DatatypeProperty ;
+    rdfs:label "contracted deletion of data and links in the cloud"@en ;
+    rdfs:comment "Has a contracted deletion of files and there links in the cloud?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractedImplementationOfDataSubjectRights a owl:DatatypeProperty ;
+    rdfs:label "contracted implementation of data subject rights"@en ;
+    rdfs:comment "Has contracted implementation of data subject rights?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractedLegalConsequencesForSLAViolation a owl:DatatypeProperty ;
+    rdfs:label "contracted legal consequences for sl violation"@en ;
+    rdfs:comment "Are there legal consequences for an SLA violation in the contract?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractedObligationForAllProcessingPersons a owl:DatatypeProperty ;
+    rdfs:label "contracted obligation for all processing persons"@en ;
+    rdfs:comment "Is there a contracted obligation for all the people processing personal data according to Art. 28 Abs. 3 S. 2 lit. b, 29, 32 Abs. 4 DSG-VO?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:contractedPseudonymizationOrEncryptionOfPersonalData a owl:DatatypeProperty ;
+    rdfs:label "contracted pseudonymization or encryption of personal data"@en ;
+    rdfs:comment "Is there contracted pseudonymization or encryption of personal data?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractedRulesForTerminationSupport a owl:DatatypeProperty ;
+    rdfs:label "contracted rules for termination support"@en ;
+    rdfs:comment "Are there rules defined in the contract for rule termination?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:contractedRulesToReturnData a owl:DatatypeProperty ;
+    rdfs:label "contracted rules to return data"@en ;
+    rdfs:comment "Contracted rules to return customer data." ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:contractedSupportOfDFA a owl:DatatypeProperty ;
+    rdfs:label "contracted support of dfa"@en ;
+    rdfs:comment "Has contracted support of a \"data protection impact assessment\" (DFA), if needed?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:boolean .
+
+gax-service:creationTime a owl:DatatypeProperty ;
+    rdfs:label "creation time"@en ;
+    rdfs:comment "Timestamp the service has been created." ;
+    rdfs:domain gax-resource:DataConnector,
+        gax-service:DataResource ;
+    rdfs:range xsd:dateTimeStamp .
+
+gax-service:customerExemptionFromClaimsOfThirdParties a owl:DatatypeProperty ;
+    rdfs:label "customer exemption from claims of third parties"@en ;
+    rdfs:comment "Is the customer exempt from all claims of third parties while using this service?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:dataCenterCertificateDetails a owl:DatatypeProperty ;
+    rdfs:label "data center certificate details"@en ;
+    rdfs:comment "More details about the certificate e.g. examination, extension and so on" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:dataCenterCertificateName a owl:DatatypeProperty ;
+    rdfs:label "data center certificate name"@en ;
+    rdfs:comment "Certificate name for the data center or infrastructure certificate" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:dataCenterLocation a owl:DatatypeProperty ;
+    rdfs:label "data center location"@en ;
+    rdfs:comment "Location to at least federal level of the data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:dataExport a owl:DatatypeProperty ;
+    rdfs:label "data export"@en ;
+    rdfs:comment "a list of methods to export data out of the service" ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range gax-core:DataExport .
+
+gax-service:dataProtectionCertificateDetails a owl:DatatypeProperty ;
+    rdfs:label "data protection certificate details"@en ;
+    rdfs:comment "More details about the certificate e.g. examination, extension and so on" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:dataProtectionCertificateName a owl:DatatypeProperty ;
+    rdfs:label "data protection certificate name"@en ;
+    rdfs:comment "Name of the data protection certificate" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:dataProtectionRegime a owl:DatatypeProperty ;
+    rdfs:label "data protection regime"@en ;
+    rdfs:comment "a list of data protection regime from the list available below" ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range xsd:string .
+
+gax-service:declarationsAboutTheScalingTypes a owl:DatatypeProperty ;
+    rdfs:label "declarations about the scaling types"@en ;
+    rdfs:comment "Has additional declarations about the scaling types" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingArchitecture ;
+    rdfs:range xsd:string .
+
+gax-service:definitionOfScalingTypesOfTheInfrastructure a owl:DatatypeProperty ;
+    rdfs:label "definition of scaling types of the infrastructure"@en ;
+    rdfs:comment "Are the scaling types and factors of the technical infrastructure defined?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingArchitecture ;
+    rdfs:range xsd:string .
+
+gax-service:dependsOn a owl:DatatypeProperty ;
+    rdfs:label "depends on"@en ;
+    rdfs:comment "a resolvable link to the service offering self-description related to the service and that can exist independently of it." ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range xsd:anyURI .
+
+gax-service:descriptionAboutDataRepatriation a owl:DatatypeProperty ;
+    rdfs:label "description about data repatriation"@en ;
+    rdfs:comment "Is there a description about data repatriation and supported file formats?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionAboutOfferedIntegrationAPIs a owl:DatatypeProperty ;
+    rdfs:label "description about offered integration is"@en ;
+    rdfs:comment "Description of the offered APIs to integrate the services" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionForTerminationSupport a owl:DatatypeProperty ;
+    rdfs:label "description for termination support"@en ;
+    rdfs:comment "Description of the rules for termination support" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfBackupOptions a owl:DatatypeProperty ;
+    rdfs:label "description of backup options"@en ;
+    rdfs:comment "Description of backup options" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfChangeManagement a owl:DatatypeProperty ;
+    rdfs:label "description of change management"@en ;
+    rdfs:comment "Description of change management rules" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfOrganizationalRequirementsForServiceUsage a owl:DatatypeProperty ;
+    rdfs:label "description of organizational requirements for service usage"@en ;
+    rdfs:comment "Description for the organizational requirements to use the service" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfServiceStackStandards a owl:DatatypeProperty ;
+    rdfs:label "description of service stack standards"@en ;
+    rdfs:comment "Description of the standard, the service stack is built on." ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfSupport a owl:DatatypeProperty ;
+    rdfs:label "description of support"@en ;
+    rdfs:comment "Description of the scope of support services" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfTechnicalRequirementsForServiceUsage a owl:DatatypeProperty ;
+    rdfs:label "description of technical requirements for service usage"@en ;
+    rdfs:comment "Description for the technical requirements to use the service" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfTestScope a owl:DatatypeProperty ;
+    rdfs:label "description of test scope"@en ;
+    rdfs:comment "Description of the scope of testing for this service" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:string .
+
+gax-service:descriptionOfTheProcessToReportDataLeaks a owl:DatatypeProperty ;
+    rdfs:label "description of the process to report data leaks"@en ;
+    rdfs:comment "Description of the process to report data leaks to the customer" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:detailsAboutDSGVOMeasures a owl:DatatypeProperty ;
+    rdfs:label "details about measures"@en ;
+    rdfs:comment "Details about the implemented technical and organisational measurements" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:detailsAboutProcess a owl:DatatypeProperty ;
+    rdfs:label "details about process"@en ;
+    rdfs:comment "More details about the process in the IT safety management" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:detailsAboutServiceManagement a owl:DatatypeProperty ;
+    rdfs:label "details about service management"@en ;
+    rdfs:comment "Details about the service management" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:disableUserAccountDaysInactive a owl:DatatypeProperty ;
+    rdfs:label "disable user account days inactive"@en ;
+    rdfs:comment "Days of account inactivity before a user account is disabled." ;
+    rdfs:domain gax-service:IdentityAccessManagement ;
+    rdfs:range xsd:integer .
+
+gax-service:efficientManagementForInformationSafety a owl:DatatypeProperty ;
+    rdfs:label "efficient management for information safety"@en ;
+    rdfs:comment "Is there an efficient management for information safety given, e.g. certification according to ISO 27001?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:efficientServiceManagement a owl:DatatypeProperty ;
+    rdfs:label "efficient service management"@en ;
+    rdfs:comment "Is an efficient service management guaranteed (ITIL)?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:encryption a owl:ObjectProperty ;
+    rdfs:label "encryption"@en ;
+    rdfs:comment "Details on encryption capabilities of this image registry." ;
+    rdfs:domain gax-service:ImageRegistry ;
+    rdfs:range gax-core:Encryption .
+
+gax-service:encryptionMethod a owl:DatatypeProperty ;
+    rdfs:label "encryption method"@en ;
+    rdfs:comment "Default: None. Define encryption method of storage service. None: means no encryption art all. managed: Virtual storage is encrypted by key managed provider. byok: Virtual storage  " ;
+    rdfs:domain gax-service:Storage ;
+    rdfs:range xsd:string .
+
+gax-service:encryptionTypesForDataTransmissionAndStorage a owl:DatatypeProperty ;
+    rdfs:label "encryption types for data transmission and storage"@en ;
+    rdfs:comment "Encryption types that can be used to encrypt data for transmission and storage?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:endpoint a owl:ObjectProperty ;
+    rdfs:label "endpoint"@en ;
+    rdfs:comment "Endpoint through which the Service Offering can be accessed" ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range gax-service:Endpoint .
+
+gax-service:experienceLevelForCloudServices a owl:DatatypeProperty ;
+    rdfs:label "experience level for cloud services"@en ;
+    rdfs:comment "Experience level of this provider to provide cloud services." ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:expirationDate a owl:DatatypeProperty ;
+    rdfs:label "expiration date"@en ;
+    rdfs:comment "Date on which the certificate expires" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:date .
+
+gax-service:fileSystem a owl:DatatypeProperty ;
+    rdfs:label "file system"@en ;
+    rdfs:comment "File system of storage service.",
+        "File system of storage services provides." ;
+    rdfs:domain gax-service:FileStorage,
+        gax-service:ObjectStorage ;
+    rdfs:range xsd:string .
+
+gax-service:flavor a owl:ObjectProperty ;
+    rdfs:label "flavor"@en ;
+    rdfs:comment "Detailed description of available flavors. A flavor describes the size of the server. " ;
+    rdfs:domain gax-service:Compute ;
+    rdfs:range gax-core:Flavor .
+
+gax-service:freeTrialPhase a owl:DatatypeProperty ;
+    rdfs:label "free trial phase"@en ;
+    rdfs:comment "Is there a free trial phase?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:fulfillmentOfFormalRequirements a owl:DatatypeProperty ;
+    rdfs:label "fulfillment of formal requirements"@en ;
+    rdfs:comment "Are the predescribed formal requirements fulfilled?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:geoRegionOptions a owl:DatatypeProperty ;
+    rdfs:label "geo region options"@en ;
+    rdfs:comment "Possible GEO-regions" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:geographicCoverage a owl:DatatypeProperty ;
+    rdfs:label "geographic coverage"@en ;
+    rdfs:comment "Geographic region covered by the dataset." ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:string .
+
+gax-service:goodImplementationOfDSGVOMeasures a owl:DatatypeProperty ;
+    rdfs:label "good implementation of measures"@en ;
+    rdfs:comment "How do appropriate measures of the DSGVO measures get implemented?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteeForDataProtectionOnBackup a owl:DatatypeProperty ;
+    rdfs:label "guarantee for data protection on backup"@en ;
+    rdfs:comment "Is it guaranteed, that data protection is also extended to the backup?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteeForImplementationOfDataSubjectRights a owl:DatatypeProperty ;
+    rdfs:label "guarantee for implementation of data subject rights"@en ;
+    rdfs:comment "How can the requirements of the DSGVO according to data subect rights be fulfilled, e.g. the deletion of personal data?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteeToDeleteLinksToCustomerData a owl:DatatypeProperty ;
+    rdfs:label "guarantee to delete links to customer data"@en ;
+    rdfs:comment "How can it be guaranteed, that also links get deleted, if the data is removed?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteedFastRecoveryOfDataAndConnectionAfterEvent a owl:DatatypeProperty ;
+    rdfs:label "guaranteed fast recovery of data and connection after event"@en ;
+    rdfs:comment "Is a quick recovery of customer data or the connection to the service / data guaranteed after an interruption event?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteedResponseTimeOnCriticalRequests a owl:DatatypeProperty ;
+    rdfs:label "guaranteed response time on critical requests"@en ;
+    rdfs:comment "What is the guaranteed response time on critical requests?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteedResponseTimeOnNormalRequests a owl:DatatypeProperty ;
+    rdfs:label "guaranteed response time on normal requests"@en ;
+    rdfs:comment "What is the guaranteed response time on normal requests?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:guaranteedTenantSeparation a owl:DatatypeProperty ;
+    rdfs:label "guaranteed tenant separation"@en ;
+    rdfs:comment "Is a continuous tenant separation guaranteed?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingArchitecture ;
+    rdfs:range xsd:string .
+
+gax-service:identity a owl:ObjectProperty ;
+    rdfs:label "identity"@en ;
+    rdfs:comment "Reference to identity access management service  storage service offing to create disks used within this compute service." ;
+    rdfs:domain gax-service:Compute ;
+    rdfs:range gax-service:IdentityAccessManagement .
+
+gax-service:image a owl:ObjectProperty ;
+    rdfs:label "image"@en ;
+    rdfs:comment "Images available in this image registry." ;
+    rdfs:domain gax-service:ImageRegistry ;
+    rdfs:range gax-resource:Image .
+
+gax-service:imageRegistry a owl:ObjectProperty ;
+    rdfs:label "image registry"@en ;
+    rdfs:comment "Reference to image registry of this compute service." ;
+    rdfs:domain gax-service:Compute ;
+    rdfs:range gax-service:ImageRegistry .
+
+gax-service:independentSubCompany a owl:DatatypeProperty ;
+    rdfs:label "independent sub company"@en ;
+    rdfs:comment "Is the data center company internal or his legally sovereign company?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:ipVersion a owl:DatatypeProperty ;
+    rdfs:label "ip version"@en ;
+    rdfs:comment "Version of IP address supported. IPv4: only ipV4 addresses are supported. IPv6: both version iIPV4 and IPv6 are supported." ;
+    rdfs:domain gax-service:Network ;
+    rdfs:range xsd:string .
+
+gax-service:isPartOfScalingGroup a owl:DatatypeProperty ;
+    rdfs:label "is part of scaling group"@en ;
+    rdfs:comment "lists autoscaling group that this VM belongs to." ;
+    rdfs:domain gax-service:Compute ;
+    rdfs:range xsd:string .
+
+gax-service:keyManagementOptions a owl:DatatypeProperty ;
+    rdfs:label "key management options"@en ;
+    rdfs:comment "Key management options" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:legalFormOfSubCompany a owl:DatatypeProperty ;
+    rdfs:label "legal form of sub company"@en ;
+    rdfs:comment "Legal form of the sub company or owner of the data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:legalName a owl:DatatypeProperty ;
+    rdfs:label "legal name"@en ;
+    rdfs:comment "Legally binding name" ;
+    rdfs:domain gax-participant:LegalPerson ;
+    rdfs:range xsd:string .
+
+gax-service:mainAddressOfSubCompany a owl:DatatypeProperty ;
+    rdfs:label "main address of sub company"@en ;
+    rdfs:comment "Address of the sub company or owner of the data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:address .
+
+gax-service:maximumDownTime a owl:DatatypeProperty ;
+    rdfs:label "maximum down time"@en ;
+    rdfs:comment "Maximum downtime of the service in hours" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:modificationDate a owl:DatatypeProperty ;
+    rdfs:label "modification date"@en ;
+    rdfs:comment "Timestamp the service has been created." ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:dateTimeStamp .
+
+gax-service:network a owl:ObjectProperty ;
+    rdfs:label "network"@en ;
+    rdfs:comment "Reference to network service offing for this compute service." ;
+    rdfs:domain gax-service:Compute ;
+    rdfs:range gax-service:Network .
+
+gax-service:numberOfEmployees a owl:DatatypeProperty ;
+    rdfs:label "number of employees"@en ;
+    rdfs:comment "Number of employees working for the company" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:integer .
+
+gax-service:numberOfPublicCloudServices a owl:DatatypeProperty ;
+    rdfs:label "number of public cloud services"@en ;
+    rdfs:comment "Number of publicly offered cloud services" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:obligationToCooperateInContract a owl:DatatypeProperty ;
+    rdfs:label "obligation to cooperate in contract"@en ;
+    rdfs:comment "Are all obligations to cooperate or provisions defined in the contract?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:offerForTraining a owl:DatatypeProperty ;
+    rdfs:label "offer for training"@en ;
+    rdfs:comment "Is there an offer for training?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:boolean .
+
+gax-service:passwordExpiresDays a owl:DatatypeProperty ;
+    rdfs:label "password expires days"@en ;
+    rdfs:comment "Days until a user must renew their password. This attribute is only allowed with authKind=credentials." ;
+    rdfs:domain gax-service:IdentityAccessManagement ;
+    rdfs:range xsd:integer .
+
+gax-service:policies a owl:DatatypeProperty ;
+    rdfs:label "policies"@en ;
+    rdfs:comment "a list of policy expressed using a DSL (e.g., Rego or ODRL)" ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range xsd:string .
+
+gax-service:possibilityToAdministerServicesWithStandardizedAPI a owl:DatatypeProperty ;
+    rdfs:label "possibility to administer services with standardized api"@en ;
+    rdfs:comment "Is there a possibility to administer services with a standardized API?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:possibilityToProvisionServiceByCustomer a owl:DatatypeProperty ;
+    rdfs:label "possibility to provision service by customer"@en ;
+    rdfs:comment "Can the customer provision the the service himself?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:possibleLocationRestrictionForCustomerData a owl:DatatypeProperty ;
+    rdfs:label "possible location restriction for customer data"@en ;
+    rdfs:comment "Can the hosting of customer data be restricted to a specific location?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:possibleLocationRestrictionForCustomerDataAdministration a owl:DatatypeProperty ;
+    rdfs:label "possible location restriction for customer data administration"@en ;
+    rdfs:comment "Can the administration of customer data be restricted to a specific location?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:preAvailableContractsForCustomers a owl:DatatypeProperty ;
+    rdfs:label "pre available contracts for customers"@en ;
+    rdfs:comment "Are the contracts available to the customer before the closing?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:pricingModelLink a owl:DatatypeProperty ;
+    rdfs:label "pricing model link"@en ;
+    rdfs:comment "Link to the pricing model" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:pricingModelSpecifications a owl:DatatypeProperty ;
+    rdfs:label "pricing model specifications"@en ;
+    rdfs:comment "Are there specifications for the pricing model?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:privateImagesAllowed a owl:DatatypeProperty ;
+    rdfs:label "private images allowed"@en ;
+    rdfs:comment "Default: \"true\". \"true\" means that the image registry supports upload of private user images." ;
+    rdfs:domain gax-service:ImageRegistry ;
+    rdfs:range xsd:boolean .
+
+gax-service:privateKeyExportFormat a owl:DatatypeProperty ;
+    rdfs:label "private key export format"@en ;
+    rdfs:comment "a list of machine readable format used to export private keys." ;
+    rdfs:domain gax-service:VerifiableCredentialWallet ;
+    rdfs:range xsd:string .
+
+gax-service:proofsForTheCustomerAccordingToADVContract a owl:DatatypeProperty ;
+    rdfs:label "proofs for the customer according to contract"@en ;
+    rdfs:comment "Which proofs according to the ADV-contract can be given to the customer for examination?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:string .
+
+gax-service:providedBy a owl:ObjectProperty ;
+    rdfs:label "provided by"@en ;
+    rdfs:comment "Id of Participant (self-descrription) providing this service offering." ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range gax-participant:Participant .
+
+gax-service:provisionType a owl:DatatypeProperty ;
+    rdfs:label "provision type"@en ;
+    rdfs:comment "Provision type of the service" ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range xsd:string .
+
+gax-service:publicIpAddressProvisioning a owl:DatatypeProperty ;
+    rdfs:label "public ip address provisioning"@en ;
+    rdfs:comment "Defines how public IP address are provided. Floating: floating ips are supported ." ;
+    rdfs:domain gax-service:Network ;
+    rdfs:range xsd:string .
+
+gax-service:publishedPricingModel a owl:DatatypeProperty ;
+    rdfs:label "published pricing model"@en ;
+    rdfs:comment "Is the pricing model publicly available to all cutomers?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:publisher a owl:DatatypeProperty ;
+    rdfs:label "publisher"@en ;
+    rdfs:comment "Publisher of the standard." ;
+    rdfs:domain gax-core:Standard ;
+    rdfs:range xsd:string .
+
+gax-service:registerNumberOfSubCompany a owl:DatatypeProperty ;
+    rdfs:label "register number of sub company"@en ;
+    rdfs:comment "Register number of the sub company or owner of the data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:registryAboutCustomerProcessingActivities a owl:DatatypeProperty ;
+    rdfs:label "registry about customer processing activities"@en ;
+    rdfs:comment "Is a registry about the customers processing activities created according to Art. 30 EU-DSGVO?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:boolean .
+
+gax-service:regularAudits a owl:DatatypeProperty ;
+    rdfs:label "regular audits"@en ;
+    rdfs:comment "Is the certificate regularly audited?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingCertificates ;
+    rdfs:range xsd:boolean .
+
+gax-service:rightsAndRoleConcept a owl:DatatypeProperty ;
+    rdfs:label "rights and role concept"@en ;
+    rdfs:comment "Which rights- and role-concept are used?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:rulesForChangeManagementInContract a owl:DatatypeProperty ;
+    rdfs:label "rules for change management in contract"@en ;
+    rdfs:comment "Are rules for change management in the contract?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:salesVolume a owl:DatatypeProperty ;
+    rdfs:label "sales volume"@en ;
+    rdfs:comment "Sales volume of the company" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:integer .
+
+gax-service:sameDataProtectionAsCommercialService a owl:DatatypeProperty ;
+    rdfs:label "same data protection as commercial service"@en ;
+    rdfs:comment "Has the free trial phase the same data protection as a commercial service?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:securityCertificateDetails a owl:DatatypeProperty ;
+    rdfs:label "security certificate details"@en ;
+    rdfs:comment "More details about the certificate e.g. examination, extension and so on" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:securityCertificateName a owl:DatatypeProperty ;
+    rdfs:label "security certificate name"@en ;
+    rdfs:comment "Certificate name for the security certificate" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSecurity ;
+    rdfs:range xsd:string .
+
+gax-service:serviceContractLink a owl:DatatypeProperty ;
+    rdfs:label "service contract link"@en ;
+    rdfs:comment "Is there a link to the service contract?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:serviceLogo a owl:DatatypeProperty ;
+    rdfs:label "service logo"@en ;
+    rdfs:comment "PDF / JPG / PNG file to show the logo of the service." ;
+    rdfs:domain gax-service:TrustedCloudServiceOffering ;
+    rdfs:range xsd:base64Binary .
+
+gax-service:serviceManagementCertificateDetails a owl:DatatypeProperty ;
+    rdfs:label "service management certificate details"@en ;
+    rdfs:comment "More details about the certificate e.g. examination, extension and so on" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:serviceManagementCertificateName a owl:DatatypeProperty ;
+    rdfs:label "service management certificate name"@en ;
+    rdfs:comment "Service management certificate name" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:serviceModel a owl:DatatypeProperty ;
+    rdfs:label "service model"@en ;
+    rdfs:comment "Service Model for the service" ;
+    rdfs:domain gax-service:TrustedCloudServiceOffering ;
+    rdfs:range xsd:string .
+
+gax-service:serviceShortDescription a owl:DatatypeProperty ;
+    rdfs:label "service short description"@en ;
+    rdfs:comment "A short description in natural language to display on the query site." ;
+    rdfs:domain gax-service:TrustedCloudServiceOffering ;
+    rdfs:range xsd:string .
+
+gax-service:serviceTitle a owl:DatatypeProperty ;
+    rdfs:label "service title"@en ;
+    rdfs:comment "Name of the service" ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range xsd:string .
+
+gax-service:serviceType a owl:DatatypeProperty ;
+    rdfs:label "service type"@en ;
+    rdfs:comment "Type of Service Offering. Choose one of the following: virtual, bare-metal, mixed" ;
+    rdfs:domain gax-service:Network,
+        gax-service:Storage ;
+    rdfs:range xsd:string .
+
+gax-service:signing a owl:ObjectProperty ;
+    rdfs:label "signing"@en ;
+    rdfs:comment "Details on signing capabilities of this image registry." ;
+    rdfs:domain gax-service:ImageRegistry ;
+    rdfs:range gax-core:Signing .
+
+gax-service:slaDescription a owl:DatatypeProperty ;
+    rdfs:label "sla description"@en ;
+    rdfs:comment "Description of the SLAs" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:slaInContract a owl:DatatypeProperty ;
+    rdfs:label "sla in contract"@en ;
+    rdfs:comment "Are there SLAs in the contract?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:slaObservanceBeCheckedByTheCustomer a owl:DatatypeProperty ;
+    rdfs:label "sla observance be checked by the customer"@en ;
+    rdfs:comment "Can the SLA observance be checked by the customer?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:boolean .
+
+gax-service:snapshotSupported a owl:DatatypeProperty ;
+    rdfs:label "snapshot supported"@en ;
+    rdfs:comment "Default: False. True is storage service supports snapshots." ;
+    rdfs:domain gax-service:Storage ;
+    rdfs:range xsd:boolean .
+
+gax-service:spatialResolution a owl:DatatypeProperty ;
+    rdfs:label "spatial resolution"@en ;
+    rdfs:comment "The spatial resolution of the dataset." ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:string .
+
+gax-service:specificationFromTrainingPartners a owl:DatatypeProperty ;
+    rdfs:label "specification from training partners"@en ;
+    rdfs:comment "Specification from training partners" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingOperativeProcesses ;
+    rdfs:range xsd:string .
+
+gax-service:standardConformity a owl:ObjectProperty ;
+    rdfs:label "standard conformity"@en ;
+    rdfs:comment "Provides information about applied standards." ;
+    rdfs:domain gax-resource:DataConnector ;
+    rdfs:range gax-core:Standard .
+
+gax-service:standardReference a owl:DatatypeProperty ;
+    rdfs:label "standard reference"@en ;
+    rdfs:comment "Provides a link to schemas or details about applied standards." ;
+    rdfs:domain gax-core:Standard ;
+    rdfs:range xsd:anyURI .
+
+gax-service:standardizedAPIForServiceIntegration a owl:DatatypeProperty ;
+    rdfs:label "standardized for service integration"@en ;
+    rdfs:comment "Is there a standardized API to integrate the service into the customers IT-landscape?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:standardizedFormatsForVMsAndContainers a owl:DatatypeProperty ;
+    rdfs:label "standardized formats for ms and containers"@en ;
+    rdfs:comment "Does the service use standardized formats virtual machines and containers?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:storage a owl:ObjectProperty ;
+    rdfs:label "storage"@en ;
+    rdfs:comment "Reference to storage service offing to create disks used within this compute service." ;
+    rdfs:domain gax-service:Compute ;
+    rdfs:range gax-service:Storage .
+
+gax-service:subCompanyLogo a owl:DatatypeProperty ;
+    rdfs:label "sub company logo"@en ;
+    rdfs:comment "Logo of the sub company or data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:subCompanyName a owl:DatatypeProperty ;
+    rdfs:label "sub company name"@en ;
+    rdfs:comment "Name of the sub company or owner of the data center" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingSubCompanies ;
+    rdfs:range xsd:string .
+
+gax-service:tags a owl:DatatypeProperty ;
+    rdfs:label "tags"@en ;
+    rdfs:comment "Tags and Keywords describing this data resource." ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:string .
+
+gax-service:temporalCoverage a owl:DatatypeProperty ;
+    rdfs:label "temporal coverage"@en ;
+    rdfs:comment "The time period covered by the data set." ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:string .
+
+gax-service:temporalResolution a owl:DatatypeProperty ;
+    rdfs:label "temporal resolution"@en ;
+    rdfs:comment "The time interval between data points, if this data set provides time series data" ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:string .
+
+gax-service:tenantSeparation a owl:DatatypeProperty ;
+    rdfs:label "tenant separation"@en ;
+    rdfs:comment "Default: virtual. How compute resources of different tenants are separated.",
+        "Default: virtual. How networks of different tenants are separated.",
+        "How does the tenant separation work?" ;
+    rdfs:domain gax-service:Compute,
+        gax-service:Network,
+        gax-service:TrustedCloudServiceOfferingArchitecture ;
+    rdfs:range xsd:string .
+
+gax-service:terminationSpecifications a owl:DatatypeProperty ;
+    rdfs:label "termination specifications"@en ;
+    rdfs:comment "Are there specifications for the contract termination and dates?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingContracts ;
+    rdfs:range xsd:string .
+
+gax-service:termsAndConditions a owl:DatatypeProperty ;
+    rdfs:label "terms and conditions"@en ;
+    rdfs:comment "a resolvable link to the Terms and Conditions applying to that service." ;
+    rdfs:domain gax-service:ServiceOffering ;
+    rdfs:range gax-core:TermsAndConditions .
+
+gax-service:title a owl:DatatypeProperty ;
+    rdfs:label "title"@en ;
+    rdfs:comment "Name of the standard." ;
+    rdfs:domain gax-core:Standard ;
+    rdfs:range xsd:string .
+
+gax-service:type a owl:DatatypeProperty ;
+    rdfs:label "type"@en ;
+    rdfs:comment "Type of the data asset, which helps discovery.  Preferably a controlled vocabulary entry referenced by URI",
+        "Type of this Orchestration Service Offering, such as kubernetes." ;
+    rdfs:domain gax-resource:DataConnector,
+        gax-service:Orchestration ;
+    rdfs:range xsd:string .
+
+gax-service:typeOfPersonalDataAccordingToTheProvider a owl:DatatypeProperty ;
+    rdfs:label "type of personal data according to the provider"@en ;
+    rdfs:comment "Are declarations in the ADV-contract about personal data as well as categories of the affected persons?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingDataProtection ;
+    rdfs:range xsd:boolean .
+
+gax-service:updateInterval a owl:DatatypeProperty ;
+    rdfs:label "update interval"@en ;
+    rdfs:comment "Interval in which new data points are added to the data set." ;
+    rdfs:domain gax-service:DataResource ;
+    rdfs:range xsd:string .
+
+gax-service:userAlwaysAccessToCustomerData a owl:DatatypeProperty ;
+    rdfs:label "user always access to customer data"@en ;
+    rdfs:comment "Does the user always have access to customer data?" ;
+    rdfs:domain gax-service:TrustedCloudServiceOfferingInteroperability ;
+    rdfs:range xsd:string .
+
+gax-service:verifiableCredentialExportFormat a owl:DatatypeProperty ;
+    rdfs:label "verifiable credential export format"@en ;
+    rdfs:comment "a list of machine readable format used to export verifiable credentials." ;
+    rdfs:domain gax-service:VerifiableCredentialWallet ;
+    rdfs:range xsd:string .
+
+gax-service:volumeTypes a owl:ObjectProperty ;
+    rdfs:label "volume types"@en ;
+    rdfs:comment "List of volume types supported by this block storage" ;
+    rdfs:domain gax-service:BlockStorage ;
+    rdfs:range gax-core:VolumeType .
+
+gax-service:website a owl:DatatypeProperty ;
+    rdfs:label "website"@en ;
+    rdfs:comment "Web address for the service presentation." ;
+    rdfs:domain gax-service:TrustedCloudServiceOffering ;
+    rdfs:range xsd:anyURI .
+
+gax-resource:SoftwareResource a owl:Class ;
+    rdfs:label "Software Resource"@en ;
+    rdfs:subClassOf gax-resource:VirtualResource .
+
+gax-resource:VirtualNode a owl:Class ;
+    rdfs:label "Virtual Node"@en ;
+    rdfs:subClassOf gax-resource:InstantiatedVirtualResource,
+        gax-resource:Node .
+
+gax-service:BlockStorage a owl:Class ;
+    rdfs:label "Block Storage"@en ;
+    rdfs:subClassOf gax-service:Storage .
+
+gax-service:FileStorage a owl:Class ;
+    rdfs:label "File Storage"@en ;
+    rdfs:subClassOf gax-service:Storage .
+
+gax-service:ObjectStorage a owl:Class ;
+    rdfs:label "Object Storage"@en ;
+    rdfs:subClassOf gax-service:Storage .
+
+gax-service:Orchestration a owl:Class ;
+    rdfs:label "Orchestration"@en ;
+    rdfs:subClassOf gax-service:Platform .
+
+gax-service:VerifiableCredentialWallet a owl:Class ;
+    rdfs:label "Verifiable Credential Wallet"@en ;
+    rdfs:subClassOf gax-service:Wallet .
+
+gax-service:Wallet a owl:Class ;
+    rdfs:label "Wallet"@en ;
+    rdfs:subClassOf gax-service:Software .
+
+gax-service:Platform a owl:Class ;
+    rdfs:label "Platform"@en ;
+    rdfs:subClassOf gax-service:ServiceOffering .
+
+gax-core:Standard a owl:Class ;
+    rdfs:label "Standard"@en .
+
+gax-service:Infrastructure a owl:Class ;
+    rdfs:label "Infrastructure"@en ;
+    rdfs:subClassOf gax-service:ServiceOffering .
+
+gax-service:TrustedCloudServiceOfferingArchitecture a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Architecture"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-resource:VirtualResource a owl:Class ;
+    rdfs:label "Virtual Resource"@en ;
+    rdfs:subClassOf gax-resource:Resource .
+
+gax-service:ImageRegistry a owl:Class ;
+    rdfs:label "Image Registry"@en ;
+    rdfs:subClassOf gax-service:Storage .
+
+gax-service:Network a owl:Class ;
+    rdfs:label "Network"@en ;
+    rdfs:subClassOf gax-service:Infrastructure .
+
+gax-resource:DataConnector a owl:Class ;
+    rdfs:label "Data Connector"@en ;
+    rdfs:subClassOf gax-resource:ServiceOffering .
+
+gax-resource:InstantiatedVirtualResource a owl:Class ;
+    rdfs:label "Instantiated Virtual Resource"@en ;
+    rdfs:subClassOf gax-resource:VirtualResource .
+
+gax-resource:PhysicalResource a owl:Class ;
+    rdfs:label "Physical Resource"@en ;
+    rdfs:subClassOf gax-resource:Resource .
+
+gax-service:IdentityAccessManagement a owl:Class ;
+    rdfs:label "Identity Access Management"@en ;
+    rdfs:subClassOf gax-service:Infrastructure .
+
+gax-resource:Node a owl:Class ;
+    rdfs:label "Node"@en .
+
+gax-service:Compute a owl:Class ;
+    rdfs:label "Compute"@en ;
+    rdfs:subClassOf gax-service:Infrastructure .
+
+gax-service:TrustedCloudServiceOfferingCertificates a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Certificates"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-participant:LegalPerson a owl:Class ;
+    rdfs:label "Legal Person"@en ;
+    rdfs:subClassOf gax-participant:Participant,
+        <http://www.w3.org/ns/org#Organization> .
+
+gax-resource:Resource a owl:Class ;
+    rdfs:label "Resource"@en .
+
+gax-service:DataResource a owl:Class ;
+    rdfs:label "Data Resource"@en ;
+    rdfs:subClassOf gax-service:VirtualResource .
+
+gax-participant:Participant a owl:Class ;
+    rdfs:label "Participant"@en ;
+    rdfs:subClassOf foaf:Agent .
+
+gax-resource:Image a owl:Class ;
+    rdfs:label "Image"@en ;
+    rdfs:subClassOf gax-resource:SoftwareResource .
+
+gax-service:Storage a owl:Class ;
+    rdfs:label "Storage"@en ;
+    rdfs:subClassOf gax-service:Infrastructure .
+
+gax-service:TrustedCloudServiceOfferingInteroperability a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Interoperability"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-resource:NetworkingDevice a owl:Class ;
+    rdfs:label "Networking Device"@en ;
+    rdfs:subClassOf gax-resource:ComputationalResource .
+
+gax-service:TrustedCloudServiceOfferingSecurity a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Security"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-service:TrustedCloudServiceOffering a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering"@en ;
+    rdfs:subClassOf gax-service:ServiceOffering .
+
+gax-service:TrustedCloudServiceOfferingSubCompanies a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Sub Companies"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-participant:TrustedCloudProvider a owl:Class ;
+    rdfs:label "Trusted Cloud Provider"@en ;
+    rdfs:subClassOf gax-participant:Participant .
+
+gax-participant:Provider a owl:Class ;
+    rdfs:label "Provider"@en ;
+    rdfs:subClassOf gax-participant:Participant .
+
+gax-service:ServiceOffering a owl:Class ;
+    rdfs:label "Service Offering"@en .
+
+gax-resource:Interconnection a owl:Class ;
+    rdfs:label "Interconnection"@en ;
+    rdfs:subClassOf gax-resource:Network .
+
+gax-service:TrustedCloudServiceOfferingDataProtection a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Data Protection"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-service:TrustedCloudServiceOfferingOperativeProcesses a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Operative Processes"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+
+gax-service:TrustedCloudServiceOfferingContracts a owl:Class ;
+    rdfs:label "Trusted Cloud Service Offering Contracts"@en ;
+    rdfs:subClassOf gax-service:TrustedCloudServiceOffering .
+

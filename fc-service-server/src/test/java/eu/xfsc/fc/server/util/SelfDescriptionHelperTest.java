@@ -13,7 +13,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.xfsc.fc.core.exception.ClientException;
-import eu.xfsc.fc.server.util.SelfDescriptionHelper;
 
 @SpringBootTest
 @AutoConfigureMockMvc

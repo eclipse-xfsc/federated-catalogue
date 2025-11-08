@@ -13,7 +13,6 @@ import eu.xfsc.fc.core.pojo.SdClaim;
  */
 public interface GraphStore {
 
-
     /**
      * Pushes set of claims to the Graph DB. The set of claims are list of claim
      * objects containing subject, predicate and object similar to the form of n-triples

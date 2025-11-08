@@ -21,7 +21,6 @@
         <dependency>
             <groupId>com.danubetech</groupId>
             <artifactId>verifiable-credentials-java</artifactId>
-            <version>1.10.0</version>
         </dependency>
         <dependency>
             <groupId>decentralized-identity</groupId>

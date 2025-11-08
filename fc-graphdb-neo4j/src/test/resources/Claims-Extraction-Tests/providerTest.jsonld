@@ -1,0 +1,74 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+    ],
+      "@id": "https://delta-dao.com/.well-known/participant.json",
+      "issuer": "https://www.handelsregister.de/" ,
+      "issuanceDate": "2010-01-01T19:73:24Z",
+      "type": [
+        "VerifiableCredential"
+      ],
+      "credentialSubject": {
+        "@context": {
+            "gax-participant": "http://w3id.org/gaia-x/participant#",
+            "xsd": "http://www.w3.org/2001/XMLSchema#"
+        },
+        "id": "http://example.org/test-issuer",
+        "@type": [
+          "gax-participant:Provider"
+        ],
+        "gax-participant:name": {
+          "@value": "deltaDAO AG",
+          "@type": "xsd:string"
+        },
+        "gax-participant:legalName": {
+          "@value": "deltaDAO AG",
+          "@type": "xsd:string"
+        },
+        "gax-participant:legalAddress": {
+          "@type": "gax-participant:Address",
+          "gax-participant:country": {
+            "@value": "DE",
+            "@type": "xsd:string"
+          },
+          "gax-participant:street-address": {
+            "@value": "Geibelstraße 46b",
+            "@type": "xsd:string"
+          },
+          "gax-participant:postal-code": {
+            "@value": "22303",
+            "@type": "xsd:string"
+          },
+          "gax-participant:locality": {
+            "@value": "Hamburg",
+            "@type": "xsd:string"
+          }
+        }
+      },
+      "proof": {
+        "type": "JsonWebSignature2020",
+        "created": "2022-06-19T07:01:07.916Z",
+        "proofPurpose": "assertionMethod",
+        "verificationMethod": "did:web:example",
+        "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..ei4-mDyfi5sD8JyVAn2hgb-JMVVpWwxrteCYTLspo_L0dQlSmRFjBrjEWzOi-dF3XReitNEfoEZfZv4wU7q5HgI3rtVHIoKZ1xxvgOGYnQ2KhWGkm3Xlx2gRZPvNeMURSbTYNvrPWqEcDF_lwN_p4tBlWxlzgPrlFIf_ovd76OaUGXeLvfBSxchlVuDNRLyAuzzI6JYIrnM9gW4bf0XhNrEeRVmGmq5DmaZXyD6zJjpQU9XEhYnnq43_8wQrEFT81rcqazIRE3BvgFuk9l1lI6G5G9VJtCik_CNE3O4tjLIp1zneJlNu1IiyhJzS2RoDsg7vCgUKlVF38ivBNH0dWQ"
+      }
+    }
+  ],
+  "proof": {
+    "type": "RsaSignature2018",
+    "created": "2018-09-14T21:19:10Z",
+    "proofPurpose": "authentication",
+    "verificationMethod": "did:web:example",
+    "challenge": "1f44d55f-f161-4938-a659-f8026467f126",
+    "domain": "4jt78h47fh47",
+    "jws": "eyJhbGciOiJSUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..kTCYt5XsITJX1CxPCT8yAV-TVIw5WEuts01mqpQy7UJiN5mgREEMGlv50aqzpqh4Qq_PbChOMqsLfRoPsnsgxD-WUcX16dUOqV0G_zS245-kronKb78cPktb3rk-BuQy72IFLN25DYuNzVBAh4vGHSrQyHUGlcTwLtjPAnKb78"
+  }
+}

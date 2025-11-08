@@ -58,7 +58,6 @@ import org.jose4j.lang.JoseException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.ClientResource;
@@ -75,12 +74,10 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -90,8 +87,8 @@ import org.springframework.security.oauth2.server.resource.authentication.Bearer
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.annotation.BeforeTestClass;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -120,8 +117,6 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@ExtendWith(SpringExtension.class)
-@ExtendWith(MockitoExtension.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureWireMock(port = 0)
@@ -137,27 +132,27 @@ public class UsersControllerTest {
     private WebApplicationContext context;
     @Autowired
     private MockMvc mockMvc;
-    @MockBean
+    @MockitoBean
     private KeycloakBuilder builder;
-    @MockBean
+    @MockitoBean
     private Keycloak keycloak;
-    @MockBean
+    @MockitoBean
     private RealmResource realmResource;
-    @MockBean
+    @MockitoBean
     private UsersResource usersResource;
-    @MockBean
+    @MockitoBean
     private ClientsResource clientsResource;
-    @MockBean
+    @MockitoBean
     private ClientResource clientResource;
-    @MockBean
+    @MockitoBean
     private RolesResource rolesResource;
-    @MockBean
+    @MockitoBean
     private GroupsResource groupsResource;
-    @MockBean
+    @MockitoBean
     private RoleMappingResource roleMappingResource;
-    @MockBean
+    @MockitoBean
     private RoleScopeResource roleScopeResource;
-    @MockBean
+    @MockitoBean
     private UserResource userResource;
     @Autowired
     private UserDao userDao;
@@ -439,8 +434,6 @@ public class UsersControllerTest {
         assertEquals(2, profile.getRoleIds().size());
         assertTrue(profile.getRoleIds().containsAll(List.of(PARTICIPANT_ADMIN_ROLE, SD_ADMIN_ROLE)));
     }
-
-
 
     //Role Assignment can be done on this criteria
     //    role :-> can given by

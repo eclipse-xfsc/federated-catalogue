@@ -16,7 +16,6 @@ import jakarta.ws.rs.core.Response;
 
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -30,12 +29,11 @@ import org.keycloak.representations.idm.UserSessionRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.event.annotation.BeforeTestClass;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -50,7 +48,6 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@ExtendWith(SpringExtension.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class SessionControllerTest {
     
@@ -61,17 +58,17 @@ public class SessionControllerTest {
     @Autowired
     private ObjectMapper jsonMapper;
 
-    @MockBean
+    @MockitoBean
     private KeycloakBuilder builder;
-    @MockBean
+    @MockitoBean
     private Keycloak keycloak;
-    @MockBean
+    @MockitoBean
     private RealmResource realmResource;
-    @MockBean
+    @MockitoBean
     private UsersResource usersResource;
-    @MockBean
+    @MockitoBean
     private UserResource userResource;
-    @MockBean
+    @MockitoBean
     private RoleMappingResource rmResource;
     
     @BeforeTestClass
