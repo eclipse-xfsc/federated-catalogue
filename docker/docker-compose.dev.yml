@@ -1,0 +1,16 @@
+# Development override: starts only infrastructure services.
+#
+# Usage (infrastructure only, run fc-server locally):
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file dev.env up
+#
+# Then in another terminal:
+#   cd .. && mvn spring-boot:run -pl fc-service-server -Dspring-boot.run.profiles=dev
+#
+# To start the full stack in Docker, just omit this override file:
+#   docker-compose --env-file dev.env up
+
+services:
+  server:
+    profiles: ["full"]
+  portal:
+    profiles: ["full"]

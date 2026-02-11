@@ -1,0 +1,14 @@
+# Development profile overrides.
+# Activated via: -Dspring-boot.run.profiles=dev
+
+federated-catalogue:
+  verification:
+    doc-loader:
+      # Override remote URLs with inline empty JSON-LD contexts.
+      # Spring Boot merges maps across profiles, so we can't remove entries —
+      # instead we replace the remote URLs with inline content that parses locally.
+      additional-context:
+        '[https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': '{"@context": {}}'
+        '[https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': '{"@context": {}}'
+      enable-http: false
+      enable-local-cache: true
