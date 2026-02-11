@@ -1,16 +1,40 @@
-# Development override: starts only infrastructure services.
+# Development override for the Federated Catalogue Docker stack.
+# Use ./dev.sh for convenient access to these workflows.
 #
-# Usage (infrastructure only, run fc-server locally):
-#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file dev.env up
-#
-# Then in another terminal:
+# Workflow 1 — Infrastructure only (run fc-server locally):
+#   ./dev.sh up
 #   cd .. && mvn spring-boot:run -pl fc-service-server -Dspring-boot.run.profiles=dev
 #
-# To start the full stack in Docker, just omit this override file:
-#   docker-compose --env-file dev.env up
+# Workflow 2 — Containerized server with hot-reload:
+#   ./dev.sh build && ./dev.sh watch
+#   # Edit code, then: ./dev.sh build
+#   # The server container restarts automatically when the JAR changes.
+#
+# Workflow 3 — Full stack without hot-reload (omit this file):
+#   ./dev.sh full
 
 services:
   server:
     profiles: ["full"]
+    volumes:
+      - ../fc-service-server/target/:/app/target/:ro
+    entrypoint: ["sh", "-c", "java -jar /app/target/fc-service-server-*.jar"]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    develop:
+      watch:
+        # The sync part is effectively a no-op since the bind mount already exposes the files,
+        # but sync+restart gives us the restart trigger we need when
+        # the JAR changes on disk. Only "restart" isn't a valid action,
+        # so we need to include "sync" as well.
+        - action: sync+restart
+          path: ../fc-service-server/target/
+          target: /app/target/
+          ignore:
+            - classes/
+            - test-classes/
+            - maven-status/
+            - generated-sources/
+            - surefire/
   portal:
     profiles: ["full"]
