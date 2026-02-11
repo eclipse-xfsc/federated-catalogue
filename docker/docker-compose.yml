@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   postgres:
-    container_name: "postgres"
+    container_name: "fc-postgres"
     image: library/postgres:14
     restart: on-failure
     environment:
@@ -16,7 +16,7 @@ services:
     networks:
       - "gaia-x"
     volumes:
-#      - pgdata:/var/lib/postgresql/data/
+      - fc-pgdata:/var/lib/postgresql/data/
       - ./postgres-initdb-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: pg_isready -d postgres -U postgres
@@ -71,7 +71,9 @@ services:
     ports:
       - "8080:8080"
     networks:
-      - "gaia-x"
+      gaia-x:
+        aliases:
+          - key-server
     restart: unless-stopped
     volumes:
       - "../keycloak/providers:/opt/keycloak/providers"
@@ -112,6 +114,10 @@ services:
       GRAPHSTORE_URI: "${GRAPH_STORE_URI}"
       GRAPHSTORE_USER: "${GRAPH_STORE_USER}"
       GRAPHSTORE_PASSWORD: "${GRAPH_STORE_PASSWORD}"
+      # Spring Data Neo4j autoconfiguration
+      SPRING_NEO4J_URI: "${GRAPH_STORE_URI}"
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: "${GRAPH_STORE_USER}"
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: "${GRAPH_STORE_PASSWORD}"
       PUBLISHER_IMPL: nats
       PUBLISHER_URL: ${NATS_URL}
       SUBSCRIBER_IMPL: none
@@ -125,9 +131,6 @@ services:
       - "8081:8081"
     networks:
       - "gaia-x"
-    extra_hosts:
-      - "key-server:host-gateway"
-      - "localhost:127.0.0.1"
     restart: always #unless-stopped
     depends_on:
       postgres:
@@ -152,13 +155,13 @@ services:
       - "8088:8088"
     networks:
       - "gaia-x"
-    extra_hosts:
-      - "key-server:host-gateway"
-      - "localhost:host-gateway"
     restart: unless-stopped
     depends_on:
       server:
         condition: service_healthy
+
+volumes:
+  fce-pgdata:
 
 networks:
   gaia-x:
