@@ -128,10 +128,18 @@ federated-catalogue:
     partners:
     self: "http://localhost:${server.port}"
   verification:
-    trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
-#    trust-anchor-url: "https://registry.lab.gaia-x.eu/development/api/trustAnchor/chain/file"
-    http-timeout: 3000 
+    # Trust Framework Configuration
+    # When trust-framework.gaiax.enabled is false (default), credentials can be uploaded
+    # without Gaia-X compliance validation. The trust anchor registry will not be called.
+    # When true, full Gaia-X Trust Framework validation is enforced.
+    trust-framework:
+      gaiax:
+        enabled: false  # Set to true to enforce Gaia-X Trust Framework compliance
+        # URLs for Gaia-X Trust Framework services (only used when enabled: true)
+        trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+    http-timeout: 3000
     validator-expire: 1D
+    # Base class type URIs for credential subject classification
     participant:
       type: "https://w3id.org/gaia-x/core#Participant"
     resource:

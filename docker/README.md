@@ -10,7 +10,7 @@ git clone git@gitlab.eclipse.org:eclipse/xfsc/cat/fc-service.git
 
 ## Run Catalog
 Go to `/docker` folder. Use docker compose to start the stack needed to use the Catalog:
- 
+
 ``` sh
 docker-compose up
 ```
@@ -21,6 +21,20 @@ Development option that starts the stack with locally build jar files:
 
 ```sh
 docker-compose --env-file dev.env up --build
+```
+
+### Trust Framework Configuration
+
+By default, the catalogue runs without Gaia-X Trust Framework validation. To enable Gaia-X compliance validation, set the environment variable before starting:
+
+```sh
+export GAIAX_TRUST_FRAMEWORK_ENABLED=true
+docker-compose up
+```
+
+Or add it to your `.env` file:
+```
+GAIAX_TRUST_FRAMEWORK_ENABLED=true
 ```
 
 ### Keycloak setup

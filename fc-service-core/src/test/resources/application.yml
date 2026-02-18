@@ -43,7 +43,11 @@ federated-catalogue:
     context-cache:
       location: contextCacheFiles
   verification:
-    trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+    # Trust Framework Configuration - disabled by default for tests
+    trust-framework:
+      gaiax:
+        enabled: false
+        trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
     participant:
       type: "http://w3id.org/gaia-x/participant#Participant"
     resource:
