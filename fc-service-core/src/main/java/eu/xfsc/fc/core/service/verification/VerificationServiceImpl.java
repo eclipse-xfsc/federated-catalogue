@@ -90,6 +90,13 @@ public class VerificationServiceImpl implements VerificationService {
   @Value("${federated-catalogue.verification.drop-validarors:false}")
   private boolean dropValidators;
 
+  /**
+   * When true, Gaia-X Trust Framework validation is enforced including trust anchor registry calls.
+   * When false (default), credentials can be uploaded without Gaia-X compliance validation.
+   */
+  @Value("${federated-catalogue.verification.trust-framework.gaiax.enabled:false}")
+  boolean gaiaxTrustFrameworkEnabled;
+
   @Value("${federated-catalogue.verification.participant.type}")
   private String participantType; 
   @Value("${federated-catalogue.verification.service-offering.type}")
@@ -113,7 +120,7 @@ public class VerificationServiceImpl implements VerificationService {
   @Autowired
   private ValidatorCacheDao validatorCache;
 
-  @Value("${federated-catalogue.verification.trust-anchor-url}")
+  @Value("${federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url:}")
   private String trustAnchorAddr;
   @Value("${federated-catalogue.verification.http-timeout:5000}") 
   private int httpTimeout;
@@ -504,7 +511,6 @@ public class VerificationServiceImpl implements VerificationService {
   public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
     trustFrameworkBaseClassUris.put(baseClass, uri);
   }
-  
 
   /* SD validation against SHACL Schemas */
   @Override
@@ -625,7 +631,11 @@ public class VerificationServiceImpl implements VerificationService {
     JWK jwk = JWK.fromJson(validator.getPublicKey());
     String url = jwk.getX5u();
     if (url == null) {
-      throw new VerificationException("Signatures error; no trust anchor url found");
+      // When Gaia-X trust framework is enabled, x5u URL is required for trust anchor validation
+      if (gaiaxTrustFrameworkEnabled) {
+        throw new VerificationException("Signatures error; no trust anchor url found");
+      }
+      log.debug("checkProofSignature; no x5u URL in JWK, skipping trust anchor validation (gaiax.enabled=false)");
     } else {
       expiration = hasPEMTrustAnchorAndIsNotExpired(url);
     }
@@ -640,7 +650,7 @@ public class VerificationServiceImpl implements VerificationService {
 
   @SuppressWarnings("unchecked")
   private Instant hasPEMTrustAnchorAndIsNotExpired(String uri) throws VerificationException {
-    log.debug("hasPEMTrustAnchorAndIsNotExpired.enter; got uri: {}", uri);
+    log.debug("hasPEMTrustAnchorAndIsNotExpired.enter; got uri: {}, gaiaxTrustFrameworkEnabled: {}", uri, gaiaxTrustFrameworkEnabled);
     String pem = rest.getForObject(uri, String.class);
     InputStream certStream = new ByteArrayInputStream(pem.getBytes(StandardCharsets.UTF_8));
     List<X509Certificate> certs;
@@ -666,15 +676,28 @@ public class VerificationServiceImpl implements VerificationService {
       }
     }
 
-    try {
-      ResponseEntity<Map> resp = rest.postForEntity(trustAnchorAddr, Map.of("uri", uri), Map.class);
-      if (!resp.getStatusCode().is2xxSuccessful()) {
-        log.info("hasPEMTrustAnchorAndIsNotExpired; Trust anchor is not set in the registry. URI: {}", uri);
+    // Only call Gaia-X Trust Anchor Registry when Gaia-X trust framework is enabled
+    if (gaiaxTrustFrameworkEnabled) {
+      if (trustAnchorAddr == null || trustAnchorAddr.isBlank()) {
+        log.warn("hasPEMTrustAnchorAndIsNotExpired; Gaia-X trust framework enabled but trust-anchor-url not configured");
+        throw new VerificationException("Signatures error; Gaia-X trust framework enabled but trust-anchor-url not configured");
       }
-    } catch (Exception ex) {
-      log.warn("hasPEMTrustAnchorAndIsNotExpired; trust anchor error: {}", ex.getMessage());
-      throw new VerificationException("Signatures error; " + ex.getMessage());
+      try {
+        ResponseEntity<Map> resp = rest.postForEntity(trustAnchorAddr, Map.of("uri", uri), Map.class);
+        if (!resp.getStatusCode().is2xxSuccessful()) {
+          log.info("hasPEMTrustAnchorAndIsNotExpired; Trust anchor is not set in the registry. URI: {}", uri);
+          throw new VerificationException("Signatures error; trust anchor is not registered in the Gaia-X registry. URI: " + uri);
+        }
+      } catch (VerificationException ex) {
+        throw ex;
+      } catch (Exception ex) {
+        log.warn("hasPEMTrustAnchorAndIsNotExpired; trust anchor error: {}", ex.getMessage());
+        throw new VerificationException("Signatures error; " + ex.getMessage());
+      }
+    } else {
+      log.debug("hasPEMTrustAnchorAndIsNotExpired; skipping Gaia-X trust anchor registry validation (gaiax.enabled=false)");
     }
+
     Instant exp = relevant == null ? null : relevant.getNotAfter().toInstant();
     log.debug("hasPEMTrustAnchorAndIsNotExpired.exit; returning: {}", exp);
     return exp;

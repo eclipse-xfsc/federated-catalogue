@@ -91,6 +91,7 @@
         <spring-cloud-contract-wiremock.version>4.3.0</spring-cloud-contract-wiremock.version>
         <security.test-addons.version>4.5.1</security.test-addons.version>
         <embedded.postgres.version>2.1.1</embedded.postgres.version>
+        <embedded.postgres.binaries.version>14.19.0</embedded.postgres.binaries.version>
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
         <jose4j.version>0.9.6</jose4j.version>
         <okhttp.version>5.3.0</okhttp.version>
@@ -471,5 +472,26 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>arm64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.zonky.test.postgres</groupId>
+                        <artifactId>embedded-postgres-binaries-linux-arm64v8</artifactId>
+                        <version>${embedded.postgres.binaries.version}</version>
+                        <scope>test</scope>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+    </profiles>
 
 </project>

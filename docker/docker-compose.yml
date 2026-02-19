@@ -115,6 +115,10 @@ services:
       PUBLISHER_IMPL: nats
       PUBLISHER_URL: ${NATS_URL}
       SUBSCRIBER_IMPL: none
+      # Trust Framework Configuration
+      # Set to 'true' to enforce Gaia-X Trust Framework compliance validation
+      # When 'false' (default), credentials can be uploaded without Gaia-X compliance
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "${GAIAX_TRUST_FRAMEWORK_ENABLED:-false}"
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1
       interval: 30s

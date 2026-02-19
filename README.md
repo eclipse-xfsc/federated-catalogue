@@ -1,7 +1,7 @@
 # Federated Catalogue
 
 ## Description
-The Gaia-X Catalogue Service makes Self-Descriptions of Providers, their Service Offerings and Resources used by these services available to Consumers.
+The Federated Catalogue Service makes Self-Descriptions of Providers, their Service Offerings and Resources used by these services available to Consumers.
 
 This project was initiated as a Reference Implementation of Gaia-X Federation Services Lot 5 [Federated Catalogue / Core Catalogue Features](https://www.gxfs.eu/core-catalogue-features/).
 
@@ -13,6 +13,41 @@ To get support you can open an issue in the project [Issues](https://github.com/
 
 ## Getting Started
 To start with FC project please follow the instructions: [Steps to build FC](./docker/README.md).
+
+## Trust Framework Configuration
+
+The Federated Catalogue can be operated with or without Gaia-X Trust Framework validation. By default, Gaia-X compliance validation is **disabled**, allowing the catalogue to be used in other ecosystems and use cases.
+
+### Configuration Options
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `federated-catalogue.verification.trust-framework.gaiax.enabled` | `false` | Enable/disable Gaia-X Trust Framework validation |
+| `federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url` | (Gaia-X registry URL) | URL for Gaia-X Trust Anchor Registry (only used when enabled) |
+
+### Behavior
+
+**When `gaiax.enabled: false` (default):**
+- Credentials can be uploaded without Gaia-X compliance validation
+- No calls are made to the Gaia-X Digital Clearing House or Trust Anchor Registry
+- Signature verification still works but does not require Gaia-X trust anchors
+- Any valid Verifiable Credential/Presentation can be stored
+
+**When `gaiax.enabled: true`:**
+- Full Gaia-X Trust Framework validation is enforced
+- Credentials must have valid trust anchor chains registered with Gaia-X
+- Calls are made to the Gaia-X Trust Anchor Registry for validation
+
+### Example Configuration (application.yml)
+
+```yaml
+federated-catalogue:
+  verification:
+    trust-framework:
+      gaiax:
+        enabled: false  # Set to true for Gaia-X compliance
+        trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+```
 
 ## Roadmap
 The project v1.0.0 was released in February 2023.
