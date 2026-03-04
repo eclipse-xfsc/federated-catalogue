@@ -3,7 +3,9 @@ management:
     configprops:
       show-values: ALWAYS
     env:
-      show-values: ALWAYS  
+      show-values: ALWAYS
+    health:
+      show-details: when_authorized
   endpoints:
     web:
       exposure:
@@ -78,7 +80,8 @@ datastore:
   file-path: target
 
 graphstore:
-  impl: neo4j #fuceki, dummy
+  impl: neo4j #fuseki, none
+  auto-rebuild-on-empty: false
   uri: bolt://localhost:7687
   user: neo4j
   password: neo12345

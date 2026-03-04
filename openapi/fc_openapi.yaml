@@ -353,6 +353,67 @@ components:
           type: string
         documentation:
           type: string
+    RebuildStatus:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: Total number of SDs to process
+        processed:
+          type: integer
+          format: int64
+          description: Number of SDs processed so far
+        percentComplete:
+          type: integer
+          description: Completion percentage (0-100)
+        running:
+          type: boolean
+          description: Whether a rebuild is currently running
+        complete:
+          type: boolean
+          description: Whether the rebuild has completed
+        failed:
+          type: boolean
+          description: Whether the rebuild has failed
+        errorMessage:
+          type: string
+          description: Error message if the rebuild failed
+        errors:
+          type: integer
+          format: int64
+          description: Number of SDs that failed during processing
+        durationMs:
+          type: integer
+          format: int64
+          description: Duration in milliseconds since rebuild started
+    GraphStatus:
+      type: object
+      properties:
+        backend:
+          type: string
+          description: The graph database backend type (NEO4J, FUSEKI, NONE)
+        enabled:
+          type: boolean
+          description: Whether the graph store is enabled
+        healthy:
+          type: boolean
+          description: Whether the graph store backend is healthy
+        activeSdCount:
+          type: integer
+          format: int64
+          description: Number of active SDs in PostgreSQL storage
+        claimCountInGraph:
+          type: integer
+          format: int64
+          description: Number of claim triples/nodes in the graph database
+        sdCountInGraph:
+          type: integer
+          format: int64
+          description: Number of distinct self-descriptions in the graph database
+        syncAssessment:
+          type: string
+          description: Sync assessment (empty, in-sync, out-of-sync, unknown, disabled)
 
   parameters:
     OffsetParam:
@@ -431,7 +492,66 @@ tags:
     description: Role Managemet operations
   - name: Session
     description: Management for auth sessions in the catalogue
+  - name: Graph Admin
+    description: Graph database administration operations.
 paths:
+  /admin/graph/rebuild:
+    post:
+      tags:
+        - Graph Admin
+      summary: Trigger an asynchronous graph rebuild
+      operationId: triggerGraphRebuild
+      security:
+        - jwt: []
+      responses:
+        '202':
+          description: Graph rebuild started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebuildStatus'
+        '409':
+          description: A graph rebuild is already in progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebuildStatus'
+        '503':
+          description: Graph store is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /admin/graph/rebuild/status:
+    get:
+      tags:
+        - Graph Admin
+      summary: Get the current graph rebuild status
+      operationId: getGraphRebuildStatus
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Current rebuild status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebuildStatus'
+  /admin/graph/status:
+    get:
+      tags:
+        - Graph Admin
+      summary: Get the current graph store status
+      operationId: getGraphStatus
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Graph store status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphStatus'
   /self-descriptions:
     get:
       tags:

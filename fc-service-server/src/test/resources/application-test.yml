@@ -17,8 +17,11 @@ federated-catalogue:
       - "http://localhost:9090"
       - "http://localhost:9091"
 
+# Graph store disabled by default for tests. Tests needing a real graph store
+# must add @TestPropertySource(properties = {"graphstore.impl=neo4j"}) and
+# @Import(EmbeddedNeo4JConfig.class) to their test class.
 graphstore:
-  impl: neo4j
+  impl: none
   query-timeout-in-seconds: 5
 
 spring:

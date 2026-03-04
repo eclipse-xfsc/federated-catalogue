@@ -14,6 +14,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -186,4 +187,15 @@ public class QueryControllerFusekiTest {
     assertNotNull(info.getDocumentation());
   }
 
+  @Test
+  public void postQuery_withJsonContentType_returnsUnsupportedMediaType() throws Exception {
+    String statement = "{\"statement\": \"{ query { nodes { id } } }\", \"parameters\": null}";
+
+    mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(statement)
+            .with(csrf())
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Accept", "application/json"))
+        .andExpect(status().isUnsupportedMediaType());
+  }
 }

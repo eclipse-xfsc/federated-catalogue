@@ -15,6 +15,7 @@ import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionBuilder;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
@@ -76,6 +77,65 @@ public class SparqlGraphStore implements GraphStore {
         return GraphBackendType.FUSEKI;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean isHealthy() {
+        try {
+            Txn.calculateRead(rdfConnection, () -> {
+                try (QueryExecution qe = rdfConnection.newQuery()
+                        .query("ASK { ?s ?p ?o }").build()) {
+                    return qe.execAsk();
+                }
+            });
+            return true;
+        } catch (Exception e) {
+            log.warn("Fuseki health check failed", e);
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long getClaimCount() {
+        try {
+            return Txn.calculateRead(rdfConnection, () -> {
+                String query = "SELECT (COUNT(*) AS ?cnt) WHERE { "
+                    + "<<?s ?p ?o>> <" + PROP_CREDENTIAL_SUBJECT + "> ?cs }";
+                try (QueryExecution qe = rdfConnection.newQuery().query(query).build()) {
+                    ResultSet rs = qe.execSelect();
+                    if (rs.hasNext()) {
+                        return rs.next().getLiteral("cnt").getLong();
+                    }
+                }
+                return 0L;
+            });
+        } catch (Exception e) {
+            log.warn("Failed to get Fuseki claim count: {}", e.getMessage());
+            return -1;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long getSdCountInGraph() {
+        try {
+            return Txn.calculateRead(rdfConnection, () -> {
+                String query = "SELECT (COUNT(DISTINCT ?cs) AS ?cnt) WHERE { "
+                    + "<<?s ?p ?o>> <" + PROP_CREDENTIAL_SUBJECT + "> ?cs }";
+                try (QueryExecution qe = rdfConnection.newQuery().query(query).build()) {
+                    ResultSet rs = qe.execSelect();
+                    if (rs.hasNext()) {
+                        return rs.next().getLiteral("cnt").getLong();
+                    }
+                }
+                return 0L;
+            });
+        } catch (Exception e) {
+            log.warn("Failed to get Fuseki SD count: {}", e.getMessage());
+            return -1;
+        }
+    }
+
     @Override
     public void addClaims(List<SdClaim> sdClaimList, String credentialSubject) {
         log.debug("addClaims.enter; got claims: {}, subject: {}", sdClaimList, credentialSubject);
@@ -108,33 +168,35 @@ public class SparqlGraphStore implements GraphStore {
         if (sdQuery.getQueryLanguage() != QueryLanguage.SPARQL) {
             throw new UnsupportedOperationException(sdQuery.getQueryLanguage() + " query language is not supported");
         }
-        final QueryExecutionBuilder queryExecutionBuilder = rdfConnection.newQuery()
-                .query(sdQuery.getQuery())
-                .timeout(sdQuery.getTimeout(), TimeUnit.SECONDS);  // Fuseki timeout is in milliseconds per default
-        try(final QueryExecution queryResults = queryExecutionBuilder.build()) {
-            final List<Map<String, Object>> parsedResults = new ArrayList<>(ResultSetFormatter.toList(queryResults.execSelect()).stream()
-                    .map(qs -> (ResultBinding) qs)
-                    .map(rb -> {
-                        final Map<String, Object> resultMap = new HashMap<>();
-                        rb.varNames().forEachRemaining(varName -> resultMap.put(varName, convertRdfNode(rb.get(varName))));
-                        return resultMap;
-                    }).toList());
-            // Shuffle list to guarantee results won't appear in a deterministic order thus giving certain results
-            // an advantage over others as they would always be in the top n result entries.
-            // However, the shuffling should only be performed if the query does not, by itself, return an ordered result.
-            if (!orderByRegex.matcher(sdQuery.getQuery()).find()) {
-                Collections.shuffle(parsedResults);
+        return Txn.calculateRead(rdfConnection, () -> {
+            final QueryExecutionBuilder queryExecutionBuilder = rdfConnection.newQuery()
+                    .query(sdQuery.getQuery())
+                    .timeout(sdQuery.getTimeout(), TimeUnit.SECONDS);  // Fuseki timeout is in milliseconds per default
+            try(final QueryExecution queryResults = queryExecutionBuilder.build()) {
+                final List<Map<String, Object>> parsedResults = new ArrayList<>(ResultSetFormatter.toList(queryResults.execSelect()).stream()
+                        .map(qs -> (ResultBinding) qs)
+                        .map(rb -> {
+                            final Map<String, Object> resultMap = new HashMap<>();
+                            rb.varNames().forEachRemaining(varName -> resultMap.put(varName, convertRdfNode(rb.get(varName))));
+                            return resultMap;
+                        }).toList());
+                // Shuffle list to guarantee results won't appear in a deterministic order thus giving certain results
+                // an advantage over others as they would always be in the top n result entries.
+                // However, the shuffling should only be performed if the query does not, by itself, return an ordered result.
+                if (!orderByRegex.matcher(sdQuery.getQuery()).find()) {
+                    Collections.shuffle(parsedResults);
+                }
+                return new PaginatedResults<>(parsedResults);
+            } catch (Exception e) {
+                if (e.getCause() instanceof HttpConnectTimeoutException) {
+                    log.error("Timeout while executing query: {}", sdQuery.getQuery(), e);
+                    throw new TimeoutException("Timeout while executing query");
+                } else {
+                    log.error("Error while executing query: {}", sdQuery.getQuery(), e);
+                    throw new ServerException("error querying data " + e.getMessage(), e);
+                }
             }
-            return new PaginatedResults<>(parsedResults);
-        } catch (Exception e) {
-            if (e.getCause() instanceof HttpConnectTimeoutException) {
-                log.error("Timeout while executing query: {}", sdQuery.getQuery(), e);
-                throw new TimeoutException("Timeout while executing query");
-            } else {
-                log.error("Error while executing query: {}", sdQuery.getQuery(), e);
-                throw new ServerException("error querying data " + e.getMessage(), e);
-            }
-        }
+        });
     }
 
     /**

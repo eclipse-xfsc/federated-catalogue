@@ -100,9 +100,8 @@ services:
     networks: 
       - "gaia-x"
 
-
 # Optional: Fuseki SPARQL-star backend. Uncomment when using GRAPH_STORE_IMPL=fuseki (e.g. dev-fuseki.env).
-# Not needed for neo4j or dummy backends.
+# Not needed for neo4j or none backends.
 #  fuseki:
 #    container_name: "fuseki"
 #    image: docker.io/stain/jena-fuseki
@@ -171,8 +170,8 @@ services:
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "${VERIFY_VP_SIGNATURE:-false}"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "${VERIFY_VC_SIGNATURE:-false}"
       FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "${GAIAX_TRUST_FRAMEWORK_ENABLED:-false}"
-      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "${VERIFY_SCHEMA:-false}"
-      # Trust anchor URL — mock registry on did-server for test environments.
+
+      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "${VERIFY_SCHEMA:-false}"# Trust anchor URL — mock registry on did-server for test environments.
       # Override in production with the real Gaia-X registry URL.
       FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_TRUST_ANCHOR_URL: "${FC_TRUST_ANCHOR_URL:-https://did-server/api/trustAnchor/chain/file}"
       JAVA_TOOL_OPTIONS: >-
@@ -200,7 +199,7 @@ services:
         condition: service_healthy
       did-server:
         condition: service_started
-        
+
   portal:
     container_name: "demo-portal"
 #    image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-demo-portal:2.0.0
