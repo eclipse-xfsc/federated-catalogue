@@ -80,7 +80,7 @@
         <key-format.version>1.23.0</key-format.version>
         <did.version>1.20.0</did.version>
         <ld-signatures.version>1.11.0</ld-signatures.version>
-        <uni-resolver.version>0.35.0</uni-resolver.version>
+        <uni-resolver.version>0.51.0</uni-resolver.version>
         <titanium.version>1.7.0</titanium.version>
         <caffeine.version>3.2.3</caffeine.version>        
         <bcpkix-jdk18on.version>1.82</bcpkix-jdk18on.version>

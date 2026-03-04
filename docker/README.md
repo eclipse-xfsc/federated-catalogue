@@ -23,19 +23,37 @@ Development option that starts the stack with locally build jar files:
 docker-compose --env-file dev.env up --build
 ```
 
-### Trust Framework Configuration
+### Verification Defaults
 
-By default, the catalogue runs without Gaia-X Trust Framework validation. To enable Gaia-X compliance validation, set the environment variable before starting:
+By default, the catalogue runs with **semantic validation only**. Signature verification and
+schema validation are disabled because signature checks without the Gaia-X trust framework
+provide no meaningful security (see architecture decision ADR 3).
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `semantics` | `true` | Validate `@type` against loaded ontologies |
+| `schema` | `false` | Validate against SHACL shapes |
+| `vp-signature` | `false` | Verify VP proof (JWS) |
+| `vc-signature` | `false` | Verify VC proof (JWS) |
+| `gaiax.enabled` | `false` | Gaia-X Trust Framework compliance |
+
+### Strict Profile (Full Verification)
+
+To enable the full verification pipeline (signatures + trust framework + schema), use the
+strict compose overlay:
 
 ```sh
-export GAIAX_TRUST_FRAMEWORK_ENABLED=true
-docker-compose up
+docker compose -f docker-compose.yml -f docker-compose.strict.yml --env-file dev.env up
 ```
 
-Or add it to your `.env` file:
+Or via the dev helper script:
+
+```sh
+./dev.sh strict
 ```
-GAIAX_TRUST_FRAMEWORK_ENABLED=true
-```
+
+This enables all verification flags and requires DID resolution infrastructure (did-server,
+certificates, trust anchor registry).
 
 ### Keycloak setup
 

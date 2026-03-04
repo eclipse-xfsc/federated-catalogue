@@ -45,7 +45,7 @@ public class DidDocumentResolver {
 				throw new VerificationException(ex);
 			}
 			if (didResult.isErrorResult()) {
-				throw new VerificationException(didResult.getErrorMessage());
+				throw new VerificationException(didResult.getErrorDetail());
 			}
 
 			//String docStream = didResult.getDidDocumentStreamAsString();

@@ -1,0 +1,28 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/did/v1",
+    "https://w3id.org/security/suites/jws-2020/v1"
+  ],
+  "id": "did:web:did-server",
+  "verificationMethod": [
+    {
+      "id": "did:web:did-server#0",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:did-server",
+      "publicKeyJwk": {
+        "kty": "RSA",
+        "e": "AQAB",
+        "n": "8CR_2IBnHiCr5HcI1qhuuzbFgLF1eIR7tc551vZSvzMkLKHTJqxuYGPeUzvSogug-L2QCkiUgfJ1YS4ERhkDS6qPIlWL3PFnG8V6PUlh86cN81ZHYvHhPV0P7JOnTxeJq5ukWEOG-1LkNi9xegzTh0EpWL85NZRbNabtGEjMHjcN2jOMRWRbA89WD5XNLLpue25Yqlw18flmsMFhyuy6bUfjtviryI8poDK9ZWpkOR3zz9M7HiAurgcKJK989D_E3gwwKQaCmBlBx_xDJRhTPunrYPPrHyi0LfhnByh3pBQ1hrzQKnVr__3bEppNZndE-XeY64W3Mhe0kTkDJvUrgw",
+        "kid": "signRSA2048",
+        "alg": "PS256",
+        "x5u": "https://did-server/certs/chain.pem"
+      }
+    }
+  ],
+  "authentication": [
+    "did:web:did-server#0"
+  ],
+  "assertionMethod": [
+    "did:web:did-server#0"
+  ]
+}

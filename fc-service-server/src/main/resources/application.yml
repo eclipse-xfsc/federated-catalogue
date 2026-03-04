@@ -148,8 +148,8 @@ federated-catalogue:
       type: "https://w3id.org/gaia-x/core#ServiceOffering"
     semantics: true
     schema: false
-    vp-signature: true
-    vc-signature: true
+    vp-signature: false
+    vc-signature: false
     signature-verifier: uni-res #local
     did: 
       base-url: "https://dev.uniresolver.io/1.0" #/identifiers/

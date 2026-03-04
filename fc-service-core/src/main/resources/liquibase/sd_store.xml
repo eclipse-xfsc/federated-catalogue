@@ -41,4 +41,12 @@
         </createIndex>
     </changeSet>
 
+    <changeSet author="Eric Nowak" id="2026-02-26-widen-validators">
+        <comment>Widen validators array elements from VARCHAR(256) to VARCHAR(2048) to support did:jwk DIDs.
+            did:jwk embeds the full JWK in the URI (~500 chars for RSA 2048 + x5u).
+            See: https://github.com/eclipse-xfsc/federated-catalogue/issues/36</comment>
+        <modifyDataType tableName="sdfiles" columnName="validators"
+                        newDataType="java.sql.Types.VARCHAR(2048) []"/>
+    </changeSet>
+
 </databaseChangeLog>

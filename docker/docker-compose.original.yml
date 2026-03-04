@@ -1,0 +1,20 @@
+# Overlay for testing against the original published 2.0.0 image.
+#
+# The 2.0.0 image uses FLAT config property names — no trust-framework.gaiax nesting.
+# See: design-documents/02-insights/testing/bdd-automation-knowledge/fixture-signing.md
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.original.yml --env-file dev.env up
+
+services:
+  server:
+    image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-service-server:2.0.0
+    build: !reset null
+    environment:
+      # 2.0.0 uses flat config (no trust-framework.gaiax nesting)
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_ANCHOR_URL: "${FC_TRUST_ANCHOR_URL:-https://did-server/api/trustAnchor/chain/file}"
+      FEDERATED_CATALOGUE_VERIFICATION_SIGNATURE_VERIFIER: "${FC_SIGNATURE_VERIFIER:-local}"
+      # Override nested vars from base compose (ignored by 2.0.0 but kept clean)
+      # These config paths have changed in the 2.0.0 release to be more generic, so we unset it here explicitly.
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: !reset null
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_TRUST_ANCHOR_URL: !reset null
