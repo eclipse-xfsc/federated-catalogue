@@ -284,6 +284,131 @@ public class SparqlGraphStoreTest {
             "No results should be stored for empty claim list");
     }
 
+    @Test
+    void addClaims_withMultipleTriples_wrapsEachIndividually() {
+        String credentialSubject = "http://example.org/credentialMulti";
+        List<SdClaim> claims = List.of(
+            typeClaim("http://example.org/multiSubject", "http://example.org/TypeA"),
+            typeClaim("http://example.org/multiSubject", "http://example.org/TypeB"),
+            literalClaim("http://example.org/multiSubject", "http://example.org/label", "Multi")
+        );
+        graphStore.addClaims(claims, credentialSubject);
+
+        List<Map<String, Object>> rows = querySparql(
+            "SELECT ?s ?p ?o ?mo WHERE { <<?s ?p ?o>> <" + CRED_SUBJECT_URI + "> ?mo } ORDER BY ?p"
+        ).getResults();
+
+        assertEquals(3, rows.size(), "Should return 3 rows for 3 individually wrapped claims");
+        for (Map<String, Object> row : rows) {
+            assertEquals(credentialSubject, row.get("mo"),
+                "Each wrapped statement's meta-object should be the credential subject");
+        }
+    }
+
+    @Test
+    void addClaims_sameTripleFromTwoCredentials_createsSeparateWrappedStatements() {
+        String credA = "http://example.org/credentialSharedA";
+        String credB = "http://example.org/credentialSharedB";
+        SdClaim sharedClaim = typeClaim("http://example.org/shared", "http://example.org/SharedType");
+
+        graphStore.addClaims(List.of(sharedClaim), credA);
+        graphStore.addClaims(List.of(sharedClaim), credB);
+
+        String sharedTripleQuery = "SELECT ?mo WHERE { <<" +
+            "<http://example.org/shared> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/SharedType>" +
+            ">> <" + CRED_SUBJECT_URI + "> ?mo } ORDER BY ?mo";
+
+        List<Map<String, Object>> rows = querySparql(sharedTripleQuery).getResults();
+
+        assertEquals(2, rows.size(), "Same triple from two credentials should create 2 wrapped statements");
+        assertEquals(credA, rows.get(0).get("mo"));
+        assertEquals(credB, rows.get(1).get("mo"));
+
+        // Delete one credential, the other should survive
+        graphStore.deleteClaims(credA);
+
+        List<Map<String, Object>> afterDelete = querySparql(sharedTripleQuery).getResults();
+
+        assertEquals(1, afterDelete.size(), "After deleting credA, only credB's wrapping should remain");
+        assertEquals(credB, afterDelete.getFirst().get("mo"));
+    }
+
+    @Test
+    void deleteClaims_removesAllWrappedStatements_zeroResultsForCredential() {
+        String credentialSubject = "http://example.org/credentialToDelete";
+        List<SdClaim> claims = List.of(
+            typeClaim("http://example.org/delSubject", "http://example.org/DelType"),
+            literalClaim("http://example.org/delSubject", "http://example.org/name", "ToDelete"),
+            literalClaim("http://example.org/delSubject", "http://example.org/desc", "Will be removed")
+        );
+        graphStore.addClaims(claims, credentialSubject);
+
+        assertEquals(3, queryBySpecificCredentialSubject(credentialSubject).getResults().size(),
+            "Precondition: 3 claims should be stored before deletion");
+
+        graphStore.deleteClaims(credentialSubject);
+
+        assertTrue(queryBySpecificCredentialSubject(credentialSubject).getResults().isEmpty(),
+            "After deletion, zero results should remain for the credential subject");
+    }
+
+    @Test
+    void queryData_regularSparqlWithoutStarSyntax_returnsWrappedStatements() {
+        String credentialSubject = "http://example.org/credentialRegular";
+        graphStore.addClaims(List.of(
+            typeClaim("http://example.org/regSubject", "http://example.org/RegType"),
+            literalClaim("http://example.org/regSubject", "http://example.org/label", "Regular")
+        ), credentialSubject);
+
+        // Regular SPARQL (no <<>> star syntax) matches the RDF-star reified statements.
+        // In Jena's RDF-star model, the only triples in the default graph are of the form:
+        //   <<inner-triple>> cred:credentialSubject <credentialSubject>
+        // So ?s binds to a triple-term, ?p to the wrapping predicate, ?o to the credential subject.
+        List<Map<String, Object>> rows = querySparql(
+            "SELECT ?s ?p ?o WHERE { ?s ?p ?o } ORDER BY ?s ?p"
+        ).getResults();
+
+        assertEquals(2, rows.size(),
+            "Regular SPARQL should return 2 rows (one per wrapped claim)");
+
+        // Each row's predicate is the credentialSubject wrapping predicate
+        for (Map<String, Object> row : rows) {
+            assertEquals(CRED_SUBJECT_URI, row.get("p"),
+                "Each result's predicate should be the RDF-star wrapping predicate");
+            assertEquals(credentialSubject, row.get("o"),
+                "Each result's object should be the credential subject");
+        }
+
+        // The triple subjects are triple-term string representations containing the original triples.
+        // This confirms the data is accessible (non-empty) and the wrapping structure is consistent.
+        for (Map<String, Object> row : rows) {
+            String subject = String.valueOf(row.get("s"));
+            assertTrue(subject.contains("http://example.org/regSubject"),
+                "Triple-term subject should contain the original inner triple's subject URI");
+        }
+    }
+
+    @Test
+    void queryData_sparqlStarFilterBySpecificCredential_returnsOnlyThatCredential() {
+        String credA = "http://example.org/credFilterA";
+        String credB = "http://example.org/credFilterB";
+        graphStore.addClaims(List.of(
+            typeClaim("http://example.org/filterSubjectA", "http://example.org/TypeFA")
+        ), credA);
+        graphStore.addClaims(List.of(
+            typeClaim("http://example.org/filterSubjectB", "http://example.org/TypeFB")
+        ), credB);
+
+        List<Map<String, Object>> rows = queryBySpecificCredentialSubject(credA).getResults();
+
+        assertEquals(1, rows.size(), "Filter by credA should return only credA's claim");
+        assertEquals("http://example.org/filterSubjectA", rows.getFirst().get("s"),
+            "Returned triple subject should belong to credA");
+        assertTrue(rows.stream().noneMatch(r ->
+                "http://example.org/filterSubjectB".equals(r.get("s"))),
+            "Filter by credA should not return credB's claims");
+    }
+
     // --- Helpers ---
 
     private PaginatedResults<Map<String, Object>> querySparql(String sparql) {
