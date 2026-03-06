@@ -117,8 +117,10 @@ public class SelfDescriptionDaoImpl implements SelfDescriptionDao {
 	    String upsert = """
    	      with u as (update sdfiles set status = :upStatus, statustime = :upStatusTime
    	          where subjectid = :subjectId and status = 0 returning sdhash oldhash, :sdHash sdhash, subjectid),
-   	      i as (insert into sdfiles(sdhash, subjectid, issuer, uploadtime, statustime, expirationtime, status, content, validators)
-   	          values (:sdHash, :subjectId, :issuer, :uploadTime, :statusTime, :expirationTime, :status, :content, :validators)
+   	      i as (insert into sdfiles(sdhash, subjectid, issuer, uploadtime, statustime, expirationtime, status, content, validators,
+   	              content_type, file_size, original_filename)
+   	          values (:sdHash, :subjectId, :issuer, :uploadTime, :statusTime, :expirationTime, :status, :content, :validators,
+   	              :contentType, :fileSize, :originalFilename)
    	          returning sdhash)
    	      select u.subjectid, u.oldhash from i full join u on u.sdhash = i.sdhash""";
 	    MapSqlParameterSource msps = new MapSqlParameterSource();
@@ -133,6 +135,9 @@ public class SelfDescriptionDaoImpl implements SelfDescriptionDao {
 	    msps.addValue("status", sd.getStatus().ordinal());
 	    msps.addValue("content", sd.getContent());
 	    msps.addValue("validators", sd.getValidators());
+	    msps.addValue("contentType", sd.getContentType());
+	    msps.addValue("fileSize", sd.getFileSize());
+	    msps.addValue("originalFilename", sd.getOriginalFilename());
 	    SubjectHashRecord subHash = jdbc.queryForObject(upsert, msps, new SDSubjectHashMapper());
 		return subHash;
 	}
@@ -223,14 +228,14 @@ public class SelfDescriptionDaoImpl implements SelfDescriptionDao {
 	    private String buildQuery(int offset, int limit) {
 	      final StringBuilder query;
 	      if (fullMeta) {
-	        query = new StringBuilder("select sdhash, subjectid, status, issuer, uploadtime, statustime, expirationtime, validators");
+	        query = new StringBuilder("select sdhash, subjectid, status, issuer, uploadtime, statustime, expirationtime, validators, content_type, file_size, original_filename");
 	      } else {
-	        query = new StringBuilder("select sdhash, null as subjectid, status, null as issuer, null as uploadtime, null as statustime, null as expirationtime, null as validators");
+	        query = new StringBuilder("select sdhash, null as subjectid, status, null as issuer, null as uploadtime, null as statustime, null as expirationtime, null as validators, null as content_type, null::bigint as file_size, null as original_filename");
 	      }
 	      if (returnContent) {
 	        query.append(", content");
 	      } else {
-	        query.append(", null as content");  
+	        query.append(", null as content");
 	      }
 	      query.append(" from sdfiles");
 	      query.append(" where 1=1");
@@ -278,9 +283,23 @@ public class SelfDescriptionDaoImpl implements SelfDescriptionDao {
 			Timestamp upt = rs.getTimestamp("uploadtime");
 			Timestamp stt = rs.getTimestamp("statustime");
 			Timestamp exp = rs.getTimestamp("expirationtime");
-			return new SdMetaRecord(rs.getString("sdhash"), rs.getString("subjectid"), SelfDescriptionStatus.values()[rs.getInt("status")], rs.getString("issuer"), 
-				arr == null ? null : Arrays.asList((String[]) arr.getArray()), upt == null ? null : upt.toInstant(), stt == null ? null : stt.toInstant(), 
-				content == null ? null : new ContentAccessorDirect(content), exp == null ? null : exp.toInstant());
+			String contentType = rs.getString("content_type");
+			long fileSize = rs.getLong("file_size");
+			String originalFilename = rs.getString("original_filename");
+			return SdMetaRecord.builder()
+				.sdHash(rs.getString("sdhash"))
+				.id(rs.getString("subjectid"))
+				.status(SelfDescriptionStatus.values()[rs.getInt("status")])
+				.issuer(rs.getString("issuer"))
+				.validatorDids(arr == null ? null : Arrays.asList((String[]) arr.getArray()))
+				.uploadTime(upt == null ? null : upt.toInstant())
+				.statusTime(stt == null ? null : stt.toInstant())
+				.content(content == null ? null : new ContentAccessorDirect(content))
+				.expirationTime(exp == null ? null : exp.toInstant())
+				.contentType(contentType)
+				.fileSize(rs.wasNull() ? null : fileSize)
+				.originalFilename(originalFilename)
+				.build();
 		}
     }
 	

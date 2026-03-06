@@ -6,6 +6,7 @@ import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
 import java.util.List;
 import java.util.Map;
 
+import eu.xfsc.fc.core.config.RdfContentTypeProperties;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -54,8 +55,9 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {SelfDescriptionStoreCompositeTest.TestApplication.class, FileStoreConfig.class, VerificationServiceImpl.class, CredentialVerificationStrategy.class, ValidatorCacheDaoImpl.class,
-  SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class, SelfDescriptionStoreCompositeTest.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, 
-  Neo4jGraphStore.class, DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class, SchemaValidationServiceImpl.class})
+  SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class, SelfDescriptionStoreCompositeTest.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class,
+  Neo4jGraphStore.class, DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class, SchemaValidationServiceImpl.class,
+  RdfContentTypeProperties.class})
 @Slf4j
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)
@@ -100,7 +102,7 @@ public class SelfDescriptionStoreCompositeTest {
    * it again.
    */
   @Test
-  void test01StoreSelfDescription() throws Exception {
+  void test01StoreSelfDescription() {
     log.info("test01StoreSelfDescription");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
@@ -115,7 +117,7 @@ public class SelfDescriptionStoreCompositeTest {
     String uri = "http://example.org/test-issuer";
     List<Map<String, Object>> claims = graphStore.queryData(
         new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", uri))).getResults();
-    Assertions.assertTrue(claims.size() > 0); 
+      Assertions.assertFalse(claims.isEmpty());
 
     List<Map<String, Object>> hNodes = graphStore.queryData(
         new GraphQuery("MATCH (n)-[r:legalAddress]->(a {locality: $locality}) RETURN n, r, a", Map.of("locality", "Hamburg"))).getResults();
@@ -134,13 +136,11 @@ public class SelfDescriptionStoreCompositeTest {
         new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", uri))).getResults();
     Assertions.assertEquals(0, claims.size());
 
-    Assertions.assertThrows(NotFoundException.class, () -> {
-      sdStorePublisher.getByHash(hash);
-    });
+    Assertions.assertThrows(NotFoundException.class, () -> sdStorePublisher.getByHash(hash));
   }
 
   @Test
-  void test02RebuildGraphDb() throws Exception {
+  void test02RebuildGraphDb() {
     log.info("test02RebuildGraphDb");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
@@ -179,9 +179,7 @@ public class SelfDescriptionStoreCompositeTest {
         new GraphQuery("MATCH (n) RETURN n", null)).getResults();
     Assertions.assertEquals(1, claims.size());
 
-    Assertions.assertThrows(NotFoundException.class, () -> {
-      sdStorePublisher.getByHash(hash);
-    });
+    Assertions.assertThrows(NotFoundException.class, () -> sdStorePublisher.getByHash(hash));
   }
 
 }
