@@ -5,6 +5,7 @@ import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.SHAPE;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.VOCABULARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,7 +45,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.FileStoreConfig;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
+import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
@@ -60,7 +63,8 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {SchemaStoreTest.TestApplication.class, FileStoreConfig.class,
-  SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaDaoImpl.class})
+  SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaDaoImpl.class,
+  ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @Transactional
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class SchemaStoreTest {
@@ -75,6 +79,9 @@ public class SchemaStoreTest {
 
   @Autowired
   private SchemaStoreImpl schemaStore;
+
+  @Autowired
+  private ProtectedNamespaceProperties protectedNsProps;
 
   @Autowired
   private JdbcTemplate jdbc;
@@ -275,7 +282,7 @@ public class SchemaStoreTest {
     String path = "Schema-Tests/valid-schemaShape.ttl";
     ContentAccessor content = TestUtil.getAccessor(path);
 
-    String schemaId1 = schemaStore.addSchema(content);
+    String schemaId1 = schemaStore.addSchema(content).id();
 
     Map<SchemaStore.SchemaType, List<String>> expected = new HashMap<>();
     expected.computeIfAbsent(SHAPE, t -> new ArrayList<>()).add(schemaId1);
@@ -310,7 +317,7 @@ public class SchemaStoreTest {
 
     String schema1 = TestUtil.getAccessor(getClass(), path).getContentAsString();
 
-    String schemaId1 = schemaStore.addSchema(new ContentAccessorDirect(schema1));
+    String schemaId1 = schemaStore.addSchema(new ContentAccessorDirect(schema1)).id();
 
     ContentAccessor ContentAccessor = schemaStore.getSchema(schemaId1);
 
@@ -369,7 +376,7 @@ public class SchemaStoreTest {
     String path1 = "Schema-Tests/valid-schemaShapeReduced.ttl";
     String path2 = "Schema-Tests/valid-schemaShape.ttl";
 
-    String schemaId = schemaStore.addSchema(TestUtil.getAccessor(getClass(), path1));
+    String schemaId = schemaStore.addSchema(TestUtil.getAccessor(getClass(), path1)).id();
     assertTermCountEquals(1);
     assertTermsEquals("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
 
@@ -455,6 +462,41 @@ public class SchemaStoreTest {
     modelActual.read(schemaContentReaderComposite, "", "TURTLE");
     assertTrue(isExistTriple(modelActual, sub01, pre01, obj01));
     assertTrue(isExistTriple(modelActual, sub02, pre02, obj02));
+  }
+
+  @Test
+  void analyzeSchema_fcmetaStatementsFiltered() {
+    // Schema with a valid OWL Ontology declaration plus an injected fcmeta: triple.
+    // The filter must strip the fcmeta: triple before type detection runs.
+    String ttl = "@prefix owl: <http://www.w3.org/2002/07/owl#> .\n"
+        + "@prefix fcmeta: <" + protectedNsProps.getNamespace() + "> .\n"
+        + "<https://example.org/TestOntology> a owl:Ontology .\n"
+        + "<https://example.org/Subject1> fcmeta:complianceResult \"injected-by-attacker\" .\n";
+    ContentAccessor content = new ContentAccessorDirect(ttl);
+
+    SchemaAnalysisResult result = schemaStore.analyzeSchema(content);
+
+    assertTrue(result.isValid(), "Schema with fcmeta: triple should be accepted after filtering");
+    assertEquals("https://example.org/TestOntology", result.getExtractedId(),
+        "Ontology IRI should be detected correctly from the filtered model");
+    assertNotNull(result.getWarning(), "Warning should be set when fcmeta: statements are filtered");
+    assertTrue(result.getWarning().contains("removed from your schema"),
+        "Warning should describe the filtered statements");
+    assertTrue(schemaStore.isSchemaType(content, ONTOLOGY));
+    result.getExtractedUrls().forEach(term ->
+        assertFalse(term.contains(protectedNsProps.getNamespace()),
+            "Protected namespace term must not appear in extracted URLs: " + term));
+  }
+
+  @Test
+  void analyzeSchema_onlyFcmetaStatements_invalidSchema() {
+    // After filtering all fcmeta: triples the model is empty — no schema type can be detected.
+    String ttl = "@prefix fcmeta: <" + protectedNsProps.getNamespace() + "> .\n"
+        + "<https://example.org/Subject1> fcmeta:complianceResult \"injected\" .\n"
+        + "<https://example.org/Subject2> fcmeta:validationTimestamp \"2024-01-01\" .\n";
+    SchemaAnalysisResult result = schemaStore.analyzeSchema(new ContentAccessorDirect(ttl));
+    assertFalse(result.isValid());
+    assertEquals("Schema type not supported", result.getErrorMessage());
   }
 
   private static boolean isExistTriple(Model model, String sub, String pre, String obj) {

@@ -32,19 +32,19 @@ public class SelfDescriptionMetadata extends SelfDescription {
   public SelfDescriptionMetadata(String id, String issuer, List<Validator> validators, ContentAccessor contentAccessor) {
     super(calculateSha256AsHex(contentAccessor.getContentAsString()), id, SelfDescriptionStatus.ACTIVE, issuer,
         validators != null ? validators.stream().map(Validator::getDidURI).collect(Collectors.toList()) : null, Instant.now(), Instant.now(),
-        null, null);
+        null, null, null);
     this.selfDescription = contentAccessor;
   }
 
   public SelfDescriptionMetadata(ContentAccessor contentAccessor, VerificationResult verificationResult) {
     super(calculateSha256AsHex(contentAccessor.getContentAsString()), verificationResult.getId(), SelfDescriptionStatus.ACTIVE,
             verificationResult.getIssuer(), verificationResult.getValidatorDids(), verificationResult.getIssuedDateTime(),
-            verificationResult.getVerificationTimestamp(), null, null); // null: contentType, fileSize
+            verificationResult.getVerificationTimestamp(), null, null, null); // null: contentType, fileSize, warnings
     this.selfDescription = contentAccessor;
   }
 
   public SelfDescriptionMetadata(String sdHash, String id, SelfDescriptionStatus status, String issuer, List<String> validatorDids, Instant uploadTime, Instant statusTime, ContentAccessor contentAccessor) {
-	super(sdHash, id, status, issuer, validatorDids, uploadTime, statusTime, null, null);
+	super(sdHash, id, status, issuer, validatorDids, uploadTime, statusTime, null, null, null);
 	this.selfDescription = contentAccessor;
   }
   

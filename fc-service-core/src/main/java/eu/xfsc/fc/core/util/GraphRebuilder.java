@@ -4,6 +4,7 @@ import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 
 import java.util.List;
@@ -36,6 +37,7 @@ public class GraphRebuilder {
   private SelfDescriptionStore sdStore;
   private final GraphStore graphStore;
   private final VerificationService verificationService;
+  private final ProtectedNamespaceFilter protectedNamespaceFilter;
 
   /**
    * Starts rebuilding the graphDb, blocking until finished or interrupted.
@@ -121,6 +123,7 @@ public class GraphRebuilder {
   private void addSdToGraph(String hash) {
     SelfDescriptionMetadata sdMetaData = sdStore.getByHash(hash);
     List<SdClaim> claims = verificationService.extractClaims(sdMetaData.getSelfDescription());
+    claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
     graphStore.addClaims(claims, sdMetaData.getId());
   }
 

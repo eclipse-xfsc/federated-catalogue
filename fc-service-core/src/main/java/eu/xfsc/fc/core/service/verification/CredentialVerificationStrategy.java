@@ -50,6 +50,7 @@ import eu.xfsc.fc.core.dao.ValidatorCacheDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.FilteredClaims;
 import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.pojo.VerificationResult;
@@ -101,7 +102,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
   private String resourceType;
 
   private Map<TrustFrameworkBaseClass, String> trustFrameworkBaseClassUris;
-
+  @Autowired
+  private ProtectedNamespaceFilter protectedNamespaceFilter;
   @Autowired
   private SchemaStore schemaStore;
   @Autowired
@@ -125,21 +127,20 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
   @Value("${federated-catalogue.verification.validator-expire:1D}")
   private Duration validatorExpiration;
 
-  private static final int HTTP_TIMEOUT = 5*1000;
-
   private RestTemplate rest;
   private volatile boolean loadersInitialised;
   private volatile StreamManager streamManager;
 
-  public CredentialVerificationStrategy() {
-    rest = restTemplate();
-  }
-
   private RestTemplate restTemplate() {
     HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
-    factory.setConnectTimeout(HTTP_TIMEOUT);
-    factory.setConnectionRequestTimeout(HTTP_TIMEOUT);
+    factory.setConnectTimeout(httpTimeout);
+    factory.setConnectionRequestTimeout(httpTimeout);
     return new RestTemplate(factory);
+  }
+
+  @PostConstruct
+  private void initRestTemplate() {
+    rest = restTemplate();
   }
 
   @PostConstruct
@@ -150,7 +151,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     trustFrameworkBaseClassUris.put(PARTICIPANT, participantType);
   }
 
-  @Override
   public VerificationResult verifySelfDescription(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
       boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
       boolean verifyVCSignatures) throws VerificationException {
@@ -213,6 +213,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
     stamp2 = System.currentTimeMillis();
     List<SdClaim> claims = extractClaims(payload);
+
+    FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "claims extraction");
+    claims = filtered.claims();
+
     log.debug("verifySelfDescription; claims extracted: {}, time taken: {}", (claims == null ? "null" : claims.size()),
    		System.currentTimeMillis() - stamp2);
 
@@ -278,6 +282,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     } else {
       result = new VerificationResult(Instant.now(), SelfDescriptionStatus.ACTIVE.getValue(), issuer, issuedDate,
               id, claims, validators);
+    }
+
+    if (filtered.hasWarning()) {
+      result.setWarnings(List.of(filtered.warning()));
     }
 
     stamp = System.currentTimeMillis() - stamp;
@@ -405,7 +413,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     return tcs;
   }
 
-  @Override
   public List<SdClaim> extractClaims(ContentAccessor payload) {
     // Make sure our interceptors are in place.
     initLoaders();
@@ -455,7 +462,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     return streamManager;
   }
 
-  @Override
   public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
     trustFrameworkBaseClassUris.put(baseClass, uri);
   }

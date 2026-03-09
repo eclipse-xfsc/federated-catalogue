@@ -34,8 +34,6 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.common.base.Strings;
-
 import eu.xfsc.fc.core.dao.SchemaDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
@@ -44,8 +42,13 @@ import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.FilteredModel;
 import eu.xfsc.fc.core.service.filestore.FileStore;
+import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.util.HashUtils;
+
+import com.google.common.base.Strings;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -62,6 +65,9 @@ public class SchemaStoreImpl implements SchemaStore {
 
   @Autowired
   private SchemaDao dao;
+
+  @Autowired
+  private ProtectedNamespaceFilter protectedNamespaceFilter;
 
   private static final Map<SchemaType, ContentAccessor> COMPOSITE_SCHEMAS = new ConcurrentHashMap<>();
 
@@ -119,6 +125,13 @@ public class SchemaStoreImpl implements SchemaStore {
       } catch (Exception exc) {
         result.setValid(false);
         result.setErrorMessage(exc.getMessage());
+      }
+    }
+    if (result.isValid()) {
+      FilteredModel filteredModel = protectedNamespaceFilter.filterModel(model, "schema import");
+      model = filteredModel.model();
+      if (filteredModel.hasWarning()) {
+        result.setWarning(filteredModel.warning());
       }
     }
     if (model.contains(null, RDF.type, SHACLM.NodeShape)
@@ -238,25 +251,27 @@ public class SchemaStoreImpl implements SchemaStore {
     return result.isValid();
   }
 
-  private SchemaRecord analyzeSchemaRecord(ContentAccessor schema) {
+  private SchemaAnalysisResult analyzeAndValidate(ContentAccessor schema) {
     SchemaAnalysisResult result = analyzeSchema(schema);
-	if (!result.isValid()) {
-	  throw new VerificationException("Schema is not valid: " + result.getErrorMessage());
-	}
-		    
-    String nameHash;
-	String schemaId = result.getExtractedId();
-	if (Strings.isNullOrEmpty(schemaId)) {
-	  nameHash = HashUtils.calculateSha256AsHex(schema.getContentAsString());
-	} else {
-	  nameHash = HashUtils.calculateSha256AsHex(schemaId);
-	}
-    return new SchemaRecord(schemaId, nameHash, result.getSchemaType(), schema.getContentAsString(), result.getExtractedUrls());  
+    if (!result.isValid()) {
+      throw new VerificationException("Schema is not valid: " + result.getErrorMessage());
+    }
+    return result;
+  }
+
+  private SchemaRecord buildSchemaRecord(SchemaAnalysisResult result, ContentAccessor schema) {
+    String schemaId = result.getExtractedId();
+    String nameHash = Strings.isNullOrEmpty(schemaId)
+        ? HashUtils.calculateSha256AsHex(schema.getContentAsString())
+        : HashUtils.calculateSha256AsHex(schemaId);
+    return new SchemaRecord(schemaId, nameHash, result.getSchemaType(),
+        schema.getContentAsString(), result.getExtractedUrls());
   }
 
   @Override
-  public String addSchema(ContentAccessor schema) {
-    SchemaRecord newRecord = analyzeSchemaRecord(schema);
+  public SchemaStoreResult addSchema(ContentAccessor schema) {
+    SchemaAnalysisResult analysis = analyzeAndValidate(schema);
+    SchemaRecord newRecord = buildSchemaRecord(analysis, schema);
     try {
       if (!dao.insert(newRecord)) {
         throw new ServerException("DB error, schema not inserted");
@@ -271,27 +286,28 @@ public class SchemaStoreImpl implements SchemaStore {
       log.info("addSchema; conflict: {}", ex.getMessage());
       throw new ServerException(ex);
     }
-    
+
     COMPOSITE_SCHEMAS.remove(newRecord.type());
-    return newRecord.getId();
+    return new SchemaStoreResult(newRecord.getId(), analysis.getWarning());
   }
-  
+
   @Override
-  public void updateSchema(String identifier, ContentAccessor schema) {
-    SchemaRecord newRecord = analyzeSchemaRecord(schema);
+  public SchemaStoreResult updateSchema(String identifier, ContentAccessor schema) {
+    SchemaAnalysisResult analysis = analyzeAndValidate(schema);
+    SchemaRecord newRecord = buildSchemaRecord(analysis, schema);
     if (newRecord.schemaId() != null && !identifier.equals(newRecord.schemaId())) {
       throw new ClientException("Given schema does not have the same Identifier as the old schema: " + identifier + " <> " + newRecord.schemaId());
     }
-    
+
     try {
       if (dao.update(identifier, newRecord.content(), newRecord.terms()) == 0) {
         throw new NotFoundException("Schema with id " + identifier + " was not found");
       }
     } catch (DuplicateKeyException ex) {
-      //try {	
+      //try {
       //  ((SchemaDaoImpl) dao).getDataSource().getConnection().rollback();
       //} catch (SQLException se) {
-      //  log.debug("updateSchema; error at rollback", se);	  
+      //  log.debug("updateSchema; error at rollback", se);
       //}
       if (ex.getMessage().contains("schematerms_pkey")) {
         throw new ConflictException("Schema redefines existing terms");
@@ -302,6 +318,7 @@ public class SchemaStoreImpl implements SchemaStore {
 
     COMPOSITE_SCHEMAS.remove(newRecord.type());
     // SDs will be revalidated in a separate thread.
+    return new SchemaStoreResult(identifier, analysis.getWarning());
   }
 
   @Override

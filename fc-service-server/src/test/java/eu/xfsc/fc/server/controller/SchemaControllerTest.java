@@ -64,7 +64,7 @@ public class SchemaControllerTest {
   @Test
   @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE})
   public void getSchemaByIdShouldReturnSuccessResponse() throws Exception {
-    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl")));
+    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl"))).id();
     String schemaId = URLEncoder.encode(id, Charset.defaultCharset());
     mockMvc.perform(MockMvcRequestBuilders.get("/schemas/{schemaId}", schemaId)
             .with(csrf())
@@ -103,7 +103,7 @@ public class SchemaControllerTest {
   @Test
   @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE})
   public void getLatestSchemaShouldReturnSuccessResponse() throws Exception {
-    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl")));
+    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl"))).id();
     mockMvc.perform(MockMvcRequestBuilders.get("/schemas/latest?type=SHAPE")
             .with(csrf())
             .accept(MediaType.APPLICATION_JSON))
@@ -122,7 +122,7 @@ public class SchemaControllerTest {
   @Test
   @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE})
   public void getLatestSchemaWithoutTypeShouldReturnBadRequest() throws Exception {
-    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl")));
+    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl"))).id();
     mockMvc.perform(MockMvcRequestBuilders.get("/schemas/latest")
             .with(csrf())
             .accept(MediaType.APPLICATION_JSON))
@@ -204,7 +204,7 @@ public class SchemaControllerTest {
   @Test
   @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE})
   public void deleteSchemasReturnSuccessResponse() throws Exception {
-    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl")));
+    String id = schemaStore.addSchema(new ContentAccessorDirect(getMockFileDataAsString("test-schema.ttl"))).id();
     String schemaId = URLEncoder.encode(id, Charset.defaultCharset());
     mockMvc.perform(MockMvcRequestBuilders.delete("/schemas/{schemaId}", schemaId)
             .with(csrf())

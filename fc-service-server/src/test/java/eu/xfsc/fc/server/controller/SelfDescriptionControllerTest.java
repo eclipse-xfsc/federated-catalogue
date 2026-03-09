@@ -358,6 +358,28 @@ public class SelfDescriptionControllerTest {
             .andReturn();
 
         SelfDescription sd = objectMapper.readValue(result.getResponse().getContentAsString(), SelfDescription.class);
+        assertTrue(sd.getWarnings() == null || sd.getWarnings().isEmpty(),
+            "Clean SD upload should produce no warnings");
+        sdStorePublisher.deleteSelfDescription(sd.getSdHash());
+    }
+
+    @Test
+    @WithMockJwtAuth(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
+        @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
+    public void addSDWithFcmetaTriples_returnsCreated_withWarning() throws Exception {
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/self-descriptions")
+                .content(getMockFileDataAsString("sd-with-fcmeta.json"))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+        SelfDescription sd = objectMapper.readValue(result.getResponse().getContentAsString(), SelfDescription.class);
+        assertNotNull(sd.getWarnings(), "Warnings should be present when fcmeta triples were filtered");
+        assertFalse(sd.getWarnings().isEmpty(), "Warnings list should not be empty when fcmeta triples were filtered");
+        assertTrue(sd.getWarnings().get(0).contains("triple(s)"), "Warning should mention filtered triple count");
+        assertTrue(sd.getWarnings().get(0).contains("federated-catalogue/meta#"), "Warning should contain the reserved namespace URI");
         sdStorePublisher.deleteSelfDescription(sd.getSdHash());
     }
 

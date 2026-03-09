@@ -73,7 +73,10 @@ federated-catalogue:
       enable-file: true
       enable-http: true
       enable-local-cache: false
-            
+    protected-namespace:
+      namespace: "https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#"
+      prefix: "fcmeta"
+
 logging:
   level:
     root: INFO

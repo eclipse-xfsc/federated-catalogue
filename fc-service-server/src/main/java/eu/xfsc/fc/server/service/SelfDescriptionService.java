@@ -180,10 +180,14 @@ public class SelfDescriptionService implements SelfDescriptionsApiDelegate {
 
       VerificationResult verificationResult = verificationService.verifySelfDescription(contentAccessor);
 
-      SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(verificationResult.getId(), verificationResult.getIssuer(), 
+      SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(verificationResult.getId(), verificationResult.getIssuer(),
               verificationResult.getValidators(), contentAccessor);
       checkParticipantAccess(sdMetadata.getIssuer());
       sdStorePublisher.storeSelfDescription(sdMetadata, verificationResult);
+
+      if (verificationResult.getWarnings() != null && !verificationResult.getWarnings().isEmpty()) {
+        sdMetadata.setWarnings(verificationResult.getWarnings());
+      }
 
       log.debug("addSelfDescription.exit; returning self-description by hash: {}", sdMetadata.getSdHash());
       return ResponseEntity.created(URI.create("/self-descriptions/" + sdMetadata.getSdHash())).body(sdMetadata);

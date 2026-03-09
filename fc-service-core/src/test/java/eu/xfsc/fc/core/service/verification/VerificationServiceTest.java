@@ -28,6 +28,7 @@ import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
 import eu.xfsc.fc.core.exception.ClientException;
@@ -50,7 +51,8 @@ import lombok.extern.slf4j.Slf4j;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {VerificationServiceTest.TestApplication.class, FileStoreConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
-        VerificationServiceImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, DidResolverConfig.class, ValidatorCacheDaoImpl.class, HttpDocumentResolver.class})
+        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, DidResolverConfig.class, ValidatorCacheDaoImpl.class, HttpDocumentResolver.class,
+        ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 public class VerificationServiceTest {
 
@@ -64,6 +66,9 @@ public class VerificationServiceTest {
 
   @Autowired
   private VerificationServiceImpl verificationService;
+
+  @Autowired
+  private ProtectedNamespaceProperties protectedNsProps;
 
   @Autowired
   private SchemaStoreImpl schemaStore;
@@ -609,6 +614,70 @@ public class VerificationServiceTest {
     ContentAccessor content = getAccessor("VerificationService/syntax/participantSD2.jsonld");
     VerificationResult result = verificationService.verifySelfDescription(content);
     assertNotNull(result, "SD should be accepted with default config (no automatic schema validation)");
+  }
+
+
+  @Test
+  void extractClaims_protectedNamespaceFilteredTest() {
+    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
+    ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantSD-with-fcmeta.jsonld");
+    VerificationResult result = verificationService.verifySelfDescription(content, true, false, false, false);
+    List<SdClaim> actualClaims = result.getClaims();
+
+    for (SdClaim claim : actualClaims) {
+      assertFalse(claim.getPredicateString().contains(protectedNsProps.getNamespace()),
+          "Protected namespace predicate should have been filtered: " + claim);
+      assertFalse(claim.getSubjectString().contains(protectedNsProps.getNamespace()),
+          "Protected namespace subject should have been filtered: " + claim);
+      if (claim.getObjectString().startsWith("<")) {
+        assertFalse(claim.getObjectString().contains(protectedNsProps.getNamespace()),
+            "Protected namespace object IRI should have been filtered: " + claim);
+      }
+    }
+
+    Set<SdClaim> expectedClaims = new HashSet<>();
+    expectedClaims.add(new SdClaim("<did:web:delta-dao.com>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://w3id.org/gaia-x/participant#LegalPerson>"));
+    expectedClaims.add(new SdClaim("<did:web:delta-dao.com>", "<http://w3id.org/gaia-x/participant#legalName>", "\"deltaDAO AG\""));
+    expectedClaims.add(new SdClaim("<did:web:delta-dao.com>", "<http://w3id.org/gaia-x/participant#registrationNumber>", "\"DEK1101R.HRB170364\""));
+    expectedClaims.add(new SdClaim("<did:web:delta-dao.com>", "<http://w3id.org/gaia-x/participant#headquarterAddress>", "_:b0"));
+    expectedClaims.add(new SdClaim("_:b0", "<http://w3id.org/gaia-x/participant#street-address>", "\"Geibelstraße 46b\""));
+    expectedClaims.add(new SdClaim("_:b0", "<http://w3id.org/gaia-x/participant#locality>", "\"Hamburg\""));
+    expectedClaims.add(new SdClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://w3id.org/gaia-x/participant#Address>"));
+    expectedClaims.add(new SdClaim("_:b0", "<http://w3id.org/gaia-x/participant#country>", "\"DE\""));
+    expectedClaims.add(new SdClaim("_:b0", "<http://w3id.org/gaia-x/participant#postal-code>", "\"22303\""));
+    expectedClaims.add(new SdClaim("<did:web:delta-dao.com>", "<http://w3id.org/gaia-x/participant#legalAddress>", "_:b1"));
+    expectedClaims.add(new SdClaim("_:b1", "<http://w3id.org/gaia-x/participant#street-address>", "\"Geibelstraße 46b\""));
+    expectedClaims.add(new SdClaim("_:b1", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://w3id.org/gaia-x/participant#Address>"));
+    expectedClaims.add(new SdClaim("_:b1", "<http://w3id.org/gaia-x/participant#postal-code>", "\"22303\""));
+    expectedClaims.add(new SdClaim("_:b1", "<http://w3id.org/gaia-x/participant#locality>", "\"Hamburg\""));
+    expectedClaims.add(new SdClaim("_:b1", "<http://w3id.org/gaia-x/participant#country>", "\"DE\""));
+    assertEquals(expectedClaims.size(), actualClaims.size(),
+        "fcmeta:complianceResult triple should have been filtered, leaving only normal claims");
+    assertEquals(expectedClaims, new HashSet<>(actualClaims));
+    assertNotNull(result.getWarnings(), "Warning should be set when fcmeta triples were filtered");
+    assertFalse(result.getWarnings().isEmpty(), "Warning list should not be empty when fcmeta triples were filtered");
+    assertTrue(result.getWarnings().get(0).contains("1 triple(s)"), "Warning should mention count of filtered triples");
+    assertTrue(result.getWarnings().get(0).contains(protectedNsProps.getNamespace()), "Warning should mention the protected namespace");
+  }
+
+  @Test
+  void extractClaims_allFcmetaClaimsFiltered_returnsEmptyList() {
+    ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantSD-only-fcmeta.jsonld");
+    VerificationResult result = verificationService.verifySelfDescription(content, false, false, false, false);
+    List<SdClaim> claims = result.getClaims();
+    assertNotNull(claims, "Result should not be null even when all claims are filtered");
+    assertTrue(claims.isEmpty(), "All fcmeta: claims should have been filtered, leaving an empty list");
+    assertNotNull(result.getWarnings(), "Warning should be set when fcmeta triples were filtered");
+    assertFalse(result.getWarnings().isEmpty(), "Warning list should not be empty when all claims are filtered");
+  }
+
+  @Test
+  void verifySelfDescription_noFcmetaTriples_noWarnings() {
+    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
+    ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering1.jsonld");
+    VerificationResult result = verificationService.verifySelfDescription(content, true, true, false, false);
+    assertTrue(result.getWarnings() == null || result.getWarnings().isEmpty(),
+        "No warnings expected when upload contains no fcmeta triples");
   }
 
 }
