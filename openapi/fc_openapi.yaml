@@ -110,7 +110,6 @@ components:
       enum:
         - OPENCYPHER
         - SPARQL
-        - GRAPHQL
       default: OPENCYPHER
     AnnotatedStatement:
       allOf:
