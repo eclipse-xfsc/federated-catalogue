@@ -38,7 +38,7 @@ public class EmbeddedNeo4JConfig {
         log.info("starting Embedded Neo4J DB");
         Neo4j embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
                 .withDisabledServer()
-                .withConfig(BoltConnector.listen_address, new SocketAddress(BoltConnector.DEFAULT_PORT))
+                .withConfig(BoltConnector.listen_address, new SocketAddress("localhost", 0))
                 .withConfig(GraphDatabaseSettings.procedure_allowlist, List.of("gds.*", "n10s.*", "apoc.*, semantics.*"))
                 .withConfig(GraphDatabaseSettings.procedure_unrestricted, List.of("gds.*", "n10s.*", "apoc.*, semantics.*"))
                 //.withConfig(GraphDatabaseSettings.log_queries_transaction_id, true)
