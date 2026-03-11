@@ -89,11 +89,7 @@ components:
           $ref: '#/components/schemas/Parameters'
       required:
         - statement
-#      discriminator:
-#        propertyName: type
-#        mapping:
-#          as: "#/components/schemas/AnnotatedStatement"  
-    Parameters: 
+    Parameters:
       type: object
       additionalProperties:
         type: object
@@ -515,7 +511,7 @@ tags:
       unknown to them.
     externalDocs:
       description: Find out more
-      url: http://gaiax.io
+      url: https://docs.gaia-x.eu
   - name: Query
     description: Send graph queries to this Catalogue.
   - name: Schemas
@@ -597,7 +593,10 @@ paths:
       tags:
         - SelfDescriptions
       summary: Get the list of metadata of Self-Descriptions in the Catalogue
+      description: 'Required permission: ASSET_READ or ADMIN_ALL'
       operationId: readSelfDescriptions
+      security:
+        - jwt: []
       parameters: #!! Added filter parameters for all(?) metadata fields
         - name: uploadTimerange
           in: query
@@ -702,6 +701,7 @@ paths:
       tags:
         - SelfDescriptions
       summary: Add a new Service-Offering, Participant or Resource SelfDescription to the catalogue
+      description: 'Required permission: ASSET_CREATE or ADMIN_ALL'
       operationId: addSelfDescription
       security:
         - jwt: []
@@ -744,7 +744,7 @@ paths:
       summary: >-
         Read a Self-Description by its hash. This returns the content of the
         self-description.
-      description: Returns a single Self-Description
+      description: 'Returns a single Self-Description. Required permission: ASSET_READ or ADMIN_ALL'
       operationId: readSelfDescriptionByHash
       parameters:
         - name: self_description_hash
@@ -774,7 +774,10 @@ paths:
       tags:
         - SelfDescriptions
       summary: Completely delete a self-description
+      description: 'Required permission: ASSET_DELETE or ADMIN_ALL'
       operationId: deleteSelfDescription
+      security:
+        - jwt: []
       parameters:
         - name: self_description_hash
           in: path
@@ -800,7 +803,10 @@ paths:
       tags:
         - SelfDescriptions
       summary: Change the lifecycle state of a SelfDescription to revoked.
+      description: 'Required permission: ASSET_UPDATE or ADMIN_ALL'
       operationId: updateSelfDescription
+      security:
+        - jwt: []
       parameters:
         - name: self_description_hash
           in: path
@@ -836,6 +842,7 @@ paths:
       tags:
         - Query
       summary: Retrieve an HTML website to send openCypher queries to the Catalogue
+      description: 'Required permission: QUERY_EXECUTE or ADMIN_ALL'
       operationId: querywebsite
       security:
         - jwt: []
@@ -854,6 +861,7 @@ paths:
       tags:
         - Query
       summary: Send a query to the Catalogue
+      description: 'Required permission: QUERY_EXECUTE or ADMIN_ALL'
       operationId: query
       parameters:
         - in: query
@@ -907,6 +915,7 @@ paths:
       tags:
         - Query
       summary: Get information about the active query backend
+      description: 'Required permission: QUERY_EXECUTE or ADMIN_ALL'
       operationId: queryInfo
       security:
         - jwt: []
@@ -924,7 +933,10 @@ paths:
       tags:
         - Query
       summary: Run distributed search query in the Catalogue
+      description: 'Required permission: QUERY_EXECUTE or ADMIN_ALL'
       operationId: search
+      security:
+        - jwt: []
       requestBody:
         description: JSON object containing query with parameters and annotations
         content:
@@ -952,8 +964,10 @@ paths:
       tags:
         - Schemas
       summary: 'Get the full list of ontologies, shapes and vocabularies.'
-      description: 'The schema identifiers, returned by this endpoint can be used to download the schema files.'
+      description: 'The schema identifiers, returned by this endpoint can be used to download the schema files. Required permission: SCHEMA_READ or ADMIN_ALL'
       operationId: getSchemas
+      security:
+        - jwt: []
       responses:
         '200':
           description: 'References to ontologies, shapes and vocabularies.'
@@ -971,7 +985,7 @@ paths:
       tags:
         - Schemas
       summary: 'Add a new Schema to the catalogue.'
-      description: 'This endpoint accepts either an ontology (OWL file), shape (SHACL file) or controlled vocabulary (SKOS file), which is added to the schemas of the catalogue.'
+      description: 'This endpoint accepts either an ontology (OWL file), shape (SHACL file) or controlled vocabulary (SKOS file), which is added to the schemas of the catalogue. Required permission: SCHEMA_CREATE or ADMIN_ALL'
       operationId: addSchema
       security:
         - jwt: []
@@ -1018,7 +1032,10 @@ paths:
       tags:
         - Schemas
       summary: Get a specific schema.
+      description: 'Required permission: SCHEMA_READ or ADMIN_ALL'
       operationId: getSchema
+      security:
+        - jwt: []
       parameters:
         - name: schemaId
           in: path
@@ -1050,6 +1067,7 @@ paths:
       tags:
         - Schemas
       summary: 'Replace a schema. This is only allowed for ontologies with the same IRI.'
+      description: 'Required permission: SCHEMA_UPDATE or ADMIN_ALL'
       operationId: updateSchema
       parameters:
         - name: schemaId
@@ -1101,6 +1119,7 @@ paths:
       tags:
         - Schemas
       summary: 'Delete a Schema'
+      description: 'Required permission: SCHEMA_DELETE or ADMIN_ALL'
       operationId: deleteSchema
       security:
         - jwt: [ ]

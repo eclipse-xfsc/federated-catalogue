@@ -1,6 +1,6 @@
 package eu.xfsc.fc.server.controller;
 
-import static eu.xfsc.fc.server.util.CommonConstants.CATALOGUE_ADMIN_ROLE;
+import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,7 +40,7 @@ public class RebuilderControllerTest {
     private ObjectMapper jsonMapper;
 
     @Test
-    @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE})
+    @WithMockUser(roles = {ADMIN_ALL})
     public void postRebuildShouldReturnSuccessResponse() throws Exception {
       GraphRebuildRequest grRequest = new GraphRebuildRequest(1, 0, 2, 3);  
       mockMvc.perform(MockMvcRequestBuilders.post("/actuator/graph-rebuild")
