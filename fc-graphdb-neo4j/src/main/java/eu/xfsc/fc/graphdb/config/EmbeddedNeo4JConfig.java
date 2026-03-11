@@ -19,7 +19,7 @@ import org.neo4j.gds.catalog.GraphProjectProc;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilders;
 //import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Slf4j
 @Configuration
-@ConditionalOnProperty(value = "federated-catalogue.scope", havingValue = "test")
+@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('test') && '${graphstore.impl}'.equals('neo4j')")
 //@EnableAutoConfiguration
 public class EmbeddedNeo4JConfig {
     
@@ -38,7 +38,7 @@ public class EmbeddedNeo4JConfig {
         log.info("starting Embedded Neo4J DB");
         Neo4j embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
                 .withDisabledServer()
-                .withConfig(BoltConnector.listen_address, new SocketAddress(BoltConnector.DEFAULT_PORT))
+                .withConfig(BoltConnector.listen_address, new SocketAddress("localhost", 0))
                 .withConfig(GraphDatabaseSettings.procedure_allowlist, List.of("gds.*", "n10s.*", "apoc.*, semantics.*"))
                 .withConfig(GraphDatabaseSettings.procedure_unrestricted, List.of("gds.*", "n10s.*", "apoc.*, semantics.*"))
                 //.withConfig(GraphDatabaseSettings.log_queries_transaction_id, true)

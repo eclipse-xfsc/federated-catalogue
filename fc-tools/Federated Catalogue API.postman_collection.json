@@ -1772,6 +1772,108 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "/query SPARQL SELECT",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"statement\": \"SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 100\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query?queryLanguage=SPARQL",
+							"protocol": "{{federated_catalogue_protocol}}",
+							"host": [
+								"{{federated_catalogue_address}}"
+							],
+							"path": [
+								"query"
+							],
+							"query": [
+								{
+									"key": "queryLanguage",
+									"value": "SPARQL"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/query SPARQL-star SELECT",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"statement\": \"PREFIX cred: <https://www.w3.org/2018/credentials#> SELECT ?s ?p ?o ?cs WHERE { << ?s ?p ?o >> cred:credentialSubject ?cs } LIMIT 100\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query?queryLanguage=SPARQL",
+							"protocol": "{{federated_catalogue_protocol}}",
+							"host": [
+								"{{federated_catalogue_address}}"
+							],
+							"path": [
+								"query"
+							],
+							"query": [
+								{
+									"key": "queryLanguage",
+									"value": "SPARQL"
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

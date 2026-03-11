@@ -56,7 +56,7 @@ services:
 #      - '$HOME/neo4j/conf/:/conf/'
 
   keycloak:
-    container_name: "keycloak"
+    container_name: "key-server"
     environment:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
@@ -99,7 +99,28 @@ services:
       start_period: 40s
     networks: 
       - "gaia-x"
-      
+
+# Optional: Fuseki SPARQL-star backend. Uncomment when using GRAPH_STORE_IMPL=fuseki (e.g. dev-fuseki.env).
+# Not needed for neo4j or dummy backends.
+#  fuseki:
+#    container_name: "fuseki"
+#    image: docker.io/stain/jena-fuseki
+#    environment:
+#      ADMIN_PASSWORD: "${GRAPH_STORE_PASSWORD}"
+#      FUSEKI_DATASET_1: "ds"
+#      JVM_ARGS: "-Xmx1g"
+#    ports:
+#      - "3330:3030"
+#    networks:
+#      - "gaia-x"
+#    restart: unless-stopped
+#    healthcheck:
+#      test: wget --no-verbose --tries=1 --spider http://localhost:3030/ds || exit 1
+#      interval: 20s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 30s
+
   server:
     container_name: "fc-server"
 #    image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-service-server:2.0.0
@@ -113,6 +134,7 @@ services:
       GRAPHSTORE_URI: "${GRAPH_STORE_URI}"
       GRAPHSTORE_USER: "${GRAPH_STORE_USER}"
       GRAPHSTORE_PASSWORD: "${GRAPH_STORE_PASSWORD}"
+      GRAPHSTORE_IMPL: "${GRAPH_STORE_IMPL}"
       # Spring Data Neo4j autoconfiguration
       SPRING_NEO4J_URI: "${GRAPH_STORE_URI}"
       SPRING_NEO4J_AUTHENTICATION_USERNAME: "${GRAPH_STORE_USER}"

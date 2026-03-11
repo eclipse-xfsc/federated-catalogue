@@ -12,7 +12,7 @@ import eu.xfsc.fc.core.config.CoreConfig;
  */
 @Configuration
 @Import(value = {CoreConfig.class})
-@ComponentScan(basePackages = {"eu.xfsc.fc.graphdb.service"})
+@ComponentScan(basePackages = {"eu.xfsc.fc.graphdb.service", "eu.xfsc.fc.graphdb.config"})
 public class ServiceConfig {
 
 }

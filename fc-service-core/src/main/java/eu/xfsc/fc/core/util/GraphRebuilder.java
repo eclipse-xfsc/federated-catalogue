@@ -11,6 +11,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +48,14 @@ public class GraphRebuilder {
    */
   public void rebuildGraphDb(int chunkCount, int chunkId, int threads, int batchSize) {
     BlockingQueue<String> taskQueue = new ArrayBlockingQueue<>(batchSize);
-    ExecutorService executorService = ProcessorUtils.createProcessors(threads, taskQueue, this::addSdToGraph, "GraphRebuilder");
+    AtomicInteger pendingTasks = new AtomicInteger(0);
+    ExecutorService executorService = ProcessorUtils.createProcessors(threads, taskQueue, hash -> {
+      try {
+        addSdToGraph(hash);
+      } finally {
+        pendingTasks.decrementAndGet();
+      }
+    }, "GraphRebuilder");
 
     int lastCount;
     String lastHash = null;
@@ -59,25 +67,22 @@ public class GraphRebuilder {
         lastHash = activeSdHashes.get(activeSdHashes.size() - 1);
         for (String hash : activeSdHashes) {
           try {
+            pendingTasks.incrementAndGet();
             taskQueue.put(hash);
           } catch (InterruptedException ex) {
             log.warn("Interrupted while rebuilding the GraphDB, aborting.");
             lastCount = 0;
             taskQueue.clear();
+            pendingTasks.decrementAndGet();
           }
         }
       }
     } while (lastCount > 0);
 
-    int openJobs = taskQueue.size();
-    while (openJobs > 0) {
-      log.debug("Waiting for {} jobs to be finished.", openJobs);
+    while (pendingTasks.get() > 0) {
+      log.debug("Waiting for {} pending jobs to be finished.", pendingTasks.get());
       sleepForQueue();
-      openJobs = taskQueue.size();
     }
-
-    // Sleep to give the last task a chance to complete.
-    sleepForQueue();
 
     ProcessorUtils.shutdownProcessors(executorService, taskQueue, 10, TimeUnit.MINUTES);
   }

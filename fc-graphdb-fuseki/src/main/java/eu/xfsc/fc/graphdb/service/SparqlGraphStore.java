@@ -1,30 +1,40 @@
 package eu.xfsc.fc.graphdb.service;
 
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
+import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.util.ClaimValidator;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
+import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.query.*;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionBuilder;
+import org.apache.jena.query.ResultSetFormatter;
+import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdfconnection.RDFConnection;
 import org.apache.jena.sparql.core.ResultBinding;
 import org.apache.jena.system.Txn;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.http.HttpConnectTimeoutException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -92,7 +102,7 @@ public class SparqlGraphStore implements GraphStore {
                     .map(qs -> (ResultBinding) qs)
                     .map(rb -> {
                         final Map<String, Object> resultMap = new HashMap<>();
-                        rb.varNames().forEachRemaining(varName -> resultMap.put(varName, rb.get(varName)));
+                        rb.varNames().forEachRemaining(varName -> resultMap.put(varName, convertRdfNode(rb.get(varName))));
                         return resultMap;
                     }).toList());
             // Shuffle list to guarantee results won't appear in a deterministic order thus giving certain results
@@ -108,8 +118,35 @@ public class SparqlGraphStore implements GraphStore {
                 throw new TimeoutException("Timeout while executing query");
             } else {
                 log.error("Error while executing query: {}", sdQuery.getQuery(), e);
-                throw new RuntimeException("Error while executing query", e);
+                throw new ServerException("error querying data " + e.getMessage(), e);
             }
         }
+    }
+
+    /**
+     * Converts an {@link RDFNode} to a JSON-serializable Java object.
+     */
+    private Object convertRdfNode(RDFNode node) {
+        if (node == null) {
+            return null;
+        }
+        if (node.isLiteral()) {
+            Literal lit = node.asLiteral();
+            try {
+                Object value = lit.getValue();
+                if (value instanceof String || value instanceof Number || value instanceof Boolean) {
+                    return value;
+                }
+                // Jena-internal types (e.g. XSDDateTime) are not JSON-serializable
+                return lit.getLexicalForm();
+            } catch (Exception e) {
+                log.warn("Could not extract typed value for literal '{}': {}", lit.getLexicalForm(), e.getMessage());
+                return lit.getLexicalForm();
+            }
+        }
+        if (node.isURIResource()) {
+            return node.asResource().getURI();
+        }
+        return node.toString();
     }
 }
