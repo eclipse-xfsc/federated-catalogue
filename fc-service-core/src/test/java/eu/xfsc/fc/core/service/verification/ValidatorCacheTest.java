@@ -37,7 +37,7 @@ import org.springframework.test.context.ContextConfiguration;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {ValidatorCacheTest.TestApplication.class, ValidatorCacheDaoImpl.class, DatabaseConfig.class, FileStoreConfig.class,
-        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, HttpDocumentResolver.class})
+        VerificationServiceImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, HttpDocumentResolver.class})
 //@DirtiesContext
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 public class ValidatorCacheTest {

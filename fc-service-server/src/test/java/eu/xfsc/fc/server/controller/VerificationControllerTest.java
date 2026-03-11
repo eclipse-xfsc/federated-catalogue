@@ -149,4 +149,51 @@ public class VerificationControllerTest {
             .andExpect(status().isOk());
   }
 
+  /** POST /verification with verifySchema=true rejects a SHACL-invalid SD. */
+  @Test
+  public void verifyShaclInvalidSD_SchemaEnabled_ShouldReturnSchemaError() throws Exception {
+    schemaStore.addSchema(getAccessor("mock-data/legal-personShape.ttl"));
+    try {
+      String json = getMockFileDataAsString("default_participant.json");
+      String response = mockMvc.perform(MockMvcRequestBuilders.post("/verification")
+              .queryParam("verifySchema", "true")
+              .queryParam("verifyVPSignature", "false")
+              .queryParam("verifyVCSignature", "false")
+              .contentType(MediaType.APPLICATION_JSON)
+              .accept(MediaType.APPLICATION_JSON)
+              .content(json)
+              .with(csrf()))
+              .andExpect(status().isUnprocessableEntity())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+      Error error = objectMapper.readValue(response, Error.class);
+      assertTrue(error.getMessage().startsWith("Schema error"), "Expected schema error but got: " + error.getMessage());
+    } finally {
+      schemaStore.clear();
+      schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+    }
+  }
+
+  /** POST /verification with verifySchema=false accepts a SHACL-invalid SD. */
+  @Test
+  public void verifyShaclInvalidSD_SchemaDisabled_ShouldReturnSuccess() throws Exception {
+    schemaStore.addSchema(getAccessor("mock-data/legal-personShape.ttl"));
+    try {
+      String json = getMockFileDataAsString("default_participant.json");
+      mockMvc.perform(MockMvcRequestBuilders.post("/verification")
+              .queryParam("verifySchema", "false")
+              .queryParam("verifyVPSignature", "false")
+              .queryParam("verifyVCSignature", "false")
+              .contentType(MediaType.APPLICATION_JSON)
+              .accept(MediaType.APPLICATION_JSON)
+              .content(json)
+              .with(csrf()))
+              .andExpect(status().isOk());
+    } finally {
+      schemaStore.clear();
+      schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+    }
+  }
+
 }

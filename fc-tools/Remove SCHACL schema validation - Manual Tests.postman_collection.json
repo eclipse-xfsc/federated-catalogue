@@ -1,0 +1,703 @@
+{
+  "info": {
+    "_postman_id": "c6c72e04-4fda-49d4-a5ac-088c4ca88909",
+    "name": "Removed SHACL schema validation - Manual Tests",
+    "description": "Manual acceptance tests for disabling SHACL schema validation on upload.\n\nGoal: Upload a SHACL shape, then upload an asset that is NOT valid against it. Expect success when schema validation is disabled.\n\n--- TEST FLOW ---\n\n1. Get Token\n2. Upload SHACL shape (requires dataAccountExport on ServiceOffering)\n3. POST /verification with verifySchema=TRUE -> REJECTED (proves shape works)\n4. POST /verification with verifySchema=FALSE -> ACCEPTED (proves toggle works)\n5. POST /self-descriptions (default verifySchema=false) -> uploaded OK\n\n--- PREREQUISITES ---\n\n1. Fill in variables: client_secret, keycloak_user_username, keycloak_user_password\n2. Start Docker: docker compose --env-file dev.env up --build\n3. Run requests in order\n\n--- TEST DATA ---\n\nSHACL Shape: Targets gax-trust-framework:ServiceOffering, requires dataAccountExport (which the SD lacks).\n\nSelf-Description (VP): ServiceOffering with valid signatures (did:web:compliance.lab.gaia-x.eu). Has serviceTitle, keywords, termsAndConditions, providedBy — but NO dataAccountExport -> SHACL-invalid.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "11711107"
+  },
+  "item": [
+    {
+      "name": "SHACL shapes remain storable",
+      "item": [
+        {
+          "name": "Upload SHACL shape (LegalPersonShape - invalidates test SD)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('SHACL shape uploaded or already exists', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 409]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "text/turtle"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "@prefix sh: <http://www.w3.org/ns/shacl#> .\n@prefix gax-validation: <http://w3id.org/gaia-x/validation#> .\n@prefix gax-trust-framework: <https://w3id.org/gaia-x/gax-trust-framework#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\ngax-validation:ServiceOfferingShape\n\ta sh:NodeShape ;\n\tsh:targetClass gax-trust-framework:ServiceOffering ;\n\tsh:property [ sh:path gax-trust-framework:dataAccountExport ;\n\t\t\t\t  sh:name \"data account export\" ;\n\t\t\t\t  sh:minCount 1 ;\n\t\t\t\t  sh:datatype xsd:string ] ;\n."
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/schemas",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "schemas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify shapes are stored (GET /schemas)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schemas endpoint returns data', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Shapes are listed', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body.length).to.be.greaterThan(2);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/schemas",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "schemas"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/schemas/{id} Copy",
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {},
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/schemas/:id",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "schemas",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/schemas/{id} Copy",
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "xml"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/schemas/:id",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "schemas",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Upload a SHACL shape requiring dataAccountExport on gax-trust-framework:ServiceOffering. The test SD lacks this field. Verify the shape is stored."
+    },
+    {
+      "name": "Verification endpoint (schema validation toggle)",
+      "item": [
+        {
+          "name": "PROOF: Verify SHACL-invalid SD REJECTED with verifySchema=true",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('SHACL-invalid SD is REJECTED when verifySchema=true', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([409, 500]);",
+                  "});",
+                  "",
+                  "pm.test('Schema error present in response', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.include('Schema error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"@context\": [\n    \"https://www.w3.org/2018/credentials/v1\"\n  ],\n  \"@id\": \"http://example.edu/verifiablePresentation/self-description1\",\n  \"type\": [\n    \"VerifiablePresentation\"\n  ],\n  \"verifiableCredential\": [\n    {\n      \"@context\": [\n        \"https://www.w3.org/2018/credentials/v1\"\n      ],\n      \"@id\": \"https://www.example.org/SoftwareOffering.json\",\n      \"@type\": [\n        \"VerifiableCredential\"\n      ],\n      \"issuer\": \"http://gaiax.de\",\n      \"issuanceDate\": \"2022-10-19T18:48:09Z\",\n      \"credentialSubject\": {\n        \"@context\": {\n          \"dcat\": \"http://www.w3.org/ns/dcat#\",\n          \"gax-core\": \"https://w3id.org/gaia-x/core#\",\n          \"gax-trust-framework\": \"https://w3id.org/gaia-x/gax-trust-framework#\",\n          \"xsd\": \"http://www.w3.org/2001/XMLSchema#\"\n        },\n        \"@id\": \"https://www.example.org/mySoftwareOffering\",\n        \"@type\": \"gax-trust-framework:ServiceOffering\",\n        \"gax-trust-framework:mySoftwareOffering\": {\n          \"@type\": \"gax-trust-framework:SoftwareOffering\",\n          \"gax-trust-framework:accessType\": \"access type\",\n          \"gax-trust-framework:formatType\": \"format type\",\n          \"gax-trust-framework:requestType\": \"request type\"\n        },\n        \"gax-trust-framework:providedBy\": {\n          \"@id\": \"gax-participant:Provider1\"\n        },\n        \"gax-trust-framework:termsAndConditions\": {\n          \"@type\": \"gax-core:TermsAndConditions\",\n          \"gax-trust-framework:content\": {\n            \"@type\": \"xsd:anyURI\",\n            \"@value\": \"http://example.org/tac\"\n          },\n          \"gax-trust-framework:hash\": \"1234\"\n        },\n        \"dcat:keyword\": [\n          \"Keyword1_1\",\n          \"Keyword1_2\",\n          \"Keyword1_3\",\n          \"Keyword1_4\",\n          \"Keyword1_5\",\n          \"Keyword1_6\",\n          \"Keyword1_7\"\n        ],\n        \"gax-trust-framework:serviceTitle\": \"Software Title\"\n      },\n      \"proof\": {\n        \"type\": \"JsonWebSignature2020\",\n        \"created\": \"2022-12-02T16:04:48Z\",\n        \"proofPurpose\": \"assertionMethod\",\n        \"verificationMethod\": \"did:web:compliance.lab.gaia-x.eu\",\n        \"jws\": \"eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..gqHw7BU2sLubTvLqf6CegEtLSeNYJfj2izkerEs-3DnFGRExjI6z0wiwza0VUXCRrek_ApNYhFiR-jmrq9mBv6qWwGUvpgVFc1oCLa6gZZ6tmw__3I7x5P9W_lkeL4Z8-NA94us2taOCckWDG3kMpye_4kynBdqUzB5ACn7ylpG9HTjzKZ0bA1Mkh49-EJE9SX6vkPeN87b8RRPxj26YYIzecLatldOqh0MHD2hRx-aM3khLRgcbJxj9zU0Cxoy4TOah0oZ33NLDi-UXz2HXAq4MGrdIRtAfLGvTr-XpEQ5LizMAeoVLk884Aag-rNnrBZZQVt_B-CLjtv3LmYJF9OaEtLvCFd9HsVeQw8uSpFVU93keL9m2T5PtxahIyznLsm0SQFmYWrVe7Pw-FoT25Rbc7RZOHQivP6NTiz9lD1HTuFXaGy8YheXhYkZ5nG79qx_-dUVJwau6W8or8deJzTmX48bv16GHWMMVW5zHWj-atpLjHAzc_guTOlP8JPX9ed2C4B32Fh12ZOin2RHC53PEjcdMp-4ZR70kTioQYJaPw2bt8QAV9FBRfyFLiwYeC9nbYUMPNtg78PNf5QgNzg__EOpHcloA5eTRQP3sz09HsYaS8Qwu-CjYfE6cdPV0GZPkCVqLInUQ3hNwamX33brZypTsPV8gJzkSU5kxDZI\"\n      }\n    }\n  ],\n  \"proof\": {\n    \"type\": \"JsonWebSignature2020\",\n    \"created\": \"2022-12-02T16:04:48Z\",\n    \"proofPurpose\": \"assertionMethod\",\n    \"verificationMethod\": \"did:web:compliance.lab.gaia-x.eu\",\n    \"jws\": \"eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..EZXMjh9hgg1BCeUayzvjVSXNIbAVn9pFSyoU477S84TYVxOEzkjs1UDDHgcxhqEx2q9aqr8G0tGvsyDS_e1LVTyzmGzY5b08k3wBwxrHTxY6u-qgYxE9Glx-3Dr-yv6KVQi70YFTChccb6VkkjXII9REKteVXavRB3jPgDNl6d-QtG8tE26rhOnp8y8QfdbleJAR8al66WJgghfXvEcHLAhdsCRuwJRrLz33i1J-XrM6VDY53LhSoHNr-xrZ7cBUzR-ki1ukL-ajUxsx67vxAKgOBvvp26GZi0Rc2lnw6cf-eIn9ZRwjp_RN6k6UWN5xNIhTxZ4IWZMxHdQk-D1Ib1JXdNzCHHcxkr0Njyr2LlS-nHxLBPcYUutlQoxzNBjHforJpAQeCd-s5wk2xBAAag8LP4kqWIekbJN0nuGAOV7wWbPJi7BbIcXLfktS8DnEDoBiUUoZkMZzOwEWv8-UIVZoYhlzhx7sAMH0T-QwpL-4PJyjN6hvZWJxBWY9fyL388pudb1XFakovqmULcXjsqGnG_rXEE7S28rD8qNBJDSgp6tAXK4kN7JPE2sh3FI9Yk5ytc9RPq38I9tez4U9cKNvL3OPykEm6fautCmCGpWPuVNE8ukQ9Q31QRcDg53bxwLryPNphTfAK8d3sIZRY5rhWc2A_RqKSssPrJeClf4\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/verification?verifySchema=true&verifyVPSignature=false&verifyVCSignature=false",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "verification"
+              ],
+              "query": [
+                {
+                  "key": "verifySchema",
+                  "value": "true"
+                },
+                {
+                  "key": "verifyVPSignature",
+                  "value": "false"
+                },
+                {
+                  "key": "verifyVCSignature",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify SHACL-invalid SD ACCEPTED (verifySchema=false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('SHACL-invalid SD accepted with verifySchema=false', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('No schema error in response', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.not.include('Schema error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"@context\": [\n    \"https://www.w3.org/2018/credentials/v1\"\n  ],\n  \"@id\": \"http://example.edu/verifiablePresentation/self-description1\",\n  \"type\": [\n    \"VerifiablePresentation\"\n  ],\n  \"verifiableCredential\": [\n    {\n      \"@context\": [\n        \"https://www.w3.org/2018/credentials/v1\"\n      ],\n      \"@id\": \"https://www.example.org/SoftwareOffering.json\",\n      \"@type\": [\n        \"VerifiableCredential\"\n      ],\n      \"issuer\": \"http://gaiax.de\",\n      \"issuanceDate\": \"2022-10-19T18:48:09Z\",\n      \"credentialSubject\": {\n        \"@context\": {\n          \"dcat\": \"http://www.w3.org/ns/dcat#\",\n          \"gax-core\": \"https://w3id.org/gaia-x/core#\",\n          \"gax-trust-framework\": \"https://w3id.org/gaia-x/gax-trust-framework#\",\n          \"xsd\": \"http://www.w3.org/2001/XMLSchema#\"\n        },\n        \"@id\": \"https://www.example.org/mySoftwareOffering\",\n        \"@type\": \"gax-trust-framework:ServiceOffering\",\n        \"gax-trust-framework:mySoftwareOffering\": {\n          \"@type\": \"gax-trust-framework:SoftwareOffering\",\n          \"gax-trust-framework:accessType\": \"access type\",\n          \"gax-trust-framework:formatType\": \"format type\",\n          \"gax-trust-framework:requestType\": \"request type\"\n        },\n        \"gax-trust-framework:providedBy\": {\n          \"@id\": \"gax-participant:Provider1\"\n        },\n        \"gax-trust-framework:termsAndConditions\": {\n          \"@type\": \"gax-core:TermsAndConditions\",\n          \"gax-trust-framework:content\": {\n            \"@type\": \"xsd:anyURI\",\n            \"@value\": \"http://example.org/tac\"\n          },\n          \"gax-trust-framework:hash\": \"1234\"\n        },\n        \"dcat:keyword\": [\n          \"Keyword1_1\",\n          \"Keyword1_2\",\n          \"Keyword1_3\",\n          \"Keyword1_4\",\n          \"Keyword1_5\",\n          \"Keyword1_6\",\n          \"Keyword1_7\"\n        ],\n        \"gax-trust-framework:serviceTitle\": \"Software Title\"\n      },\n      \"proof\": {\n        \"type\": \"JsonWebSignature2020\",\n        \"created\": \"2022-12-02T16:04:48Z\",\n        \"proofPurpose\": \"assertionMethod\",\n        \"verificationMethod\": \"did:web:compliance.lab.gaia-x.eu\",\n        \"jws\": \"eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..gqHw7BU2sLubTvLqf6CegEtLSeNYJfj2izkerEs-3DnFGRExjI6z0wiwza0VUXCRrek_ApNYhFiR-jmrq9mBv6qWwGUvpgVFc1oCLa6gZZ6tmw__3I7x5P9W_lkeL4Z8-NA94us2taOCckWDG3kMpye_4kynBdqUzB5ACn7ylpG9HTjzKZ0bA1Mkh49-EJE9SX6vkPeN87b8RRPxj26YYIzecLatldOqh0MHD2hRx-aM3khLRgcbJxj9zU0Cxoy4TOah0oZ33NLDi-UXz2HXAq4MGrdIRtAfLGvTr-XpEQ5LizMAeoVLk884Aag-rNnrBZZQVt_B-CLjtv3LmYJF9OaEtLvCFd9HsVeQw8uSpFVU93keL9m2T5PtxahIyznLsm0SQFmYWrVe7Pw-FoT25Rbc7RZOHQivP6NTiz9lD1HTuFXaGy8YheXhYkZ5nG79qx_-dUVJwau6W8or8deJzTmX48bv16GHWMMVW5zHWj-atpLjHAzc_guTOlP8JPX9ed2C4B32Fh12ZOin2RHC53PEjcdMp-4ZR70kTioQYJaPw2bt8QAV9FBRfyFLiwYeC9nbYUMPNtg78PNf5QgNzg__EOpHcloA5eTRQP3sz09HsYaS8Qwu-CjYfE6cdPV0GZPkCVqLInUQ3hNwamX33brZypTsPV8gJzkSU5kxDZI\"\n      }\n    }\n  ],\n  \"proof\": {\n    \"type\": \"JsonWebSignature2020\",\n    \"created\": \"2022-12-02T16:04:48Z\",\n    \"proofPurpose\": \"assertionMethod\",\n    \"verificationMethod\": \"did:web:compliance.lab.gaia-x.eu\",\n    \"jws\": \"eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..EZXMjh9hgg1BCeUayzvjVSXNIbAVn9pFSyoU477S84TYVxOEzkjs1UDDHgcxhqEx2q9aqr8G0tGvsyDS_e1LVTyzmGzY5b08k3wBwxrHTxY6u-qgYxE9Glx-3Dr-yv6KVQi70YFTChccb6VkkjXII9REKteVXavRB3jPgDNl6d-QtG8tE26rhOnp8y8QfdbleJAR8al66WJgghfXvEcHLAhdsCRuwJRrLz33i1J-XrM6VDY53LhSoHNr-xrZ7cBUzR-ki1ukL-ajUxsx67vxAKgOBvvp26GZi0Rc2lnw6cf-eIn9ZRwjp_RN6k6UWN5xNIhTxZ4IWZMxHdQk-D1Ib1JXdNzCHHcxkr0Njyr2LlS-nHxLBPcYUutlQoxzNBjHforJpAQeCd-s5wk2xBAAag8LP4kqWIekbJN0nuGAOV7wWbPJi7BbIcXLfktS8DnEDoBiUUoZkMZzOwEWv8-UIVZoYhlzhx7sAMH0T-QwpL-4PJyjN6hvZWJxBWY9fyL388pudb1XFakovqmULcXjsqGnG_rXEE7S28rD8qNBJDSgp6tAXK4kN7JPE2sh3FI9Yk5ytc9RPq38I9tez4U9cKNvL3OPykEm6fautCmCGpWPuVNE8ukQ9Q31QRcDg53bxwLryPNphTfAK8d3sIZRY5rhWc2A_RqKSssPrJeClf4\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/verification?verifySchema=false&verifyVPSignature=false&verifyVCSignature=false",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "verification"
+              ],
+              "query": [
+                {
+                  "key": "verifySchema",
+                  "value": "false"
+                },
+                {
+                  "key": "verifyVPSignature",
+                  "value": "false"
+                },
+                {
+                  "key": "verifyVCSignature",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Two-step test of the schema validation toggle on /verification.\n\n1. verifySchema=TRUE -> REJECTED (proves the shape catches missing dataAccountExport)\n2. verifySchema=FALSE -> ACCEPTED (proves schema validation is disabled)\n\nSignature checks disabled via query params to isolate the schema validation test."
+    },
+    {
+      "name": "Self-Description Upload (POST /self-descriptions)",
+      "item": [
+        {
+          "name": "Upload SHACL-invalid SD (default verifySchema=false)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('SHACL-invalid SD uploaded (default verifySchema=false)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 200]);",
+                  "});",
+                  "",
+                  "pm.test('No schema error in response', function () {",
+                  "    var body = pm.response.text();",
+                  "    pm.expect(body).to.not.include('Schema error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"@context\": [\n    \"https://www.w3.org/2018/credentials/v1\"\n  ],\n  \"@id\": \"http://example.edu/verifiablePresentation/self-description1\",\n  \"type\": [\n    \"VerifiablePresentation\"\n  ],\n  \"verifiableCredential\": [\n    {\n      \"@context\": [\n        \"https://www.w3.org/2018/credentials/v1\"\n      ],\n      \"@id\": \"https://www.example.org/SoftwareOffering.json\",\n      \"@type\": [\n        \"VerifiableCredential\"\n      ],\n      \"issuer\": \"http://gaiax.de\",\n      \"issuanceDate\": \"2022-10-19T18:48:09Z\",\n      \"credentialSubject\": {\n        \"@context\": {\n          \"dcat\": \"http://www.w3.org/ns/dcat#\",\n          \"gax-core\": \"https://w3id.org/gaia-x/core#\",\n          \"gax-trust-framework\": \"https://w3id.org/gaia-x/gax-trust-framework#\",\n          \"xsd\": \"http://www.w3.org/2001/XMLSchema#\"\n        },\n        \"@id\": \"https://www.example.org/mySoftwareOffering\",\n        \"@type\": \"gax-trust-framework:ServiceOffering\",\n        \"gax-trust-framework:mySoftwareOffering\": {\n          \"@type\": \"gax-trust-framework:SoftwareOffering\",\n          \"gax-trust-framework:accessType\": \"access type\",\n          \"gax-trust-framework:formatType\": \"format type\",\n          \"gax-trust-framework:requestType\": \"request type\"\n        },\n        \"gax-trust-framework:providedBy\": {\n          \"@id\": \"gax-participant:Provider1\"\n        },\n        \"gax-trust-framework:termsAndConditions\": {\n          \"@type\": \"gax-core:TermsAndConditions\",\n          \"gax-trust-framework:content\": {\n            \"@type\": \"xsd:anyURI\",\n            \"@value\": \"http://example.org/tac\"\n          },\n          \"gax-trust-framework:hash\": \"1234\"\n        },\n        \"dcat:keyword\": [\n          \"Keyword1_1\",\n          \"Keyword1_2\",\n          \"Keyword1_3\",\n          \"Keyword1_4\",\n          \"Keyword1_5\",\n          \"Keyword1_6\",\n          \"Keyword1_7\"\n        ],\n        \"gax-trust-framework:serviceTitle\": \"Software Title\"\n      },\n      \"proof\": {\n        \"type\": \"JsonWebSignature2020\",\n        \"created\": \"2022-12-02T16:04:48Z\",\n        \"proofPurpose\": \"assertionMethod\",\n        \"verificationMethod\": \"did:web:compliance.lab.gaia-x.eu\",\n        \"jws\": \"eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..gqHw7BU2sLubTvLqf6CegEtLSeNYJfj2izkerEs-3DnFGRExjI6z0wiwza0VUXCRrek_ApNYhFiR-jmrq9mBv6qWwGUvpgVFc1oCLa6gZZ6tmw__3I7x5P9W_lkeL4Z8-NA94us2taOCckWDG3kMpye_4kynBdqUzB5ACn7ylpG9HTjzKZ0bA1Mkh49-EJE9SX6vkPeN87b8RRPxj26YYIzecLatldOqh0MHD2hRx-aM3khLRgcbJxj9zU0Cxoy4TOah0oZ33NLDi-UXz2HXAq4MGrdIRtAfLGvTr-XpEQ5LizMAeoVLk884Aag-rNnrBZZQVt_B-CLjtv3LmYJF9OaEtLvCFd9HsVeQw8uSpFVU93keL9m2T5PtxahIyznLsm0SQFmYWrVe7Pw-FoT25Rbc7RZOHQivP6NTiz9lD1HTuFXaGy8YheXhYkZ5nG79qx_-dUVJwau6W8or8deJzTmX48bv16GHWMMVW5zHWj-atpLjHAzc_guTOlP8JPX9ed2C4B32Fh12ZOin2RHC53PEjcdMp-4ZR70kTioQYJaPw2bt8QAV9FBRfyFLiwYeC9nbYUMPNtg78PNf5QgNzg__EOpHcloA5eTRQP3sz09HsYaS8Qwu-CjYfE6cdPV0GZPkCVqLInUQ3hNwamX33brZypTsPV8gJzkSU5kxDZI\"\n      }\n    }\n  ],\n  \"proof\": {\n    \"type\": \"JsonWebSignature2020\",\n    \"created\": \"2022-12-02T16:04:48Z\",\n    \"proofPurpose\": \"assertionMethod\",\n    \"verificationMethod\": \"did:web:compliance.lab.gaia-x.eu\",\n    \"jws\": \"eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..EZXMjh9hgg1BCeUayzvjVSXNIbAVn9pFSyoU477S84TYVxOEzkjs1UDDHgcxhqEx2q9aqr8G0tGvsyDS_e1LVTyzmGzY5b08k3wBwxrHTxY6u-qgYxE9Glx-3Dr-yv6KVQi70YFTChccb6VkkjXII9REKteVXavRB3jPgDNl6d-QtG8tE26rhOnp8y8QfdbleJAR8al66WJgghfXvEcHLAhdsCRuwJRrLz33i1J-XrM6VDY53LhSoHNr-xrZ7cBUzR-ki1ukL-ajUxsx67vxAKgOBvvp26GZi0Rc2lnw6cf-eIn9ZRwjp_RN6k6UWN5xNIhTxZ4IWZMxHdQk-D1Ib1JXdNzCHHcxkr0Njyr2LlS-nHxLBPcYUutlQoxzNBjHforJpAQeCd-s5wk2xBAAag8LP4kqWIekbJN0nuGAOV7wWbPJi7BbIcXLfktS8DnEDoBiUUoZkMZzOwEWv8-UIVZoYhlzhx7sAMH0T-QwpL-4PJyjN6hvZWJxBWY9fyL388pudb1XFakovqmULcXjsqGnG_rXEE7S28rD8qNBJDSgp6tAXK4kN7JPE2sh3FI9Yk5ytc9RPq38I9tez4U9cKNvL3OPykEm6fautCmCGpWPuVNE8ukQ9Q31QRcDg53bxwLryPNphTfAK8d3sIZRY5rhWc2A_RqKSssPrJeClf4\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "self-descriptions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/self-descriptions/{hash} Copy",
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {},
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "self-descriptions",
+                ":hash"
+              ],
+              "variable": [
+                {
+                  "key": "hash",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "/self-descriptions/{hash} Copy",
+          "protocolProfileBehavior": {
+            "disabledSystemHeaders": {}
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash",
+              "protocol": "{{federated_catalogue_protocol}}",
+              "host": [
+                "{{federated_catalogue_address}}"
+              ],
+              "path": [
+                "self-descriptions",
+                ":hash"
+              ],
+              "variable": [
+                {
+                  "key": "hash",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "POST /self-descriptions with a SHACL-invalid SD (missing dataAccountExport). Default config: verifySchema=false. Expect 201 Created."
+    },
+    {
+      "name": "0. Get Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = JSON.parse(responseBody);",
+              "pm.collectionVariables.set('access_token', jsonData.access_token);",
+              "pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{keycloak_user_username}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{keycloak_user_password}}",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{client_id}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "{{client_secret}}",
+              "type": "default"
+            },
+            {
+              "key": "scope",
+              "value": "openid",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloak_protocol}}://{{keycloak_address}}/realms/gaia-x/protocol/openid-connect/token",
+          "protocol": "{{keycloak_protocol}}",
+          "host": [
+            "{{keycloak_address}}"
+          ],
+          "path": [
+            "realms",
+            "gaia-x",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "client_id",
+      "value": "federated-catalogue"
+    },
+    {
+      "key": "client_secret",
+      "value": ""
+    },
+    {
+      "key": "federated_catalogue_address",
+      "value": "localhost:8081"
+    },
+    {
+      "key": "federated_catalogue_protocol",
+      "value": "http"
+    },
+    {
+      "key": "keycloak_address",
+      "value": "key-server:8080"
+    },
+    {
+      "key": "keycloak_protocol",
+      "value": "http"
+    },
+    {
+      "key": "keycloak_user_username",
+      "value": ""
+    },
+    {
+      "key": "keycloak_user_password",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    }
+  ]
+}

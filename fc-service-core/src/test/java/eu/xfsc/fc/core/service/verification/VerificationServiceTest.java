@@ -23,7 +23,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
@@ -35,7 +34,7 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.pojo.SemanticValidationResult;
+import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.VerificationResult;
 import eu.xfsc.fc.core.pojo.VerificationResultOffering;
 import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
@@ -51,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {VerificationServiceTest.TestApplication.class, FileStoreConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
-        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, DidResolverConfig.class, ValidatorCacheDaoImpl.class, HttpDocumentResolver.class})
+        VerificationServiceImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, DidResolverConfig.class, ValidatorCacheDaoImpl.class, HttpDocumentResolver.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 public class VerificationServiceTest {
 
@@ -72,11 +71,11 @@ public class VerificationServiceTest {
   @AfterEach
   public void storageSelfCleaning() throws IOException {
     schemaStore.clear();
+    verificationService.setVerifySchema(false);
   }
 
   @Test
   void invalidSyntax_MissingQuote() {
-    log.debug("invalidSyntax_MissingQuote");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/syntax/missingQuote.jsonld";
     ContentAccessor content = getAccessor(path);
@@ -88,7 +87,6 @@ public class VerificationServiceTest {
 
   @Test
   void invalidSyntax_NoVCinSD() {
-    log.debug("invalidSyntax_NoVCinSD");
     String path = "VerificationService/syntax/smallExample.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     Exception ex = assertThrowsExactly(VerificationException.class, ()
@@ -98,7 +96,6 @@ public class VerificationServiceTest {
 
   @Test
   void validVCnoVP() {
-    log.debug("validVCnoVP");
     String path = "VerificationService/syntax/input.vc.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     VerificationResult vr = verificationService.verifySelfDescription(getAccessor(path), true, true, false, false);
@@ -112,7 +109,6 @@ public class VerificationServiceTest {
 
   @Test
   void validVCUnknownType() {
-    log.debug("validVCUnknownType");
     String path = "VerificationService/jsonld/input.vc.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     Exception ex = assertThrowsExactly(VerificationException.class, () -> verificationService.verifySelfDescription(getAccessor(path)));
@@ -126,7 +122,6 @@ public class VerificationServiceTest {
   
   @Test
   void validVPUnknownType() {
-    log.debug("validVPUnknownType");
     String path = "VerificationService/jsonld/input.vp.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     Exception ex = assertThrowsExactly(VerificationException.class, () -> verificationService.verifySelfDescription(getAccessor(path)));
@@ -140,7 +135,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_Participant() {
-    log.debug("validSyntax_Participant");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/syntax/participantSD2.jsonld";
     VerificationResult vr = verificationService.verifySelfDescription(getAccessor(path));
@@ -154,7 +148,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_ValidSDVP() {
-    log.debug("validSyntax_ValidSDVP");
     //schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/syntax/input.vp.jsonld";
     VerificationResult vr = verificationService.verifySelfDescription(getAccessor(path), true, true, false, false);
@@ -169,7 +162,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_ValidServiceOldSchema() {
-    log.debug("validSyntax_ValidServiceOldSchema");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering1.jsonld");
     VerificationResult vr = verificationService.verifySelfDescription(content, true, true, false, false);
@@ -188,7 +180,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_ValidServiceNewSchema() {
-    log.debug("validSyntax_ValidServiceNewSchema");
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering2.jsonld");
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.SERVICE_OFFERING, "https://w3id.org/gaia-x/core#ServiceOffering");
@@ -209,7 +200,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_ValidPersonOldSchema() {
-    log.debug("validSyntax_ValidPerson");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson1.jsonld");
     VerificationResult vr = verificationService.verifySelfDescription(content, true, true, false, false);
@@ -229,7 +219,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_ValidPersonNewSchema() {
-    log.debug("validSyntax_ValidPerson2");
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "https://w3id.org/gaia-x/core#Participant");
@@ -251,7 +240,6 @@ public class VerificationServiceTest {
 
   @Test
   void validSyntax_ValidResourceNewSchema() {
-    log.debug("validSyntax_ValidResourceNewSchema");
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/resourceSD.jsonld");
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.RESOURCE, "https://w3id.org/gaia-x/core#Resource"); 
@@ -272,7 +260,6 @@ public class VerificationServiceTest {
   
   @Test
   void validSyntax_LegalParticipantNewSchema() {
-    log.debug("validSyntax_LegalParticipantNewSchema");
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "https://w3id.org/gaia-x/core#Participant"); 
@@ -297,7 +284,6 @@ public class VerificationServiceTest {
 
   @Test
   void invalidProof_InvalidSignatureType(){
-    log.debug("invalidProof_InvalidSignatureType");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/syntax/input.vp.jsonld";
     Exception ex = assertThrowsExactly(VerificationException.class, ()
@@ -307,7 +293,6 @@ public class VerificationServiceTest {
 
   @Test
   void invalidProof_MissingProofs() {
-    log.debug("invalidProof_MissingProofs");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/sign/hasNoSignature1.json";
 
@@ -319,7 +304,6 @@ public class VerificationServiceTest {
 
   @Test
   void invalidProof_UnknownVerificationMethod() {
-    log.debug("invalidProof_UnknownVerificationMethod");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/sign/hasInvalidSignatureType.json";
 
@@ -331,7 +315,6 @@ public class VerificationServiceTest {
 
   @Test
   void invalidProof_SignaturesMissing2() {
-    log.debug("invalidProof_SignaturesMissing2");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/sign/lacksSomeSignatures.json";
 
@@ -343,7 +326,6 @@ public class VerificationServiceTest {
 
   @Test
   void verifySignature_InvalidSignature() { 
-    log.debug("verifySignature_InvalidSignature");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/sign/hasInvalidSignature.json";
     Exception ex = assertThrowsExactly(VerificationException.class, ()
@@ -361,7 +343,6 @@ public class VerificationServiceTest {
     
   //@Test //TODO: think how to run it with the static key above
   void validSyntax_ValidSO() {
-    log.debug("validSyntax_ValidSO");
     //schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     schemaStore.initializeDefaultSchemas();
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.SERVICE_OFFERING, "https://w3id.org/gaia-x/core#ServiceOffering");
@@ -372,7 +353,6 @@ public class VerificationServiceTest {
     
   @Test
   void validSD() {
-    log.debug("validSD");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/sign/valid_signature.json";
     VerificationResult result = verificationService.verifySelfDescription(getAccessor(path), false, false, true, true);
@@ -381,7 +361,6 @@ public class VerificationServiceTest {
 
   @Test
   void validComplexSD() {
-    log.debug("validComplexSD");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     String path = "VerificationService/sign/valid_complex_signature.json";
     VerificationResult result = verificationService.verifySelfDescription(getAccessor(path));
@@ -432,12 +411,10 @@ public class VerificationServiceTest {
   
   @Test
   void extractClaims_providerTest() {
-    log.debug("extractClaims_providerTest");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
     VerificationResult result = verificationService.verifySelfDescription(content, true, true, false, false);
     List<SdClaim> actualClaims = result.getClaims();
-    log.debug("extractClaims_providerTest; actual claims: {}", actualClaims);
     Set<SdClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new SdClaim("<http://example.org/test-issuer>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://w3id.org/gaia-x/participant#Provider>"));
     expectedClaims.add(new SdClaim("<http://example.org/test-issuer>", "<http://w3id.org/gaia-x/participant#name>", "\"deltaDAO AG\""));
@@ -454,12 +431,10 @@ public class VerificationServiceTest {
 
   @Test
   void extractClaims_participantTest() {
-    log.debug("extractClaims_participantTest");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantSD.jsonld");
     VerificationResult result = verificationService.verifySelfDescription(content, true, false, false, false);
     List<SdClaim> actualClaims = result.getClaims();
-    log.debug("extractClaims_participantTest; actual claims: {}", actualClaims);
 
     Set<SdClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new SdClaim("<did:web:delta-dao.com>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://w3id.org/gaia-x/participant#LegalPerson>"));
@@ -488,12 +463,10 @@ public class VerificationServiceTest {
 
   @Test
   void extractClaims_participantTwoVCsTest() {
-    log.debug("extractClaims_participantTwoVCsTest");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoVCs.jsonld");
     VerificationResult result = verificationService.verifySelfDescription(content, true, true, false, false);
     List<SdClaim> actualClaims = result.getClaims();
-    log.debug("extractClaims_participantTest; actual claims: {}", actualClaims);
     List<SdClaim> expectedClaims = new ArrayList<>();
     expectedClaims.add(new SdClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://www.w3.org/2006/vcard/ns#Address>"));
     expectedClaims.add(new SdClaim("_:b0", "<http://www.w3.org/2006/vcard/ns#country-name>", "\"Country\""));
@@ -515,13 +488,11 @@ public class VerificationServiceTest {
 
   @Test
   void extractClaims_jsonValueCharacterTest() throws Exception {
-    log.debug("validSyntax_jsonValueCharacterTest");
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/specialCharacters.jsonld");
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.RESOURCE, "https://w3id.org/gaia-x/core#Resource");
     VerificationResult result = verificationService.verifySelfDescription(content, true, false, false, false);
     List<SdClaim> actualClaims = result.getClaims();
-    log.debug("validSyntax_jsonValueCharacterTest; actual claims: {}", actualClaims);
     Set<SdClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new SdClaim("<did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/gax-trust-framework#Resource>"));
     expectedClaims.add(new SdClaim("<did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2>", "<http://purl.org/dc/terms/description>", "\"\\n \\\\ Test with </\\\"s>pecial\\\" \\\\ / characters \\b </\\f \\n \\r \\t 🔥\""));
@@ -531,7 +502,6 @@ public class VerificationServiceTest {
 
   @Test
   void extractClaims_participantTwoAdditionalContextTest() throws Exception {
-    log.debug("extractClaims_participantTwoVCsTest");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoAdditionalContext.jsonld");
     try {
@@ -545,12 +515,10 @@ public class VerificationServiceTest {
   
   @Test
   void extractClaims_participantTwoCSsTest() {
-    log.debug("extractClaims_participantTwoCSsTest");
     schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoCSs.jsonld");
     VerificationResult result = verificationService.verifySelfDescription(content, true, true, false, false);
     List<SdClaim> actualClaims = result.getClaims();
-    log.debug("extractClaims_participantTest; actual claims: {}", actualClaims);
 
     Set<SdClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new SdClaim("<http://w3id.org/gaia-x/participant#Provider1>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://w3id.org/gaia-x/participant#LegalPerson>"));
@@ -572,8 +540,7 @@ public class VerificationServiceTest {
 
   @Test
   void verifyValidationResultInvalid() {
-    log.debug("verifyValidationResult");
-    SemanticValidationResult validationResult = verificationService.verifySelfDescriptionAgainstSchema(
+    SchemaValidationResult validationResult = verificationService.verifySelfDescriptionAgainstSchema(
             getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"), getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
 
     if (!validationResult.isConforming()) {
@@ -585,8 +552,7 @@ public class VerificationServiceTest {
 
   @Test
   void verifyValidationResultValid() {
-    log.debug("verifyValidationResult");
-    SemanticValidationResult validationResult = verificationService.verifySelfDescriptionAgainstSchema(
+    SchemaValidationResult validationResult = verificationService.verifySelfDescriptionAgainstSchema(
             getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"), getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
     assertTrue(validationResult.isConforming());
 
@@ -594,10 +560,9 @@ public class VerificationServiceTest {
 
   @Test
   void verifyInvalidSDValidation_Result_Against_CompositeSchema() {
-    log.debug("verifyInvalidSDValidation_Result_Against_CompositeSchema_bug");
     schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
     schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
-    SemanticValidationResult result = verificationService.verifySelfDescriptionAgainstCompositeSchema(
+    SchemaValidationResult result = verificationService.verifySelfDescriptionAgainstCompositeSchema(
     		getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"));
     assertFalse(result.isConforming(), "Validation should have failed.");
     assertTrue(result.getValidationReport().contains("Property needs to have at least 1 value"));
@@ -605,12 +570,45 @@ public class VerificationServiceTest {
 
   @Test
   void verifyValidVP_SDValidationCompositeSchema() {
-    log.debug("verifyValidVP_SDValidationCompositeSchema");
     schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
     schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-    SemanticValidationResult validationResult = verificationService.verifySelfDescriptionAgainstCompositeSchema(
+    SchemaValidationResult validationResult = verificationService.verifySelfDescriptionAgainstCompositeSchema(
             getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"));
     assertTrue(validationResult.isConforming());
   }
-  
+
+  /** With verifySchema=true, an SD that violates SHACL shapes should be rejected. */
+  @Test
+  void schemaValidationEnabled_InvalidSD_Rejected() {
+    verificationService.setVerifySchema(true);
+    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
+    schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
+    ContentAccessor content = getAccessor("VerificationService/syntax/participantSD2.jsonld");
+    Exception ex = assertThrowsExactly(VerificationException.class, ()
+            -> verificationService.verifySelfDescription(content));
+    assertTrue(ex.getMessage().startsWith("Schema error:"), "Expected schema validation error but got: " + ex.getMessage());
+  }
+
+  /** With verifySchema=false, an SD that violates SHACL shapes should still be accepted. */
+  @Test
+  void schemaValidationDisabled_InvalidSD_Accepted() {
+    verificationService.setVerifySchema(false);
+    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
+    schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
+    ContentAccessor content = getAccessor("VerificationService/syntax/participantSD2.jsonld");
+    VerificationResult result = verificationService.verifySelfDescription(content);
+    assertNotNull(result, "SD should be accepted when schema validation is disabled");
+  }
+
+  /** A JSON-LD asset invalid against stored SHACL shapes is accepted with the default configuration. */
+  @Test
+  void defaultConfig_NoAutomaticSchemaValidation() {
+    // verifySchema is not set — relies on default (false)
+    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
+    schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
+    ContentAccessor content = getAccessor("VerificationService/syntax/participantSD2.jsonld");
+    VerificationResult result = verificationService.verifySelfDescription(content);
+    assertNotNull(result, "SD should be accepted with default config (no automatic schema validation)");
+  }
+
 }

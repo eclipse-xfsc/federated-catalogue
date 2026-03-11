@@ -53,6 +53,8 @@ import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
+import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -65,7 +67,7 @@ import okhttp3.mockwebserver.MockWebServer;
 @SpringBootTest(properties = { "publisher.impl=ces", "publisher.url=http://localhost:9091", "publisher.comp-url=http://localhost:9090" })
 @ActiveProfiles({"test"}) 
 @ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, SelfDescriptionStoreConfig.class, SelfDescriptionDaoImpl.class,
-		DummyGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class, 
+		DummyGraphStore.class, VerificationServiceImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
 		DocumentLoaderConfig.class,	DocumentLoaderProperties.class, ValidatorCacheDaoImpl.class, CesTrackerDaoImpl.class})
 //@Import(EmbeddedNeo4JConfig.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)

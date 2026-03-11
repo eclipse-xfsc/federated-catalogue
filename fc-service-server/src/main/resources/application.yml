@@ -147,7 +147,7 @@ federated-catalogue:
     service-offering:
       type: "https://w3id.org/gaia-x/core#ServiceOffering"
     semantics: true
-    schema: true
+    schema: false
     vp-signature: true
     vc-signature: true
     signature-verifier: uni-res #local

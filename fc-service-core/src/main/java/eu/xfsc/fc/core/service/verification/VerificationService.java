@@ -3,7 +3,7 @@ package eu.xfsc.fc.core.service.verification;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.pojo.SemanticValidationResult;
+import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.VerificationResult;
 import eu.xfsc.fc.core.pojo.VerificationResultOffering;
 import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
@@ -73,20 +73,24 @@ public interface VerificationService {
   List<SdClaim> extractClaims(ContentAccessor payload);
 
   /**
-   * The function validates the Self-Description against the composite schema.
+   * The function validates the Self-Description against the given schema.
    *
    * @param payload ContentAccessor to SD which should be validated.
-   * @param schema ContentAccessor - the schema to validate SDD against
+   * @param schema ContentAccessor - the schema to validate SD against (null = composite)
    * @return the result of the semantic validation.
+   * @deprecated Use {@link SchemaValidationService#validateSelfDescriptionAgainstSchema} directly.
    */
-  SemanticValidationResult verifySelfDescriptionAgainstSchema(ContentAccessor payload, ContentAccessor schema);
+  @Deprecated
+  SchemaValidationResult verifySelfDescriptionAgainstSchema(ContentAccessor payload, ContentAccessor schema);
 
   /**
    * The function validates the Self-Description against the composite schema.
    *
    * @param payload ContentAccessor to SD which should be validated.
    * @return the result of the semantic validation.
+   * @deprecated Use {@link SchemaValidationService#validateSelfDescriptionAgainstCompositeSchema} directly.
    */
-  SemanticValidationResult verifySelfDescriptionAgainstCompositeSchema(ContentAccessor payload);
+  @Deprecated
+  SchemaValidationResult verifySelfDescriptionAgainstCompositeSchema(ContentAccessor payload);
 
 }

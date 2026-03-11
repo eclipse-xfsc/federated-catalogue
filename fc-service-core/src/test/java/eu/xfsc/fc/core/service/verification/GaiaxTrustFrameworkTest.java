@@ -93,6 +93,9 @@ public class GaiaxTrustFrameworkTest {
     private VerificationServiceImpl verificationService;
 
     @Autowired
+    private CredentialVerificationStrategy credentialStrategy;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
@@ -104,7 +107,7 @@ public class GaiaxTrustFrameworkTest {
     @AfterEach
     public void tearDown() throws IOException {
         // Reset to default (matches @SpringBootTest property)
-        verificationService.gaiaxTrustFrameworkEnabled = false;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
         clearValidatorCache();
         schemaStore.clear();
     }
@@ -123,7 +126,7 @@ public class GaiaxTrustFrameworkTest {
     @Test
     @DisplayName("AC-1/AC-3: Credential without x5u URL should be ACCEPTED when Gaia-X is disabled")
     void testCredentialWithoutX5u_AcceptedWhenDisabled() {
-        verificationService.gaiaxTrustFrameworkEnabled = false;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
         String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
 
@@ -144,7 +147,7 @@ public class GaiaxTrustFrameworkTest {
     @Test
     @DisplayName("AC-1: Non-Gaia-X credential claims should be extractable")
     void testClaimsExtractable_WhenDisabled() {
-        verificationService.gaiaxTrustFrameworkEnabled = false;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
         String path = "VerificationService/syntax/participantSD2.jsonld";
 
@@ -162,7 +165,7 @@ public class GaiaxTrustFrameworkTest {
     @Test
     @DisplayName("AC-4: Credential without x5u URL should be REJECTED when Gaia-X is enabled")
     void testCredentialWithoutX5u_RejectedWhenEnabled() {
-        verificationService.gaiaxTrustFrameworkEnabled = true;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = true;
 
         String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
 
@@ -177,7 +180,7 @@ public class GaiaxTrustFrameworkTest {
     @Test
     @DisplayName("AC-4: Gaia-X compliant credential should still work when enabled")
     void testGaiaxCredentialWorks_WhenEnabled() {
-        verificationService.gaiaxTrustFrameworkEnabled = true;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = true;
 
         String path = "VerificationService/syntax/participantSD2.jsonld";
 
@@ -198,8 +201,8 @@ public class GaiaxTrustFrameworkTest {
 
         // --- Test with Gaia-X ENABLED: should REJECT ---
         clearValidatorCache(); // Ensure no cached validators interfere
-        verificationService.gaiaxTrustFrameworkEnabled = true;
-        assertTrue(verificationService.gaiaxTrustFrameworkEnabled, "Precondition: Gaia-X should be enabled");
+        credentialStrategy.gaiaxTrustFrameworkEnabled = true;
+        assertTrue(credentialStrategy.gaiaxTrustFrameworkEnabled, "Precondition: Gaia-X should be enabled");
 
         Exception enabledEx = assertThrowsExactly(VerificationException.class, () ->
             verificationService.verifySelfDescription(getAccessor(path),
@@ -210,8 +213,8 @@ public class GaiaxTrustFrameworkTest {
 
         // --- Test with Gaia-X DISABLED: should NOT get trust anchor error ---
         clearValidatorCache(); // Clear cache before testing with different setting
-        verificationService.gaiaxTrustFrameworkEnabled = false;
-        assertFalse(verificationService.gaiaxTrustFrameworkEnabled, "Precondition: Gaia-X should be disabled");
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
+        assertFalse(credentialStrategy.gaiaxTrustFrameworkEnabled, "Precondition: Gaia-X should be disabled");
 
         try {
             verificationService.verifySelfDescription(getAccessor(path),
@@ -231,7 +234,7 @@ public class GaiaxTrustFrameworkTest {
 
         // --- First: DISABLE Gaia-X, verify no trust anchor error ---
         clearValidatorCache(); // Ensure no cached validators interfere
-        verificationService.gaiaxTrustFrameworkEnabled = false;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
         try {
             verificationService.verifySelfDescription(getAccessor(path),
@@ -245,7 +248,7 @@ public class GaiaxTrustFrameworkTest {
 
         // --- Then: ENABLE Gaia-X, verify trust anchor error occurs ---
         clearValidatorCache(); // Clear cache before testing with different setting
-        verificationService.gaiaxTrustFrameworkEnabled = true;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = true;
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
             verificationService.verifySelfDescription(getAccessor(path),
@@ -260,7 +263,7 @@ public class GaiaxTrustFrameworkTest {
     @Test
     @DisplayName("Invalid signature should still be rejected when Gaia-X is disabled")
     void testInvalidSignatureRejected_WhenDisabled() {
-        verificationService.gaiaxTrustFrameworkEnabled = false;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
         String path = "VerificationService/sign/hasInvalidSignature.json";
 
@@ -279,7 +282,7 @@ public class GaiaxTrustFrameworkTest {
     @Test
     @DisplayName("Missing proof should still be rejected when Gaia-X is disabled")
     void testMissingProofRejected_WhenDisabled() {
-        verificationService.gaiaxTrustFrameworkEnabled = false;
+        credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
         String path = "VerificationService/sign/hasNoSignature1.json";
 

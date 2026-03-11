@@ -58,7 +58,7 @@ public class RevalidationServiceImpl implements RevalidationService {
   private SelfDescriptionStore sdStorePublisher;
 
   @Autowired
-  private VerificationService verificationService;
+  private SchemaValidationService schemaValidationService;
 
   private BlockingQueue<String> taskQueue;
   private ExecutorService executorService;
@@ -96,7 +96,7 @@ public class RevalidationServiceImpl implements RevalidationService {
   private void handleTask(final String sdhash) {
     ContentAccessor content = sdStorePublisher.getSDFileByHash(sdhash);
     try {
-      verificationService.verifySelfDescriptionAgainstCompositeSchema(content);
+      schemaValidationService.validateSelfDescriptionAgainstCompositeSchema(content);
     } catch (VerificationException ex) {
       log.info("SD {} is no longer valid", sdhash);
       sdStorePublisher.changeLifeCycleStatus(sdhash, SelfDescriptionStatus.REVOKED);

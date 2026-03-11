@@ -187,7 +187,7 @@ public class ClaimValidator {
      *
      * @param payload    ContentAccessor of a self-Description payload to be validated
      * @param shaclShape ContentAccessor of a union schemas of type SHACL
-     * @return SemanticValidationResult object
+     * @return SchemaValidationResult object
      */
     public static String validateClaimsBySchema(List<SdClaim> claims, ContentAccessor schema, StreamManager sm) {
       Model data = ModelFactory.createDefaultModel();

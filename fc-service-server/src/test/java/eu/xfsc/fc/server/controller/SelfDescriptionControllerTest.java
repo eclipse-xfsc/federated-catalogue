@@ -393,6 +393,30 @@ public class SelfDescriptionControllerTest {
         schemaStore.clear();
     }
     
+    /**
+     * POST /self-descriptions accepts a SHACL-invalid SD with default config (verifySchema=false).
+     * Same SD as addParicipantReturnCreatedResponse, but with a SHACL shape loaded that would reject it.
+     * Proves that schema validation is disabled in the upload flow.
+     */
+    @Test
+    @WithMockJwtAuth(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
+        @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
+    public void addShaclInvalidSDReturnCreatedResponse() throws Exception {
+        schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+        schemaStore.addSchema(getAccessor("mock-data/legal-personShape.ttl"));
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/self-descriptions")
+                .content(getMockFileDataAsString("default_participant.json"))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+        SelfDescription sd = objectMapper.readValue(result.getResponse().getContentAsString(), SelfDescription.class);
+        sdStorePublisher.deleteSelfDescription(sd.getSdHash());
+        schemaStore.clear();
+    }
+
     @Test
     @WithMockJwtAuth(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
         @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
