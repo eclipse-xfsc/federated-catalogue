@@ -3,6 +3,7 @@ package eu.xfsc.fc.graphdb.service;
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.TimeoutException;
+import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.SdClaim;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -60,6 +62,18 @@ public class SparqlGraphStore implements GraphStore {
     public SparqlGraphStore() {
         super();
         this.claimValidator = new ClaimValidator();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<QueryLanguage> getSupportedQueryLanguage() {
+        return Optional.of(QueryLanguage.SPARQL);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public GraphBackendType getBackendType() {
+        return GraphBackendType.FUSEKI;
     }
 
     @Override

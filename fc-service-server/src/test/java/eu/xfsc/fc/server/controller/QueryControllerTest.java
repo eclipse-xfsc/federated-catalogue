@@ -1,18 +1,24 @@
 package eu.xfsc.fc.server.controller;
 
-import static eu.xfsc.fc.server.util.TestUtil.getAccessor;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.xfsc.fc.api.generated.model.Error;
+import eu.xfsc.fc.api.generated.model.QueryInfo;
+import eu.xfsc.fc.api.generated.model.Results;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.PaginatedResults;
+import eu.xfsc.fc.core.pojo.SdFilter;
+import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
+import eu.xfsc.fc.core.pojo.VerificationResultOffering;
+import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
+import eu.xfsc.fc.core.service.schemastore.SchemaStore;
+import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.verification.VerificationService;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.server.helper.FileReaderHelper;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -29,25 +35,20 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import eu.xfsc.fc.api.generated.model.QueryLanguage;
-import eu.xfsc.fc.api.generated.model.Results;
-import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdFilter;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
-import eu.xfsc.fc.core.service.verification.VerificationService;
-import eu.xfsc.fc.server.helper.FileReaderHelper;
-import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
+import static eu.xfsc.fc.server.util.TestUtil.getAccessor;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -60,6 +61,11 @@ public class QueryControllerTest {
   private final static String DEFAULT_SERVICE_SD_FILE_NAME = "default-sd-service-offering.json";
   private final static String DEFAULT_PARTICIPANT_SD_FILE_NAME = "default_participant.json";
   private final static String UNIQUE_PARTICIPANT_SD_FILE_NAME = "unique_participant.json";
+
+  private static final String OPENCYPHER_CONTENT_TYPE = "application/opencypher-query";
+  private static final String SPARQL_CONTENT_TYPE = "application/sparql-query";
+
+  private static final String QUERY_NO_LIMIT = "MATCH (n:ServiceOffering) RETURN n";
 
   @Autowired
   private WebApplicationContext context;
@@ -107,28 +113,30 @@ public class QueryControllerTest {
     embeddedDatabaseServer.close();
   }
 
-  private String QUERY_REQUEST_GET = "{\"statement\": \"MATCH (n:ServiceOffering) RETURN n LIMIT 1\", "
-          + "\"parameters\": null}";
+  private String QUERY_REQUEST_GET = "MATCH (n:ServiceOffering) RETURN n LIMIT 1";
 
-  private String QUERY_REQUEST_TIMEOUT = "{\"statement\": \"CALL apoc.util.sleep($duration)\", \"parameters\": {\"duration\": 3000}}";
+  private String QUERY_REQUEST_TIMEOUT = "CALL apoc.util.sleep(3000)";
 
-  private String QUERY_REQUEST_GET_WITH_PARAMETERS = "{\"statement\": \"MATCH (n)-[:hasLegallyBindingAddress]->(m)  " +
-      "where m.locality = $locality RETURN n \", \"parameters\": { \"locality\": \"City Name 2\"}}";
+  private String QUERY_REQUEST_GET_WITH_PARAMETERS = "MATCH (n)-[:hasLegallyBindingAddress]->(m) "
+      + "where m.locality = 'City Name 2' RETURN n";
 
-  private String QUERY_REQUEST_GET_WITH_PARAMETERS_UNKNOWN = "{\"statement\": \"MATCH (n:ServiceOffering) where "
-          + "n.name = $name RETURN n \", \"parameters\": { \"name\": \"notFound\"}}";
+  private String QUERY_REQUEST_GET_WITH_PARAMETERS_UNKNOWN = "MATCH (n:ServiceOffering) where "
+          + "n.name = 'notFound' RETURN n";
 
-  private String QUERY_REQUEST_POST = "{\"statement\": \" CREATE (n:Person {name: 'TestUser', title: 'Developer'})\", "
-          + "\"parameters\": null}";
+  private String QUERY_REQUEST_POST = "CREATE (n:Person {name: 'TestUser', title: 'Developer'})";
 
-  private String QUERY_REQUEST_UPDATE = "{\"statement\": \"Match (m:Person) where m.name = 'TestUser' SET m.name = "
-          + "'TestUserUpdated' RETURN m\", \"parameters\": null}";
+  private String QUERY_REQUEST_UPDATE = "Match (m:Person) where m.name = 'TestUser' SET m.name = "
+          + "'TestUserUpdated' RETURN m";
 
-  private String QUERY_REQUEST_DELETE = "{\"statement\": \"MATCH (n:LegalPerson) where n.name = 'Fredrik "
-          + "DETACH DELETE n\", \"parameters\": null}";
+  private String QUERY_REQUEST_DELETE = "MATCH (n:LegalPerson) where n.name = 'Fredrik "
+          + "DETACH DELETE n";
 
-  private String QUERY_REQUEST_GET_SUBJECT_ID = "{\"statement\": \"MATCH (n:ServiceOffering) where n.uri IS NOT NULL RETURN n" +
-      ".uri \", \"parameters\": null}";
+  private String QUERY_REQUEST_GET_SUBJECT_ID = "MATCH (n:ServiceOffering) where n.uri IS NOT NULL RETURN n.uri";
+
+  // JSON body for /query/search (AnnotatedStatement), which still uses application/json
+  private static final String SEARCH_REQUEST_GET = "{\"statement\": \"MATCH (n:ServiceOffering) RETURN n LIMIT 1\", \"parameters\": null}";
+  private static final String SEARCH_REQUEST_GET_WITH_PARAMETERS_UNKNOWN = "{\"statement\": \"MATCH (n:ServiceOffering) where "
+          + "n.name = 'notFound' RETURN n \", \"parameters\": null}";
 
   @Test
   public void getQueryPageShouldReturnSuccessResponse() throws Exception {
@@ -145,8 +153,7 @@ public class QueryControllerTest {
     mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_GET)
             .with(csrf())
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("Produces", "application/json")
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON));
@@ -154,14 +161,21 @@ public class QueryControllerTest {
 
   @Test
   public void postUsupportedQueryReturnNotImplementedResponse() throws Exception {
-    mockMvc.perform(MockMvcRequestBuilders.post("/query")
-            .content(QUERY_REQUEST_GET)
-            .contentType(MediaType.APPLICATION_JSON)
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content("SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10")
             .with(csrf())
-            .queryParam("queryLanguage", QueryLanguage.SPARQL.getValue())
-            .header("Produces", "application/json")
+            .contentType(SPARQL_CONTENT_TYPE)
             .header("Accept", "application/json"))
-            .andExpect(status().isNotImplemented());
+            .andExpect(status().isUnsupportedMediaType())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    Error error = objectMapper.readValue(response, Error.class);
+    assertEquals("unsupported_query_language", error.getCode());
+    assertTrue(error.getMessage().contains("SPARQL"));
+    assertTrue(error.getMessage().contains("OPENCYPHER"));
+    assertTrue(error.getMessage().contains("NEO4J"));
   }
 
   @Test
@@ -169,8 +183,7 @@ public class QueryControllerTest {
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_GET)
             .with(csrf())
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("Produces", "application/json")
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andReturn()
@@ -188,8 +201,7 @@ public class QueryControllerTest {
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_GET_SUBJECT_ID)
             .with(csrf())
-            .contentType(MediaType.APPLICATION_JSON)
-            .header("Produces", "application/json")
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .header("Accept", "application/json"))
         .andExpect(status().isOk())
         .andReturn()
@@ -217,9 +229,8 @@ public class QueryControllerTest {
   public void postGetQueriesWithParametersReturnSuccessResponse() throws Exception {
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_GET_WITH_PARAMETERS)
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .with(csrf())
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andReturn()
@@ -236,9 +247,8 @@ public class QueryControllerTest {
 
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_GET_WITH_PARAMETERS_UNKNOWN)
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .with(csrf())
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andReturn()
@@ -250,12 +260,118 @@ public class QueryControllerTest {
   }
 
   @Test
+  public void postQuery_withOpenCypherContentType_returnsResults() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(QUERY_REQUEST_GET)
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Results result = objectMapper.readValue(response, Results.class);
+    assertEquals(1, result.getItems().size());
+    Map<String, Object> node = (Map<String, Object>) result.getItems().getFirst().get("n");
+    assertNotNull(node, "Returned item should contain node data under key 'n'");
+    assertEquals("My example provider2", node.get("hasLegallyBindingName"));
+    assertTrue(((List<?>) node.get("claimsGraphUri")).contains("http://example.org/test-issuer2"));
+  }
+
+  @Test
+  public void postQuery_withOpenCypherContentType_returnsSuccessResponse() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(QUERY_REQUEST_GET)
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Results result = objectMapper.readValue(response, Results.class);
+    assertEquals(1, result.getItems().size());
+  }
+
+  @Test
+  public void postQuery_withTotalCountTrue_returnsTotalCountMatchingItemsSize() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(QUERY_NO_LIMIT)
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .queryParam("withTotalCount", "true")
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Results result = objectMapper.readValue(response, Results.class);
+    assertFalse(result.getItems().isEmpty(), "Should return at least one ServiceOffering");
+    assertEquals(result.getItems().size(), result.getTotalCount(),
+        "With withTotalCount=true and no LIMIT, totalCount should match items count");
+  }
+
+  /**
+   * POST a Cypher query without LIMIT clause. Verifies that the default limit injection
+   * does not break the query. With only 3 SDs in test data,
+   * the 100-item limit is not boundary-tested; this validates correctness of injection.
+   */
+  @Test
+  public void postQuery_withoutLimit_succeedsWithDefaultLimitInjected() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(QUERY_NO_LIMIT)
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Results result = objectMapper.readValue(response, Results.class);
+    assertFalse(result.getItems().isEmpty(), "Query without LIMIT should succeed with injected default limit");
+  }
+
+  @Test
+  public void postQuery_withExplicitLimit_preservesLimit() throws Exception {
+    // Precondition: verify more than 1 node exists so LIMIT is actually tested
+    String allResponse = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content("MATCH (n) RETURN n")
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+    Results allResults = objectMapper.readValue(allResponse, Results.class);
+    assertTrue(allResults.getItems().size() > 1,
+        "Precondition: test fixture must contain more than 1 node for LIMIT test to be meaningful");
+
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content("MATCH (n) RETURN n LIMIT 1")
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Results result = objectMapper.readValue(response, Results.class);
+    assertEquals(1, result.getItems().size(),
+        "Explicit LIMIT 1 should return exactly 1 result");
+  }
+
+  @Test
   public void postQueryReturnForbiddenResponse() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_POST)
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .with(csrf())
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().is5xxServerError());
   }
@@ -264,9 +380,8 @@ public class QueryControllerTest {
   public void postQueryForUpdateReturnForbiddenResponse() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_UPDATE)
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .with(csrf())
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().is5xxServerError());
 
@@ -276,9 +391,8 @@ public class QueryControllerTest {
   public void postQueryForDeleteReturnForbiddenResponse() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_DELETE)
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .with(csrf())
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().is5xxServerError());
   }
@@ -288,10 +402,9 @@ public class QueryControllerTest {
 
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_TIMEOUT)
-            .contentType(MediaType.APPLICATION_JSON)
+            .contentType(OPENCYPHER_CONTENT_TYPE)
             .with(csrf())
             .queryParam("timeout", "1")
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().isGatewayTimeout())
             .andReturn()
@@ -302,6 +415,24 @@ public class QueryControllerTest {
     assertEquals("timeout_error", result.getCode());
   }
   
+  @Test
+  public void getQueryInfo_onNeo4jBackend_returnsNeo4jInfo() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.get("/query/info")
+            .with(csrf())
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    QueryInfo info = objectMapper.readValue(response, QueryInfo.class);
+    assertEquals("NEO4J", info.getBackend());
+    assertEquals("OPENCYPHER", info.getQueryLanguage());
+    assertEquals(Boolean.TRUE, info.getEnabled());
+    assertNotNull(info.getExampleQuery());
+    assertNotNull(info.getDocumentation());
+  }
+
   // the same tests as in DistributedQueryControllerTest. copied here to overcome Embedded Neo4J issue.
   // we run out of connections with it somehow, so had to disable DistributedQueryControllerTest.
   
@@ -319,10 +450,9 @@ public class QueryControllerTest {
 			      .addHeader("Content-Type", "application/json"));
 		
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query/search")
-	            .content(QUERY_REQUEST_GET)
+	            .content(SEARCH_REQUEST_GET)
 	            .with(csrf())
 	            .contentType(MediaType.APPLICATION_JSON)
-	            .header("Produces", "application/json")
 	            .header("Accept", "application/json"))
 	            .andExpect(status().isOk())
 	            .andReturn()
@@ -349,10 +479,9 @@ public class QueryControllerTest {
 		      .addHeader("Content-Type", "application/json"));
 	
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query/search")
-            .content(QUERY_REQUEST_GET)
+            .content(SEARCH_REQUEST_GET)
             .with(csrf())
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andReturn()
@@ -380,10 +509,9 @@ public class QueryControllerTest {
 		      .addHeader("Content-Type", "application/json"));
 		
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query/search")
-            .content(QUERY_REQUEST_GET)
+            .content(SEARCH_REQUEST_GET)
             .with(csrf())
             .contentType(MediaType.APPLICATION_JSON)
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andReturn()
@@ -408,10 +536,9 @@ public class QueryControllerTest {
 		      .addHeader("Content-Type", "application/json"));
 		
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query/search")
-            .content(QUERY_REQUEST_GET_WITH_PARAMETERS_UNKNOWN)
+            .content(SEARCH_REQUEST_GET_WITH_PARAMETERS_UNKNOWN)
             .contentType(MediaType.APPLICATION_JSON)
             .with(csrf())
-            .header("Produces", "application/json")
             .header("Accept", "application/json"))
             .andExpect(status().isOk())
             .andReturn()

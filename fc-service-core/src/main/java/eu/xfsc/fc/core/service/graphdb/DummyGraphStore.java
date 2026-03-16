@@ -3,10 +3,13 @@ package eu.xfsc.fc.core.service.graphdb;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import eu.xfsc.fc.api.generated.model.QueryLanguage;
+import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
@@ -30,6 +33,16 @@ public class DummyGraphStore implements GraphStore {
     public PaginatedResults<Map<String, Object>> queryData(GraphQuery sdQuery) {
         // Dummy implementation
         return new PaginatedResults<Map<String, Object>>(Collections.emptyList());
+    }
+
+    @Override
+    public Optional<QueryLanguage> getSupportedQueryLanguage() {
+        return Optional.empty();
+    }
+
+    @Override
+    public GraphBackendType getBackendType() {
+        return GraphBackendType.NONE;
     }
 
 }

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.TimeoutException;
+import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.SdClaim;
@@ -64,7 +66,19 @@ public class Neo4jGraphStore implements GraphStore {
         super();
         this.claimValidator = new ClaimValidator();
     }
-    
+
+    /** {@inheritDoc} */
+    @Override
+    public Optional<QueryLanguage> getSupportedQueryLanguage() {
+        return Optional.of(QueryLanguage.OPENCYPHER);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public GraphBackendType getBackendType() {
+        return GraphBackendType.NEO4J;
+    }
+
     /**
      * {@inheritDoc}
      */

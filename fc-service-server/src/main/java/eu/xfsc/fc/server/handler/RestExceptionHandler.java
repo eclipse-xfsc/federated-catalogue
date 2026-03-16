@@ -6,7 +6,9 @@ import static org.springframework.http.HttpStatus.GATEWAY_TIMEOUT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -16,9 +18,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import eu.xfsc.fc.api.generated.model.Error;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.TimeoutException;
+import eu.xfsc.fc.core.exception.UnsupportedQueryLanguageException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -101,6 +105,34 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Error> handleVerificationException(VerificationException exception) {
     log.info("handleVerificationException; Verification error: {}", exception.getMessage());
     return new ResponseEntity<>(new Error("verification_error", exception.getMessage()), UNPROCESSABLE_ENTITY);
+  }
+
+  /**
+   * Method handles the Unsupported Query Language Exception.
+   *
+   * @param exception Thrown UnsupportedQueryLanguageException.
+   * @return The custom Federated Catalogue application error with status code 415.
+   */
+  @ExceptionHandler({UnsupportedQueryLanguageException.class})
+  protected ResponseEntity<Error> handleUnsupportedQueryLanguageException(
+      UnsupportedQueryLanguageException exception) {
+    log.info("handleUnsupportedQueryLanguageException; error: {}", exception.getMessage());
+    return new ResponseEntity<>(
+        new Error("unsupported_query_language", exception.getMessage()), UNSUPPORTED_MEDIA_TYPE);
+  }
+
+  /**
+   * Method handles the Graph Store Disabled Exception.
+   *
+   * @param exception Thrown GraphStoreDisabledException.
+   * @return The custom Federated Catalogue application error with status code 503.
+   */
+  @ExceptionHandler({GraphStoreDisabledException.class})
+  protected ResponseEntity<Error> handleGraphStoreDisabledException(
+      GraphStoreDisabledException exception) {
+    log.info("handleGraphStoreDisabledException; error: {}", exception.getMessage());
+    return new ResponseEntity<>(
+        new Error("graph_store_disabled", exception.getMessage()), SERVICE_UNAVAILABLE);
   }
 
   /**

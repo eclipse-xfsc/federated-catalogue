@@ -1622,16 +1622,15 @@
 							{
 								"key": "accept",
 								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/opencypher-query"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": " {\r\n    \"statement\": \"MATCH (n:LegalPerson)-[:legalAddress]->(a:Address {locality: 'Town Name'}) return n, a\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "MATCH (n:LegalPerson)-[:legalAddress]->(a:Address {locality: 'Town Name'}) return n, a"
 						},
 						"url": {
 							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query",
@@ -1660,15 +1659,15 @@
 							]
 						},
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/opencypher-query"
+							}
+						],
 						"body": {
 							"mode": "raw",
-							"raw": " {\r\n    \"statement\": \"MATCH (n:ServiceOffering)-[:hasLegallyBindingAddress]->(a:Address) where a.locality = 'City Name 2' return n, a\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "MATCH (n:ServiceOffering)-[:hasLegallyBindingAddress]->(a:Address) where a.locality = 'City Name 2' return n, a"
 						},
 						"url": {
 							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query",
@@ -1704,16 +1703,15 @@
 							{
 								"key": "accept",
 								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/opencypher-query"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": " {\r\n\"statement\": \"MATCH (n) DETACH DELETE n\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "MATCH (n) DETACH DELETE n"
 						},
 						"url": {
 							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query",
@@ -1749,16 +1747,15 @@
 							{
 								"key": "accept",
 								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/opencypher-query"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": " {\r\n\"statement\": \"CREATE (n:Person {name: 'TestUser', title: 'Developer'})\",\"parameters\": null\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "CREATE (n:Person {name: 'TestUser', title: 'Developer'})"
 						},
 						"url": {
 							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query",
@@ -1794,31 +1791,24 @@
 							{
 								"key": "accept",
 								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/sparql-query"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"statement\": \"SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 100\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 100"
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query?queryLanguage=SPARQL",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
 								"query"
-							],
-							"query": [
-								{
-									"key": "queryLanguage",
-									"value": "SPARQL"
-								}
 							]
 						}
 					},
@@ -1845,11 +1835,56 @@
 							{
 								"key": "accept",
 								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/sparql-query"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"statement\": \"PREFIX cred: <https://www.w3.org/2018/credentials#> SELECT ?s ?p ?o ?cs WHERE { << ?s ?p ?o >> cred:credentialSubject ?cs } LIMIT 100\"\r\n}",
+							"raw": "PREFIX cred: <https://www.w3.org/2018/credentials#> SELECT ?s ?p ?o ?cs WHERE { << ?s ?p ?o >> cred:credentialSubject ?cs } LIMIT 100"
+						},
+						"url": {
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query",
+							"protocol": "{{federated_catalogue_protocol}}",
+							"host": [
+								"{{federated_catalogue_address}}"
+							],
+							"path": [
+								"query"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/query/info",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {},
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1857,19 +1892,14 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query?queryLanguage=SPARQL",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/query/info",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"query"
-							],
-							"query": [
-								{
-									"key": "queryLanguage",
-									"value": "SPARQL"
-								}
+								"query",
+								"info"
 							]
 						}
 					},

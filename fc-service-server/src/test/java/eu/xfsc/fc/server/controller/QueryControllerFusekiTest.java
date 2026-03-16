@@ -1,7 +1,8 @@
 package eu.xfsc.fc.server.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.xfsc.fc.api.generated.model.QueryLanguage;
+import eu.xfsc.fc.api.generated.model.Error;
+import eu.xfsc.fc.api.generated.model.QueryInfo;
 import eu.xfsc.fc.api.generated.model.Results;
 import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -42,6 +44,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @TestPropertySource(properties = {"graphstore.impl=fuseki"})
 public class QueryControllerFusekiTest {
+
+  private static final String OPENCYPHER_CONTENT_TYPE = "application/opencypher-query";
+  private static final String SPARQL_CONTENT_TYPE = "application/sparql-query";
+  private static final String CYPHER_QUERY = "MATCH (n) RETURN n LIMIT 1";
 
   @Autowired
   private WebApplicationContext context;
@@ -75,10 +81,10 @@ public class QueryControllerFusekiTest {
 
   @Test
   void postQuery_withSparqlSelect_returnsUploadedClaimData() throws Exception {
-    String sparqlStatement = "{\"statement\": \"SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> "
-        + "<https://www.w3.org/2018/credentials#credentialSubject> ?cs }\", \"parameters\": null}";
+    String sparqlQuery = "SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> "
+        + "<https://www.w3.org/2018/credentials#credentialSubject> ?cs }";
 
-    String response = postSparqlQuery(sparqlStatement)
+    String response = postSparqlQuery(sparqlQuery)
         .andExpect(status().isOk())
         .andReturn()
         .getResponse()
@@ -102,27 +108,82 @@ public class QueryControllerFusekiTest {
 
   @Test
   void postQuery_withSparqlInsert_returnsServerError() throws Exception {
-    String insertStatement = "{\"statement\": \"INSERT DATA { <http://example.org/s> "
-        + "<http://example.org/p> <http://example.org/o> }\", \"parameters\": null}";
+    String insertQuery = "INSERT DATA { <http://example.org/s> "
+        + "<http://example.org/p> <http://example.org/o> }";
 
-    postSparqlQuery(insertStatement)
+    postSparqlQuery(insertQuery)
         .andExpect(status().is5xxServerError());
   }
 
   @Test
   void postQuery_withInvalidSparqlSyntax_returnsServerError() throws Exception {
-    String badStatement = "{\"statement\": \"SELCT ?s WERE { ?s ?p ?o }\", \"parameters\": null}";
+    String badQuery = "SELCT ?s WERE { ?s ?p ?o }";
 
-    postSparqlQuery(badStatement)
+    postSparqlQuery(badQuery)
         .andExpect(status().is5xxServerError());
   }
 
-  private ResultActions postSparqlQuery(String jsonBody) throws Exception {
+  private ResultActions postSparqlQuery(String queryText) throws Exception {
     return mockMvc.perform(MockMvcRequestBuilders.post("/query")
-        .content(jsonBody)
+        .content(queryText)
         .with(csrf())
-        .contentType(MediaType.APPLICATION_JSON)
-        .queryParam("queryLanguage", QueryLanguage.SPARQL.getValue())
+        .contentType(SPARQL_CONTENT_TYPE)
         .header("Accept", "application/json"));
   }
+
+  @Test
+  public void postQuery_withOpenCypherContentType_returnsUnsupportedLanguageError() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(CYPHER_QUERY)
+            .with(csrf())
+            .contentType(OPENCYPHER_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isUnsupportedMediaType())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Error error = objectMapper.readValue(response, Error.class);
+    assertEquals("unsupported_query_language", error.getCode());
+    assertTrue(error.getMessage().contains("OPENCYPHER"));
+    assertTrue(error.getMessage().contains("SPARQL"));
+  }
+
+  @Test
+  public void postQuery_withSparqlAndNoLimit_returnsResults() throws Exception {
+    String sparqlNoLimit = "SELECT ?s ?p ?o WHERE { ?s ?p ?o }";
+
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
+            .content(sparqlNoLimit)
+            .with(csrf())
+            .contentType(SPARQL_CONTENT_TYPE)
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    Results result = objectMapper.readValue(response, Results.class);
+    assertFalse(result.getItems().isEmpty(),
+        "SPARQL query without LIMIT should succeed and return results (no limit injection for SPARQL)");
+  }
+
+  @Test
+  public void getQueryInfo_onFusekiBackend_returnsFusekiInfo() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.get("/query/info")
+            .with(csrf())
+            .header("Accept", "application/json"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    QueryInfo info = objectMapper.readValue(response, QueryInfo.class);
+    assertEquals("FUSEKI", info.getBackend());
+    assertEquals("SPARQL", info.getQueryLanguage());
+    assertEquals(Boolean.TRUE, info.getEnabled());
+    assertNotNull(info.getExampleQuery());
+    assertNotNull(info.getDocumentation());
+  }
+
 }

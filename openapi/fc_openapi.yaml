@@ -60,6 +60,14 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: >-
+        The Content-Type indicates a query language not supported by the active
+        graph database backend. Check GET /query/info for the supported language.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       type: object
@@ -322,10 +330,29 @@ components:
         - $ref: '#/components/schemas/ResultPage'
         - type: object
           properties:
-            items: 
+            items:
               type: array
-              items: 
+              items:
                 $ref: '#/components/schemas/Result'
+    QueryInfo:
+      type: object
+      properties:
+        backend:
+          type: string
+          example: "NEO4J"
+        queryLanguage:
+          type: string
+          example: "OPENCYPHER"
+        contentType:
+          type: string
+          example: "application/opencypher-query"
+        enabled:
+          type: boolean
+          example: true
+        exampleQuery:
+          type: string
+        documentation:
+          type: string
 
   parameters:
     OffsetParam:
@@ -667,11 +694,6 @@ paths:
       operationId: query
       parameters:
         - in: query
-          name: queryLanguage
-          schema:
-            $ref: '#/components/schemas/QueryLanguage'
-          required: false
-        - in: query
           name: timeout
           schema:
             type: integer
@@ -687,14 +709,19 @@ paths:
         - jwt: []
       requestBody:
         description: >-
-          JSON object to send queries. Use "application/json" for openCypher
-          queries. A Catalogue may also support the other content types
-          depending on its supported query languages but only "application/json"
-          is mandatory.
+          Raw query text. Use Content-Type to indicate the query language:
+          "application/sparql-query" for SPARQL, "application/opencypher-query"
+          for openCypher.
+        required: true
         content:
-          application/json:
+          application/sparql-query:
             schema:
-              $ref: '#/components/schemas/Statement'
+              type: string
+              example: "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"
+          application/opencypher-query:
+            schema:
+              type: string
+              example: "MATCH (n:Resource) RETURN n.uri AS id, n.name AS name LIMIT 10"
       responses:
         '200':
           description: successful query
@@ -708,6 +735,25 @@ paths:
           ## interval. The client needs to rewrite the query so it can be
           ## processed faster.
           $ref: '#/components/responses/ServerError'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /query/info:
+    get:
+      tags:
+        - Query
+      summary: Get information about the active query backend
+      operationId: queryInfo
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Query backend information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryInfo'
         '500':
           $ref: '#/components/responses/ServerError'
   /query/search:
@@ -729,13 +775,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Results'
-        '400': ## Wrong query 
+        '400': ## Wrong query
           $ref: '#/components/responses/ClientError'
-        '408': ## Query Timeout: 
+        '408': ## Query Timeout:
           $ref: '#/components/responses/ServerError'
+        '422':
+          $ref: '#/components/responses/Unprocessible'
         '500':
           $ref: '#/components/responses/ServerError'
-          
+
   /schemas:
     get:
       tags:

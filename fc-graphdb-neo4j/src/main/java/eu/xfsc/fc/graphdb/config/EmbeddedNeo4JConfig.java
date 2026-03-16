@@ -32,13 +32,16 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnExpression("'${federated-catalogue.scope}'.equals('test') && '${graphstore.impl}'.equals('neo4j')")
 //@EnableAutoConfiguration
 public class EmbeddedNeo4JConfig {
-    
+
+    /** Port 0 tells the OS to assign a random available port, avoiding conflicts. */
+    private static final int RANDOM_AVAILABLE_PORT = 0;
+
 	@Bean
     public Neo4j embeddedDatabaseServer() {
         log.info("starting Embedded Neo4J DB");
         Neo4j embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
                 .withDisabledServer()
-                .withConfig(BoltConnector.listen_address, new SocketAddress("localhost", 0))
+                .withConfig(BoltConnector.listen_address, new SocketAddress("localhost", RANDOM_AVAILABLE_PORT))
                 .withConfig(GraphDatabaseSettings.procedure_allowlist, List.of("gds.*", "n10s.*", "apoc.*, semantics.*"))
                 .withConfig(GraphDatabaseSettings.procedure_unrestricted, List.of("gds.*", "n10s.*", "apoc.*, semantics.*"))
                 //.withConfig(GraphDatabaseSettings.log_queries_transaction_id, true)
