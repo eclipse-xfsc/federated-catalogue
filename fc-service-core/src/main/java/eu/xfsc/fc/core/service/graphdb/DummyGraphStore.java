@@ -50,4 +50,14 @@ public class DummyGraphStore implements GraphStore {
         return true;
     }
 
+    @Override
+    public Optional<QueryLanguage> getSupportedQueryLanguage() {
+        return Optional.empty();
+    }
+
+    @Override
+    public GraphBackendType getBackendType() {
+        return GraphBackendType.NONE;
+    }
+
 }
