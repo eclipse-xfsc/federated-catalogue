@@ -49,5 +49,4 @@ public class DummyGraphStore implements GraphStore {
     public boolean isHealthy() {
         return true;
     }
-
 }
