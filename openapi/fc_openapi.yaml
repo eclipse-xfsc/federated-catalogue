@@ -1028,11 +1028,11 @@ paths:
             default: true
         - name: verifySchema
           in: query
-          description: 'To verify SD agains schema or not'
+          description: 'To verify SD against stored SHACL shapes or not'
           required: false
           schema:
             type: boolean
-            default: true  
+            default: false
         - name: verifyVPSignature
           in: query
           description: 'To verify VP signature or not'
