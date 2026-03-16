@@ -1,0 +1,15 @@
+# Strict verification overlay — enables all verification flags.
+# Matches the original 2.0.0 implementation behaviour (Gaia-X + schema validation).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.strict.yml --env-file dev.env up
+#
+# See: cat-integration-tests/docs/adr/003-interim-two-config-test-strategy.md
+
+services:
+  server:
+    environment:
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "true"
+      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
+      FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"
+      FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "true"
