@@ -34,10 +34,10 @@ public class VerificationService implements VerificationApiDelegate {
 
 
   /**
-   * Service method for POST /verifications/self-descriptions: Send a JSON-LD document to verify with the information
+   * Service method for POST /verification: Send a JSON-LD document to verify with the information
    * from the Catalogue.
    *
-   * @param jsonSelfDescription JSON-LD document to be verified object to send queries.
+   * @param body JSON-LD credential to be verified.
    * @return Verification result (status code 200)
    *       or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *       or Query Timeout: the query took longer than the configured timeout interval.
@@ -50,7 +50,7 @@ public class VerificationService implements VerificationApiDelegate {
           String body) {
     log.debug("verify.enter; got body of length: {}; verify semantics: {}, schema: {}, vp-signature: {}, vc-signature: {}", 
             body.length(), verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
-    VerificationResult verificationResult = verificationService.verifySelfDescription(new ContentAccessorDirect(body), 
+    VerificationResult verificationResult = verificationService.verifyCredential(new ContentAccessorDirect(body), 
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
     log.debug("verify.exit; returning result: {}", verificationResult);
     return ResponseEntity.ok(verificationResult);
@@ -58,9 +58,9 @@ public class VerificationService implements VerificationApiDelegate {
   }
 
   /**
-   * Service method for GET /verifications/self-descriptions: Show HTML page to verify (portions of) a signed SD.
+   * Service method for GET /verification: Show HTML page to verify (portions of) a signed credential.
    *
-   * @return HTML document that contains a query field to verify SD. (status code 200)
+   * @return HTML document that contains a query field to verify credentials. (status code 200)
    *        or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *        or May contain hints how to solve the error or indicate what went wrong at the server.
    *        Must not outline any information about the internal structure of the server. (status code 500)

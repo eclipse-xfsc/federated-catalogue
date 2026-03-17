@@ -7,9 +7,9 @@ public class SimulationHelper {
     return System.getProperty("user.dir") + "\\user-files\\resources\\";
   }
 
-  public static String addRandomId(String sd) {
+  public static String addRandomId(String credential) {
     String id = UUID.randomUUID().toString();
-    return sd
+    return credential
         .replace("http://example.edu/verifiablePresentation/self-description",
             "http://example.edu/verifiablePresentation/self-description-" + id)
         .replace("https://www.example.org/mySoftwareOffering",

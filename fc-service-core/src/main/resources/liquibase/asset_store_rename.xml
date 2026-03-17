@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="peleskek" id="2026-03-09-rename-sdfiles-to-assets">
+        <comment>CAT-NFR-01: Rename sdfiles table and columns to generic asset naming.
+            Table: sdfiles -> assets
+            Column: sdhash -> asset_hash
+            Indexes renamed accordingly.</comment>
+
+        <renameTable oldTableName="sdfiles" newTableName="assets"/>
+
+        <renameColumn tableName="assets" oldColumnName="sdhash" newColumnName="asset_hash"
+                      columnDataType="java.sql.Types.VARCHAR(64)"/>
+
+        <dropIndex tableName="assets" indexName="idx_sdfiles_exptime_status"/>
+        <createIndex tableName="assets" indexName="idx_assets_exptime_status">
+            <column name="status"/>
+            <column name="expirationtime"/>
+        </createIndex>
+
+        <!-- Rename the primary key constraint -->
+        <sql>ALTER TABLE assets RENAME CONSTRAINT sdfiles_pkey TO assets_pkey</sql>
+
+        <!-- Recreate the partial unique index with the new table name -->
+        <sql dbms="postgresql">DROP INDEX IF EXISTS idx_sd_file_is_active</sql>
+        <sql dbms="postgresql">CREATE UNIQUE INDEX idx_asset_active ON assets(subjectid) WHERE status=0</sql>
+    </changeSet>
+
+</databaseChangeLog>

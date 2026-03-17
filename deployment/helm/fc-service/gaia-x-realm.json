@@ -117,7 +117,7 @@
         },
         {
           "id": "f657c29c-1939-4735-b10e-681a61f10df3",
-          "name": "Ro-SD-A",
+          "name": "Ro-AS-A",
           "composite": true,
           "composites": {
             "client": {
@@ -290,7 +290,7 @@
           "composites": {
             "client": {
               "federated-catalogue": [
-                "Ro-SD-A",
+                "Ro-AS-A",
                 "Ro-PA-A",
                 "Ro-MU-A",
                 "ADMIN_ALL"

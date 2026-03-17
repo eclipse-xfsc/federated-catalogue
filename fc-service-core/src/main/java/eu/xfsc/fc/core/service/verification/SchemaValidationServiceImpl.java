@@ -11,8 +11,8 @@ import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
 import jakarta.annotation.PostConstruct;
 
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Default implementation of {@link SchemaValidationService}.
  *
- * <p>Performs SHACL validation by extracting RDF claims from a self-description payload
+ * <p>Performs SHACL validation by extracting RDF claims from a credential payload
  * and validating them against SHACL shape graphs using {@link ClaimValidator}.</p>
  *
  * @see SchemaValidationService
@@ -56,34 +56,34 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
 
     private StreamManager streamManager;
 
-    /** {@inheritDoc} Delegates to {@link #validateSelfDescriptionAgainstSchema} with a {@code null} schema. */
+    /** {@inheritDoc} Delegates to {@link #validateCredentialAgainstSchema} with a {@code null} schema. */
     @Override
-    public SchemaValidationResult validateSelfDescriptionAgainstCompositeSchema(ContentAccessor payload) {
-        return validateSelfDescriptionAgainstSchema(payload, null);
+    public SchemaValidationResult validateCredentialAgainstCompositeSchema(ContentAccessor payload) {
+        return validateCredentialAgainstSchema(payload, null);
     }
 
     /** {@inheritDoc} */
     @Override
-    public SchemaValidationResult validateSelfDescriptionAgainstSchema(ContentAccessor payload, ContentAccessor schema) {
-        log.debug("validateSelfDescriptionAgainstSchema.enter;");
+    public SchemaValidationResult validateCredentialAgainstSchema(ContentAccessor payload, ContentAccessor schema) {
+        log.debug("validateCredentialAgainstSchema.enter;");
         SchemaValidationResult result = null;
         try {
             if (schema == null) {
                 schema = schemaStore.getCompositeSchema(SchemaStore.SchemaType.SHAPE);
             }
-            List<SdClaim> claims = extractClaims(payload);
+            List<CredentialClaim> claims = extractClaims(payload);
             result = validateClaimsAgainstSchema(claims, schema);
         } catch (Exception exc) {
-            log.info("validateSelfDescriptionAgainstSchema.error: {}", exc.getMessage());
+            log.info("validateCredentialAgainstSchema.error: {}", exc.getMessage());
         }
         boolean conforms = result != null && result.isConforming();
-        log.debug("validateSelfDescriptionAgainstSchema.exit; conforms: {}", conforms);
+        log.debug("validateCredentialAgainstSchema.exit; conforms: {}", conforms);
         return result;
     }
 
     /** {@inheritDoc} */
     @Override
-    public SchemaValidationResult validateClaimsAgainstCompositeSchema(List<SdClaim> claims) {
+    public SchemaValidationResult validateClaimsAgainstCompositeSchema(List<CredentialClaim> claims) {
         log.debug("validateClaimsAgainstCompositeSchema.enter;");
         SchemaValidationResult result = null;
         try {
@@ -99,7 +99,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
 
     /** {@inheritDoc} */
     @Override
-    public SchemaValidationResult validateClaimsAgainstSchema(List<SdClaim> claims, ContentAccessor schema) {
+    public SchemaValidationResult validateClaimsAgainstSchema(List<CredentialClaim> claims, ContentAccessor schema) {
         String report = ClaimValidator.validateClaimsBySchema(claims, schema, streamManager);
         return new SchemaValidationResult(report == null, report);
     }
@@ -124,15 +124,15 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
     }
 
     /**
-     * Extracts RDF claims from a self-description payload by trying each
+     * Extracts RDF claims from a credential payload by trying each
      * {@link ClaimExtractor} in order. Returns the first successful extraction
      * result, or {@code null} if all extractors fail.
      *
-     * @param payload the self-description to extract claims from
+     * @param payload the credential to extract claims from
      * @return extracted claims, or {@code null} if extraction fails
      */
-    private List<SdClaim> extractClaims(ContentAccessor payload) {
-        List<SdClaim> claims = null;
+    private List<CredentialClaim> extractClaims(ContentAccessor payload) {
+        List<CredentialClaim> claims = null;
         for (ClaimExtractor extractor : EXTRACTORS) {
             try {
                 claims = extractor.extractClaims(payload);

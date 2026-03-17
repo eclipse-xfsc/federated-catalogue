@@ -20,7 +20,7 @@ public interface RevalidationService {
   /**
    * Check if the revalidator is active.
    *
-   * @return true if the Revalidator is actively revalidating SDs
+   * @return true if the Revalidator is actively revalidating assets
    */
   boolean isWorking();
 

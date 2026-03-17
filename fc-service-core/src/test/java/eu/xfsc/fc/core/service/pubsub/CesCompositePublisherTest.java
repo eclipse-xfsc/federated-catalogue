@@ -36,24 +36,24 @@ import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.JacksonConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.PubSubConfig;
-import eu.xfsc.fc.core.config.SelfDescriptionStoreConfig;
+import eu.xfsc.fc.core.config.AssetStoreConfig;
 import eu.xfsc.fc.core.dao.impl.CesTrackerDaoImpl;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
-import eu.xfsc.fc.core.dao.impl.SelfDescriptionDaoImpl;
+import eu.xfsc.fc.core.dao.impl.AssetDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.GraphQuery;
-import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResult;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
@@ -68,7 +68,7 @@ import okhttp3.mockwebserver.MockWebServer;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest(properties = { "publisher.impl=ces", "publisher.url=http://localhost:9091", "publisher.comp-url=http://localhost:9090" })
 @ActiveProfiles({"test"}) 
-@ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, SelfDescriptionStoreConfig.class, SelfDescriptionDaoImpl.class,
+@ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, AssetStoreConfig.class, AssetDaoImpl.class,
 		DummyGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
 		DocumentLoaderConfig.class,	DocumentLoaderProperties.class, ValidatorCacheDaoImpl.class, CesTrackerDaoImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 //@Import(EmbeddedNeo4JConfig.class)
@@ -84,13 +84,13 @@ public class CesCompositePublisherTest {
 	}
 	
 	@Autowired
-	private SDPublisher cesPublisher;
+	private AssetPublisher cesPublisher;
 	//@Autowired
 	//private Neo4j embeddedDatabaseServer;
 	@Autowired
 	private GraphStore graphStore;
 	@Autowired
-	private SelfDescriptionStore sdStorePublisher;
+	private AssetStore assetStorePublisher;
 	@Autowired
 	private VerificationServiceImpl verificationService;
 	@Autowired
@@ -123,51 +123,51 @@ public class CesCompositePublisherTest {
 	
 
 	@Test
-	public void test01SDStoreRollback() throws Exception {
+	public void test01AssetStoreRollback() throws Exception {
 		//ContentAccessor content = getAccessor("Pub-Sub-Tests/sag-research.jsonld");
 		cesPublisher.setTransactional(true);
 	    ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
 	    schemaStore.initializeDefaultSchemas();
 	    verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "https://w3id.org/gaia-x/core#Participant"); 
-	    VerificationResult vr = verificationService.verifySelfDescription(content, true, true, false, false);
+	    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
 	    verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "http://w3id.org/gaia-x/participant#Participant"); 
 	    assertNotNull(vr);
-		SelfDescriptionMetadata sdm = new SelfDescriptionMetadata(content, vr);
+		AssetMetadata assetMetadata = new AssetMetadata(content, vr);
 		mockCompService.enqueue(new MockResponse()
 			      .setBody("{\"error\": \"Conflict\"}")
 			      .addHeader("Content-Type", "application/json")
 			      .setResponseCode(409));
-	    Exception ex = assertThrowsExactly(ExternalServiceException.class, () -> sdStorePublisher.storeSelfDescription(sdm, vr));
+	    Exception ex = assertThrowsExactly(ExternalServiceException.class, () -> assetStorePublisher.storeCredential(assetMetadata, vr));
 	    assertEquals(HttpStatusCode.valueOf(409), ((ExternalServiceException) ex).getStatus());
 	    List<Map<String, Object>> claims = graphStore.queryData(
-	            new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", sdm.getId()))).getResults();
+	            new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", assetMetadata.getId()))).getResults();
 	    Assertions.assertEquals(0, claims.size());
-	    Assertions.assertThrows(NotFoundException.class, () -> {sdStorePublisher.getByHash(sdm.getSdHash());});
+	    Assertions.assertThrows(NotFoundException.class, () -> {assetStorePublisher.getByHash(assetMetadata.getAssetHash());});
 	}
 	  
 	@Test
-	public void test02SDStoreCommit() throws Exception {
+	public void test02AssetStoreCommit() throws Exception {
 		//ContentAccessor content = getAccessor("Pub-Sub-Tests/sag-research.jsonld");
 		cesPublisher.setTransactional(false);
 	    ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
 	    schemaStore.initializeDefaultSchemas();
 	    verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "https://w3id.org/gaia-x/core#Participant"); 
-	    VerificationResult vr = verificationService.verifySelfDescription(content, true, true, false, false);
+	    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
 	    verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "http://w3id.org/gaia-x/participant#Participant"); 
 	    assertNotNull(vr);
-		SelfDescriptionMetadata sdm = new SelfDescriptionMetadata(content, vr);
+		AssetMetadata assetMetadata = new AssetMetadata(content, vr);
 		mockCompService.enqueue(new MockResponse()
 			      .setBody("{\"error\": \"Conflict\"}")
 			      .addHeader("Content-Type", "application/json")
 			      .setResponseCode(409));
-	    sdStorePublisher.storeSelfDescription(sdm, vr);
+	    assetStorePublisher.storeCredential(assetMetadata, vr);
 	    //List<Map<String, Object>> claims = graphStore.queryData(
-	    //        new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", sdm.getId()))).getResults();
+	    //        new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", assetMetadata.getId()))).getResults();
 	    //Assertions.assertTrue(claims.size() > 0);
-	    SelfDescriptionMetadata sdm2 = sdStorePublisher.getByHash(sdm.getSdHash());
-	    assertNotNull(sdm2);
-	    assertEquals(sdm.getSdHash(), sdm2.getSdHash());
-	    assertEquals(sdm.getId(), sdm2.getId());
-	    assertEquals(sdm.getIssuer(), sdm2.getIssuer());
+	    AssetMetadata assetMetadata2 = assetStorePublisher.getByHash(assetMetadata.getAssetHash());
+	    assertNotNull(assetMetadata2);
+	    assertEquals(assetMetadata.getAssetHash(), assetMetadata2.getAssetHash());
+	    assertEquals(assetMetadata.getId(), assetMetadata2.getId());
+	    assertEquals(assetMetadata.getIssuer(), assetMetadata2.getIssuer());
 	}
 }

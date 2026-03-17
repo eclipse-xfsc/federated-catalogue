@@ -31,7 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
-import eu.xfsc.fc.api.generated.model.SelfDescriptionStatus;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
@@ -40,19 +40,19 @@ import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.RevalidatorChunksDaoImpl;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
-import eu.xfsc.fc.core.dao.impl.SelfDescriptionDaoImpl;
+import eu.xfsc.fc.core.dao.impl.AssetDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorFile;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResult;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {RevalidationServiceTest.TestApplication.class, RevalidationServiceImpl.class, RevalidatorChunksDaoImpl.class, FileStoreConfig.class, DummyGraphStore.class,
-  VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, ValidatorCacheDaoImpl.class, SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class,
+  VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, ValidatorCacheDaoImpl.class, AssetStoreImpl.class, AssetDaoImpl.class,
   DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, HttpDocumentResolver.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 //@Import(EmbeddedNeo4JConfig.class)
@@ -85,7 +85,7 @@ public class RevalidationServiceTest {
   private VerificationService verificationService;
 
   @Autowired
-  private SelfDescriptionStore sdStore;
+  private AssetStore assetStore;
 
   @Autowired
   private SchemaStore schemaStore;
@@ -101,7 +101,7 @@ public class RevalidationServiceTest {
   @AfterEach
   public void storageSelfCleaning() throws IOException {
     revalidator.cleanup();
-    sdStore.clear();
+    assetStore.clear();
     schemaStore.clear();
   }
 
@@ -142,8 +142,8 @@ public class RevalidationServiceTest {
     schemaStore.initializeDefaultSchemas();
     revalidator.setup();
     Instant treshold = Instant.now();
-    addSelfDescription("VerificationService/syntax/input.vp.jsonld");
-    addSelfDescription("Claims-Extraction-Tests/providerTest.jsonld");
+    addAsset("VerificationService/syntax/input.vp.jsonld");
+    addAsset("Claims-Extraction-Tests/providerTest.jsonld");
     revalidator.startValidating();
     int count = 0;
     while ((revalidator.isWorking() || !allChunksAfter(treshold)) && count < 10) {
@@ -162,9 +162,9 @@ public class RevalidationServiceTest {
     revalidator.setBatchSize(500);
     revalidator.setWorkerCount(Runtime.getRuntime().availableProcessors());
     revalidator.setup();
-    addSelfDescription("VerificationService/syntax/input.vp.jsonld");
-    addSelfDescription("Claims-Extraction-Tests/providerTest.jsonld");
-    //addSdsFromDirectory("GeneratedSds");
+    addAsset("VerificationService/syntax/input.vp.jsonld");
+    addAsset("Claims-Extraction-Tests/providerTest.jsonld");
+    //addAssetsFromDirectory("GeneratedAssets);
     Instant treshold = Instant.now();
     schemaStore.initializeDefaultSchemas();
     int count = 0;
@@ -177,26 +177,26 @@ public class RevalidationServiceTest {
     assertTrue(allChunksAfter(treshold), "All chunks should have been revalidated.");
   }
 
-  private void addSdsFromDirectory(final String path) {
+  private void addAssetsFromDirectory(final String path) {
     long start = System.currentTimeMillis();
     URL url = getClass().getClassLoader().getResource(path);
     String str = URLDecoder.decode(url.getFile(), StandardCharsets.UTF_8);
-    File sdDir = new File(str);
-    File[] files = sdDir.listFiles();
+    File assetDir = new File(str);
+    File[] files = assetDir.listFiles();
     Arrays.sort(files, (var o1, var o2) -> o1.getName().compareTo(o1.getName()));
     ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    for (File sd : sdDir.listFiles()) {
-      service.submit(() -> addSelfDescription(new ContentAccessorFile(sd)));
+    for (File asset : assetDir.listFiles()) {
+      service.submit(() -> addAsset(new ContentAccessorFile(asset)));
     }
     service.shutdown();
     try {
       service.awaitTermination(2, TimeUnit.MINUTES);
     } catch (InterruptedException ex) {
-      log.warn("Interrupted while waiting for SDs to be added.");
+      log.warn("Interrupted while waiting for assets to be added.");
     }
     long time = System.currentTimeMillis() - start;
-    Integer count = jdbc.queryForObject("select count(*) from sdfiles where status = ?", Integer.class, SelfDescriptionStatus.ACTIVE.ordinal());
-    log.debug("added {} Self-Descriptions from {} in {}ms", count, path, time);
+    Integer count = jdbc.queryForObject("select count(*) from assets where status = ?", Integer.class, AssetStatus.ACTIVE.ordinal());
+    log.debug("added {} assets from {} in {}ms", count, path, time);
   }
 
   private boolean allChunksAfter(Instant treshold) {
@@ -211,18 +211,18 @@ public class RevalidationServiceTest {
     return count;
   }
 
-  private String addSelfDescription(String path) throws VerificationException, UnsupportedEncodingException, InterruptedException {
-    log.debug("Adding SD from {}", path);
+  private String addAsset(String path) throws VerificationException, UnsupportedEncodingException, InterruptedException {
+    log.debug("Adding asset from {}", path);
     final ContentAccessor content = getAccessor(path);
-    return addSelfDescription(content);
+    return addAsset(content);
   }
 
-  public String addSelfDescription(final ContentAccessor content) throws VerificationException {
+  public String addAsset(final ContentAccessor content) throws VerificationException {
     try {
-      final VerificationResult vr = verificationService.verifySelfDescription(content, true, true, false, false);
-      final SelfDescriptionMetadata sd = new SelfDescriptionMetadata(content, vr);
-      sdStore.storeSelfDescription(sd, vr);
-      return sd.getSdHash();
+      final CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+      final AssetMetadata assetMetadata = new AssetMetadata(content, vr);
+      assetStore.storeCredential(assetMetadata, vr);
+      return assetMetadata.getAssetHash();
     } catch (VerificationException exc) {
       log.debug("Failed to add: {}", exc.getMessage());
       return null;

@@ -11,18 +11,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Utility for extending RDF claims with credential subject annotations.
+ * Adds a {@code claimsGraphUri} property linking claims to their source credential subject IRI.
+ * For W3C credentials, this is the {@code credentialSubject.id}; for other RDF, it's the main subject IRI.
+ * 
+ * @see eu.xfsc.fc.core.pojo.CredentialClaim
+ */
 public class ExtendClaims {
 
     /**
-     * Adds annotation property with value credential subject for claims Uses
-     * model which previously validated containing claims
+     * Adds annotation property linking claims to their source credential subject IRI.
+     * Uses a previously validated model containing claims.
      *
-     * @param claims
-     * @param credentialSubject
-     * @return Triples as string
+     * @param claims the RDF model containing claims to annotate
+     * @param credentialSubject the credential's subject IRI (credentialSubject.id)
+     * @return Triples as N-Triples string
      */
-
-
     public static String addPropertyGraphUri(Model claims, String credentialSubject) {
         Literal credentialSubjectLiteral = ResourceFactory.createStringLiteral(credentialSubject);
         Property claimsGraphUri = ResourceFactory.createProperty("http://w3id.org/gaia-x/service#claimsGraphUri");

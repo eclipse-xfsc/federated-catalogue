@@ -53,12 +53,12 @@ public class ParticipantClient extends ServiceClient {
         return doGet("/participants", Map.of(), queryParams, Participants.class, authorizedClient);
     }
 
-    public Participant addParticipant(String participantSD) {
-        return doPost("/participants", participantSD, Map.of(), Map.of(), Participant.class);
+    public Participant addParticipant(String participantCredential) {
+        return doPost("/participants", participantCredential, Map.of(), Map.of(), Participant.class);
     }
 
-    public Participant addParticipant(String participantSD, OAuth2AuthorizedClient authorizedClient) {
-        return doPost("/participants", participantSD, Map.of(), Map.of(), Participant.class, authorizedClient);
+    public Participant addParticipant(String participantCredential, OAuth2AuthorizedClient authorizedClient) {
+        return doPost("/participants", participantCredential, Map.of(), Map.of(), Participant.class, authorizedClient);
     }
 
     public Participant deleteParticipant(String participantId) {
@@ -71,13 +71,13 @@ public class ParticipantClient extends ServiceClient {
         return doDelete("/participants/{participantId}", pathParams, Map.of(), Participant.class, authorizedClient);
     }
 
-    public Participant updateParticipant(String participantId, String participantSD) {
+    public Participant updateParticipant(String participantId, String participantCredential) {
         Map<String, Object> pathParams = Map.of("participantId", participantId);
-        return doPut("/participants/{participantId}", participantSD, pathParams, Map.of(), Participant.class);
+        return doPut("/participants/{participantId}", participantCredential, pathParams, Map.of(), Participant.class);
     }
 
-    public Participant updateParticipant(String participantId, String participantSD, OAuth2AuthorizedClient authorizedClient) {
+    public Participant updateParticipant(String participantId, String participantCredential, OAuth2AuthorizedClient authorizedClient) {
         Map<String, Object> pathParams = Map.of("participantId", participantId);
-        return doPut("/participants/{participantId}", participantSD, pathParams, Map.of(), Participant.class, authorizedClient);
+        return doPut("/participants/{participantId}", participantCredential, pathParams, Map.of(), Participant.class, authorizedClient);
     }
 }

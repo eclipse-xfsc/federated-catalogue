@@ -1,9 +1,9 @@
 package eu.xfsc.fc.core.util;
 
-import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 
@@ -34,7 +34,7 @@ public class GraphRebuilder {
   private static final int QUEUE_CLEAR_WAIT_INTERVAL = 100;
 
   @Autowired
-  private SelfDescriptionStore sdStore;
+  private AssetStore assetStore;
   private final GraphStore graphStore;
   private final VerificationService verificationService;
   private final ProtectedNamespaceFilter protectedNamespaceFilter;
@@ -61,7 +61,7 @@ public class GraphRebuilder {
    * @param chunkId The (0-based) index of this GraphRebuilder.
    * @param threads The number of threads to use to rebuild the graph.
    * @param batchSize The number of Hashes to fetch from the database at the same time.
-   * @param progressCallback Called for each SD processed: (1, null) on success, (1, exception) on failure. May be null.
+   * @param progressCallback Called for each asset processed: (1, null) on success, (1, exception) on failure. May be null.
    */
   public void rebuildGraphDb(int chunkCount, int chunkId, int threads, int batchSize,
                              BiConsumer<Integer, Exception> progressCallback) {
@@ -70,9 +70,9 @@ public class GraphRebuilder {
     ExecutorService executorService = ProcessorUtils.createProcessors(threads, taskQueue, hash -> {
       Exception caught = null;
       try {
-        addSdToGraph(hash);
+        addAssetToGraph(hash);
       } catch (Exception e) {
-        log.error("Failed to add SD {} to graph", hash, e);
+        log.error("Failed to add asset {} to graph", hash, e);
         caught = e;
       } finally {
         pendingTasks.decrementAndGet();
@@ -85,12 +85,12 @@ public class GraphRebuilder {
     int lastCount;
     String lastHash = null;
     do {
-      List<String> activeSdHashes = sdStore.getActiveSdHashes(lastHash, batchSize, chunkCount, chunkId);
-      lastCount = activeSdHashes.size();
+      List<String> activeAssetHashes = assetStore.getActiveAssetHashes(lastHash, batchSize, chunkCount, chunkId);
+      lastCount = activeAssetHashes.size();
       log.info("Rebuilding GraphDB: Fetched {} Hashes", lastCount);
       if (lastCount > 0) {
-        lastHash = activeSdHashes.getLast();
-        for (String hash : activeSdHashes) {
+        lastHash = activeAssetHashes.getLast();
+        for (String hash : activeAssetHashes) {
           try {
             pendingTasks.incrementAndGet();
             taskQueue.put(hash);
@@ -120,11 +120,11 @@ public class GraphRebuilder {
     }
   }
 
-  private void addSdToGraph(String hash) {
-    SelfDescriptionMetadata sdMetaData = sdStore.getByHash(hash);
-    List<SdClaim> claims = verificationService.extractClaims(sdMetaData.getSelfDescription());
+  private void addAssetToGraph(String hash) {
+    AssetMetadata assetMetaData = assetStore.getByHash(hash);
+    List<CredentialClaim> claims = verificationService.extractClaims(assetMetaData.getContentAccessor());
     claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
-    graphStore.addClaims(claims, sdMetaData.getId());
+    graphStore.addClaims(claims, assetMetaData.getId());
   }
 
 }

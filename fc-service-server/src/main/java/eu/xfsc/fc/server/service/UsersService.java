@@ -6,7 +6,7 @@ import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.CommonConstants.SD_ADMIN_ROLE;
+import static eu.xfsc.fc.server.util.CommonConstants.ASSET_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.SessionUtils.checkParticipantAccess;
 import static eu.xfsc.fc.server.util.SessionUtils.getSessionUserId;
 import static eu.xfsc.fc.server.util.SessionUtils.getSessionUserRoles;
@@ -262,7 +262,7 @@ public class UsersService implements UsersApiDelegate {
         }
         break;
 
-      case SD_ADMIN_ROLE:
+      case ASSET_ADMIN_ROLE:
 
         if (!(sessionUserRoles.stream()
             .anyMatch(List.of(CATALOGUE_ADMIN_ROLE_WITH_PREFIX, PARTICIPANT_ADMIN_ROLE_WITH_PREFIX,
@@ -271,8 +271,8 @@ public class UsersService implements UsersApiDelegate {
             .anyMatch(List.of(CATALOGUE_ADMIN_ROLE_WITH_PREFIX, PARTICIPANT_ADMIN_ROLE_WITH_PREFIX)::contains))
             && (sessionUserRoles.contains(PARTICIPANT_USER_ADMIN_ROLE_WITH_PREFIX) && (userId == null || userId.equals(getSessionUserId())))
         ) {
-          log.debug("doCheckRoleAssignmentRule.fails for assigning role :{};",SD_ADMIN_ROLE );
-          throwAccessDeniedException(SD_ADMIN_ROLE);
+          log.debug("doCheckRoleAssignmentRule.fails for assigning role :{};",ASSET_ADMIN_ROLE );
+          throwAccessDeniedException(ASSET_ADMIN_ROLE);
         }
 
         break;

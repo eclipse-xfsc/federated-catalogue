@@ -12,8 +12,8 @@ import com.apicatalog.rdf.RdfGraph;
 import com.apicatalog.rdf.RdfTriple;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -25,9 +25,9 @@ public class TitaniumClaimExtractor implements ClaimExtractor {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public List<SdClaim> extractClaims(ContentAccessor content) throws Exception {
+    public List<CredentialClaim> extractClaims(ContentAccessor content) throws Exception {
         log.debug("extractClaims.enter; got content: {}", content);
-        List<SdClaim> claims = new ArrayList<>();
+        List<CredentialClaim> claims = new ArrayList<>();
         Document document = JsonDocument.of(content.getContentAsStream());
         JsonArray arr = JsonLd.expand(document).get();
         log.trace("extractClaims; expanded: {}", arr);
@@ -49,7 +49,7 @@ public class TitaniumClaimExtractor implements ClaimExtractor {
         return claims;
     }
     
-    private void addClaims(List<SdClaim> claims, JsonObject vc) throws JsonLdError {
+    private void addClaims(List<CredentialClaim> claims, JsonObject vc) throws JsonLdError {
         JsonArray css = vc.getJsonArray("https://www.w3.org/2018/credentials#credentialSubject");
         for (JsonValue cs: css) {
             Document csDoc = JsonDocument.of(cs.asJsonObject());
@@ -58,7 +58,7 @@ public class TitaniumClaimExtractor implements ClaimExtractor {
             List<RdfTriple> triples = rdfGraph.toList();
             for (RdfTriple triple: triples) {
                 log.trace("extractClaims; got triple: {}", triple);
-                SdClaim claim = new SdClaim(triple, objectMapper);
+                CredentialClaim claim = new CredentialClaim(triple, objectMapper);
                 claims.add(claim);
             }
         }

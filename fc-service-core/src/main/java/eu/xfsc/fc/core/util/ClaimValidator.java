@@ -49,8 +49,8 @@ import org.topbraid.shacl.vocabulary.SH;
 import com.apicatalog.rdf.RdfValue;
 
 import eu.xfsc.fc.core.exception.QueryException;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -86,16 +86,16 @@ public class ClaimValidator {
      * Validates if a claim elements are following the required syntax and
      * conditions before sending them to Neo4J
      *
-     * @param sdClaimList the set of claims to be validated
+     * @param claimList the set of claims to be validated
      * @return the claim as a formatted triple string
      * @throws IOException 
      */
-    public Model validateClaims(List<SdClaim> sdClaimList) { 
+    public Model validateClaims(List<CredentialClaim> claimList) { 
         Model listClaims = ModelFactory.createDefaultModel();
         StringBuilder payload = new StringBuilder();
-        for (SdClaim sdClaim : sdClaimList) {
-            validateRDFTripleSyntax(sdClaim);
-            payload.append(sdClaim.asTriple());
+        for (CredentialClaim claim : claimList) {
+            validateRDFTripleSyntax(claim);
+            payload.append(claim.asTriple());
         }
         InputStream in = IOUtils.toInputStream(payload, StandardCharsets.UTF_8);
         RDFDataMgr.read(listClaims, in, Lang.TTL);
@@ -106,16 +106,16 @@ public class ClaimValidator {
      * Method to validate that a claim follow the RDF triple syntax, i.e., <
      * (URI, blank node) , URI, (URI, blank node, literal) >
      *
-     * @param sdClaim the claim to be validated
+     * @param claim the claim to be validated
      */
-    private void validateRDFTripleSyntax(SdClaim sdClaim) {
+    private void validateRDFTripleSyntax(CredentialClaim claim) {
         Model model = ModelFactory.createDefaultModel();
-        try (InputStream in = IOUtils.toInputStream(sdClaim.asTriple(), StandardCharsets.UTF_8)) {
+        try (InputStream in = IOUtils.toInputStream(claim.asTriple(), StandardCharsets.UTF_8)) {
             switchOnJenaLiteralValidation();
             RDFDataMgr.read(model, in, Lang.TTL);
         } catch (IOException | DatatypeFormatException | RiotException e) {
             log.debug("Error in Validating validateRDFTripleSyntax {}", e.getMessage());
-            throw new QueryException(String.format("Triple %s has syntax error: %s", sdClaim.asTriple(), e.getMessage()));
+            throw new QueryException(String.format("Triple %s has syntax error: %s", claim.asTriple(), e.getMessage()));
         } finally {
             resetJenaLiteralValidation();
         }
@@ -138,33 +138,33 @@ public class ClaimValidator {
             // angle brackets) will already be rejected above as Jena
             // should complain about the not defined prefix (e.g. ex in
             // the ex:Foo example above).
-            String subjectStr = sdClaim.getSubjectValue();
+            String subjectStr = claim.getSubjectValue();
             try {
                 uri = new URI(subjectStr);
             } catch (URISyntaxException e) {
-                throw new QueryException(String.format("Subject in triple %s is not a valid URI", sdClaim.asTriple()));
+                throw new QueryException(String.format("Subject in triple %s is not a valid URI", claim.asTriple()));
             } // else it should be a blank node
         }
         // --- predicate --------------------------------------------------
         Node p = triple.getPredicate();
         if (p.isURI()) {
             // c.f. the comment for handling subject nodes above
-            String predicateStr = sdClaim.getPredicateValue();
+            String predicateStr = claim.getPredicateValue();
             try {
                 uri = new URI(predicateStr);
             } catch (URISyntaxException e) {
-                throw new QueryException(String.format("Predicate in triple %s is not a valid URI", sdClaim.asTriple()));
+                throw new QueryException(String.format("Predicate in triple %s is not a valid URI", claim.asTriple()));
             }
         }
         // --- object -----------------------------------------------------
         Node o = triple.getObject();
         if (o.isURI()) {
             // c.f. the comment for handling subject nodes above
-            String objectStr = sdClaim.getObjectValue();
+            String objectStr = claim.getObjectValue();
             try {
                 uri = new URI(objectStr);
             } catch (URISyntaxException e) {
-                throw new QueryException(String.format("Object in triple %s is not a valid URI", sdClaim.asTriple()));
+                throw new QueryException(String.format("Object in triple %s is not a valid URI", claim.asTriple()));
             }
         } else if (o.isLiteral()) {
             // Nothing needs to be done here as literal syntax errors and
@@ -174,7 +174,7 @@ public class ClaimValidator {
         } // else it's a blank node, which is OK
     }
     
-    public Pair<String, Set<String>> resolveClaims(List<SdClaim> claims, String subject) {
+    public Pair<String, Set<String>> resolveClaims(List<CredentialClaim> claims, String subject) {
         Model model = validateClaims(claims);
         String added = ExtendClaims.addPropertyGraphUri(model, subject);
         Set<String> props = ExtendClaims.getMultivalProp(model);
@@ -185,11 +185,11 @@ public class ClaimValidator {
     /**
      * Method that validates a dataGraph against shaclShape
      *
-     * @param payload    ContentAccessor of a self-Description payload to be validated
+     * @param payload    ContentAccessor of a credential payload to be validated
      * @param shaclShape ContentAccessor of a union schemas of type SHACL
      * @return SchemaValidationResult object
      */
-    public static String validateClaimsBySchema(List<SdClaim> claims, ContentAccessor schema, StreamManager sm) {
+    public static String validateClaimsBySchema(List<CredentialClaim> claims, ContentAccessor schema, StreamManager sm) {
       Model data = ModelFactory.createDefaultModel();
       Model shape = ModelFactory.createDefaultModel();
       RDFParser.create()
@@ -200,7 +200,7 @@ public class ClaimValidator {
 
       RDFNode node;
       TypeMapper typeMapper = TypeMapper.getInstance();
-      for (SdClaim claim: claims) {
+      for (CredentialClaim claim: claims) {
         log.trace("validateClaimsBySchema; {}", claim);
         RdfValue object = claim.getObject();
         if (object.isLiteral()) {
@@ -251,7 +251,7 @@ public class ClaimValidator {
             }
           }
         } catch (Exception e) {
-          log.debug("getSDType.error: {}", e.getMessage());
+          log.debug("getSubjectType.error: {}", e.getMessage());
         }
         return null;
       }

@@ -12,15 +12,15 @@ import eu.xfsc.fc.core.util.HashUtils;
 public class ParticipantMetaData extends Participant {
 
   @JsonIgnore
-  private String sdHash;
+  private String assetHash;
 
-  public ParticipantMetaData(String id, String participantName, String participantPublicKey, String selfDescription) {
-    super(id, participantName, participantPublicKey, selfDescription);
-    this.sdHash = HashUtils.calculateSha256AsHex(selfDescription);
+  public ParticipantMetaData(String id, String participantName, String participantPublicKey, String asset) {
+    super(id, participantName, participantPublicKey, asset);
+    this.assetHash = HashUtils.calculateSha256AsHex(asset);
   }
 
-  public ParticipantMetaData(String id, String participantName, String participantPublicKey, String selfDescription, String sdHash) {
-    super(id, participantName, participantPublicKey, selfDescription);
-    this.sdHash = sdHash;
+  public ParticipantMetaData(String id, String participantName, String participantPublicKey, String asset, String assetHash) {
+    super(id, participantName, participantPublicKey, asset);
+    this.assetHash = assetHash;
   }
 }

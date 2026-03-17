@@ -9,8 +9,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 
@@ -20,7 +20,7 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 public class DummyGraphStore implements GraphStore {
 
     @Override
-    public void addClaims(List<SdClaim> sdClaimList, String credentialSubject) {
+    public void addClaims(List<CredentialClaim> claimList, String credentialSubject) {
         // Dummy implementation
     }
 
@@ -30,7 +30,7 @@ public class DummyGraphStore implements GraphStore {
     }
 
     @Override
-    public PaginatedResults<Map<String, Object>> queryData(GraphQuery sdQuery) {
+    public PaginatedResults<Map<String, Object>> queryData(GraphQuery query) {
         // Dummy implementation
         return new PaginatedResults<>(Collections.emptyList());
     }

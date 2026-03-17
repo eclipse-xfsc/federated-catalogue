@@ -33,8 +33,8 @@ import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
 import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.pojo.VerificationResult;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -132,7 +132,7 @@ public class GaiaxTrustFrameworkTest {
         String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
 
         try {
-            VerificationResult result = verificationService.verifySelfDescription(
+            CredentialVerificationResult result = verificationService.verifyCredential(
                 getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
             // Success - trust anchor check was skipped
             assertNotNull(result, "Should return result when Gaia-X is disabled");
@@ -150,13 +150,13 @@ public class GaiaxTrustFrameworkTest {
     void testClaimsExtractable_WhenDisabled() {
         credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
-        String path = "VerificationService/syntax/participantSD2.jsonld";
+        String path = "VerificationService/syntax/participantCredential2.jsonld";
 
-        VerificationResult result = verificationService.verifySelfDescription(
+        CredentialVerificationResult result = verificationService.verifyCredential(
             getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result, "Should return result");
-        assertTrue(result instanceof VerificationResultParticipant, "Should be participant result");
+        assertTrue(result instanceof CredentialVerificationResultParticipant, "Should be participant result");
         assertNotNull(result.getClaims(), "Claims should be extracted");
         assertFalse(result.getClaims().isEmpty(), "Should have claims");
     }
@@ -171,7 +171,7 @@ public class GaiaxTrustFrameworkTest {
         String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
         assertEquals("Signatures error; no trust anchor url found", ex.getMessage(),
@@ -183,14 +183,14 @@ public class GaiaxTrustFrameworkTest {
     void testGaiaxCredentialWorks_WhenEnabled() {
         credentialStrategy.gaiaxTrustFrameworkEnabled = true;
 
-        String path = "VerificationService/syntax/participantSD2.jsonld";
+        String path = "VerificationService/syntax/participantCredential2.jsonld";
 
         // Without signature verification, this should work
-        VerificationResult result = verificationService.verifySelfDescription(
+        CredentialVerificationResult result = verificationService.verifyCredential(
             getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result, "Should process Gaia-X credential");
-        assertTrue(result instanceof VerificationResultParticipant);
+        assertTrue(result instanceof CredentialVerificationResultParticipant);
     }
 
     // ==================== Behavioral Toggle Tests ====================
@@ -206,7 +206,7 @@ public class GaiaxTrustFrameworkTest {
         assertTrue(credentialStrategy.gaiaxTrustFrameworkEnabled, "Precondition: Gaia-X should be enabled");
 
         Exception enabledEx = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
             "Should throw when Gaia-X is enabled");
         assertTrue(enabledEx.getMessage().contains("no trust anchor url found"),
@@ -218,7 +218,7 @@ public class GaiaxTrustFrameworkTest {
         assertFalse(credentialStrategy.gaiaxTrustFrameworkEnabled, "Precondition: Gaia-X should be disabled");
 
         try {
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
             // Success - no exception means trust anchor check was skipped
         } catch (VerificationException e) {
@@ -238,7 +238,7 @@ public class GaiaxTrustFrameworkTest {
         credentialStrategy.gaiaxTrustFrameworkEnabled = false;
 
         try {
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
         } catch (VerificationException e) {
             if (e.getMessage().contains("no trust anchor url found")) {
@@ -252,7 +252,7 @@ public class GaiaxTrustFrameworkTest {
         credentialStrategy.gaiaxTrustFrameworkEnabled = true;
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
             "Should throw when Gaia-X is enabled");
         assertEquals("Signatures error; no trust anchor url found", ex.getMessage(),
@@ -269,7 +269,7 @@ public class GaiaxTrustFrameworkTest {
         String path = "VerificationService/sign/hasInvalidSignature.json";
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 SKIP_SEMANTICS, SKIP_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
         // The credential must NOT be accepted. We expect either:
@@ -288,7 +288,7 @@ public class GaiaxTrustFrameworkTest {
         String path = "VerificationService/sign/hasNoSignature1.json";
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifySelfDescription(getAccessor(path),
+            verificationService.verifyCredential(getAccessor(path),
                 SKIP_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
         assertEquals("Signatures error; No proof found", ex.getMessage(),

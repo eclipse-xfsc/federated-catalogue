@@ -80,7 +80,7 @@ public class SchemasService implements SchemasApiDelegate {
    * Service method for GET /schemas/latest : Get the latest schema for a given type.
    *
    * @param type Type of the schema. (optional)
-   * @param term The URI of the term of the requested Self-Description schema e.g.
+   * @param term The URI of the term of the requested asset schema e.g.
    *             &#x60;<a href="http://w3id.org/gaia-x/service#ServiceOffering&#x60">...</a>; (optional)
    * @return The latest schemas for the given type or term. (status code 200)
    *         or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)

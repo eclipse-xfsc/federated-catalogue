@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.api.generated.model.Error;
 import eu.xfsc.fc.api.generated.model.QueryInfo;
 import eu.xfsc.fc.api.generated.model.Results;
-import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
@@ -70,12 +70,12 @@ public class QueryControllerFusekiTest {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
 
     graphStore.addClaims(List.of(
-        new SdClaim(
+        new CredentialClaim(
             "<http://example.org/service1>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
             "<http://example.org/ServiceOffering>"
         ),
-        new SdClaim(
+        new CredentialClaim(
             "<http://example.org/service1>",
             "<http://example.org/name>",
             "\"Test SPARQL Service\""

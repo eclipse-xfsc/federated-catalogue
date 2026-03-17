@@ -11,8 +11,8 @@ import com.danubetech.verifiablecredentials.CredentialSubject;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -22,9 +22,9 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<SdClaim> extractClaims(ContentAccessor content) throws Exception {
+    public List<CredentialClaim> extractClaims(ContentAccessor content) throws Exception {
         log.debug("extractClaims.enter; got content: {}", content);
-        List<SdClaim> claims = new ArrayList<>();
+        List<CredentialClaim> claims = new ArrayList<>();
         VerifiablePresentation vp = VerifiablePresentation.fromJson(content.getContentAsString());
         Map<String, Object> vpm = vp.getJsonObject();
         List<Map<String, Object>> vcms;
@@ -57,7 +57,7 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
                 log.trace("extractClaims; CS claims: {}", cs.getClaims());
                 for (RdfNQuad nquad: cs.toDataset().toList()) {
                     log.debug("extractClaims; got NQuad: {}", nquad);
-                    SdClaim claim = new SdClaim(nquad, objectMapper);
+                    CredentialClaim claim = new CredentialClaim(nquad, objectMapper);
                     claims.add(claim);
                 }
             }

@@ -36,7 +36,7 @@ import com.danubetech.verifiablecredentials.validation.Validation;
 //import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonStructure;
@@ -116,7 +116,7 @@ public class VerificationDirectTest {
         log.debug("participant claims: {}", claims);
         log.debug("participant RDF: {}", vp.getVerifiableCredential().getCredentialSubject().toDataset().toList());
 
-        //content = getAccessor("Claims-Extraction-Tests/participantSD.jsonld");
+        //content = getAccessor("Claims-Extraction-Tests/participantCredential.jsonld");
         //vp = VerifiablePresentation.fromJson(content.getContentAsString());
         //claims = vp.getVerifiableCredential().getCredentialSubject().getClaims();
         //log.debug("big participant claims: {}", claims);
@@ -141,7 +141,7 @@ public class VerificationDirectTest {
     void testExtract() throws Exception {
         //ContentAccessor content = getAccessor("Claims-Tests/legalPerson_two_VC.jsonld");
         //ContentAccessor content = getAccessor("Claims-Tests/credentialSubject2.jsonld");
-        //ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantSD.jsonld");
+        //ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential.jsonld");
         ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoVCs.jsonld"); // participantTwoCSs.jsonld");
         Document doc = JsonDocument.of(content.getContentAsStream());
         com.apicatalog.jsonld.JsonLdOptions opts = new com.apicatalog.jsonld.JsonLdOptions();
@@ -150,7 +150,7 @@ public class VerificationDirectTest {
         log.debug("extractClaims; expanded: {}", arr);
         JsonObject vp = arr.get(0).asJsonObject();
         JsonArray vcs = vp.get("https://www.w3.org/2018/credentials#verifiableCredential").asJsonArray();
-        List<SdClaim> claims = new ArrayList<>();
+        List<CredentialClaim> claims = new ArrayList<>();
         Map<String, String> subMap = new HashMap<>();
         int idxVC = 0;
         for (JsonValue vcv: vcs) {
@@ -174,7 +174,7 @@ public class VerificationDirectTest {
                     for (RdfTriple triple: triples) {
                         //log.debug("extractClaims; got triple: {}", triple);
                         String suffix = idxVC + "." + idxCS;
-                        SdClaim claim = new SdClaim(rdf2String(triple.getSubject(), subMap, suffix), 
+                        CredentialClaim claim = new CredentialClaim(rdf2String(triple.getSubject(), subMap, suffix), 
                                 rdf2String(triple.getPredicate(), subMap, suffix), rdf2String(triple.getObject(), subMap, suffix));
                         claims.add(claim);
                         log.debug("extractClaims; claim: {}", claim);
@@ -185,7 +185,7 @@ public class VerificationDirectTest {
         
         Set<String> subjects = new HashSet<>();
         Set<String> objects = new HashSet<>();
-        for (SdClaim claim : claims) {
+        for (CredentialClaim claim : claims) {
           subjects.add(claim.getSubjectString());
           objects.add(claim.getObjectString());
         }
@@ -199,7 +199,7 @@ public class VerificationDirectTest {
         //ContentAccessor content = getAccessor(VerificationDirectTest.class, "Claims-Extraction-Tests/providerTest.jsonld");
         //ContentAccessor content = getAccessor("Claims-Tests/legalPerson_two_VC.jsonld");
         //ContentAccessor content = getAccessor("Claims-Tests/credentialSubject2.jsonld");
-        ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantSD.jsonld");
+        ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential.jsonld");
         Document doc = JsonDocument.of(content.getContentAsStream());
         JsonObject vp = doc.getJsonContent().get().asJsonObject();
         log.debug("extractTree; VP: {}", vp);

@@ -25,13 +25,13 @@ public abstract class CommonSimulation extends Simulation {
   private static final String PASSWORD_KEY = "password";
   private static final String VC_FILENAME = "vc.json";
   public static final String IS_ADDED_PARAM = "isAdded";
-  public static final String SD_HASH_PARAM = "sdHash";
+  public static final String ASSET_HASH_PARAM = "assetHash";
 
-  private String sdContent;
+  private String credentialContent;
 
   {
     try {
-      sdContent = Files.readString(Path.of(getResourcePath() + VC_FILENAME));
+      credentialContent = Files.readString(Path.of(getResourcePath() + VC_FILENAME));
     } catch (FileNotFoundException exception) {
       System.out.println("Can't find " + VC_FILENAME + " file in resources: " + exception);
     } catch (IOException exception) {
@@ -39,8 +39,8 @@ public abstract class CommonSimulation extends Simulation {
     }
   }
 
-  public String getSdContent() {
-    return sdContent;
+  public String getCredentialContent() {
+    return credentialContent;
   }
 
   static {

@@ -1,10 +1,10 @@
 package eu.xfsc.fc.core.service.graphdb;
 
-import eu.xfsc.fc.api.generated.model.SelfDescriptionStatus;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
-import eu.xfsc.fc.core.pojo.SdFilter;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.pojo.AssetFilter;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.util.GraphRebuilder;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class GraphRebuildService {
 
   private final GraphRebuilder graphRebuilder;
-  private final SelfDescriptionStore sdStore;
+  private final AssetStore assetStore;
   private final GraphStore graphStore;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
   private final AtomicBoolean running = new AtomicBoolean(false);
@@ -34,10 +34,10 @@ public class GraphRebuildService {
   @Getter
   private volatile GraphRebuildProgress status = GraphRebuildProgress.idle();
 
-  public GraphRebuildService(GraphRebuilder graphRebuilder, SelfDescriptionStore sdStore,
+  public GraphRebuildService(GraphRebuilder graphRebuilder, AssetStore assetStore,
                              GraphStore graphStore) {
     this.graphRebuilder = graphRebuilder;
-    this.sdStore = sdStore;
+    this.assetStore = assetStore;
     this.graphStore = graphStore;
   }
 
@@ -63,11 +63,11 @@ public class GraphRebuildService {
     try {
       executor.submit(() -> {
         try {
-          SdFilter filter = new SdFilter();
-          filter.setStatuses(List.of(SelfDescriptionStatus.ACTIVE));
+          AssetFilter filter = new AssetFilter();
+          filter.setStatuses(List.of(AssetStatus.ACTIVE));
           filter.setLimit(0);
           filter.setOffset(0);
-          long total = sdStore.getByFilter(filter, false, false).getTotalCount();
+          long total = assetStore.getByFilter(filter, false, false).getTotalCount();
           status.setTotal(total);
           graphRebuilder.rebuildGraphDb(chunkCount, chunkId, threads, batchSize,
               (count, error) -> {

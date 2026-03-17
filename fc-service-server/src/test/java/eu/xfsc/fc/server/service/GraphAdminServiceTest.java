@@ -18,11 +18,11 @@ import eu.xfsc.fc.api.generated.model.GraphStatus;
 import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdFilter;
+import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildProgress;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 
 /**
  * Unit tests for {@link GraphAdminService} business logic.
@@ -38,13 +38,13 @@ class GraphAdminServiceTest {
   private GraphStore graphStore;
 
   @Mock
-  private SelfDescriptionStore sdStore;
+  private AssetStore assetStore;
 
   private GraphAdminService service;
 
   @BeforeEach
   void setUp() {
-    service = new GraphAdminService(graphRebuildService, graphStore, sdStore, 4, 100);
+    service = new GraphAdminService(graphRebuildService, graphStore, assetStore, 4, 100);
   }
 
   @Test
@@ -98,10 +98,10 @@ class GraphAdminServiceTest {
   }
 
   @Test
-  void getGraphStatus_sdCountUnknown_returnsUnknownAssessment() {
+  void getGraphStatus_assetCountUnknown_returnsUnknownAssessment() {
     stubEnabledBackend(GraphBackendType.NEO4J, true);
-    stubActiveSdCount(5);
-    when(graphStore.getSdCountInGraph()).thenReturn(-1L);
+    stubActiveAssetCount(5);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(-1L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -111,8 +111,8 @@ class GraphAdminServiceTest {
   @Test
   void getGraphStatus_bothEmpty_returnsEmptyAssessment() {
     stubEnabledBackend(GraphBackendType.NEO4J, true);
-    stubActiveSdCount(0);
-    when(graphStore.getSdCountInGraph()).thenReturn(0L);
+    stubActiveAssetCount(0);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(0L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -120,10 +120,10 @@ class GraphAdminServiceTest {
   }
 
   @Test
-  void getGraphStatus_emptyGraphWithActiveSds_returnsOutOfSync() {
+  void getGraphStatus_emptyGraphWithActiveAssets_returnsOutOfSync() {
     stubEnabledBackend(GraphBackendType.FUSEKI, true);
-    stubActiveSdCount(10);
-    when(graphStore.getSdCountInGraph()).thenReturn(0L);
+    stubActiveAssetCount(10);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(0L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -131,10 +131,10 @@ class GraphAdminServiceTest {
   }
 
   @Test
-  void getGraphStatus_graphSdsButNoActiveSds_returnsOutOfSync() {
+  void getGraphStatus_graphAssetsButNoActiveAssets_returnsOutOfSync() {
     stubEnabledBackend(GraphBackendType.NEO4J, true);
-    stubActiveSdCount(0);
-    when(graphStore.getSdCountInGraph()).thenReturn(5L);
+    stubActiveAssetCount(0);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(5L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -142,10 +142,10 @@ class GraphAdminServiceTest {
   }
 
   @Test
-  void getGraphStatus_sdCountMatchesActiveSds_returnsInSync() {
+  void getGraphStatus_assetCountMatchesActiveAssets_returnsInSync() {
     stubEnabledBackend(GraphBackendType.NEO4J, true);
-    stubActiveSdCount(10);
-    when(graphStore.getSdCountInGraph()).thenReturn(10L);
+    stubActiveAssetCount(10);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(10L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -155,10 +155,10 @@ class GraphAdminServiceTest {
   }
 
   @Test
-  void getGraphStatus_fewerSdsInGraphThanActive_returnsOutOfSync() {
+  void getGraphStatus_fewerAssetsInGraphThanActive_returnsOutOfSync() {
     stubEnabledBackend(GraphBackendType.NEO4J, true);
-    stubActiveSdCount(500);
-    when(graphStore.getSdCountInGraph()).thenReturn(2L);
+    stubActiveAssetCount(500);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(2L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -166,10 +166,10 @@ class GraphAdminServiceTest {
   }
 
   @Test
-  void getGraphStatus_moreSdsInGraphThanActive_returnsOutOfSync() {
+  void getGraphStatus_moreAssetsInGraphThanActive_returnsOutOfSync() {
     stubEnabledBackend(GraphBackendType.NEO4J, true);
-    stubActiveSdCount(10);
-    when(graphStore.getSdCountInGraph()).thenReturn(25L);
+    stubActiveAssetCount(10);
+    when(graphStore.getRDFAssetCountInGraph()).thenReturn(25L);
 
     GraphStatus body = service.getGraphStatus().getBody();
 
@@ -184,10 +184,10 @@ class GraphAdminServiceTest {
   }
 
   @SuppressWarnings("unchecked")
-  private void stubActiveSdCount(long count) {
+  private void stubActiveAssetCount(long count) {
     PaginatedResults<?> result = org.mockito.Mockito.mock(PaginatedResults.class);
     when(result.getTotalCount()).thenReturn(count);
-    when(sdStore.getByFilter(any(SdFilter.class), eq(false), eq(false)))
+    when(assetStore.getByFilter(any(AssetFilter.class), eq(false), eq(false)))
         .thenReturn((PaginatedResults) result);
   }
 }

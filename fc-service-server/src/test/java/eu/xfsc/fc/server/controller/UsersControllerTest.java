@@ -13,9 +13,9 @@ import static eu.xfsc.fc.server.util.CommonConstants.CATALOGUE_ADMIN_ROLE_WITH_P
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.CommonConstants.SD_ADMIN_ROLE;
+import static eu.xfsc.fc.server.util.CommonConstants.ASSET_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.TestCommonConstants.DEFAULT_PARTICIPANT_ID;
-import static eu.xfsc.fc.server.util.TestCommonConstants.SD_ADMIN_ROLE_WITH_PREFIX;
+import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_ADMIN_ROLE_WITH_PREFIX;
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -197,7 +197,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = SD_ADMIN_ROLE_WITH_PREFIX)
+    @WithMockUser(authorities = ASSET_ADMIN_ROLE_WITH_PREFIX)
     public void addUserShouldReturnForbiddenResponse() throws Exception {
         mockMvc
             .perform(MockMvcRequestBuilders.post("/users")
@@ -225,7 +225,7 @@ public class UsersControllerTest {
 
     @Test
     @WithMockUser(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX})
-    public void addDuplicateSDReturnConflictWithKeycloak() throws Exception {
+    public void addDuplicateAssetReturnConflictWithKeycloak() throws Exception {
         User user = getTestUser("name2", "surname2");
         setupKeycloak(HttpStatus.SC_CREATED, user, UUID.randomUUID().toString());
         userDao.create(user);
@@ -263,7 +263,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = SD_ADMIN_ROLE_WITH_PREFIX)
+    @WithMockUser(authorities = ASSET_ADMIN_ROLE_WITH_PREFIX)
     public void getUserShouldReturnForbiddenResponse() throws Exception {
         mockMvc
             .perform(MockMvcRequestBuilders.get("/users/{userId}", "123")
@@ -308,7 +308,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = SD_ADMIN_ROLE_WITH_PREFIX)
+    @WithMockUser(authorities = ASSET_ADMIN_ROLE_WITH_PREFIX)
     public void getUsersShouldReturnForbiddenResponse() throws Exception {
         mockMvc
             .perform(MockMvcRequestBuilders.get("/users")
@@ -336,7 +336,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {SD_ADMIN_ROLE_WITH_PREFIX})
+    @WithMockUser(authorities = {ASSET_ADMIN_ROLE_WITH_PREFIX})
     public void deleteUserShouldReturnForbiddenResponse() throws Exception {
         mockMvc
             .perform(MockMvcRequestBuilders.delete("/users/{userId}", "123")
@@ -401,7 +401,7 @@ public class UsersControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {SD_ADMIN_ROLE_WITH_PREFIX})
+    @WithMockUser(authorities = {ASSET_ADMIN_ROLE_WITH_PREFIX})
     public void updateUserShouldReturnForbiddenResponse() throws Exception {
         mockMvc
             .perform(MockMvcRequestBuilders.put("/users/{userId}", "123")
@@ -421,25 +421,25 @@ public class UsersControllerTest {
 
         when(roleScopeResource.listAll())
             .thenReturn(List.of(new RoleRepresentation(PARTICIPANT_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE, false),
-                new RoleRepresentation(SD_ADMIN_ROLE, SD_ADMIN_ROLE, false)));
+                new RoleRepresentation(ASSET_ADMIN_ROLE, ASSET_ADMIN_ROLE, false)));
 
         String response = mockMvc
             .perform(MockMvcRequestBuilders.put("/users/{userId}/roles", existed.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(SD_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE)))
+                .content(objectMapper.writeValueAsString(List.of(ASSET_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE)))
                 .with(csrf()))
             .andExpect(status().isOk())
             .andReturn().getResponse().getContentAsString();
         UserProfile profile = objectMapper.readValue(response, UserProfile.class);
         assertEquals(2, profile.getRoleIds().size());
-        assertTrue(profile.getRoleIds().containsAll(List.of(PARTICIPANT_ADMIN_ROLE, SD_ADMIN_ROLE)));
+        assertTrue(profile.getRoleIds().containsAll(List.of(PARTICIPANT_ADMIN_ROLE, ASSET_ADMIN_ROLE)));
     }
 
     //Role Assignment can be done on this criteria
     //    role :-> can given by
     //    Ro-MU-CA :-> Ro-MU-CA
     //    Ro-MU-A :-> Ro-MU-CA, Ro-MU-A
-    //    Ro-SD-A :-> Ro-MU-CA, Ro-MU-A, Ro-Pa-A (if not self)
+    //    Ro-AS-A :-> Ro-MU-CA, Ro-MU-A, Ro-Pa-A (if not self)
     //    Ro-Pa-A :-> Ro-MU-CA, Ro-MU-A, Ro-Pa-A
 
     //Please see above criteria for detailed role assignment rule.
@@ -457,7 +457,7 @@ public class UsersControllerTest {
         String response = mockMvc
             .perform(MockMvcRequestBuilders.put("/users/{userId}/roles", existed.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(SD_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE)))
+                .content(objectMapper.writeValueAsString(List.of(ASSET_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE)))
                 .with(csrf()))
             .andExpect(status().isForbidden())
             .andReturn().getResponse().getContentAsString();
@@ -474,7 +474,7 @@ public class UsersControllerTest {
         String result = mockMvc
             .perform(MockMvcRequestBuilders.put("/users/{userId}/roles", "123")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(SD_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE)))
+                .content(objectMapper.writeValueAsString(List.of(ASSET_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE)))
                 .with(csrf()))
             .andExpect(status().isNotFound())
             .andReturn().getResponse().getContentAsString();
@@ -503,7 +503,7 @@ public class UsersControllerTest {
         UserProfile newProfile = userDao.select(existed.getId());
         assertNotNull(newProfile);
         assertEquals(2, newProfile.getRoleIds().size());
-        assertTrue(newProfile.getRoleIds().containsAll(List.of(PARTICIPANT_ADMIN_ROLE, SD_ADMIN_ROLE)));
+        assertTrue(newProfile.getRoleIds().containsAll(List.of(PARTICIPANT_ADMIN_ROLE, ASSET_ADMIN_ROLE)));
     }
 
     @Test
@@ -540,7 +540,7 @@ public class UsersControllerTest {
 
         UserProfile existed = userDao.create(user);
         assertEquals(1, existed.getRoleIds().size());
-        assertTrue( existed.getRoleIds().contains(SD_ADMIN_ROLE));
+        assertTrue( existed.getRoleIds().contains(ASSET_ADMIN_ROLE));
 
         when(roleScopeResource.listAll())
             .thenReturn(List.of(new RoleRepresentation(PARTICIPANT_ADMIN_ROLE, PARTICIPANT_ADMIN_ROLE, false)));
@@ -606,7 +606,7 @@ public class UsersControllerTest {
             .participantId(DEFAULT_PARTICIPANT_ID)
             .firstName(firstName)
             .lastName(lastName)
-            .addRoleIdsItem(SD_ADMIN_ROLE);
+            .addRoleIdsItem(ASSET_ADMIN_ROLE);
     }
 
     private static void assertThatResponseUserHasValidData(final User excepted, final UserProfile actual) {

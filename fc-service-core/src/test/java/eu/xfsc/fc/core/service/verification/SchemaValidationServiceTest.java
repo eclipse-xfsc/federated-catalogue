@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Unit tests for {@link SchemaValidationService}.
  *
- * <p>Verifies SHACL validation of self-description payloads against individual and composite
+ * <p>Verifies SHACL validation of credential payloads against individual and composite
  * schemas, covering both conforming and non-conforming inputs.</p>
  */
 @Slf4j
@@ -70,7 +70,7 @@ public class SchemaValidationServiceTest {
     /** Verifies that an invalid legal-person payload fails SHACL validation against a specific schema. */
     @Test
     void validateInvalidPayloadAgainstSchema() {
-        SchemaValidationResult result = schemaValidationService.validateSelfDescriptionAgainstSchema(
+        SchemaValidationResult result = schemaValidationService.validateCredentialAgainstSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"),
                 getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
 
@@ -82,7 +82,7 @@ public class SchemaValidationServiceTest {
     /** Verifies that a valid legal-person payload passes SHACL validation against a specific schema. */
     @Test
     void validateValidPayloadAgainstSchema() {
-        SchemaValidationResult result = schemaValidationService.validateSelfDescriptionAgainstSchema(
+        SchemaValidationResult result = schemaValidationService.validateCredentialAgainstSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"),
                 getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
 
@@ -96,7 +96,7 @@ public class SchemaValidationServiceTest {
         schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
         schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
 
-        SchemaValidationResult result = schemaValidationService.validateSelfDescriptionAgainstCompositeSchema(
+        SchemaValidationResult result = schemaValidationService.validateCredentialAgainstCompositeSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"));
 
         assertNotNull(result, "Result should not be null");
@@ -110,7 +110,7 @@ public class SchemaValidationServiceTest {
         schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
         schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
 
-        SchemaValidationResult result = schemaValidationService.validateSelfDescriptionAgainstCompositeSchema(
+        SchemaValidationResult result = schemaValidationService.validateCredentialAgainstCompositeSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"));
 
         assertNotNull(result, "Result should not be null");
@@ -123,9 +123,9 @@ public class SchemaValidationServiceTest {
         schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
         schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
 
-        SchemaValidationResult resultExplicit = schemaValidationService.validateSelfDescriptionAgainstCompositeSchema(
+        SchemaValidationResult resultExplicit = schemaValidationService.validateCredentialAgainstCompositeSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"));
-        SchemaValidationResult resultNullSchema = schemaValidationService.validateSelfDescriptionAgainstSchema(
+        SchemaValidationResult resultNullSchema = schemaValidationService.validateCredentialAgainstSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"), null);
 
         assertNotNull(resultExplicit);

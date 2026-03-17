@@ -32,7 +32,7 @@ public class ParticipantsController {
   /**
    * POST /participants : Register a new participant in the catalogue.
    *
-   * @param body Participant Self-Description (required)
+   * @param body Participant credential (required)
    * @return Created Participant (status code 201)
    *         or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *         or Forbidden. The user does not have the permission to execute this request. (status code 403)
@@ -116,7 +116,7 @@ public class ParticipantsController {
    * PUT /participants/{participantId} : Update a participant in the catalogue.
    *
    * @param id The participant to update. (required)
-   * @param body Participant Self-Description (required)
+   * @param body Participant credential (required)
    * @return Updated Participant (status code 200)
    *         or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *         or Forbidden. The user does not have the permission to execute this request. (status code 403)

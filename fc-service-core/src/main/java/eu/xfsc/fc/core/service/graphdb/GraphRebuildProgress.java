@@ -21,9 +21,9 @@ public class GraphRebuildProgress {
   private volatile String errorMessage;
 
   /**
-   * Creates a new progress tracker for a rebuild with the given total SD count.
+   * Creates a new progress tracker for a rebuild with the given total asset count.
    *
-   * @param total the total number of SDs to process
+   * @param total the total number of assets to process
    */
   public GraphRebuildProgress(long total) {
     this.total = total;
@@ -42,16 +42,16 @@ public class GraphRebuildProgress {
   }
 
   /**
-   * Sets the total SD count. Used when the count is determined asynchronously.
+   * Sets the total asset count. Used when the count is determined asynchronously.
    *
-   * @param total the total number of SDs to process
+   * @param total the total number of assets to process
    */
   void setTotal(long total) {
     this.total = total;
   }
 
   /**
-   * Returns the number of SDs processed so far.
+   * Returns the number of assets processed so far.
    *
    * @return the processed count
    */
@@ -60,7 +60,7 @@ public class GraphRebuildProgress {
   }
 
   /**
-   * Returns the number of SDs that failed during processing.
+   * Returns the number of assets that failed during processing.
    *
    * @return the error count
    */

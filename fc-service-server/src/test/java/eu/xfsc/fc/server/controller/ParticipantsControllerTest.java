@@ -1,27 +1,59 @@
 package eu.xfsc.fc.server.controller;
 
+import static eu.xfsc.fc.server.helper.FileReaderHelper.getMockFileDataAsString;
+import static eu.xfsc.fc.server.helper.UserServiceHelper.getAllRoles;
+import static eu.xfsc.fc.server.util.CommonConstants.CATALOGUE_ADMIN_ROLE_WITH_PREFIX;
+import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE;
+import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE_WITH_PREFIX;
+import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE;
+import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_ADMIN_ROLE_WITH_PREFIX;
+import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
+import static eu.xfsc.fc.server.util.TestUtil.getAccessor;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import com.c4_soft.springaddons.security.oauth2.test.annotations.Claims;
 import com.c4_soft.springaddons.security.oauth2.test.annotations.OpenIdClaims;
 import com.c4_soft.springaddons.security.oauth2.test.annotations.StringArrayClaim;
 import com.c4_soft.springaddons.security.oauth2.test.annotations.StringClaim;
 import com.c4_soft.springaddons.security.oauth2.test.annotations.WithMockJwtAuth;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.xfsc.fc.api.generated.model.Assets;
 import eu.xfsc.fc.api.generated.model.Participants;
-import eu.xfsc.fc.api.generated.model.SelfDescriptions;
 import eu.xfsc.fc.api.generated.model.User;
 import eu.xfsc.fc.api.generated.model.UserProfiles;
 import eu.xfsc.fc.core.dao.impl.ParticipantDaoImpl;
 import eu.xfsc.fc.core.dao.impl.UserDaoImpl;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.ParticipantMetaData;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
+import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -30,7 +62,6 @@ import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -70,38 +101,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static eu.xfsc.fc.server.helper.FileReaderHelper.getMockFileDataAsString;
-import static eu.xfsc.fc.server.helper.UserServiceHelper.getAllRoles;
-import static eu.xfsc.fc.server.util.CommonConstants.CATALOGUE_ADMIN_ROLE_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE;
-import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE;
-import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.TestCommonConstants.SD_ADMIN_ROLE_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.TestUtil.getAccessor;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -118,7 +117,7 @@ public class ParticipantsControllerTest {
   @Autowired
   private WebApplicationContext context;
   @Autowired
-  private SelfDescriptionStoreImpl sdStorePublisher;
+  private AssetStoreImpl assetStorePublisher;
   @Autowired
   private Neo4j embeddedDatabaseServer;
   @Autowired
@@ -160,10 +159,10 @@ public class ParticipantsControllerTest {
   private RoleScopeResource roleScopeResource;
 
   private final String userId = "ae366624-8371-401d-b2c4-518d2f308a15";
-  private final String DEFAULT_PARTICIPANT_FILE = "default_participant.json";
-  private final String ALTERNATIVE_PARTICIPANT_FILE = "alternative_participant.json";
-  private final String ALTERNATIVE2_PARTICIPANT_FILE = "alternative2_participant.json";
-  private final String UNIQUE_PARTICIPANT_FILE = "unique_participant.json";
+  private final String DEFAULT_PARTICIPANT_FILE = "default-participant.json";
+  private final String ALTERNATIVE_PARTICIPANT_FILE = "alternative-participant.json";
+  private final String ALTERNATIVE2_PARTICIPANT_FILE = "alternative2-participant.json";
+  private final String UNIQUE_PARTICIPANT_FILE = "unique-participant.json";
   private final String PUBLIC_KEY_AS_JWK = "{\"kty\":\"RSA\",\"e\":\"AQAB\",\"alg\":\"PS256\",\"n\":\"0nYZU6EuuzHKBCzkcBZqsMkVZXngYO7VujfLU_4ys7onF4HxTJPP3OGKEjbjbMgmpa7vKaWRomt_XXTjemA3r3f5t8bj0IoqFfvbTIq65GUIIh4y2mVbomdcQLRK2Auf79vDiqiONknTSstoPjAiCg6t6z_KruGFZbDOhYkZwqrjGnmB_LfFSlpeLwkQQ-5dVLhhXkImmWhnACoAo8ECny24Ap7wLbN9i9o1fNSz2uszACj0zxFhl3NGunHFUm3YkGd0URvoToXpK9a4zfihSUxHjeT0_7a9puVF4E3w1AAjSh4nV3pLE0cJyDITVb2M4d3m9tjjz_3XwjYiAAJ1MKVBSKDM27pexRFCJj_Dvb-dr-AImhqBhPDHn_gjdaRZIVoADC4zwBULkpvUaUIKmNFyYOjDYWWTBzTf4Gs9QL5adlVfVyK14MZPBOyq-cqIIymgp6A5_R3hKnCCBP8C_S0-VDidhI6Pr5VJPx9DydI0eB2DiOyOZvbfg7sKVkJXFUEJRiBTMhujyjYqeTtCHjCFHctZVQ8hU279eyk7mpmpDrktfCFJFi-00ZzQWTgtzBoGhke5hj0hjtG1n4jN6BfypdT5oB-DeXl2P1hp_hNC9I5gveWUYHAqN4VKve_52A3ub8vBlISQhEUeZoFUterTiDA3NyK7wsj_V7-KM6U\"}";
 
   @BeforeAll
@@ -197,7 +196,7 @@ public class ParticipantsControllerTest {
     ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_CREATED, part);
 
-    deleteParticipantFromSdStore(part);
+    deleteParticipantFromAssetStore(part);
 
     String response = mockMvc
             .perform(MockMvcRequestBuilders.post("/participants")
@@ -213,9 +212,9 @@ public class ParticipantsControllerTest {
     assertEquals("did:example:issuer", partResult.getId());
     assertEquals("did:example:holder", partResult.getName());
     assertEquals(PUBLIC_KEY_AS_JWK, partResult.getPublicKey());
-    assertEquals(part.getSelfDescription(), partResult.getSelfDescription());
+    assertEquals(part.getAsset(), partResult.getAsset());
 
-    assertDoesNotThrow(() -> sdStorePublisher.getByHash(part.getSdHash()));
+    assertDoesNotThrow(() -> assetStorePublisher.getByHash(part.getAssetHash()));
   }
 
   @Test
@@ -226,19 +225,19 @@ public class ParticipantsControllerTest {
     ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_CREATED, part);
 
-    deleteParticipantFromSdStore(part);
+    deleteParticipantFromAssetStore(part);
 
     ContentAccessorDirect contentAccessor = new ContentAccessorDirect(json);
-    VerificationResultParticipant verResult = verificationService.verifyParticipantSelfDescription(contentAccessor);
-    SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(contentAccessor, verResult);
-    sdStorePublisher.storeSelfDescription(sdMetadata, verResult);
+    CredentialVerificationResultParticipant verResult = verificationService.verifyParticipantCredential(contentAccessor);
+    AssetMetadata assetMetadata = new AssetMetadata(contentAccessor, verResult);
+    assetStorePublisher.storeCredential(assetMetadata, verResult);
 
     List<Map<String, Object>> nodes = graphStore.queryData(new GraphQuery(
             "MATCH (n) WHERE $graphUri IN n.claimsGraphUri RETURN n",
             Map.of("graphUri", "did:example:issuer")
     )).getResults();
     log.debug("addDuplicateParticipantShouldReturnConflictResponse-1; got {} nodes", nodes.size());
-    Assertions.assertEquals(1, nodes.size());
+    assertEquals(1, nodes.size());
 
     mockMvc
             .perform(MockMvcRequestBuilders.post("/participants")
@@ -252,7 +251,7 @@ public class ParticipantsControllerTest {
             Map.of("graphUri", "did:example:issuer")
     )).getResults();
     log.debug("addDuplicateParticipantShouldReturnConflictResponse-2; got {} nodes", nodes.size());
-    Assertions.assertEquals(1, nodes.size());
+    assertEquals(1, nodes.size());
   }
 
   @Test
@@ -289,7 +288,7 @@ public class ParticipantsControllerTest {
   }
 
   @Test
-  @WithMockUser(authorities = SD_ADMIN_ROLE_WITH_PREFIX)
+  @WithMockUser(authorities = ASSET_ADMIN_ROLE_WITH_PREFIX)
   public void getParticipantsShouldReturnForbiddenResponse() throws Exception {
     mockMvc
             .perform(MockMvcRequestBuilders.get("/participants")
@@ -301,30 +300,30 @@ public class ParticipantsControllerTest {
   @Test
   @WithMockUser(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX, ASSET_READ_WITH_PREFIX})
   @Order(20)
-  public void getAddedParticipantSDShouldReturnSuccessResponseWithSameSD() throws Exception {
+  public void getAddedParticipantCredentialShouldReturnSuccessResponseWithSameCredential() throws Exception {
     String json = getMockFileDataAsString(DEFAULT_PARTICIPANT_FILE);
     ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_OK, part);
 
     String response = mockMvc
-            .perform(MockMvcRequestBuilders.get("/self-descriptions")
+            .perform(MockMvcRequestBuilders.get("/assets")
                     .contentType(MediaType.APPLICATION_JSON)
                     .queryParam("id", part.getId()).queryParam("withContent", "true")
                     .with(csrf()))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-    SelfDescriptions selfDescriptions = objectMapper.readValue(response, SelfDescriptions.class);
-    String sdHash = selfDescriptions.getItems().get(0).getMeta().getSdHash();
-    String content = selfDescriptions.getItems().get(0).getContent();
+    Assets assets = objectMapper.readValue(response, Assets.class);
+    String assetHash = assets.getItems().get(0).getMeta().getAssetHash();
+    String content = assets.getItems().get(0).getContent();
 
-    String responseOfSDContent = mockMvc
-            .perform(MockMvcRequestBuilders.get("/self-descriptions/" + sdHash)
+    String responseOfCredentialContent = mockMvc
+            .perform(MockMvcRequestBuilders.get("/assets/" + assetHash)
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-    assertEquals(part.getSelfDescription(), responseOfSDContent);
-    assertEquals(responseOfSDContent, content);
-    assertEquals(1, selfDescriptions.getItems().size());
+    assertEquals(part.getAsset(), responseOfCredentialContent);
+    assertEquals(responseOfCredentialContent, content);
+    assertEquals(1, assets.getItems().size());
   }
 
   @Test
@@ -365,7 +364,7 @@ public class ParticipantsControllerTest {
   @WithMockUser(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX})
   @Order(20)
   public void getParticipantUsersShouldReturnCorrectNumber() throws Exception {
-    ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key-1", "empty SD");
+    ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key-1", "empty asset");
     setupKeycloak(HttpStatus.SC_OK, part);
     String partId = URLEncoder.encode(part.getId(), Charset.defaultCharset());
 
@@ -384,7 +383,7 @@ public class ParticipantsControllerTest {
   }
 
   @Test
-  @WithMockUser(authorities = SD_ADMIN_ROLE_WITH_PREFIX)
+  @WithMockUser(authorities = ASSET_ADMIN_ROLE_WITH_PREFIX)
   public void addParticipantShouldReturnForbiddenResponse() throws Exception {
     mockMvc
             .perform(MockMvcRequestBuilders.post("/participants")
@@ -397,10 +396,10 @@ public class ParticipantsControllerTest {
   @Test
   @WithMockUser(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX})
   @Order(25)
-  public void addParticipantFailWithSameSDShouldReturnConflictFromKeyCloakWithoutDBStore() throws Exception {
+  public void addParticipantFailWithSameCredentialShouldReturnConflictFromKeyCloakWithoutDBStore() throws Exception {
     String json = getMockFileDataAsString(DEFAULT_PARTICIPANT_FILE);
     ParticipantMetaData partNew = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
-    sdStorePublisher.deleteSelfDescription(partNew.getSdHash());
+    assetStorePublisher.deleteAsset(partNew.getAssetHash());
     setupKeycloak(HttpStatus.SC_CONFLICT, partNew);
 
     mockMvc
@@ -410,9 +409,9 @@ public class ParticipantsControllerTest {
                     .with(csrf()))
             .andExpect(status().isConflict());
 
-    NotFoundException exceptionSDStore = assertThrows(NotFoundException.class,
-            () -> sdStorePublisher.getByHash(partNew.getSdHash()));
-    assertEquals(NotFoundException.class, exceptionSDStore.getClass());
+    NotFoundException exceptionAssetStore = assertThrows(NotFoundException.class,
+            () -> assetStorePublisher.getByHash(partNew.getAssetHash()));
+    assertEquals(NotFoundException.class, exceptionAssetStore.getClass());
   }
 
   @Test
@@ -431,9 +430,9 @@ public class ParticipantsControllerTest {
                     .with(csrf()))
             .andExpect(status().is5xxServerError());
 
-    Throwable exceptionSD = assertThrows(Throwable.class,
-            () -> sdStorePublisher.getByHash(part.getSdHash()));
-    assertEquals(NotFoundException.class, exceptionSD.getClass());
+    Throwable exceptionAssetStore = assertThrows(Throwable.class,
+            () -> assetStorePublisher.getByHash(part.getAssetHash()));
+    assertEquals(NotFoundException.class, exceptionAssetStore.getClass());
   }
 
   @Test
@@ -467,10 +466,10 @@ public class ParticipantsControllerTest {
     assertEquals("did:example:holder", partResult.getName());
     assertEquals(PUBLIC_KEY_AS_JWK, partResult.getPublicKey());
 
-    assertDoesNotThrow(() -> sdStorePublisher.getByHash(part.getSdHash()));
+    assertDoesNotThrow(() -> assetStorePublisher.getByHash(part.getAssetHash()));
 
-    SelfDescriptionMetadata metadata = sdStorePublisher.getByHash(part.getSdHash());
-    assertEquals(part.getSelfDescription(), metadata.getSelfDescription().getContentAsString());
+    AssetMetadata metadata = assetStorePublisher.getByHash(part.getAssetHash());
+    assertEquals(part.getAsset(), metadata.getContentAccessor().getContentAsString());
   }
 
   @Test
@@ -499,9 +498,9 @@ public class ParticipantsControllerTest {
     setupKeycloak(HttpStatus.SC_OK, part);
 
     ContentAccessorDirect contentAccessor = new ContentAccessorDirect(json);
-    VerificationResultParticipant verResult = verificationService.verifyParticipantSelfDescription(contentAccessor);
-    SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(contentAccessor, verResult);
-    sdStorePublisher.storeSelfDescription(sdMetadata, verResult);
+    CredentialVerificationResultParticipant verResult = verificationService.verifyParticipantCredential(contentAccessor);
+    AssetMetadata assetMetadata = new AssetMetadata(contentAccessor, verResult);
+    assetStorePublisher.storeCredential(assetMetadata, verResult);
 
     String updatedParticipant = getMockFileDataAsString(ALTERNATIVE2_PARTICIPANT_FILE);
     String partId = URLEncoder.encode(part.getId(), Charset.defaultCharset());
@@ -531,9 +530,9 @@ public class ParticipantsControllerTest {
             .with(csrf()))
         .andExpect(status().is5xxServerError());
 
-    Throwable exceptionSD = assertThrows(Throwable.class,
-            () -> sdStorePublisher.getByHash(part.getSdHash()));
-    assertEquals(NotFoundException.class, exceptionSD.getClass());
+    Throwable exceptionAssetStore = assertThrows(Throwable.class,
+            () -> assetStorePublisher.getByHash(part.getAssetHash()));
+    assertEquals(NotFoundException.class, exceptionAssetStore.getClass());
   }
 
   @Test
@@ -580,9 +579,9 @@ public class ParticipantsControllerTest {
             .with(csrf()))
         .andExpect(status().isNotFound());
 
-    Throwable exceptionSD = assertThrows(Throwable.class,
-            () -> sdStorePublisher.getByHash(part.getSdHash()));
-    assertEquals(NotFoundException.class, exceptionSD.getClass());
+    Throwable exceptionAssetStore = assertThrows(Throwable.class,
+            () -> assetStorePublisher.getByHash(part.getAssetHash()));
+    assertEquals(NotFoundException.class, exceptionAssetStore.getClass());
 
   }
 
@@ -596,9 +595,9 @@ public class ParticipantsControllerTest {
     String json = getMockFileDataAsString(UNIQUE_PARTICIPANT_FILE);
     ParticipantMetaData part = new ParticipantMetaData("did:example:unique-issuer", "did:example:holder", "did:example:holder#key", json);
     ContentAccessorDirect contentAccessor = new ContentAccessorDirect(json);
-    VerificationResultParticipant verResult = verificationService.verifyParticipantSelfDescription(contentAccessor);
-    SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(contentAccessor, verResult);
-    sdStorePublisher.storeSelfDescription(sdMetadata, verResult);
+    CredentialVerificationResultParticipant verResult = verificationService.verifyParticipantCredential(contentAccessor);
+    AssetMetadata assetMetadata = new AssetMetadata(contentAccessor, verResult);
+    assetStorePublisher.storeCredential(assetMetadata, verResult);
 
     setupKeycloak(HttpStatus.SC_OK, part);
     String partId = URLEncoder.encode(part.getId(), Charset.defaultCharset());
@@ -616,9 +615,9 @@ public class ParticipantsControllerTest {
     assertEquals("did:example:holder", participantMetaData.getName());
     assertEquals("did:example:holder#key", participantMetaData.getPublicKey());
 
-    Throwable exceptionSD = assertThrows(Throwable.class,
-            () -> sdStorePublisher.getByHash(part.getSdHash()));
-    assertEquals(NotFoundException.class, exceptionSD.getClass());
+    Throwable exceptionAssetStore = assertThrows(Throwable.class,
+            () -> assetStorePublisher.getByHash(part.getAssetHash()));
+    assertEquals(NotFoundException.class, exceptionAssetStore.getClass());
   }
 
   @Test
@@ -652,9 +651,9 @@ public class ParticipantsControllerTest {
     ParticipantMetaData participantMetaData = objectMapper.readValue(response, ParticipantMetaData.class);
     assertNotNull(participantMetaData);
 
-    Throwable exceptionSD = assertThrows(Throwable.class,
-            () -> sdStorePublisher.getByHash(part.getSdHash()));
-    assertEquals(NotFoundException.class, exceptionSD.getClass());
+    Throwable exceptionAssetStore = assertThrows(Throwable.class,
+            () -> assetStorePublisher.getByHash(part.getAssetHash()));
+    assertEquals(NotFoundException.class, exceptionAssetStore.getClass());
 
     assertEquals(0, userDao.search(userId, 0, 1).getTotalCount());
   }
@@ -737,9 +736,9 @@ public class ParticipantsControllerTest {
     }
   }
 
-  private void deleteParticipantFromSdStore(ParticipantMetaData part) {
+  private void deleteParticipantFromAssetStore(ParticipantMetaData part) {
     try {
-      sdStorePublisher.deleteSelfDescription(part.getSdHash());
+      assetStorePublisher.deleteAsset(part.getAssetHash());
     } catch (Exception ex) {
     }
   }

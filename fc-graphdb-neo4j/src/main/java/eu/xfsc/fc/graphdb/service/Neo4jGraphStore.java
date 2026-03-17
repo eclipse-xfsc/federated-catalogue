@@ -33,7 +33,7 @@ import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -106,14 +106,14 @@ public class Neo4jGraphStore implements GraphStore {
 
     /** {@inheritDoc} */
     @Override
-    public long getSdCountInGraph() {
+    public long getRDFAssetCountInGraph() {
         try (Session session = driver.session()) {
             Result result = session.run(
                 "MATCH (n) WHERE n.claimsGraphUri IS NOT NULL "
                 + "UNWIND n.claimsGraphUri AS uri RETURN count(DISTINCT uri) AS cnt");
             return result.single().get("cnt").asLong();
         } catch (Exception e) {
-            log.warn("Failed to get Neo4j SD count: {}", e.getMessage());
+            log.warn("Failed to get Neo4j asset count: {}", e.getMessage());
             return -1;
         }
     }
@@ -122,11 +122,11 @@ public class Neo4jGraphStore implements GraphStore {
      * {@inheritDoc}
      */
     @Override
-    public void addClaims(List<SdClaim> sdClaimList, String credentialSubject) {
-        log.debug("addClaims.enter; got claims: {}, subject: {}", sdClaimList, credentialSubject);
-        if (!sdClaimList.isEmpty()) {
+    public void addClaims(List<CredentialClaim> claimList, String credentialSubject) {
+        log.debug("addClaims.enter; got claims: {}, subject: {}", claimList, credentialSubject);
+        if (!claimList.isEmpty()) {
             try (Session session = driver.session()) { 
-                Pair<String, Set<String>> props = claimValidator.resolveClaims(sdClaimList, credentialSubject);
+                Pair<String, Set<String>> props = claimValidator.resolveClaims(claimList, credentialSubject);
                 if (!props.getRight().isEmpty()) {
                     updateGraphConfig(session, props.getRight());
                 }
@@ -157,27 +157,27 @@ public class Neo4jGraphStore implements GraphStore {
      * {@inheritDoc}
      */
     @Override
-    public PaginatedResults<Map<String, Object>> queryData(GraphQuery sdQuery) {
-        log.debug("queryData.enter; got query: {}", sdQuery);
+    public PaginatedResults<Map<String, Object>> queryData(GraphQuery query) {
+        log.debug("queryData.enter; got query: {}", query);
 
-        if (sdQuery.getQueryLanguage() != QueryLanguage.OPENCYPHER) {
-            throw new UnsupportedOperationException(sdQuery.getQueryLanguage() + " query language is not supported yet");
+        if (query.getQueryLanguage() != QueryLanguage.OPENCYPHER) {
+            throw new UnsupportedOperationException(query.getQueryLanguage() + " query language is not supported yet");
         }
 
         TransactionConfig transactionConfig = TransactionConfig.builder()
-                .withTimeout(Duration.ofSeconds(sdQuery.getTimeout()))
+                .withTimeout(Duration.ofSeconds(query.getTimeout()))
                 .build();
 
         long stamp = System.currentTimeMillis();
         try (Session session = driver.session()) {
             //In this method we use read transaction to avoid any Cypher query that modifies data
-            return session.executeRead(tx -> doQuery(tx, sdQuery), transactionConfig);
+            return session.executeRead(tx -> doQuery(tx, query), transactionConfig);
         } catch (Exception ex) {
             stamp = System.currentTimeMillis() - stamp;
             log.error("queryData.error: {}", ex.getMessage());
             if (ex.getMessage() != null && ex.getMessage().contains(timeoutMarker)) {
-                if (stamp > sdQuery.getTimeout() * 1000) {
-                    throw new TimeoutException("query timeout (" + sdQuery.getTimeout() + " sec) exceeded)");
+                if (stamp > query.getTimeout() * 1000) {
+                    throw new TimeoutException("query timeout (" + query.getTimeout() + " sec) exceeded)");
                 }
             }
             throw new ServerException("error querying data " + ex.getMessage());
@@ -253,26 +253,26 @@ public class Neo4jGraphStore implements GraphStore {
         }
     }
 
-    private String getDynamicallyAddedCountClauseQuery(GraphQuery sdQuery) {
-        if (sdQuery.isWithTotalCount()) {
-            log.debug("getDynamicallyAddedCountClauseQuery.enter; actual query: {}", sdQuery.getQuery());
+    private String getDynamicallyAddedCountClauseQuery(GraphQuery query) {
+        if (query.isWithTotalCount()) {
+            log.debug("getDynamicallyAddedCountClauseQuery.enter; actual query: {}", query.getQuery());
             /*get string before statements and append count clause*/
             String statement = "return";
 
-            String queryStatementLowerCase = sdQuery.getQuery().toLowerCase();
+            String queryStatementLowerCase = query.getQuery().toLowerCase();
             int indexOf = queryStatementLowerCase.lastIndexOf(statement);
 
             if (indexOf == -1) {
                 // no need for count if no return
-                return sdQuery.getQuery();
+                return query.getQuery();
             }
 
             /*add totalCount to query to get count*/
-            StringBuffer subStringOfCount = new StringBuffer(sdQuery.getQuery().substring(0, indexOf));
+            StringBuffer subStringOfCount = new StringBuffer(query.getQuery().substring(0, indexOf));
             subStringOfCount.append("WITH count(*) as totalCount ");
 
             /*append totalCount to return statements*/
-            StringBuffer actualQuery = new StringBuffer(sdQuery.getQuery());
+            StringBuffer actualQuery = new StringBuffer(query.getQuery());
             int indexOfAfter = actualQuery.toString().toLowerCase().lastIndexOf(statement) + statement.length();
 
             if (queryStatementLowerCase.lastIndexOf("return *") == -1) {
@@ -283,7 +283,7 @@ public class Neo4jGraphStore implements GraphStore {
             log.debug("getDynamicallyAddedCountClauseQuery.exit; count query appended : {}", finalString);
             return finalString;
         }
-        return sdQuery.getQuery();
+        return query.getQuery();
     }
 
 }

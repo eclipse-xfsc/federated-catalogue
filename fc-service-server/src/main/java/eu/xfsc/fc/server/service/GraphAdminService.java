@@ -9,13 +9,13 @@ import org.springframework.stereotype.Service;
 
 import eu.xfsc.fc.api.generated.model.GraphStatus;
 import eu.xfsc.fc.api.generated.model.RebuildStatus;
-import eu.xfsc.fc.api.generated.model.SelfDescriptionStatus;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
-import eu.xfsc.fc.core.pojo.SdFilter;
+import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildProgress;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.server.generated.controller.GraphAdminApiDelegate;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,17 +31,17 @@ public class GraphAdminService implements GraphAdminApiDelegate {
 
   private final GraphRebuildService graphRebuildService;
   private final GraphStore graphStore;
-  private final SelfDescriptionStore sdStore;
+  private final AssetStore assetStore;
   private final int rebuildThreads;
   private final int rebuildBatchSize;
 
   public GraphAdminService(GraphRebuildService graphRebuildService, GraphStore graphStore,
-                           SelfDescriptionStore sdStore,
+                           AssetStore assetStore,
                            @Value("${graphstore.rebuild-threads:4}") int rebuildThreads,
                            @Value("${graphstore.rebuild-batch-size:100}") int rebuildBatchSize) {
     this.graphRebuildService = graphRebuildService;
     this.graphStore = graphStore;
-    this.sdStore = sdStore;
+    this.assetStore = assetStore;
     this.rebuildThreads = rebuildThreads;
     this.rebuildBatchSize = rebuildBatchSize;
   }
@@ -88,33 +88,33 @@ public class GraphAdminService implements GraphAdminApiDelegate {
 
     if (!enabled) {
       dto.setHealthy(false);
-      dto.setActiveSdCount(0L);
+      dto.setActiveAssetCount(0L);
       dto.setClaimCountInGraph(0L);
-      dto.setSdCountInGraph(0L);
+      dto.setAssetCountInGraph(0L);
       dto.setSyncAssessment("disabled");
       return ResponseEntity.ok(dto);
     }
 
     dto.setHealthy(graphStore.isHealthy());
 
-    SdFilter filter = new SdFilter();
-    filter.setStatuses(List.of(SelfDescriptionStatus.ACTIVE));
+    AssetFilter filter = new AssetFilter();
+    filter.setStatuses(List.of(AssetStatus.ACTIVE));
     filter.setLimit(0);
     filter.setOffset(0);
-    long activeSdCount = sdStore.getByFilter(filter, false, false).getTotalCount();
+    long activeAssetCount = assetStore.getByFilter(filter, false, false).getTotalCount();
     long claimCount = graphStore.getClaimCount();
-    long sdCountInGraph = graphStore.getSdCountInGraph();
+    long assetCountInGraph = graphStore.getRDFAssetCountInGraph();
 
-    dto.setActiveSdCount(activeSdCount);
+    dto.setActiveAssetCount(activeAssetCount);
     dto.setClaimCountInGraph(claimCount);
-    dto.setSdCountInGraph(sdCountInGraph);
+    dto.setAssetCountInGraph(assetCountInGraph);
 
     String syncAssessment;
-    if (sdCountInGraph == -1) {
+    if (assetCountInGraph == -1) {
       syncAssessment = "unknown";
-    } else if (sdCountInGraph == 0 && activeSdCount == 0) {
+    } else if (assetCountInGraph == 0 && activeAssetCount == 0) {
       syncAssessment = "empty";
-    } else if (sdCountInGraph == activeSdCount && activeSdCount > 0) {
+    } else if (assetCountInGraph == activeAssetCount && activeAssetCount > 0) {
       syncAssessment = "in-sync";
     } else {
       syncAssessment = "out-of-sync";

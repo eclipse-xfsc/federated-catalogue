@@ -29,7 +29,7 @@ import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
 import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.pojo.VerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -77,7 +77,7 @@ public class SignatureVerificationTest {
 	void testComplienceV1Signature() {
 	    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
 	    String path = "VerificationService/sign-unires/participant_v1_signed.jsonld";
-	    VerificationResult result = verificationService.verifySelfDescription(getAccessor(path));
+	    CredentialVerificationResult result = verificationService.verifyCredential(getAccessor(path));
 	    assertEquals(1, result.getValidators().size(), "Incorrect number of validators found");
 	}
 
@@ -91,7 +91,7 @@ public class SignatureVerificationTest {
 	    schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
 	    String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
 	    Exception ex = assertThrowsExactly(VerificationException.class, ()
-	            -> verificationService.verifySelfDescription(getAccessor(path), true, true, true, true));
+	            -> verificationService.verifyCredential(getAccessor(path), true, true, true, true));
 	    assertEquals("Signatures error; no trust anchor url found", ex.getMessage());
 	}
 

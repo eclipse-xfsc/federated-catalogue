@@ -24,6 +24,13 @@ graphstore:
   impl: none
   query-timeout-in-seconds: 5
 
+scheduler:
+  asset:
+    cron:
+      expression: 0 0 0 * * *
+  schema:
+    init-delay: 1000
+
 spring:
   liquibase:
     contexts: test

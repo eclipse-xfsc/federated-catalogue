@@ -4,7 +4,7 @@ import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.graphdb.config.EmbeddedFusekiConfig;
 import org.apache.jena.rdfconnection.RDFConnection;
@@ -58,7 +58,7 @@ public class SparqlGraphStoreTest {
 
     @Test
     void addClaims_queriedWithSparqlStar_returnsUploadedTripleData() {
-        List<SdClaim> claims = List.of(
+        List<CredentialClaim> claims = List.of(
             typeClaim("http://example.org/subject1", "http://example.org/ServiceOffering"),
             literalClaim("http://example.org/subject1", "http://example.org/name", "Test Service")
         );
@@ -81,7 +81,7 @@ public class SparqlGraphStoreTest {
 
     @Test
     void addClaims_wrapsEachClaimWithCredentialSubjectMetaProperty() {
-        List<SdClaim> claims = List.of(
+        List<CredentialClaim> claims = List.of(
             typeClaim("http://example.org/subject2", "http://example.org/Resource"),
             literalClaim("http://example.org/subject2", "http://example.org/label", "My Resource")
         );
@@ -163,7 +163,7 @@ public class SparqlGraphStoreTest {
     @ParameterizedTest
     @MethodSource("malformedUriClaims")
     void addClaims_withMalformedUri_throwsQueryExceptionIdentifyingBrokenPart(
-            SdClaim brokenClaim, String expectedMessageFragment) {
+            CredentialClaim brokenClaim, String expectedMessageFragment) {
         Exception exception = assertThrows(QueryException.class,
             () -> graphStore.addClaims(List.of(brokenClaim), "http://example.org/credential"));
 
@@ -174,22 +174,22 @@ public class SparqlGraphStoreTest {
     static Stream<Arguments> malformedUriClaims() {
         return Stream.of(
             Arguments.of(
-                new SdClaim("<__http://example.org/broken__>", RDF_TYPE,
+                new CredentialClaim("<__http://example.org/broken__>", RDF_TYPE,
                     "<http://example.org/Type>"),
                 "Subject in triple"),
             Arguments.of(
-                new SdClaim("<http://example.org/subject>", "<__http://example.org/broken__>",
+                new CredentialClaim("<http://example.org/subject>", "<__http://example.org/broken__>",
                     "<http://example.org/Type>"),
                 "Predicate in triple"),
             Arguments.of(
-                new SdClaim("<http://example.org/subject>", RDF_TYPE,
+                new CredentialClaim("<http://example.org/subject>", RDF_TYPE,
                     "<__http://example.org/broken__>"),
                 "Object in triple")
         );
     }
 
     @ParameterizedTest
-    @EnumSource(value = QueryLanguage.class, names = {"OPENCYPHER", "GRAPHQL"})
+    @EnumSource(value = QueryLanguage.class, names = {"OPENCYPHER"})
     void queryData_withUnsupportedLanguage_throwsUnsupportedOperationException(QueryLanguage language) {
         GraphQuery query = new GraphQuery("SELECT * WHERE { ?s ?p ?o }", Map.of(),
             language, GraphQuery.QUERY_TIMEOUT, false);
@@ -217,13 +217,13 @@ public class SparqlGraphStoreTest {
 
     @Test
     void getClaimCount_afterAddClaims_returnsCorrectCount() {
-        List<SdClaim> claims = List.of(
-            new SdClaim(
+        List<CredentialClaim> claims = List.of(
+            new CredentialClaim(
                 "<http://example.org/healthSubject>",
                 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<http://example.org/ServiceOffering>"
             ),
-            new SdClaim(
+            new CredentialClaim(
                 "<http://example.org/healthSubject>",
                 "<http://example.org/name>",
                 "\"Health Check Service\""
@@ -238,21 +238,21 @@ public class SparqlGraphStoreTest {
     }
 
     @Test
-    void getSdCountInGraph_emptyDataset_returnsZero() {
-        long count = graphStore.getSdCountInGraph();
+    void getRDFAssetCountInGraph_emptyDataset_returnsZero() {
+        long count = graphStore.getRDFAssetCountInGraph();
         assertEquals(0, count,
-            "getSdCountInGraph() should return 0 on empty dataset");
+            "getRDFAssetCountInGraph() should return 0 on empty dataset");
     }
 
     @Test
-    void getSdCountInGraph_afterAddClaims_countsDistinctCredentialSubjects() {
+    void getRDFAssetCountInGraph_afterAddClaims_countsDistinctCredentialSubjects() {
         graphStore.addClaims(List.of(
-            new SdClaim(
+            new CredentialClaim(
                 "<http://example.org/subject1>",
                 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<http://example.org/ServiceOffering>"
             ),
-            new SdClaim(
+            new CredentialClaim(
                 "<http://example.org/subject1>",
                 "<http://example.org/name>",
                 "\"Service One\""
@@ -260,7 +260,7 @@ public class SparqlGraphStoreTest {
         ), "http://example.org/credential1");
 
         graphStore.addClaims(List.of(
-            new SdClaim(
+            new CredentialClaim(
                 "<http://example.org/subject2>",
                 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<http://example.org/Resource>"
@@ -269,8 +269,8 @@ public class SparqlGraphStoreTest {
 
         assertEquals(3, graphStore.getClaimCount(),
             "getClaimCount() should return 3 claim triples total");
-        assertEquals(2, graphStore.getSdCountInGraph(),
-            "getSdCountInGraph() should return 2 distinct credential subjects");
+        assertEquals(2, graphStore.getRDFAssetCountInGraph(),
+            "getRDFAssetCountInGraph() should return 2 distinct credential subjects");
     }
 
     @Test
@@ -287,7 +287,7 @@ public class SparqlGraphStoreTest {
     @Test
     void addClaims_withMultipleTriples_wrapsEachIndividually() {
         String credentialSubject = "http://example.org/credentialMulti";
-        List<SdClaim> claims = List.of(
+        List<CredentialClaim> claims = List.of(
             typeClaim("http://example.org/multiSubject", "http://example.org/TypeA"),
             typeClaim("http://example.org/multiSubject", "http://example.org/TypeB"),
             literalClaim("http://example.org/multiSubject", "http://example.org/label", "Multi")
@@ -309,7 +309,7 @@ public class SparqlGraphStoreTest {
     void addClaims_sameTripleFromTwoCredentials_createsSeparateWrappedStatements() {
         String credA = "http://example.org/credentialSharedA";
         String credB = "http://example.org/credentialSharedB";
-        SdClaim sharedClaim = typeClaim("http://example.org/shared", "http://example.org/SharedType");
+        CredentialClaim sharedClaim = typeClaim("http://example.org/shared", "http://example.org/SharedType");
 
         graphStore.addClaims(List.of(sharedClaim), credA);
         graphStore.addClaims(List.of(sharedClaim), credB);
@@ -336,7 +336,7 @@ public class SparqlGraphStoreTest {
     @Test
     void deleteClaims_removesAllWrappedStatements_zeroResultsForCredential() {
         String credentialSubject = "http://example.org/credentialToDelete";
-        List<SdClaim> claims = List.of(
+        List<CredentialClaim> claims = List.of(
             typeClaim("http://example.org/delSubject", "http://example.org/DelType"),
             literalClaim("http://example.org/delSubject", "http://example.org/name", "ToDelete"),
             literalClaim("http://example.org/delSubject", "http://example.org/desc", "Will be removed")
@@ -426,11 +426,11 @@ public class SparqlGraphStoreTest {
             "SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> <" + CRED_SUBJECT_URI + "> <" + credentialSubject + "> }");
     }
 
-    private static SdClaim typeClaim(String subject, String type) {
-        return new SdClaim("<" + subject + ">", RDF_TYPE, "<" + type + ">");
+    private static CredentialClaim typeClaim(String subject, String type) {
+        return new CredentialClaim("<" + subject + ">", RDF_TYPE, "<" + type + ">");
     }
 
-    private static SdClaim literalClaim(String subject, String predicate, String value) {
-        return new SdClaim("<" + subject + ">", "<" + predicate + ">", "\"" + value + "\"");
+    private static CredentialClaim literalClaim(String subject, String predicate, String value) {
+        return new CredentialClaim("<" + subject + ">", "<" + predicate + ">", "\"" + value + "\"");
     }
 }

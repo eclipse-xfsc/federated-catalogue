@@ -8,10 +8,10 @@ import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 
 /**
- * Defines the required functions to add, query, update and delete active claims extracted from self-descriptions
+ * Defines the required functions to add, query, update and delete active claims extracted from credentials
  * @author nacharya
  */
 public interface GraphStore {
@@ -21,14 +21,14 @@ public interface GraphStore {
      * objects containing subject, predicate and object similar to the form of n-triples
      * format stored in individual strings.
      *
-     * @param sdClaimList List of claims to be added to the Graph DB.
-     * @param credentialSubject contains a self-description unique identifier
+     * @param claimList List of claims to be added to the Graph DB.
+     * @param credentialSubject contains an asset unique identifier
      */
-    void addClaims(List<SdClaim> sdClaimList, String credentialSubject);
+    void addClaims(List<CredentialClaim> claimList, String credentialSubject);
 
     /**
-     * Deletes all claims in the Graph DB of a given self-description
-     * @param credentialSubject contains a self-description unique identifier
+     * Deletes all claims in the Graph DB of a given asset
+     * @param credentialSubject contains an asset unique identifier
      */
     void deleteClaims(String credentialSubject);
 
@@ -36,10 +36,10 @@ public interface GraphStore {
      * Query the graph when Cypher query is passed in query object and this
      * returns list of Maps with key value pairs as a result.
      *
-     * @param sdQuery is the query to be executed
+     * @param query is the query to be executed
      * @return List of Maps
      */
-    PaginatedResults<Map<String, Object>> queryData(GraphQuery sdQuery);
+    PaginatedResults<Map<String, Object>> queryData(GraphQuery query);
 
     /**
      * Returns the query language supported by this graph store implementation.
@@ -75,15 +75,15 @@ public interface GraphStore {
     }
 
     /**
-     * Returns the number of distinct self-descriptions whose claims are stored
+     * Returns the number of distinct RDF-assets whose claims are stored
      * in the graph database. Unlike {@link #getClaimCount()}, which counts
      * individual claim triples/nodes, this counts unique credential subjects.
      *
-     * @return the SD count (&ge; 0), or {@code -1} if the count could not be
+     * @return the asset count (&ge; 0), or {@code -1} if the count could not be
      *         determined (e.g. connectivity failure). The default implementation
      *         returns {@code 0}, suitable for disabled or dummy stores.
      */
-    default long getSdCountInGraph() {
+    default long getRDFAssetCountInGraph() {
         return 0;
     }
 

@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import eu.xfsc.fc.api.generated.model.SelfDescription;
+import eu.xfsc.fc.api.generated.model.Asset;
 import eu.xfsc.fc.core.exception.ServerException;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.server.service.AssetUploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,9 +35,9 @@ public class AssetUploadController {
 
     private final AssetUploadService assetUploadService;
 
-    @PostMapping(value = "/self-descriptions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+    @PostMapping(value = "/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SelfDescription> addAssetMultipart(
+    public ResponseEntity<Asset> addAssetMultipart(
             @RequestPart("file") MultipartFile file) {
         log.debug("addAssetMultipart.enter; filename: {}, contentType: {}, size: {}",
                 file.getOriginalFilename(), file.getContentType(), file.getSize());
@@ -50,18 +50,18 @@ public class AssetUploadController {
         }
 
         String contentType = file.getContentType() != null ? file.getContentType() : DEFAULT_CONTENT_TYPE;
-        SelfDescriptionMetadata result = assetUploadService.processUpload(content, contentType, file.getOriginalFilename());
-        return ResponseEntity.created(URI.create("/self-descriptions/" + result.getSdHash())).body(result);
+        AssetMetadata result = assetUploadService.processUpload(content, contentType, file.getOriginalFilename());
+        return ResponseEntity.created(URI.create("/assets/" + result.getAssetHash())).body(result);
     }
 
-    @PostMapping(value = "/self-descriptions", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+    @PostMapping(value = "/assets", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SelfDescription> addAssetOctetStream(
+    public ResponseEntity<Asset> addAssetOctetStream(
             @RequestBody byte[] content,
             @RequestHeader(value = "Content-Type", defaultValue = DEFAULT_CONTENT_TYPE) String contentType) {
         log.debug("addAssetOctetStream.enter; contentType: {}, size: {}", contentType, content.length);
 
-        SelfDescriptionMetadata result = assetUploadService.processUpload(content, contentType, null);
-        return ResponseEntity.created(URI.create("/self-descriptions/" + result.getSdHash())).body(result);
+        AssetMetadata result = assetUploadService.processUpload(content, contentType, null);
+        return ResponseEntity.created(URI.create("/assets/" + result.getAssetHash())).body(result);
     }
 }
