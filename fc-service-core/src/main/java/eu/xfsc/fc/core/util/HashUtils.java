@@ -30,4 +30,15 @@ public class HashUtils {
     return Hashing.sha256().hashString(data, StandardCharsets.UTF_8).toString();
   }
 
+  /**
+   * Calculates the Sha256 hash of the given data bytes and returns it as a
+   * Hex-String.
+   *
+   * @param data The data to hash.
+   * @return The hash of the data as Hex-String: ^[0-9a-f]{64}$
+   */
+  public static String calculateSha256AsHex(byte[] data) {
+    return Hashing.sha256().hashBytes(data).toString();
+  }
+
 }

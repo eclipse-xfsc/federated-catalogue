@@ -46,11 +46,11 @@ services:
     restart: always
     command: neo4j
     healthcheck:
-      test: ["CMD-SHELL", "/var/lib/neo4j/bin/neo4j status"]
-      interval: 20s
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 40s
+      retries: 10
+      start_period: 30s
 #    volumes:
 #      - '$HOME/neo4j/data:/data'
 #      - '$HOME/neo4j/conf/:/conf/'

@@ -258,6 +258,14 @@ components:
           description: >-
             The last time stamp (ISO8601) the status changed (for this
             Catalogue)
+        contentType:
+          type: string
+          description: MIME content-type of the uploaded asset (e.g. application/ld+json, application/pdf)
+          example: 'application/ld+json'
+        fileSize:
+          type: integer
+          format: int64
+          description: Size of the uploaded asset in bytes
     SelfDescriptionStatus:
       type: string
       enum:
@@ -666,7 +674,10 @@ paths:
       security:
         - jwt: []
       requestBody:
-        description: The new SelfDescription
+        description: >-
+          The new SelfDescription (application/json) or non-RDF asset.
+          For non-RDF assets, use multipart/form-data or application/octet-stream
+          (handled by the server outside the generated delegate pattern).
         content:
           application/json:
             schema:

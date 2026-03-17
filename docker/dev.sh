@@ -145,7 +145,7 @@ case "${1:-}" in
     echo "Building fc-service-server JAR (skipping tests)..."
     # `mvn package` covers both scenarios (bare-metal with spring-boot dev-tools and containerized).
     # For local mode with devtools, `mvn compile` would be enough here.
-    (cd .. && mvn package -pl fc-service-server -am -DskipTests -Dcheckstyle.skip "${@:2}")
+    (cd .. && mvn clean package -pl fc-service-server,fc-demo-portal -am -DskipTests -Dcheckstyle.skip "${@:2}")
     ;;
   test)
     echo "Running hot-reload verification tests..."

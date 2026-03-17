@@ -49,4 +49,23 @@
                         newDataType="java.sql.Types.VARCHAR(2048) []"/>
     </changeSet>
 
+    <changeSet author="Eric Nowak" id="2026-03-04-asset-metadata">
+        <comment>Add metadata columns for non-RDF asset support (CAT-FR-AM-01).
+            content_type: MIME type of the uploaded asset.
+            file_size: size in bytes of the original upload.
+            original_filename: client-provided filename from multipart upload.
+            Existing rows are backfilled with application/ld+json (all prior uploads were JSON-LD).
+            The content column is made nullable: non-RDF assets store content in FileStore only.</comment>
+        <addColumn tableName="sdfiles">
+            <column name="content_type" type="VARCHAR(255)"/>
+            <column name="file_size" type="BIGINT"/>
+            <column name="original_filename" type="VARCHAR(500)"/>
+        </addColumn>
+        <update tableName="sdfiles">
+            <column name="content_type" value="application/ld+json"/>
+            <where>content_type IS NULL</where>
+        </update>
+        <dropNotNullConstraint tableName="sdfiles" columnName="content"/>
+    </changeSet>
+
 </databaseChangeLog>

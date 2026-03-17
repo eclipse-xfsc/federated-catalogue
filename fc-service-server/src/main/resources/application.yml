@@ -22,6 +22,10 @@ server:
   shutdown: graceful
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   application:
     name: federated-catalogue-service
   datasource:
@@ -120,13 +124,24 @@ subscriber:
 
 federated-catalogue:
   scope: runtime
+  rdf:
+    content-types:
+      - application/ld+json
+      # Uncomment as VerificationService gains support for these formats:
+      # - text/turtle
+      # - application/n-triples
+      # - application/rdf+xml
+      # - application/n-quads
+      # - application/trig
   file-store:
     cached: true
     cache-size: 128
     schema:
-      location: schemaFiles
+      location: schemaFiles        # RDF schema definitions used for SD validation
+    asset:
+      location: assetFiles         # Non-RDF file content (PDFs, images, binaries)
     context-cache:
-      location: contextCacheFiles
+      location: contextCacheFiles  # Cached JSON-LD context documents
   query:
     partners:
     self: "http://localhost:${server.port}"

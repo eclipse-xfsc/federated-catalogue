@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.pojo;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Accessor class for passing SelfDescription or Schema content. Implementations
@@ -21,5 +22,16 @@ public interface ContentAccessor {
    * @return the content as a stream
    */
   InputStream getContentAsStream();
+
+  /**
+   * Returns the content as a byte array. Default implementation
+   * converts from string, which is correct for text-based content.
+   * Binary implementations should override this.
+   *
+   * @return the content as a byte array
+   */
+  default byte[] getContentAsBytes() {
+    return getContentAsString().getBytes(StandardCharsets.UTF_8);
+  }
 
 }

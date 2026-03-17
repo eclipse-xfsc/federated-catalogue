@@ -1,10 +1,13 @@
 package eu.xfsc.fc.core.service.sdstore;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,7 @@ import eu.xfsc.fc.core.pojo.SdFilter;
 import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.pojo.VerificationResult;
+import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,6 +43,14 @@ public class SelfDescriptionStoreImpl implements SelfDescriptionStore {
 
   @Autowired
   private GraphStore graphDb;
+
+  @Autowired
+  @Qualifier("assetFileStore")
+  private FileStore fileStore;
+
+  /** Prefix for generating asset subject IDs from content hashes. */
+  @Value("${federated-catalogue.asset.subject-id-prefix:urn:asset:sha256:}")
+  private String assetSubjectIdPrefix;
 
   @Override
   public ContentAccessor getSDFileByHash(final String hash) {
@@ -80,8 +92,18 @@ public class SelfDescriptionStoreImpl implements SelfDescriptionStore {
       Validator minVal = validators.stream().min(new Validator.ExpirationComparator()).orElse(null);
       expirationTime = minVal == null ? null : minVal.getExpirationDate();
     }
-    SdMetaRecord sd = new SdMetaRecord(sdMetadata.getSdHash(), sdMetadata.getId(), sdMetadata.getStatus(), sdMetadata.getIssuer(), sdMetadata.getValidatorDids(), 
-    		sdMetadata.getUploadDatetime(), sdMetadata.getStatusDatetime(), sdMetadata.getSelfDescription(), expirationTime); // sdMetadata.getSelfDescription(), verificationResult);
+    SdMetaRecord sd = SdMetaRecord.builder()
+        .sdHash(sdMetadata.getSdHash())
+        .id(sdMetadata.getId())
+        .status(sdMetadata.getStatus())
+        .issuer(sdMetadata.getIssuer())
+        .validatorDids(sdMetadata.getValidatorDids())
+        .uploadTime(sdMetadata.getUploadDatetime())
+        .statusTime(sdMetadata.getStatusDatetime())
+        .content(sdMetadata.getSelfDescription())
+        .expirationTime(expirationTime)
+        .contentType("application/ld+json")
+        .build();
 
     SubjectHashRecord subjectHash = null;
     try {
@@ -101,6 +123,39 @@ public class SelfDescriptionStoreImpl implements SelfDescriptionStore {
     }
     graphDb.addClaims(verificationResult.getClaims(), sdMetadata.getId());
     return subjectHash;
+  }
+
+  @Override
+  public SelfDescriptionMetadata storeAsset(final SelfDescriptionMetadata sdMetadata, final String originalFilename) {
+    log.debug("storeAsset.enter; got meta: {}", sdMetadata);
+    String subjectId = sdMetadata.getId() != null ? sdMetadata.getId() : assetSubjectIdPrefix + sdMetadata.getSdHash();
+    SdMetaRecord sd = SdMetaRecord.builder()
+        .sdHash(sdMetadata.getSdHash())
+        .id(subjectId)
+        .status(sdMetadata.getStatus())
+        .issuer(sdMetadata.getIssuer())
+        .validatorDids(sdMetadata.getValidatorDids())
+        .uploadTime(sdMetadata.getUploadDatetime())
+        .statusTime(sdMetadata.getStatusDatetime())
+        .contentType(sdMetadata.getContentType())
+        .fileSize(sdMetadata.getFileSize())
+        .originalFilename(originalFilename)
+        .build();
+    try {
+      dao.insert(sd);
+    } catch (DuplicateKeyException ex) {
+      if (ex.getMessage().contains("sdfiles_pkey")) {
+        throw new ConflictException(String.format("asset with hash %s already exists", sdMetadata.getSdHash()));
+      }
+      throw new ServerException(ex);
+    }
+    try {
+      fileStore.storeFile(sdMetadata.getSdHash(), sdMetadata.getSelfDescription());
+    } catch (IOException ex) {
+      throw new ServerException("Failed to store asset content in file store", ex);
+    }
+    log.debug("storeAsset.exit; stored asset with hash: {}", sdMetadata.getSdHash());
+    return sd;
   }
 
   @Override
@@ -125,9 +180,14 @@ public class SelfDescriptionStoreImpl implements SelfDescriptionStore {
     if (ssr == null) {
       throw new NotFoundException("no self-description found for hash " + hash);
     }
-    
+
     if (ssr.getSdStatus() == SelfDescriptionStatus.ACTIVE) {
       graphDb.deleteClaims(ssr.subjectId());
+    }
+    try {
+      fileStore.deleteFile(hash);
+    } catch (IOException ex) {
+      log.debug("deleteSelfDescription; file store cleanup skipped for hash {}: {}", hash, ex.getMessage());
     }
   }
 
