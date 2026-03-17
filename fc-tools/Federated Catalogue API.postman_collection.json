@@ -2420,6 +2420,117 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Graph Admin",
+			"item": [
+				{
+					"name": "POST Trigger Graph Rebuild",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/admin/graph/rebuild",
+							"protocol": "{{federated_catalogue_protocol}}",
+							"host": [
+								"{{federated_catalogue_address}}"
+							],
+							"path": [
+								"admin",
+								"graph",
+								"rebuild"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET Rebuild Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/admin/graph/rebuild/status",
+							"protocol": "{{federated_catalogue_protocol}}",
+							"host": [
+								"{{federated_catalogue_address}}"
+							],
+							"path": [
+								"admin",
+								"graph",
+								"rebuild",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET Graph Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/admin/graph/status",
+							"protocol": "{{federated_catalogue_protocol}}",
+							"host": [
+								"{{federated_catalogue_address}}"
+							],
+							"path": [
+								"admin",
+								"graph",
+								"status"
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"event": [

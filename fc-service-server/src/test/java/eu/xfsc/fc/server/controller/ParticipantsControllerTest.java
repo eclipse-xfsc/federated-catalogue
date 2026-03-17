@@ -67,6 +67,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -107,6 +108,7 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = {"graphstore.impl=neo4j"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

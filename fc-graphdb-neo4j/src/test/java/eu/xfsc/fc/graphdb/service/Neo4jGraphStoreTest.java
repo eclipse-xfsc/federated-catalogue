@@ -1009,6 +1009,40 @@ public class Neo4jGraphStoreTest {
 
 
     @Test
+    void isHealthy_embeddedNeo4j_returnsTrue() {
+        Assertions.assertTrue(graphGaia.isHealthy(),
+            "isHealthy() should return true for embedded Neo4j");
+    }
+
+    @Test
+    void getClaimCount_emptyGraph_returnsZeroOrPositive() {
+        // On a fresh graph, claim count should be 0 or greater (other tests may have added data)
+        long count = graphGaia.getClaimCount();
+        Assertions.assertTrue(count >= 0,
+            "getClaimCount() should return 0 or positive on embedded Neo4j");
+    }
+
+    @Test
+    void getClaimCount_afterAddClaims_returnsPositiveValue() {
+        String credentialSubject = "http://example.org/healthCheckSubject";
+        List<SdClaim> sdClaimList = List.of(
+                new SdClaim(
+                        "<http://example.org/healthCheckSubject>",
+                        "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                        "<http://w3id.org/gaia-x/service#ServiceOffering>"
+                )
+        );
+        graphGaia.addClaims(sdClaimList, credentialSubject);
+
+        long count = graphGaia.getClaimCount();
+        Assertions.assertTrue(count > 0,
+            "getClaimCount() should return positive value after addClaims");
+
+        // cleanup
+        graphGaia.deleteClaims(credentialSubject);
+    }
+
+    @Test
     void testQueryDataTimeout() {
         int acceptableDuration = (queryTimeoutInSeconds - 1) * 1000;
         int tooLongDuration = (queryTimeoutInSeconds + 2) * 1000;  // two seconds more than acceptable

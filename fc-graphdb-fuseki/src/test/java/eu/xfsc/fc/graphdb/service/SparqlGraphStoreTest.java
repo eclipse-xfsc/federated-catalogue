@@ -203,6 +203,77 @@ public class SparqlGraphStoreTest {
     }
 
     @Test
+    void isHealthy_embeddedFuseki_returnsTrue() {
+        assertTrue(graphStore.isHealthy(),
+            "isHealthy() should return true for embedded Fuseki");
+    }
+
+    @Test
+    void getClaimCount_emptyDataset_returnsZero() {
+        long count = graphStore.getClaimCount();
+        assertEquals(0, count,
+            "getClaimCount() should return 0 on empty dataset");
+    }
+
+    @Test
+    void getClaimCount_afterAddClaims_returnsCorrectCount() {
+        List<SdClaim> claims = List.of(
+            new SdClaim(
+                "<http://example.org/healthSubject>",
+                "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                "<http://example.org/ServiceOffering>"
+            ),
+            new SdClaim(
+                "<http://example.org/healthSubject>",
+                "<http://example.org/name>",
+                "\"Health Check Service\""
+            )
+        );
+        String credentialSubject = "http://example.org/healthCredential";
+        graphStore.addClaims(claims, credentialSubject);
+
+        long count = graphStore.getClaimCount();
+        assertEquals(2, count,
+            "getClaimCount() should return 2 for 2 claim triples");
+    }
+
+    @Test
+    void getSdCountInGraph_emptyDataset_returnsZero() {
+        long count = graphStore.getSdCountInGraph();
+        assertEquals(0, count,
+            "getSdCountInGraph() should return 0 on empty dataset");
+    }
+
+    @Test
+    void getSdCountInGraph_afterAddClaims_countsDistinctCredentialSubjects() {
+        graphStore.addClaims(List.of(
+            new SdClaim(
+                "<http://example.org/subject1>",
+                "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                "<http://example.org/ServiceOffering>"
+            ),
+            new SdClaim(
+                "<http://example.org/subject1>",
+                "<http://example.org/name>",
+                "\"Service One\""
+            )
+        ), "http://example.org/credential1");
+
+        graphStore.addClaims(List.of(
+            new SdClaim(
+                "<http://example.org/subject2>",
+                "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                "<http://example.org/Resource>"
+            )
+        ), "http://example.org/credential2");
+
+        assertEquals(3, graphStore.getClaimCount(),
+            "getClaimCount() should return 3 claim triples total");
+        assertEquals(2, graphStore.getSdCountInGraph(),
+            "getSdCountInGraph() should return 2 distinct credential subjects");
+    }
+
+    @Test
     void addClaims_withEmptyList_storesNothing() {
         String credentialSubject = "http://example.org/emptySubject";
 

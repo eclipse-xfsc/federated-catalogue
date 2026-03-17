@@ -13,7 +13,7 @@ datastore:
   file-path: target
   
 graphstore:
-  impl: dummy
+  impl: none
 
 publisher:
   impl: none #nats

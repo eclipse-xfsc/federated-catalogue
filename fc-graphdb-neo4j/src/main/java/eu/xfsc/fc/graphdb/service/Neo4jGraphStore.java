@@ -79,6 +79,45 @@ public class Neo4jGraphStore implements GraphStore {
         return GraphBackendType.NEO4J;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean isHealthy() {
+        try {
+            driver.verifyConnectivity();
+            return true;
+        } catch (Exception e) {
+            log.warn("Neo4j connectivity check failed", e);
+            return false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long getClaimCount() {
+        try (Session session = driver.session()) {
+            Result result = session.run(
+                "MATCH (n) WHERE n.claimsGraphUri IS NOT NULL RETURN count(n) AS cnt");
+            return result.single().get("cnt").asLong();
+        } catch (Exception e) {
+            log.warn("Failed to get Neo4j claim count: {}", e.getMessage());
+            return -1;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public long getSdCountInGraph() {
+        try (Session session = driver.session()) {
+            Result result = session.run(
+                "MATCH (n) WHERE n.claimsGraphUri IS NOT NULL "
+                + "UNWIND n.claimsGraphUri AS uri RETURN count(DISTINCT uri) AS cnt");
+            return result.single().get("cnt").asLong();
+        } catch (Exception e) {
+            log.warn("Failed to get Neo4j SD count: {}", e.getMessage());
+            return -1;
+        }
+    }
+
     /**
      * {@inheritDoc}
      */

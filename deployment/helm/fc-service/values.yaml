@@ -127,6 +127,8 @@ env:
     value: /var/lib/fc-service/filestore
   - name: FEDERATED_CATALOGUE_VERIFICATION_SIGNATURES
     value: "true"
+  - name: GRAPHSTORE_IMPL
+    value: neo4j
   - name: GRAPHSTORE_URI
     value: bolt://fc-neo4j:7687
   - name: GRAPHSTORE_QUERY_TIMEOUT_IN_SECONDS
