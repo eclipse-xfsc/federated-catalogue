@@ -1,5 +1,6 @@
 package eu.xfsc.fc.server.util;
 
+import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.CommonConstants.CATALOGUE_ADMIN_ROLE_WITH_PREFIX;
 
 import java.util.Collection;
@@ -79,7 +80,9 @@ public class SessionUtils {
    */
   public static void checkParticipantAccess(String participantId) {
     String sessionParticipantId = SessionUtils.getSessionParticipantId();
-    if (!SessionUtils.sessionUserHasRole(CATALOGUE_ADMIN_ROLE_WITH_PREFIX) && (Objects.isNull(participantId)
+    if (!SessionUtils.sessionUserHasRole(CATALOGUE_ADMIN_ROLE_WITH_PREFIX)
+        && !SessionUtils.sessionUserHasRole(ADMIN_ALL_WITH_PREFIX)
+        && (Objects.isNull(participantId)
         || Objects.isNull(sessionParticipantId) || !participantId.equals(sessionParticipantId))) {
       log.debug("checkParticipantAccess; The user does not have access to the specified participant."
           + " User incoming participant id = {}, session participant id = {}.", sessionParticipantId, participantId);

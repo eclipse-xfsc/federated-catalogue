@@ -63,12 +63,35 @@ When all components started you should setup Keycloak which is used as Identity 
 127.0.0.1	key-server
 ```
 
-- Open keycloak admin console at `http://key-server:8080/admin`, with `admin/admin` credentials, select `gaia-x` realm. 
-- Go to `Clients` section, select `federated-catalogue` client, go to Credentials tab, Regenerate client Secret, copy it and set to `/docker/.env` file in `FC_CLIENT_SECRET` variable
-- Go to users and create one to work with. Set its username and other attributes, save. Then go to Credentials tab, 
-  set its password twice, disable Temporary switch, save. Go to Role Mappings tab, click on `Assign role` and 
-  assign the role `federated-catalogue Ro-MU-CA` to your user.
-- Rebuild FC image and restart fc-service-server container to pick up changes applied at the second step above by cancelling out of the process running the docker-compose, then run `docker-compose build server`, then `docker-compose up`.
+Open keycloak admin console at `http://key-server:8080/admin` with `admin/admin` credentials, select `gaia-x` realm.
+
+#### Client secret
+
+The `federated-catalogue` client secret must match the `FC_CLIENT_SECRET` value in `.env`/`dev.env`. If you regenerate the secret in Keycloak, update `.env`/`dev.env` and restart the server:
+
+```sh
+docker compose --env-file dev.env build server
+docker compose --env-file dev.env up -d server
+```
+
+#### Create a user
+
+Go to Users, create a new user with username and attributes, save. Then go to Credentials tab, set a password, disable Temporary, save.
+
+#### Assign roles
+
+Go to the user's Role Mappings tab, click `Assign role`, filter by client `federated-catalogue`, and assign a composite role:
+For development and running integration tests, assign `Ro-MU-CA` or `ADMIN_ALL`.
+
+#### Re-importing the realm (existing stack)
+
+If you need to update the realm (e.g., after adding new roles), use Keycloak's partial import:
+
+1. Go to Realm Settings → Action → Partial import
+2. Upload `keycloak/realms/gaia-x-realm.json`
+3. Select **Skip** for existing resources (preserves client secret and user accounts)
+
+New roles will be created; existing ones are preserved. To update composite role mappings on existing roles, manually edit them in the Keycloak UI or do a full teardown (`./dev.sh clean`) and restart.
 
 Now you can test FC Service with Demo Portal web app. Go to `http://localhost:8088` in your browser and press Login button. You should be redirected to Keycloak Login page. Use  user credentials you created above..
 

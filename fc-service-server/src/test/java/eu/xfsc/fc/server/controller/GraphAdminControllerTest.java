@@ -1,6 +1,6 @@
 package eu.xfsc.fc.server.controller;
 
-import static eu.xfsc.fc.server.util.CommonConstants.CATALOGUE_ADMIN_ROLE;
+import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,7 +35,7 @@ public class GraphAdminControllerTest {
   private MockMvc mockMvc;
 
   @Test
-  @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE})
+  @WithMockUser(roles = {ADMIN_ALL})
   public void postRebuild_withAdminRole_returns202() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.post("/admin/graph/rebuild")
             .contentType(MediaType.APPLICATION_JSON)
@@ -53,7 +53,7 @@ public class GraphAdminControllerTest {
   }
 
   @Test
-  @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE})
+  @WithMockUser(roles = {ADMIN_ALL})
   public void getRebuildStatus_withAdminRole_returns200() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/graph/rebuild/status")
             .accept(MediaType.APPLICATION_JSON))
@@ -72,7 +72,7 @@ public class GraphAdminControllerTest {
   }
 
   @Test
-  @WithMockUser(roles = {CATALOGUE_ADMIN_ROLE})
+  @WithMockUser(roles = {ADMIN_ALL})
   public void getGraphStatus_withAdminRole_returnsBackendInfo() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/graph/status")
             .accept(MediaType.APPLICATION_JSON))
