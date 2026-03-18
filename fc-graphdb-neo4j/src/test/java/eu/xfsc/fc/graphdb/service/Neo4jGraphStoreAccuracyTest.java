@@ -30,6 +30,7 @@ import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
 import eu.xfsc.fc.core.dao.impl.SelfDescriptionDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
@@ -43,6 +44,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
+import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.graphdb.config.GraphDbConfig;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
@@ -53,9 +55,10 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {Neo4jGraphStoreAccuracyTest.TestApplication.class, DatabaseConfig.class, GraphDbConfig.class, FileStoreConfig.class, Neo4jGraphStoreAccuracyTest.class, 
-	Neo4jGraphStore.class, SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class, VerificationServiceImpl.class, CredentialVerificationStrategy.class, SchemaStoreImpl.class, SchemaDaoImpl.class, ValidatorCacheDaoImpl.class,
-	DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class, SchemaValidationServiceImpl.class})
+@ContextConfiguration(classes = {Neo4jGraphStoreAccuracyTest.TestApplication.class, DatabaseConfig.class, GraphDbConfig.class, FileStoreConfig.class, Neo4jGraphStoreAccuracyTest.class,
+	Neo4jGraphStore.class, SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, ValidatorCacheDaoImpl.class,
+	DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
+	CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)
 public class Neo4jGraphStoreAccuracyTest {

@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1"
+  ],
+  "@id": "http://example.edu/verifiablePresentation/only-fcmeta",
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1"
+      ],
+      "@id": "https://example.org/credentials/only-fcmeta",
+      "type": [
+        "VerifiableCredential"
+      ],
+      "issuer": "https://example.org/issuer",
+      "issuanceDate": "2010-01-01T00:00:00Z",
+      "credentialSubject": {
+        "@context": {
+          "fcmeta": "https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#",
+          "xsd": "http://www.w3.org/2001/XMLSchema#"
+        },
+        "id": "did:web:attacker.example.org",
+        "fcmeta:complianceResult": {
+          "@value": "injected-by-attacker",
+          "@type": "xsd:string"
+        },
+        "fcmeta:validationTimestamp": {
+          "@value": "2024-01-01T00:00:00Z",
+          "@type": "xsd:string"
+        }
+      }
+    }
+  ]
+}

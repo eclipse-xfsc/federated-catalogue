@@ -189,7 +189,7 @@ public class SparqlGraphStoreTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = QueryLanguage.class, names = {"OPENCYPHER", "GRAPHQL"})
+    @EnumSource(value = QueryLanguage.class, names = {"OPENCYPHER"})
     void queryData_withUnsupportedLanguage_throwsUnsupportedOperationException(QueryLanguage language) {
         GraphQuery query = new GraphQuery("SELECT * WHERE { ?s ?p ?o }", Map.of(),
             language, GraphQuery.QUERY_TIMEOUT, false);

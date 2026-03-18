@@ -152,6 +152,17 @@ components:
           items:
             type: string
             description: The dids of validators, having signed parts of the Self-Description
+        warnings:
+          type: array
+          description: >-
+            Warnings issued during processing (e.g. triples removed due to reserved namespace filtering).
+            The operation succeeded for all remaining data. Absent or empty when no warnings occurred.
+          items:
+            type: string
+          example:
+            - "2 triple(s) were removed from your upload because they use the reserved internal namespace
+               <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
+               This namespace is reserved for internal catalogue use only and cannot be set by external clients."
       required:
         - verificationTimestamp
         - lifecycleStatus #!! is not known when verifying external SDs. Remove from required -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
@@ -266,6 +277,17 @@ components:
           type: integer
           format: int64
           description: Size of the uploaded asset in bytes
+        warnings:
+          type: array
+          description: >-
+            Warnings issued during processing (e.g. triples removed due to reserved namespace filtering).
+            The operation succeeded for all remaining data. Absent or empty when no warnings occurred.
+          items:
+            type: string
+          example:
+            - "2 triple(s) were removed from your upload because they use the reserved internal namespace
+               <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
+               This namespace is reserved for internal catalogue use only and cannot be set by external clients."
     SelfDescriptionStatus:
       type: string
       enum:
@@ -342,6 +364,17 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Result'
+    SchemaResult:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 'The internal identifier of the schema.'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
     QueryInfo:
       type: object
       properties:
@@ -971,6 +1004,10 @@ paths:
               description: 'URL of the added Schema.'
               schema:
                 type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaResult'
         '400':
           $ref: '#/components/responses/ClientError'
         '403':
@@ -1047,6 +1084,10 @@ paths:
       responses:
         '200':
           description: 'Updated.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaResult'
         '400':
           $ref: '#/components/responses/ClientError'
         '403':

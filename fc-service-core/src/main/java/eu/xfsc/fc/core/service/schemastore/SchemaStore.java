@@ -40,17 +40,18 @@ public interface SchemaStore {
    * syntax.
    *
    * @param schema The schema content to be stored.
-   * @return The internal identifier of the Schema.
+   * @return The result containing the internal identifier and any warnings.
    */
-  String addSchema(ContentAccessor schema);
+  SchemaStoreResult addSchema(ContentAccessor schema);
 
   /**
    * Update the schema with the given identifier.
    *
    * @param identifier The identifier of the schema to update.
    * @param schema The content to replace the schema with.
+   * @return The result containing the identifier and any warnings.
    */
-  void updateSchema(String identifier, ContentAccessor schema);
+  SchemaStoreResult updateSchema(String identifier, ContentAccessor schema);
 
   /**
    * Delete the schema with the given identifier.

@@ -35,5 +35,9 @@ public class SchemaAnalysisResult {
    * The error message if validation failed.
    */
   private String errorMessage;
+  /**
+   * Warning message if protected namespace statements were filtered during import.
+   */
+  private String warning;
 
 }

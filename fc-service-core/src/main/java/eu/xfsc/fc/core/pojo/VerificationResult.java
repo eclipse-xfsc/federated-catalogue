@@ -28,7 +28,7 @@ public class VerificationResult extends eu.xfsc.fc.api.generated.model.Verificat
 
   public VerificationResult(Instant verificationTimestamp, String lifecycleStatus, String issuer, Instant issuedDateTime,
           String id, List<SdClaim> claims, List<Validator> validators) {
-    super(verificationTimestamp, lifecycleStatus, issuer, issuedDateTime, null);
+    super(verificationTimestamp, lifecycleStatus, issuer, issuedDateTime, null, null);
     this.id = id;
     this.claims = claims;
     this.setValidators(validators);
