@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.Comparator;
 
 /**
- * POJO Class for holding the validators, that signed the Self-Description.
+ * POJO Class for holding the validators, that signed the credential.
  */
 @lombok.Getter
 @lombok.Setter

@@ -6,12 +6,12 @@ import eu.xfsc.fc.api.generated.model.QueryInfo;
 import eu.xfsc.fc.api.generated.model.Results;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdFilter;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.AssetFilter;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.server.helper.FileReaderHelper;
@@ -65,9 +65,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WithMockUser(roles = {QUERY_EXECUTE})
 public class QueryControllerTest {
 
-  private final static String DEFAULT_SERVICE_SD_FILE_NAME = "default-sd-service-offering.json";
-  private final static String DEFAULT_PARTICIPANT_SD_FILE_NAME = "default_participant.json";
-  private final static String UNIQUE_PARTICIPANT_SD_FILE_NAME = "unique_participant.json";
+  private final static String DEFAULT_SERVICE_CREDENTIAL_FILE_NAME = "default-credential-service-offering.json";
+  private final static String DEFAULT_PARTICIPANT_CREDENTIAL_FILE_NAME = "default-participant.json";
+  private final static String UNIQUE_PARTICIPANT_CREDENTIAL_FILE_NAME = "unique-participant.json";
 
   private static final String OPENCYPHER_CONTENT_TYPE = "application/opencypher-query";
   private static final String SPARQL_CONTENT_TYPE = "application/sparql-query";
@@ -84,7 +84,7 @@ public class QueryControllerTest {
   private Neo4j embeddedDatabaseServer;
 
   @Autowired
-  private SelfDescriptionStore sdStorePublisher;
+  private AssetStore assetStorePublisher;
 
   @Autowired
   private VerificationService verificationService;
@@ -102,7 +102,7 @@ public class QueryControllerTest {
   public void setup() throws Exception {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
-    initialiseAllDataBaseWithManuallyAddingSDFromRepository();
+    initialiseAllDataBaseWithManuallyAddingCredentialsFromRepository();
     mockBackEnd90 = new MockWebServer();
     mockBackEnd90.noClientAuth();
     mockBackEnd90.start(9090);
@@ -116,7 +116,7 @@ public class QueryControllerTest {
     mockBackEnd91.shutdown();
     mockBackEnd90.shutdown();
     schemaStore.clear();
-    sdStorePublisher.clear();
+    assetStorePublisher.clear();
     embeddedDatabaseServer.close();
   }
 
@@ -204,7 +204,7 @@ public class QueryControllerTest {
 
 
   @Test
-  public void postGetSDMetadataCountBySubjectIDSQueriesReturnSuccessResponse() throws Exception {
+  public void postGetAssetMetadataCountBySubjectIDSQueriesReturnSuccessResponse() throws Exception {
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/query")
             .content(QUERY_REQUEST_GET_SUBJECT_ID)
             .with(csrf())
@@ -223,10 +223,10 @@ public class QueryControllerTest {
 
     assertEquals(1, uriId.size());
 
-    final SdFilter filterParams = new SdFilter();
+    final AssetFilter filterParams = new AssetFilter();
     filterParams.setIds(uriId);
 
-    PaginatedResults<SelfDescriptionMetadata> byFilter = sdStorePublisher.getByFilter(filterParams, true, true);
+    PaginatedResults<AssetMetadata> byFilter = assetStorePublisher.getByFilter(filterParams, true, true);
     int matchCount = byFilter.getResults().size();
 
     assertEquals(uriId.size(), matchCount);
@@ -245,7 +245,8 @@ public class QueryControllerTest {
             .getContentAsString();
 
     Results result = objectMapper.readValue(response, Results.class);
-    assertEquals(2, result.getItems().size());
+    // Only 1 match: the service offering has City Name 2; participants do not
+    assertEquals(1, result.getItems().size());
     assertTrue(result.getItems().size() < 101);
   }
 
@@ -323,7 +324,7 @@ public class QueryControllerTest {
 
   /**
    * POST a Cypher query without LIMIT clause. Verifies that the default limit injection
-   * does not break the query. With only 3 SDs in test data,
+   * does not break the query. With only 3 assets in test data,
    * the 100-item limit is not boundary-tested; this validates correctness of injection.
    */
   @Test
@@ -590,33 +591,33 @@ public class QueryControllerTest {
             .andExpect(status().isUnauthorized());
   }
 
-  private void initialiseAllDataBaseWithManuallyAddingSDFromRepository() throws Exception {
+  private void initialiseAllDataBaseWithManuallyAddingCredentialsFromRepository() throws Exception {
 
-    //adding 1st sd
+    //adding 1st credential
     ContentAccessorDirect contentAccessor =
-        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(DEFAULT_PARTICIPANT_SD_FILE_NAME));
-    VerificationResultParticipant verificationResult = verificationService.verifyParticipantSelfDescription(contentAccessor);
-    SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(verificationResult.getId(),
+        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(DEFAULT_PARTICIPANT_CREDENTIAL_FILE_NAME));
+    CredentialVerificationResultParticipant verificationResult = verificationService.verifyParticipantCredential(contentAccessor);
+    AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(),
             verificationResult.getIssuer(), verificationResult.getValidators(), contentAccessor);
-    sdStorePublisher.storeSelfDescription(sdMetadata, verificationResult);
+    assetStorePublisher.storeCredential(assetMetadata, verificationResult);
 
-    //adding second sd
+    //adding second credential
     ContentAccessorDirect contentAccessor2
-            = new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(DEFAULT_SERVICE_SD_FILE_NAME));
-    VerificationResultOffering verificationResult2
-            = verificationService.verifyOfferingSelfDescription(contentAccessor2);
-    SelfDescriptionMetadata sdMetadata2 = new SelfDescriptionMetadata(verificationResult2.getId(),
+            = new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(DEFAULT_SERVICE_CREDENTIAL_FILE_NAME));
+    CredentialVerificationResultOffering verificationResult2
+            = verificationService.verifyOfferingCredential(contentAccessor2);
+    AssetMetadata assetMetadata2 = new AssetMetadata(verificationResult2.getId(),
             verificationResult2.getIssuer(), verificationResult2.getValidators(), contentAccessor2);
-    sdStorePublisher.storeSelfDescription(sdMetadata2, verificationResult2);
+    assetStorePublisher.storeCredential(assetMetadata2, verificationResult2);
 
-    //adding sd 3
+    //adding credential 3
    ContentAccessorDirect contentAccessorDirect3 =
-        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(UNIQUE_PARTICIPANT_SD_FILE_NAME));
-    VerificationResultParticipant verificationResult3
-        = verificationService.verifyParticipantSelfDescription(contentAccessorDirect3);
-    SelfDescriptionMetadata sdMetadata3 = new SelfDescriptionMetadata(verificationResult3.getId(),
+        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(UNIQUE_PARTICIPANT_CREDENTIAL_FILE_NAME));
+    CredentialVerificationResultParticipant verificationResult3
+        = verificationService.verifyParticipantCredential(contentAccessorDirect3);
+    AssetMetadata assetMetadata3 = new AssetMetadata(verificationResult3.getId(),
         verificationResult3.getIssuer(), verificationResult3.getValidators(), contentAccessorDirect3);
-    sdStorePublisher.storeSelfDescription(sdMetadata3, verificationResult2);
+    assetStorePublisher.storeCredential(assetMetadata3, verificationResult3);
   }
 
 }

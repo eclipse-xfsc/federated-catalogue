@@ -317,7 +317,7 @@ public class SchemaStoreImpl implements SchemaStore {
     }
 
     COMPOSITE_SCHEMAS.remove(newRecord.type());
-    // SDs will be revalidated in a separate thread.
+    //Assets  will be revalidated in a separate thread.
     return new SchemaStoreResult(identifier, analysis.getWarning());
   }
 

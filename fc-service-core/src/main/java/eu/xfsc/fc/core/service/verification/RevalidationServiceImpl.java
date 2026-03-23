@@ -1,11 +1,11 @@
 package eu.xfsc.fc.core.service.verification;
 
-import eu.xfsc.fc.api.generated.model.SelfDescriptionStatus;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.dao.RevalidatorChunksDao;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.util.ProcessorUtils;
 
 import java.util.List;
@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
- * Revalidates all active SDs against the composite schema.
+ * Revalidates all active assets against the composite schema.
  */
 @Slf4j
 public class RevalidationServiceImpl implements RevalidationService {
@@ -28,7 +28,7 @@ public class RevalidationServiceImpl implements RevalidationService {
   private static final String MANAGER_THREAD_NAME = "revalidationManager";
 
   /**
-   * The number of worker threads to use for revalidating SDs.
+   * The number of worker threads to use for revalidating assets.
    */
   @Value("${federated-catalogue.revalidation-service.worker-count:5}")
   private int workerCount;
@@ -55,7 +55,7 @@ public class RevalidationServiceImpl implements RevalidationService {
   private RevalidatorChunksDao dao;
 
   @Autowired
-  private SelfDescriptionStore sdStorePublisher;
+  private AssetStore assetStorePublisher;
 
   @Autowired
   private SchemaValidationService schemaValidationService;
@@ -93,13 +93,13 @@ public class RevalidationServiceImpl implements RevalidationService {
     this.batchSize = batchSize;
   }
 
-  private void handleTask(final String sdhash) {
-    ContentAccessor content = sdStorePublisher.getSDFileByHash(sdhash);
+  private void handleTask(final String assetHash) {
+    ContentAccessor content = assetStorePublisher.getFileByHash(assetHash);
     try {
-      schemaValidationService.validateSelfDescriptionAgainstCompositeSchema(content);
+      schemaValidationService.validateCredentialAgainstCompositeSchema(content);
     } catch (VerificationException ex) {
-      log.info("SD {} is no longer valid", sdhash);
-      sdStorePublisher.changeLifeCycleStatus(sdhash, SelfDescriptionStatus.REVOKED);
+      log.info("Asset {} is no longer valid", assetHash);
+      assetStorePublisher.changeLifeCycleStatus(assetHash, AssetStatus.REVOKED);
     }
     final var finalTaskQueue = taskQueue;
     if (finalTaskQueue != null && finalTaskQueue.size() < 0.5 * batchSize) {
@@ -124,15 +124,15 @@ public class RevalidationServiceImpl implements RevalidationService {
       if (workingOnChunk >= 0) {
         if (taskQueue.size() < 0.5 * batchSize) {
           // Fetch more hashes.
-          List<String> activeSdHashes = sdStorePublisher.getActiveSdHashes(lastHash, batchSize, instanceCount, workingOnChunk);
-          if (activeSdHashes.isEmpty()) {
+          List<String> activeAssetHashes = assetStorePublisher.getActiveAssetHashes(lastHash, batchSize, instanceCount, workingOnChunk);
+          if (activeAssetHashes.isEmpty()) {
             log.info("Finished revalidating.");
             workingOnChunk = -1;
             lastHash = null;
           } else {
-            taskQueue.addAll(activeSdHashes);
-            lastHash = activeSdHashes.get(activeSdHashes.size() - 1);
-            log.debug("Added {} hashes for chunk {} of {}. Queue now: {}", activeSdHashes.size(), workingOnChunk, instanceCount, taskQueue.size());
+            taskQueue.addAll(activeAssetHashes);
+            lastHash = activeAssetHashes.get(activeAssetHashes.size() - 1);
+            log.debug("Added {} hashes for chunk {} of {}. Queue now: {}", activeAssetHashes.size(), workingOnChunk, instanceCount, taskQueue.size());
           }
         }
       }

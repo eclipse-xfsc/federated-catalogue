@@ -45,18 +45,18 @@ import com.danubetech.verifiablecredentials.VerifiableCredential;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
 import com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords;
 
-import eu.xfsc.fc.api.generated.model.SelfDescriptionStatus;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.dao.ValidatorCacheDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.Validator;
-import eu.xfsc.fc.core.pojo.VerificationResult;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.pojo.VerificationResultResource;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
@@ -73,7 +73,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Verification strategy for Verifiable Credential payloads (VP/VC).
- * Contains the self-description verification logic: syntactic parsing of VP/VCs,
+ * Contains the credential verification logic: syntactic parsing of VP/VCs,
  * semantic checks, schema verification, signature verification, and claim extraction.
  */
 @Slf4j
@@ -151,16 +151,16 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     trustFrameworkBaseClassUris.put(PARTICIPANT, participantType);
   }
 
-  public VerificationResult verifySelfDescription(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
       boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
       boolean verifyVCSignatures) throws VerificationException {
-    log.debug("verifySelfDescription.enter; strict: {}, expectedType: {}, verifySemantics: {}, verifySchema: {}, verifyVPSignatures: {}, verifyVCSignatures: {}",
+    log.debug("verifyCredential.enter; strict: {}, expectedType: {}, verifySemantics: {}, verifySchema: {}, verifyVPSignatures: {}, verifyVCSignatures: {}",
             strict, expectedClass, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
     long stamp = System.currentTimeMillis();
 
     // syntactic validation
     JsonLDObject ld = parseContent(payload);
-    log.debug("verifySelfDescription; content parsed, time taken: {}", System.currentTimeMillis() - stamp);
+    log.debug("verifyCredential; content parsed, time taken: {}", System.currentTimeMillis() - stamp);
 
     // see https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/issues/200
     // add GAIA-X context(s) if present
@@ -169,7 +169,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     // semantic verification
     long stamp2 = System.currentTimeMillis();
     TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics);
-    log.debug("verifySelfDescription; credentials processed, time taken: {}", System.currentTimeMillis() - stamp2);
+    log.debug("verifyCredential; credentials processed, time taken: {}", System.currentTimeMillis() - stamp2);
 
     if (verifySemantics && !typedCredentials.hasClasses()) {
       throw new VerificationException("Semantic Error: no proper CredentialSubject found");
@@ -204,27 +204,27 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
     if (verifySemantics) {
    	  if (partCount > 0 && soffCount > 0) {
-   	    throw new VerificationException("Semantic error: SD has several types: " + baseClasses);
+   	    throw new VerificationException("Semantic error: credential has several types: " + baseClasses);
       }
       if (expectedClass != UNKNOWN && baseClass != expectedClass) {
-        throw new VerificationException("Semantic error: expected SD of type " + expectedClass + " but found " + baseClass);
+        throw new VerificationException("Semantic error: expected credential of type " + expectedClass + " but found " + baseClass);
       }
     }
 
     stamp2 = System.currentTimeMillis();
-    List<SdClaim> claims = extractClaims(payload);
+    List<CredentialClaim> claims = extractClaims(payload);
 
     FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "claims extraction");
     claims = filtered.claims();
 
-    log.debug("verifySelfDescription; claims extracted: {}, time taken: {}", (claims == null ? "null" : claims.size()),
+    log.debug("verifyCredential; claims extracted: {}, time taken: {}", (claims == null ? "null" : claims.size()),
    		System.currentTimeMillis() - stamp2);
 
     if (verifySemantics && strict) {
       Set<String> subjects = new HashSet<>();
       Set<String> objects = new HashSet<>();
       if (claims != null && !claims.isEmpty()) {
-        for (SdClaim claim : claims) {
+        for (CredentialClaim claim : claims) {
           subjects.add(claim.getSubjectString());
           objects.add(claim.getObjectString());
         }
@@ -263,7 +263,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     String issuer = typedCredentials.getIssuer();
     Instant issuedDate = typedCredentials.getIssuanceDate();
 
-    VerificationResult result;
+    CredentialVerificationResult result;
     if (baseClass == PARTICIPANT) {
       if (issuer == null) {
         issuer = id;
@@ -271,16 +271,16 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
       String method = typedCredentials.getProofMethod();
       String holder = typedCredentials.getHolder();
       String name = holder == null ? issuer : holder;
-      result = new VerificationResultParticipant(Instant.now(), SelfDescriptionStatus.ACTIVE.getValue(), issuer, issuedDate,
+      result = new CredentialVerificationResultParticipant(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
               claims, validators, name, method);
     } else if (baseClass == SERVICE_OFFERING) {
-      result = new VerificationResultOffering(Instant.now(), SelfDescriptionStatus.ACTIVE.getValue(), issuer, issuedDate,
+      result = new CredentialVerificationResultOffering(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
               id, claims, validators);
     } else if (baseClass == RESOURCE) {
-      result = new VerificationResultResource(Instant.now(), SelfDescriptionStatus.ACTIVE.getValue(), issuer, issuedDate,
+      result = new CredentialVerificationResultResource(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
               id, claims, validators);
     } else {
-      result = new VerificationResult(Instant.now(), SelfDescriptionStatus.ACTIVE.getValue(), issuer, issuedDate,
+      result = new CredentialVerificationResult(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
               id, claims, validators);
     }
 
@@ -289,7 +289,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     stamp = System.currentTimeMillis() - stamp;
-    log.debug("verifySelfDescription.exit; returning: {}; time taken: {}", result, stamp);
+    log.debug("verifyCredential.exit; returning: {}; time taken: {}", result, stamp);
     return result;
   }
 
@@ -302,7 +302,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
       return getCredentials(vp);
     }
     if (vpRequired) {
-      throw new VerificationException("Semantic error: expected SD of type 'VerifiablePresentation', actual SD type: " + ld.getTypes());
+      throw new VerificationException("Semantic error: expected credential of type 'VerifiablePresentation', actual credential type: " + ld.getTypes());
     }
     if (ld.isType(VerifiableCredentialKeywords.JSONLD_TERM_VERIFIABLE_CREDENTIAL)) {
       VerifiableCredential vc = VerifiableCredential.fromJsonLDObject(ld);
@@ -314,10 +314,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
       }
       return getCredentials(vc);
     }
-    throw new VerificationException("Semantic error: unexpected SD type: " + ld.getTypes());
+    throw new VerificationException("Semantic error: unexpected credential type: " + ld.getTypes());
   }
 
-  /* SD parsing, semantic validation */
+  /* Credential parsing, semantic validation */
   private JsonLDObject parseContent(ContentAccessor content) {
     try {
       return JsonLDObject.fromJson(content.getContentAsString());
@@ -413,10 +413,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     return tcs;
   }
 
-  public List<SdClaim> extractClaims(ContentAccessor payload) {
+  public List<CredentialClaim> extractClaims(ContentAccessor payload) {
     // Make sure our interceptors are in place.
     initLoaders();
-    List<SdClaim> claims = null;
+    List<CredentialClaim> claims = null;
     for (ClaimExtractor extra : extractors) {
       try {
         claims = extra.extractClaims(payload);
@@ -467,7 +467,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
   }
 
 
-  /* SD signatures verification */
+  /* Credential signatures verification */
   private List<Validator> checkCryptography(TypedCredentials tcs, boolean verifyVP, boolean verifyVC) {
     log.debug("checkCryptography.enter;");
     long timestamp = System.currentTimeMillis();
@@ -622,7 +622,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     TypedCredentials(VerifiableCredential credential) {
       this.presentation = null;
       Map<VerifiableCredential, TrustFrameworkBaseClass> creds;
-      TrustFrameworkBaseClass bc = getSDBaseClass(credential);
+      TrustFrameworkBaseClass bc = getCredentialBaseClass(credential);
       creds = Map.of(credential, bc);
       this.credentials = creds;
     }
@@ -639,13 +639,13 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         for (Map<String, Object> _vc : l) {
           VerifiableCredential vc = VerifiableCredential.fromMap(_vc);
           vc.setDocumentLoader(this.presentation.getDocumentLoader());
-          TrustFrameworkBaseClass bc = getSDBaseClass(vc);
+          TrustFrameworkBaseClass bc = getCredentialBaseClass(vc);
           creds.put(vc, bc);
         }
       } else {
         VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) obj);
         vc.setDocumentLoader(this.presentation.getDocumentLoader());
-        TrustFrameworkBaseClass bc = getSDBaseClass(vc);
+        TrustFrameworkBaseClass bc = getCredentialBaseClass(vc);
         creds = Map.of(vc, bc);
       }
       this.credentials = creds;
@@ -732,13 +732,13 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
       return credentials.values().stream().anyMatch(bc -> bc != UNKNOWN);
     }
 
-    private TrustFrameworkBaseClass getSDBaseClass(VerifiableCredential credential) {
+    private TrustFrameworkBaseClass getCredentialBaseClass(VerifiableCredential credential) {
       ContentAccessor gaxOntology = schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY);
       TrustFrameworkBaseClass result = ClaimValidator.getSubjectType(gaxOntology, getStreamManager(), credential.toJson(), trustFrameworkBaseClassUris);
       if (result == null) {
     	  result = UNKNOWN;
       }
-      log.debug("getSDBaseClass; got type result: {}", result);
+      log.debug("getCredentialBaseClass; got type result: {}", result);
       return result;
     }
 

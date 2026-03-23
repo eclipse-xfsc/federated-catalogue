@@ -133,12 +133,12 @@ components:
         verificationTimestamp:
           type: string
           format : date-time
-        lifecycleStatus: #!! is not known when verifying external SDs -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
-          type: string # does the self-description have a lifecycle status in this catalogue?
-          description: Lifecycle-state an SD would get, if it would be added to the catalogue.
-        issuer: #!! Is this the participant? -> Julius: Yes, the participant that created the SD
-          type: string # contains the id of the issuers self-description if available  #!! NOT FURTHER SPECIFIED
-          description: ID of the issues Self-Description, if available.
+        lifecycleStatus: #!! is not known when verifying external credentials -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
+          type: string # does the asset have a lifecycle status in this catalogue?
+          description: Lifecycle-state an asset would get, if it would be added to the catalogue.
+        issuer: #!! Is this the participant? -> Julius: Yes, the participant that created the credential
+          type: string # contains the id of the issuers credential if available #!! NOT FURTHER SPECIFIED
+          description: ID of the issuer's credential, if available.
         issuedDateTime:
           type: string
           format: date-time
@@ -146,7 +146,7 @@ components:
           type: array
           items:
             type: string
-            description: The dids of validators, having signed parts of the Self-Description
+            description: The DIDs of validators that signed parts of the credential
         warnings:
           type: array
           description: >-
@@ -160,7 +160,7 @@ components:
                This namespace is reserved for internal catalogue use only and cannot be set by external clients."
       required:
         - verificationTimestamp
-        - lifecycleStatus #!! is not known when verifying external SDs. Remove from required -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
+        - lifecycleStatus #!! is not known when verifying external credentials. Remove from required -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
         - issuer #!! Comment on issuer: if available, but still required?? Remove from required -> Julius: required
         - issuedDateTime
         - validatorDids
@@ -172,9 +172,9 @@ components:
           description: Global ID of the participant
         name:
           type: string
-        publicKey: #!! Can this be changed? If it is changed, are all SDs signed by the old key invalid? -> Julius: For the first version you can assume that SD go invalid when the TrustAnchor or participant key change
+        publicKey: #!! Can this be changed? If it is changed, are all credentials signed by the old key invalid? -> Julius: For the first version you can assume that credentials go invalid when the TrustAnchor or participant key change
           type: string
-        selfDescription:
+        asset:
           type: string
     User:
       type: object
@@ -234,21 +234,21 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Role'
-    SelfDescription:
+    Asset:
       type: object
       properties:
-        sdHash:
+        assetHash:
           type: string
         id: #!! Added id / credentialSubject
           type: string
         status:
-          $ref: '#/components/schemas/SelfDescriptionStatus'
+          $ref: '#/components/schemas/AssetStatus'
         issuer:
           type: string
         validatorDids:
           description: >-
             The credentialSubjects of the parties that validated (parts of) the
-            Self-Description
+            credential.
           type: array
           items:
             type: string
@@ -256,7 +256,7 @@ components:
           type: string
           format: date-time
           example: '2022-03-01T13:00:00Z'
-          description: The time stamp (ISO8601) when the SD was uploaded.
+          description: The time stamp (ISO8601) when the asset was uploaded.
         statusDatetime:
           type: string
           format: date-time
@@ -283,18 +283,18 @@ components:
             - "2 triple(s) were removed from your upload because they use the reserved internal namespace
                <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
                This namespace is reserved for internal catalogue use only and cannot be set by external clients."
-    SelfDescriptionStatus:
+    AssetStatus:
       type: string
       enum:
         - active
         - eol
         - deprecated
         - revoked
-    SelfDescriptionResult:
+    AssetResult:
       type: object
       properties:
         meta:
-          $ref: '#/components/schemas/SelfDescription'
+          $ref: '#/components/schemas/Asset'
         content:
           type: string
     OntologySchema:
@@ -323,15 +323,15 @@ components:
       properties:
         totalCount:
           type: integer
-    SelfDescriptions:
+    Assets:
       allOf:
         - $ref: '#/components/schemas/ResultPage'
         - type: object
           properties:
-            items: 
+            items:
               type: array
-              items: 
-                $ref: '#/components/schemas/SelfDescriptionResult'
+              items:
+                $ref: '#/components/schemas/AssetResult'
     Participants:
       allOf:
         - $ref: '#/components/schemas/ResultPage'
@@ -395,11 +395,11 @@ components:
         total:
           type: integer
           format: int64
-          description: Total number of SDs to process
+          description: Total number of assets to process
         processed:
           type: integer
           format: int64
-          description: Number of SDs processed so far
+          description: Number of assets processed so far
         percentComplete:
           type: integer
           description: Completion percentage (0-100)
@@ -418,7 +418,7 @@ components:
         errors:
           type: integer
           format: int64
-          description: Number of SDs that failed during processing
+          description: Number of assets that failed during processing
         durationMs:
           type: integer
           format: int64
@@ -435,18 +435,18 @@ components:
         healthy:
           type: boolean
           description: Whether the graph store backend is healthy
-        activeSdCount:
+        activeAssetCount:
           type: integer
           format: int64
-          description: Number of active SDs in PostgreSQL storage
+          description: Number of active assets in PostgreSQL storage
         claimCountInGraph:
           type: integer
           format: int64
           description: Number of claim triples/nodes in the graph database
-        sdCountInGraph:
+        assetCountInGraph:
           type: integer
           format: int64
-          description: Number of distinct self-descriptions in the graph database
+          description: Number of distinct assets in the graph database
         syncAssessment:
           type: string
           description: Sync assessment (empty, in-sync, out-of-sync, unknown, disabled)
@@ -492,23 +492,25 @@ components:
       schema:
         type: array
         items:
-          $ref: '#/components/schemas/SelfDescriptionStatus'
-      explode: false      
+          $ref: '#/components/schemas/AssetStatus'
+      explode: false
       required: false
-      description: SelfDescription statuses
+      description: Asset statuses
   securitySchemes:
     jwt:
       type: http
       scheme: bearer
       bearerFormat: JWT
 tags:
-  - name: SelfDescriptions
+  - name: Assets
     description: >-
-      Retrieving Self-Descriptions from the Catalogue. All Self-Descriptions are
-      JSON-LD files. They are referenced by their sha256 hash. Catalogues
-      synchronize by downloading changesets (lists of hashes) from known other
-      Catalogues and reading the full Self-Descriptions of entries that are
-      unknown to them.
+      Manage assets in the Catalogue. Assets can be RDF credentials (JSON-LD
+      Verifiable Presentations containing Verifiable Credentials), non-credential 
+      RDF data (plain RDF triples), or non-RDF files. RDF content is automatically 
+      verified and all claims or triples extracted to the graph database. Non-RDF 
+      content is stored as-is. Assets are referenced by their sha256 hash. Catalogues 
+      synchronize by exchanging changesets (lists of hashes) with peer Catalogues 
+      and downloading any assets not yet locally available.
     externalDocs:
       description: Find out more
       url: https://docs.gaia-x.eu
@@ -516,8 +518,8 @@ tags:
     description: Send graph queries to this Catalogue.
   - name: Schemas
     description: >-
-      The format of the self-descriptions are defined by schemas in the
-      catalogue. Here you get information about the latest schema.
+      The format of RDF assets is defined by schemas in the catalogue.
+      Here you get information about the latest schema.
   - name: Verification
     description: The Catalogue provides a verification service for e.g. checking the syntax
   - name: Participants
@@ -588,21 +590,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GraphStatus'
-  /self-descriptions:
+  /assets:
     get:
       tags:
-        - SelfDescriptions
-      summary: Get the list of metadata of Self-Descriptions in the Catalogue
-      description: 'Required permission: ASSET_READ or ADMIN_ALL'
-      operationId: readSelfDescriptions
+        - Assets
+      summary: Get the list of asset metadata in the Catalogue
+      operationId: readAssets
       security:
         - jwt: []
       parameters: #!! Added filter parameters for all(?) metadata fields
         - name: uploadTimerange
           in: query
           description: >-
-            Filter for the time range when the Self-Description was uploaded to
-            the catalogue. The time range has to be specified as start time and
+            Filter for the time range when the asset was uploaded to the
+            catalogue. The time range has to be specified as start time and
             end time as ISO8601 timestamp separated by a `/`.
           required: false
           example: 2022-03-01T13:00:00Z/2022-05-11T15:30:00Z
@@ -611,10 +612,9 @@ paths:
         - name: statusTimerange
           in: query
           description: >-
-            Filter for the time range when the status of the Self-Description
-            was last changed in the catalogue. The time range has to be
-            specified as start time and end time as ISO8601 timestamp separated
-            by a `/`.
+            Filter for the time range when the status of the asset was last
+            changed in the catalogue. The time range has to be specified as
+            start time and end time as ISO8601 timestamp separated by a `/`.
           required: false
           example: 2022-03-01T13:00:00Z/2022-05-11T15:30:00Z
           schema:
@@ -622,46 +622,46 @@ paths:
         - name: issuers
           in: query
           description: >-
-            Filter for the issuer of the Self-Description. This is the unique ID
-            of the Participant that has prepared the Self-Description.
+            Filter for the issuer of the credential. This is the unique ID of the
+            Participant that has prepared the credential.
           required: false
           schema:
             type: array
             items:
               type: string
-          explode: false    
+          explode: false
         - name: validators
           in: query
           description: >-
-            Filter for a validator of the Self-Description. This is the unique
-            ID of the Participant that validated (part of) the Self-Description.
+            Filter for a validator of the credential. This is the unique ID of the
+            Participant that validated (part of) the credential.
           required: false
           schema:
             type: array
             items:
               type: string
-          explode: false    
+          explode: false
         - name: statuses
           in: query
-          description: Filter for the status of the Self-Description.
+          description: Filter for the status of the asset.
           required: false
           schema:
             type: array
             items:
-                $ref: '#/components/schemas/SelfDescriptionStatus'
-          explode: false      
+              $ref: '#/components/schemas/AssetStatus'
+          explode: false
         - name: ids
           in: query
-          description: Filter for a id/credentialSubject of the Self-Description.
+          description: Filter for the id/credentialSubject of the credential.
           required: false
           schema:
             type: array
             items:
               type: string
-          explode: false    
+          explode: false
         - name: hashes
           in: query
-          description: Filter for a hash of the Self-Description.
+          description: Filter for the hash of the asset.
           required: false
           schema:
             type: array
@@ -670,14 +670,14 @@ paths:
           explode: false
         - name: withMeta
           in: query
-          description: To add Self-Description Metadata to response or not.
+          description: Whether to include asset metadata in the response.
           required: false
           schema:
             type: boolean
             default: true
         - name: withContent
           in: query
-          description: To add Self-Description Content to response or not.
+          description: Whether to include asset content in the response.
           required: false
           schema:
             type: boolean
@@ -686,11 +686,11 @@ paths:
         - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
-          description: List of meta data of available Self-Descriptions.
+          description: List of metadata of available assets.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SelfDescriptions'
+                $ref: '#/components/schemas/Assets'
         '400':
           $ref: '#/components/responses/ClientError'
         '401':
@@ -699,17 +699,21 @@ paths:
           $ref: '#/components/responses/ServerError'
     post:
       tags:
-        - SelfDescriptions
-      summary: Add a new Service-Offering, Participant or Resource SelfDescription to the catalogue
-      description: 'Required permission: ASSET_CREATE or ADMIN_ALL'
-      operationId: addSelfDescription
+        - Assets
+      summary: Add a new asset to the catalogue
+      description: >-
+        Upload an asset. RDF content (JSON-LD credentials) is automatically
+        detected and routed through the verification pipeline. Non-RDF content
+        is stored directly.
+      operationId: addAsset
       security:
         - jwt: []
       requestBody:
         description: >-
-          The new SelfDescription (application/json) or non-RDF asset.
-          For non-RDF assets, use multipart/form-data or application/octet-stream
-          (handled by the server outside the generated delegate pattern).
+          The asset content. For RDF credentials, use application/json with a
+          JSON-LD body. For non-RDF assets, use multipart/form-data or
+          application/octet-stream (handled by the server outside the generated
+          delegate pattern).
         content:
           application/json:
             schema:
@@ -720,13 +724,13 @@ paths:
           description: Created
           headers:
             location:
-              description: URL of the added Self-Description.
+              description: URL of the added asset.
               schema:
                 type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SelfDescription'
+                $ref: '#/components/schemas/Asset'
         '400':
           $ref: '#/components/responses/ClientError'
         '401':
@@ -737,19 +741,17 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/ServerError'
-  /self-descriptions/{self_description_hash}:
+  /assets/{asset_hash}:
     get:
       tags:
-        - SelfDescriptions
-      summary: >-
-        Read a Self-Description by its hash. This returns the content of the
-        self-description.
-      description: 'Returns a single Self-Description. Required permission: ASSET_READ or ADMIN_ALL'
-      operationId: readSelfDescriptionByHash
+        - Assets
+      summary: Read an asset by its hash.
+      description: Returns the content of a single asset.
+      operationId: readAssetByHash
       parameters:
-        - name: self_description_hash
+        - name: asset_hash
           in: path
-          description: Hash of the SelfDescription
+          description: Hash identifier of the asset
           required: true
           schema:
             type: string
@@ -757,7 +759,7 @@ paths:
         - jwt: []
       responses:
         '200':
-          description: The requested SelfDescription
+          description: The requested asset
           content:
             application/json:
               schema:
@@ -772,16 +774,15 @@ paths:
           $ref: '#/components/responses/ServerError'
     delete:
       tags:
-        - SelfDescriptions
-      summary: Completely delete a self-description
-      description: 'Required permission: ASSET_DELETE or ADMIN_ALL'
-      operationId: deleteSelfDescription
+        - Assets
+      summary: Completely delete an asset
+      operationId: deleteAsset
       security:
         - jwt: []
       parameters:
-        - name: self_description_hash
+        - name: asset_hash
           in: path
-          description: Hash of the SelfDescription
+          description: Hash identifier of the asset
           required: true
           schema:
             type: string
@@ -798,19 +799,18 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
-  /self-descriptions/{self_description_hash}/revoke:
+  /assets/{asset_hash}/revoke:
     post:
       tags:
-        - SelfDescriptions
-      summary: Change the lifecycle state of a SelfDescription to revoked.
-      description: 'Required permission: ASSET_UPDATE or ADMIN_ALL'
-      operationId: updateSelfDescription
+        - Assets
+      summary: Change the lifecycle state of an asset to revoked.
+      operationId: updateAsset
       security:
         - jwt: []
       parameters:
-        - name: self_description_hash
+        - name: asset_hash
           in: path
-          description: Hash of the SelfDescription
+          description: Hash identifier of the asset
           required: true
           schema:
             type: string
@@ -819,13 +819,13 @@ paths:
           description: Revoked
           headers:
             location:
-              description: URL of the added SelfDescription
+              description: URL of the asset
               schema:
                 type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SelfDescription'
+                $ref: '#/components/schemas/Asset'
         '400':
           $ref: '#/components/responses/ClientError'
         '401':
@@ -1160,7 +1160,7 @@ paths:
               - vocabulary
         - name: term
           in: query
-          description: 'The URI of the term of the requested Self-Description schema e.g. `http://w3id.org/gaia-x/service#ServiceOffering`'
+          description: 'The URI of the term of the requested schema e.g. `http://w3id.org/gaia-x/service#ServiceOffering`'
           required: false
           schema:
             type: string
@@ -1186,13 +1186,13 @@ paths:
     get:
       tags:
         - Verification
-      summary: Show a HTML page to verify (portions of) a signed Self-Description
+      summary: Show a HTML page to verify (portions of) a signed credential
       operationId: verifyPage
       responses:
         '200':
           description: >-
             HTML document that contains a query field to verify (portions of)
-            Self-Descriptions.
+            credentials.
           content:
             text/html:
               schema:
@@ -1211,14 +1211,14 @@ paths:
       parameters:
         - name: verifySemantics
           in: query
-          description: 'To verify SD semantics or not'
+          description: 'To verify credential semantics or not'
           required: false
           schema:
             type: boolean
             default: true
         - name: verifySchema
           in: query
-          description: 'To verify SD against stored SHACL shapes or not'
+          description: 'To verify credential against stored SHACL shapes or not'
           required: false
           schema:
             type: boolean
@@ -1261,7 +1261,7 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
   /participants:
-    get: #!! Needs pagination; Should this really include the entire Participant SD, or only the hash?
+    get: #!! Needs pagination; Should this really include the entire Participant credential, or only the hash?
       tags:
         - Participants
       summary: Get the registered participants
@@ -1290,7 +1290,7 @@ paths:
       summary: Register a new participant in the catalogue
       operationId: addParticipant
       requestBody:
-        description: Participant Self-Description
+        description: Participant credential
         required: true
         content:
           application/json:
@@ -1359,7 +1359,7 @@ paths:
           schema:
             type: string
       requestBody: #!! Added participant as request body
-        description: Participant Self-Description
+        description: Participant credential
         required: true
         content:
           application/json:
@@ -1424,7 +1424,6 @@ paths:
           description: The participant Id
           schema:
             type: string
-        #!! Added pagination parameters
         - $ref: '#/components/parameters/OffsetParam'
         - $ref: '#/components/parameters/LimitParam'
       responses:

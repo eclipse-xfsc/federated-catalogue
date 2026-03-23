@@ -1,7 +1,13 @@
 # Federated Catalogue
 
 ## Description
-The Federated Catalogue Service makes Self-Descriptions of Providers, their Service Offerings and Resources used by these services available to Consumers.
+The Federated Catalogue Service makes assets (metadata descriptions of Providers, their Service Offerings and Resources) available to Consumers.
+
+> **Note:** This project was originally developed for Gaia-X, where assets were called "Self-Descriptions" (SDs). As part of the CAT-NFR-01 naming refactoring, "Self-Description" has been replaced with two terms:
+> - **Asset** — at the API and storage layer (e.g., `POST /assets`, `AssetStore`, `AssetMetadata`). Covers any uploaded item: RDF credentials, PDFs, templates, binary files.
+> - **Credential** — inside the verification pipeline (e.g., `verifyCredential()`, `storeCredential()`, `CredentialVerificationResult`). Applies only when the uploaded asset is a Verifiable Credential/Presentation (JSON-LD).
+>
+> See the [naming refactoring (CAT-NFR-01)](https://github.com/eclipse-xfsc/docs/blob/f3c6e6b6fbcc87732a1dfe83f060fa58a9a97873/federated-catalogue/src/docs/CAT%20Enhancement/CAT_Enhancement_Specifications%20v1.0.pdf) for details.
 
 This project was initiated as a Reference Implementation of Gaia-X Federation Services Lot 5 [Federated Catalogue / Core Catalogue Features](https://www.gxfs.eu/core-catalogue-features/).
 

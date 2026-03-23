@@ -46,7 +46,7 @@
             <archive>
               <manifest>
                 <addClasspath>true</addClasspath>
-                <mainClass>eu.xfsc.fc.tools.signer.SDSigner</mainClass>
+                <mainClass>eu.xfsc.fc.tools.signer.CredentialSigner</mainClass>
               </manifest>
             </archive>
             <descriptorRefs>

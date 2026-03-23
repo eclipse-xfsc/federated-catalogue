@@ -45,7 +45,7 @@ public class FileStoreTest {
     return new ContentAccessorDirect(String.format("%016d", idx));
   }
 
-  private void assertStoredSdFiles(final int expected) {
+  private void assertStoredAssetFiles(final int expected) {
     final MutableInt count = new MutableInt(0);
     fileStore.getFileIterable().forEach(file -> count.increment());
     final String message = String.format("Storing %d file(s) should result in exactly %d file(s) in the store.",
@@ -72,7 +72,7 @@ public class FileStoreTest {
     log.info("Pattern {}-{} Read    {} in {}ms", nameLength, treeDepth, totalFileCount, duration);
 
     startTime = System.currentTimeMillis();
-    assertStoredSdFiles(totalFileCount);
+    assertStoredAssetFiles(totalFileCount);
     endTime = System.currentTimeMillis();
     duration = endTime - startTime;
     log.info("Pattern {}-{} Counted {} in {}ms", nameLength, treeDepth, totalFileCount, duration);

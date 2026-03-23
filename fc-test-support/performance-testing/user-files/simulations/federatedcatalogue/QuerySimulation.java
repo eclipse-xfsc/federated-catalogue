@@ -1,6 +1,6 @@
 package federatedcatalogue;
 
-import static federatedcatalogue.SelfDescriptionSigner.signSd;
+import static federatedcatalogue.CredentialSigner.signCredential;
 import static federatedcatalogue.SimulationHelper.addRandomId;
 import static io.gatling.javaapi.core.CoreDsl.StringBody;
 import static io.gatling.javaapi.core.CoreDsl.exec;
@@ -22,14 +22,14 @@ public class QuerySimulation extends CommonSimulation {
 
   private static final String IS_ADDED_PARAM = "isAdded";
 
-  ChainBuilder add = exec(http("Add SD")
-      .post("/self-descriptions")
-      .body(StringBody(session -> signSd(addRandomId(getSdContent()))))
+  ChainBuilder add = exec(http("Add credential")
+      .post("/assets")
+      .body(StringBody(session -> signCredential(addRandomId(getCredentialContent()))))
       .header("Content-Type", "application/json")
       .header("Authorization", session -> "Bearer " + session.get("access_token"))
       .check(status().saveAs(IS_ADDED_PARAM))
       .check(status().is(201))
-      .check(jsonPath("$..sdHash").saveAs(SD_HASH_PARAM)));
+      .check(jsonPath("$..assetHash").saveAs(ASSET_HASH_PARAM)));
 
   private ChainBuilder getQuery(String query) {
     return exec(http("Query")

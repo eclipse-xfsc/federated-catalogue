@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 public class ParticipantDaoImpl implements ParticipantDao {
   private static final String ATR_NAME = "name";
   private static final String ATR_PUBLIC_KEY  = "publicKey";
-  private static final String ATR_SD_HASH = "sdHash";
+  private static final String ATR_ASSET_HASH = "assetHash";
 
   @Value("${keycloak.realm}")
   private String realm;
@@ -194,8 +194,7 @@ public class ParticipantDaoImpl implements ParticipantDao {
     groupRepo.setName(participant.getId());
     groupRepo.singleAttribute(ATR_NAME, participant.getName());
     groupRepo.singleAttribute(ATR_PUBLIC_KEY, participant.getPublicKey());
-    //String sdHash = HashUtils.calculateSha256AsHex(participant.getSelfDescription()); 
-    groupRepo.singleAttribute(ATR_SD_HASH, participant.getSdHash()); // sdHash);
+    groupRepo.singleAttribute(ATR_ASSET_HASH, participant.getAssetHash());
     return groupRepo;
   }
 
@@ -209,11 +208,11 @@ public class ParticipantDaoImpl implements ParticipantDao {
     Map<String, List<String>> attributes = groupRepo.getAttributes();
     // check for required attributes..
     if (emptyAttributes(attributes.get(ATR_NAME)) || emptyAttributes(attributes.get(ATR_PUBLIC_KEY)) ||
-        emptyAttributes(attributes.get(ATR_SD_HASH))) {
+        emptyAttributes(attributes.get(ATR_ASSET_HASH))) {
       return null; 
     }
     return new ParticipantMetaData(groupRepo.getName(), attributes.get(ATR_NAME).get(0),
-        attributes.get(ATR_PUBLIC_KEY).get(0), null, attributes.get(ATR_SD_HASH).get(0));
+        attributes.get(ATR_PUBLIC_KEY).get(0), null, attributes.get(ATR_ASSET_HASH).get(0));
   }
 
   private boolean emptyAttributes(List<String> attrs) {

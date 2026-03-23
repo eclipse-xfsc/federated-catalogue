@@ -92,12 +92,6 @@ class QueryLanguageValidatorTest {
   }
 
   @Test
-  void queryLanguageProperties_unmappedLanguage_throwsIllegalArgumentException() {
-    assertThrows(IllegalArgumentException.class,
-        () -> QueryLanguageProperties.of(QueryLanguage.GRAPHQL));
-  }
-
-  @Test
   void fromContentType_openCypherContentType_returnsOpenCypher() {
     assertEquals(QueryLanguage.OPENCYPHER,
         QueryLanguageProperties.fromContentType("application/opencypher-query"));

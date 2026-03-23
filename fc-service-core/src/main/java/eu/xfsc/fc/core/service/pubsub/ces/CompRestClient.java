@@ -21,11 +21,11 @@ public class CompRestClient extends ServiceClient {
 		this.jsonMapper = mapper;
 	}
 
-	public Map<String, Object> postCredentials(String selfDescription) {
-		log.debug("postCredentials.enter; got SD: {}", selfDescription.length());
+	public Map<String, Object> postCredentials(String credential) {
+		log.debug("postCredentials.enter; got credential: {}", credential.length());
 		// can add optional vcid query param..
         Map<String, Object> queryParams = Map.of();
-        String str = this.doPost("/credential-offers", selfDescription, Map.of(), queryParams, String.class);
+        String str = this.doPost("/credential-offers", credential, Map.of(), queryParams, String.class);
         Map<String, Object> result;
 		try {
 			result = jsonMapper.readValue(str, mapTypeRef);

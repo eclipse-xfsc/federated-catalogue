@@ -231,7 +231,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "[\r\n    \"Ro-MU-CA\",\r\n    \"Ro-PA-A\",\r\n    \"Ro-MU-A\",\r\n    \"Ro-SD-A\"\r\n]",
+							"raw": "[\r\n    \"Ro-MU-CA\",\r\n    \"Ro-PA-A\",\r\n    \"Ro-MU-A\",\r\n    \"Ro-AS-A\"\r\n]",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -718,10 +718,10 @@
 			]
 		},
 		{
-			"name": "Self description",
+			"name": "Asset",
 			"item": [
 				{
-					"name": "/self-descriptions",
+					"name": "/assets",
 					"protocolProfileBehavior": {
 						"disabledSystemHeaders": {}
 					},
@@ -745,7 +745,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "<place_sd_here>",
+							"raw": "<place_asset_json_here>",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -753,20 +753,20 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"self-descriptions"
+								"assets"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "/self-descriptions test",
+					"name": "/assets test",
 					"protocolProfileBehavior": {
 						"disabledSystemHeaders": {}
 					},
@@ -790,7 +790,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "<place_sd_here>",
+							"raw": "<place_asset_json_here>",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -798,20 +798,20 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"self-descriptions"
+								"assets"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "/self-descriptions/{hash}/revoke",
+					"name": "/assets/{hash}/revoke",
 					"protocolProfileBehavior": {
 						"disabledSystemHeaders": {}
 					},
@@ -843,13 +843,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash/revoke",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash/revoke",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"self-descriptions",
+								"assets",
 								":hash",
 								"revoke"
 							],
@@ -864,7 +864,7 @@
 					"response": []
 				},
 				{
-					"name": "/self-descriptions",
+					"name": "/assets",
 					"protocolProfileBehavior": {
 						"disabledSystemHeaders": {},
 						"disableBodyPruning": true
@@ -897,13 +897,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions?statuses=REVOKED,ACTIVE,DEPRECATED",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets?statuses=REVOKED,ACTIVE,DEPRECATED",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"self-descriptions"
+								"assets"
 							],
 							"query": [
 								{
@@ -916,7 +916,7 @@
 					"response": []
 				},
 				{
-					"name": "/self-descriptions/{hash}",
+					"name": "/assets/{hash}",
 					"protocolProfileBehavior": {
 						"disabledSystemHeaders": {},
 						"disableBodyPruning": true
@@ -949,13 +949,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"self-descriptions",
+								"assets",
 								":hash"
 							],
 							"variable": [
@@ -969,7 +969,7 @@
 					"response": []
 				},
 				{
-					"name": "/self-descriptions/{hash}",
+					"name": "/assets/{hash}",
 					"protocolProfileBehavior": {
 						"disabledSystemHeaders": {}
 					},
@@ -1001,13 +1001,13 @@
 							}
 						},
 						"url": {
-							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash",
+							"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash",
 							"protocol": "{{federated_catalogue_protocol}}",
 							"host": [
 								"{{federated_catalogue_address}}"
 							],
 							"path": [
-								"self-descriptions",
+								"assets",
 								":hash"
 							],
 							"variable": [
@@ -1195,7 +1195,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "[\r\n    \"uma_authorization\",\r\n    \"offline_access\",\r\n    \"Ro-MU-CA\",\r\n    \"Ro-PA-A\",\r\n    \"default-roles-gaia-x\",\r\n    \"Ro-MU-A\",\r\n    \"Ro-SD-A\"\r\n]",
+							"raw": "[\r\n    \"uma_authorization\",\r\n    \"offline_access\",\r\n    \"Ro-MU-CA\",\r\n    \"Ro-PA-A\",\r\n    \"default-roles-gaia-x\",\r\n    \"Ro-MU-A\",\r\n    \"Ro-AS-A\"\r\n]",
 							"options": {
 								"raw": {
 									"language": "json"

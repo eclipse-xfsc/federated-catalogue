@@ -15,10 +15,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 
 import eu.xfsc.fc.core.pojo.GraphBackendType;
-import eu.xfsc.fc.core.pojo.SdFilter;
+import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 
 /**
  * Unit tests for {@link GraphStoreStartupChecker}.
@@ -31,7 +31,7 @@ class GraphStoreStartupCheckerTest {
   private GraphStore graphStore;
 
   @Mock
-  private SelfDescriptionStore sdStore;
+  private AssetStore assetStore;
 
   @Mock
   private GraphRebuildService graphRebuildService;
@@ -44,7 +44,7 @@ class GraphStoreStartupCheckerTest {
   @BeforeEach
   void setUp() {
     startupChecker = new GraphStoreStartupChecker(
-        graphStore, sdStore, graphRebuildService, false, 4, 100);
+        graphStore, assetStore, graphRebuildService, false, 4, 100);
   }
 
   @Test
@@ -68,10 +68,10 @@ class GraphStoreStartupCheckerTest {
   }
 
   @Test
-  void onApplicationEvent_emptyGraphWithActiveSds_logsWarningWithoutRebuild() {
+  void onApplicationEvent_emptyGraphWithActiveAssets_logsWarningWithoutRebuild() {
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.NEO4J);
     when(graphStore.getClaimCount()).thenReturn(0L);
-    stubActiveSdCount(5);
+    stubActiveAssetCount(5);
 
     startupChecker.onApplicationEvent(event);
 
@@ -79,12 +79,12 @@ class GraphStoreStartupCheckerTest {
   }
 
   @Test
-  void onApplicationEvent_emptyGraphWithActiveSdsAndAutoRebuild_triggersRebuild() {
+  void onApplicationEvent_emptyGraphWithActiveAssetsAndAutoRebuild_triggersRebuild() {
     startupChecker = new GraphStoreStartupChecker(
-        graphStore, sdStore, graphRebuildService, true, 4, 100);
+        graphStore, assetStore, graphRebuildService, true, 4, 100);
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.NEO4J);
     when(graphStore.getClaimCount()).thenReturn(0L);
-    stubActiveSdCount(5);
+    stubActiveAssetCount(5);
 
     startupChecker.onApplicationEvent(event);
 
@@ -95,7 +95,7 @@ class GraphStoreStartupCheckerTest {
   void onApplicationEvent_populatedGraph_doesNotTriggerRebuild() {
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
     when(graphStore.getClaimCount()).thenReturn(10L);
-    stubActiveSdCount(5);
+    stubActiveAssetCount(5);
 
     startupChecker.onApplicationEvent(event);
 
@@ -103,10 +103,10 @@ class GraphStoreStartupCheckerTest {
   }
 
   @Test
-  void onApplicationEvent_emptyGraphAndNoActiveSds_doesNotTriggerRebuild() {
+  void onApplicationEvent_emptyGraphAndNoActiveAssets_doesNotTriggerRebuild() {
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.NEO4J);
     when(graphStore.getClaimCount()).thenReturn(0L);
-    stubActiveSdCount(0);
+    stubActiveAssetCount(0);
 
     startupChecker.onApplicationEvent(event);
 
@@ -114,10 +114,10 @@ class GraphStoreStartupCheckerTest {
   }
 
   @SuppressWarnings("unchecked")
-  private void stubActiveSdCount(long count) {
+  private void stubActiveAssetCount(long count) {
     var result = org.mockito.Mockito.mock(
         eu.xfsc.fc.core.pojo.PaginatedResults.class);
     when(result.getTotalCount()).thenReturn(count);
-    when(sdStore.getByFilter(any(SdFilter.class), eq(false), eq(false))).thenReturn(result);
+    when(assetStore.getByFilter(any(AssetFilter.class), eq(false), eq(false))).thenReturn(result);
   }
 }

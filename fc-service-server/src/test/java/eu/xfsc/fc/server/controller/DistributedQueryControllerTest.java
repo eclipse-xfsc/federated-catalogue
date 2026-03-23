@@ -32,11 +32,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.xfsc.fc.api.generated.model.Results;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.server.helper.FileReaderHelper;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
@@ -67,7 +67,7 @@ public class DistributedQueryControllerTest {
   private Neo4j embeddedDatabaseServer;
 
   @Autowired
-  private SelfDescriptionStore sdStorePublisher;
+  private AssetStore assetStorePublisher;
 
   @Autowired
   private VerificationService verificationService;
@@ -86,7 +86,7 @@ public class DistributedQueryControllerTest {
   public void setup() throws Exception {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
     schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
-    initialiseAllDataBaseWithManuallyAddingSDFromRepository();
+    initialiseAllDataBaseWithManuallyAddingCredentialFromRepository();
     mockBackEnd90 = new MockWebServer();
     mockBackEnd90.noClientAuth();
     mockBackEnd90.start(9090);
@@ -100,7 +100,7 @@ public class DistributedQueryControllerTest {
     mockBackEnd91.shutdown();
     mockBackEnd90.shutdown();
     schemaStore.clear();
-    sdStorePublisher.clear();
+    assetStorePublisher.clear();
     embeddedDatabaseServer.close();
   }
 
@@ -229,35 +229,35 @@ public class DistributedQueryControllerTest {
   }
 
 
-  private void initialiseAllDataBaseWithManuallyAddingSDFromRepository() throws Exception {
+  private void initialiseAllDataBaseWithManuallyAddingCredentialFromRepository() throws Exception {
 
 	  log.debug("INIT-DATA.START");
 	  try {
-    //adding 1st sd
+    //adding 1st credential
     ContentAccessorDirect contentAccessor =
-        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("default_participant.json"));
-    VerificationResultParticipant verificationResult = verificationService.verifyParticipantSelfDescription(contentAccessor);
-    SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(verificationResult.getId(),
+        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("default-participant.json"));
+    CredentialVerificationResultParticipant verificationResult = verificationService.verifyParticipantCredential(contentAccessor);
+    AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(),
             verificationResult.getIssuer(), verificationResult.getValidators(), contentAccessor);
-    sdStorePublisher.storeSelfDescription(sdMetadata, verificationResult);
+    assetStorePublisher.storeCredential(assetMetadata, verificationResult);
 
-    //adding second sd
+    //adding second credential
     ContentAccessorDirect contentAccessor2
-            = new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("default-sd-service-offering.json"));
-    VerificationResultOffering verificationResult2
-            = verificationService.verifyOfferingSelfDescription(contentAccessor2);
-    SelfDescriptionMetadata sdMetadata2 = new SelfDescriptionMetadata(verificationResult2.getId(),
+            = new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("default-credential-service-offering.json"));
+    CredentialVerificationResultOffering verificationResult2
+            = verificationService.verifyOfferingCredential(contentAccessor2);
+    AssetMetadata assetMetadata2 = new AssetMetadata(verificationResult2.getId(),
             verificationResult2.getIssuer(), verificationResult2.getValidators(), contentAccessor2);
-    sdStorePublisher.storeSelfDescription(sdMetadata2, verificationResult2);
+    assetStorePublisher.storeCredential(assetMetadata2, verificationResult2);
 
-    //adding sd 3
+    //adding third credential
    ContentAccessorDirect contentAccessorDirect3 =
-        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("unique_participant.json"));
-    VerificationResultParticipant verificationResult3
-        = verificationService.verifyParticipantSelfDescription(contentAccessorDirect3);
-    SelfDescriptionMetadata sdMetadata3 = new SelfDescriptionMetadata(verificationResult3.getId(),
+        new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("unique-participant.json"));
+    CredentialVerificationResultParticipant verificationResult3
+        = verificationService.verifyParticipantCredential(contentAccessorDirect3);
+    AssetMetadata assetMetadata3 = new AssetMetadata(verificationResult3.getId(),
         verificationResult3.getIssuer(), verificationResult3.getValidators(), contentAccessorDirect3);
-    sdStorePublisher.storeSelfDescription(sdMetadata3, verificationResult2);
+    assetStorePublisher.storeCredential(assetMetadata3, verificationResult3);
     
 	  } catch (Exception ex) {
 		  log.error("INIT-DATA.ERROR", ex);

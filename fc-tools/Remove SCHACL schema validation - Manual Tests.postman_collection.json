@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c6c72e04-4fda-49d4-a5ac-088c4ca88909",
     "name": "Removed SHACL schema validation - Manual Tests",
-    "description": "Manual acceptance tests for disabling SHACL schema validation on upload.\n\nGoal: Upload a SHACL shape, then upload an asset that is NOT valid against it. Expect success when schema validation is disabled.\n\n--- TEST FLOW ---\n\n1. Get Token\n2. Upload SHACL shape (requires dataAccountExport on ServiceOffering)\n3. POST /verification with verifySchema=TRUE -> REJECTED (proves shape works)\n4. POST /verification with verifySchema=FALSE -> ACCEPTED (proves toggle works)\n5. POST /self-descriptions (default verifySchema=false) -> uploaded OK\n\n--- PREREQUISITES ---\n\n1. Fill in variables: client_secret, keycloak_user_username, keycloak_user_password\n2. Start Docker: docker compose --env-file dev.env up --build\n3. Run requests in order\n\n--- TEST DATA ---\n\nSHACL Shape: Targets gax-trust-framework:ServiceOffering, requires dataAccountExport (which the SD lacks).\n\nSelf-Description (VP): ServiceOffering with valid signatures (did:web:compliance.lab.gaia-x.eu). Has serviceTitle, keywords, termsAndConditions, providedBy — but NO dataAccountExport -> SHACL-invalid.",
+    "description": "Manual acceptance tests for disabling SHACL schema validation on upload.\n\nGoal: Upload a SHACL shape, then upload an asset that is NOT valid against it. Expect success when schema validation is disabled.\n\n--- TEST FLOW ---\n\n1. Get Token\n2. Upload SHACL shape (requires dataAccountExport on ServiceOffering)\n3. POST /verification with verifySchema=TRUE -> REJECTED (proves shape works)\n4. POST /verification with verifySchema=FALSE -> ACCEPTED (proves toggle works)\n5. POST /assets (default verifySchema=false) -> uploaded OK\n\n--- PREREQUISITES ---\n\n1. Fill in variables: client_secret, keycloak_user_username, keycloak_user_password\n2. Start Docker: docker compose --env-file dev.env up --build\n3. Run requests in order\n\n--- TEST DATA ---\n\nSHACL Shape: Targets gax-trust-framework:ServiceOffering, requires dataAccountExport (which the credential lacks).\n\nSelf-Description (VP): ServiceOffering with valid signatures (did:web:compliance.lab.gaia-x.eu). Has serviceTitle, keywords, termsAndConditions, providedBy — but NO dataAccountExport -> SHACL-invalid.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "11711107"
   },
@@ -11,7 +11,7 @@
       "name": "SHACL shapes remain storable",
       "item": [
         {
-          "name": "Upload SHACL shape (LegalPersonShape - invalidates test SD)",
+          "name": "Upload SHACL shape (LegalPersonShape - invalidates test credential)",
           "event": [
             {
               "listen": "test",
@@ -224,20 +224,20 @@
           "response": []
         }
       ],
-      "description": "Upload a SHACL shape requiring dataAccountExport on gax-trust-framework:ServiceOffering. The test SD lacks this field. Verify the shape is stored."
+      "description": "Upload a SHACL shape requiring dataAccountExport on gax-trust-framework:ServiceOffering. The test credential lacks this field. Verify the shape is stored."
     },
     {
       "name": "Verification endpoint (schema validation toggle)",
       "item": [
         {
-          "name": "PROOF: Verify SHACL-invalid SD REJECTED with verifySchema=true",
+          "name": "PROOF: Verify SHACL-invalid credential REJECTED with verifySchema=true",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('SHACL-invalid SD is REJECTED when verifySchema=true', function () {",
+                  "pm.test('SHACL-invalid credential is REJECTED when verifySchema=true', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([409, 500]);",
                   "});",
                   "",
@@ -304,14 +304,14 @@
           "response": []
         },
         {
-          "name": "Verify SHACL-invalid SD ACCEPTED (verifySchema=false)",
+          "name": "Verify SHACL-invalid credential ACCEPTED (verifySchema=false)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('SHACL-invalid SD accepted with verifySchema=false', function () {",
+                  "pm.test('SHACL-invalid credential accepted with verifySchema=false', function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
                   "",
@@ -381,17 +381,17 @@
       "description": "Two-step test of the schema validation toggle on /verification.\n\n1. verifySchema=TRUE -> REJECTED (proves the shape catches missing dataAccountExport)\n2. verifySchema=FALSE -> ACCEPTED (proves schema validation is disabled)\n\nSignature checks disabled via query params to isolate the schema validation test."
     },
     {
-      "name": "Self-Description Upload (POST /self-descriptions)",
+      "name": "Asset Upload (POST /assets)",
       "item": [
         {
-          "name": "Upload SHACL-invalid SD (default verifySchema=false)",
+          "name": "Upload SHACL-invalid credential (default verifySchema=false)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('SHACL-invalid SD uploaded (default verifySchema=false)', function () {",
+                  "pm.test('SHACL-invalid credential uploaded (default verifySchema=false)', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([201, 200]);",
                   "});",
                   "",
@@ -435,20 +435,20 @@
               }
             },
             "url": {
-              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions",
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets",
               "protocol": "{{federated_catalogue_protocol}}",
               "host": [
                 "{{federated_catalogue_address}}"
               ],
               "path": [
-                "self-descriptions"
+                "assets"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "/self-descriptions/{hash} Copy",
+          "name": "/assets/{hash} Copy",
           "protocolProfileBehavior": {
             "disabledSystemHeaders": {},
             "disableBodyPruning": true
@@ -481,13 +481,13 @@
               }
             },
             "url": {
-              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash",
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash",
               "protocol": "{{federated_catalogue_protocol}}",
               "host": [
                 "{{federated_catalogue_address}}"
               ],
               "path": [
-                "self-descriptions",
+                "assets",
                 ":hash"
               ],
               "variable": [
@@ -501,7 +501,7 @@
           "response": []
         },
         {
-          "name": "/self-descriptions/{hash} Copy",
+          "name": "/assets/{hash} Copy",
           "protocolProfileBehavior": {
             "disabledSystemHeaders": {}
           },
@@ -533,13 +533,13 @@
               }
             },
             "url": {
-              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/self-descriptions/:hash",
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash",
               "protocol": "{{federated_catalogue_protocol}}",
               "host": [
                 "{{federated_catalogue_address}}"
               ],
               "path": [
-                "self-descriptions",
+                "assets",
                 ":hash"
               ],
               "variable": [
@@ -553,7 +553,7 @@
           "response": []
         }
       ],
-      "description": "POST /self-descriptions with a SHACL-invalid SD (missing dataAccountExport). Default config: verifySchema=false. Expect 201 Created."
+      "description": "POST /assets with a SHACL-invalid credential (missing dataAccountExport). Default config: verifySchema=false. Expect 201 Created."
     },
     {
       "name": "0. Get Token",

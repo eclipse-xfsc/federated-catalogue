@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initialscale=1.0">
-    <title>Verify Self-Description</title>
+    <title>Verify Credential</title>
     <link href="css/jquery-ui.min.css" rel="stylesheet">
     <script src="js/jquery-3.6.3.min.js"></script>
     <script src="js/jquery-ui.min.js"></script>
@@ -29,11 +29,11 @@
 <body>
  <div class="container">
     <div>
-        <h2>Verify Self-Description</h2>
+        <h2>Verify Credential</h2>
         <br>
-        Please upload SD file or copy/paste SD content in textarea:<br>
+        Please upload credential file or copy/paste credential content in textarea:<br>
         <br>
-        <input accept="application/json" class="btn btn-info" id="sdFile" name="datafile" size="40" type="file">
+        <input accept="application/json" class="btn btn-info" id="credentialFile" name="datafile" size="40" type="file">
         </p>
 
         <textarea id="content-target" placeholder="Please upload or copy paste"
@@ -62,7 +62,7 @@
 
         <br>
         <!--<br><br><br>-->
-        <button class="btn btn-primary" onclick="verifySD()">Verify</button>
+        <button class="btn btn-primary" onclick="verifyCredential()">Verify</button>
         <br>
         <br><div><label>Verification result :</label> <br>
           <textarea id="result" placeholder="Verification result" style="padding:5px; font-weight:bold; float:left; width: 800px; height:auto ">
@@ -72,7 +72,7 @@
         <script>
 
             <!--Event for fileUpload and getFile is triggered -->
-            document.getElementById('sdFile').addEventListener('change', getFile)
+            document.getElementById('credentialFile').addEventListener('change', getFile)
 
             function getFile(event) {
                 $('#result').html("");
@@ -100,12 +100,12 @@
                 })
             }
 
-            <!--Post call for verify sd to server -->
-            function verifySD(){
+            <!--Post call for verify credential to server -->
+            function verifyCredential(){
 
                 $('#result').html("");
                 if(document.getElementById('content-target').value=="" || document.getElementById('content-target').value==null){
-                     alert("Please add Self-Description");
+                     alert("Please add credential");
                      return;
                 }
                 var checkVerifySemantics = $("#verifySemantics").is(":checked") ? "true" : "false";

@@ -4,12 +4,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import eu.xfsc.fc.core.service.pubsub.SDPublisher;
-import eu.xfsc.fc.core.service.pubsub.SDSubscriber;
-import eu.xfsc.fc.core.service.pubsub.ces.CesSDPublisherImpl;
-import eu.xfsc.fc.core.service.pubsub.ces.CesSDSubscriberImpl;
-import eu.xfsc.fc.core.service.pubsub.nats.NatsSDPublisherImpl;
-import eu.xfsc.fc.core.service.pubsub.nats.NatsSDSubscriberImpl;
+import eu.xfsc.fc.core.service.pubsub.AssetPublisher;
+import eu.xfsc.fc.core.service.pubsub.AssetSubscriber;
+import eu.xfsc.fc.core.service.pubsub.ces.CesAssetPublisherImpl;
+import eu.xfsc.fc.core.service.pubsub.ces.CesAssetSubscriberImpl;
+import eu.xfsc.fc.core.service.pubsub.nats.NatsAssetPublisherImpl;
+import eu.xfsc.fc.core.service.pubsub.nats.NatsAssetSubscriberImpl;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -22,38 +22,38 @@ public class PubSubConfig {
     private String subImpl;
     
     @Bean
-    public SDPublisher getSDPublisher() {
-    	SDPublisher pub = null;
+    public AssetPublisher getAssetPublisher() {
+    	AssetPublisher pub = null;
     	switch (pubImpl) {
 			//case "basf": 
-			//	pub = new BasfSDPublisherImpl();
+			//	pub = new BasfAssetPublisherImpl();
 			//	break;
 	    	case "ces":
-	    		pub = new CesSDPublisherImpl();
+	    		pub = new CesAssetPublisherImpl();
 	    		break;
 			case "nats": 
-				pub = new NatsSDPublisherImpl();
+				pub = new NatsAssetPublisherImpl();
 				break;
     	}
-    	log.debug("getSDPublisher; returning {} for impl {}", pub, pubImpl);
+    	log.debug("getAssetPublisher; returning {} for impl {}", pub, pubImpl);
     	return pub;
     }
 
     @Bean
-    public SDSubscriber getSDSubscriber() {
-    	SDSubscriber sub = null;
+    public AssetSubscriber getAssetSubscriber() {
+    	AssetSubscriber sub = null;
     	switch (subImpl) {
     		//case "basf": 
-    		//	sub = new BasfSDSubscriberImpl();
+    		//	sub = new BasfAssetSubscriberImpl();
     		//	break;
     	    case "ces":
-    	    	sub = new CesSDSubscriberImpl();
+    	    	sub = new CesAssetSubscriberImpl();
     	    	break;
     		case "nats": 
-    			sub = new NatsSDSubscriberImpl();
+    			sub = new NatsAssetSubscriberImpl();
     			break;
     	}
-    	log.debug("getSDSubscriber; returning {} for impl {}", sub, subImpl);
+    	log.debug("getAssetSubscriber; returning {} for impl {}", sub, subImpl);
     	return sub;
     }
         

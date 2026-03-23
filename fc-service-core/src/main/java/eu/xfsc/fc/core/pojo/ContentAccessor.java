@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Accessor class for passing SelfDescription or Schema content. Implementations
+ * Accessor class for passing asset or schema content. Implementations
  * may use lazy-loading to improve memory use.
  */
 public interface ContentAccessor {

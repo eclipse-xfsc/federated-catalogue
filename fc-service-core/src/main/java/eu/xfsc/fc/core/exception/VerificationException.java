@@ -1,7 +1,7 @@
 package eu.xfsc.fc.core.exception;
 
 /**
- * VerificationException is an exception that is thrown when the validation of a SD fails
+ * VerificationException is an exception that is thrown when the validation of a credential fails
  * Implementation of the {@link ServiceException} exception.
  */
 

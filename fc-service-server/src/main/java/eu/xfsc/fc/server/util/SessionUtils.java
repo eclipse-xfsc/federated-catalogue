@@ -76,7 +76,7 @@ public class SessionUtils {
   /**
    * Internal service method for checking user access to a particular Participant.
    *
-   * @param participantId The Participant issuer of SD (required).
+   * @param participantId The Participant issuer of the asset (required).
    */
   public static void checkParticipantAccess(String participantId) {
     String sessionParticipantId = SessionUtils.getSessionParticipantId();

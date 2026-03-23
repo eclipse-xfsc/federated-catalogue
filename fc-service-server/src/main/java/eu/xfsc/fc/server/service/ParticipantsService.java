@@ -13,11 +13,11 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.ParticipantMetaData;
-import eu.xfsc.fc.core.pojo.SdFilter;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
+import eu.xfsc.fc.core.pojo.AssetFilter;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.Validator;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 
 import static eu.xfsc.fc.server.util.SessionUtils.checkParticipantAccess;
@@ -44,14 +44,14 @@ public class ParticipantsService implements ParticipantsApiDelegate {
   @Autowired
   private ValidatorCacheDao validatorCache;
   @Autowired
-  private SelfDescriptionStore sdStorePublisher;
+  private AssetStore assetStorePublisher;
   @Autowired
   private VerificationService verificationService;
 
   /**
    * POST /participants : Register a new participant in the catalogue.
    *
-   * @param body Participant Self-Description (required)
+   * @param body Participant credential (required)
    * @return Created Participant (status code 201)
    *         or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *         or Forbidden. The user does not have the permission to execute this request. (status code 403)
@@ -61,13 +61,13 @@ public class ParticipantsService implements ParticipantsApiDelegate {
   @Override
   @Transactional
   public ResponseEntity<Participant> addParticipant(String body) {
-    log.debug("addParticipant.enter; got SD of length: {}", body.length()); // it can be JWT?
-    Pair<VerificationResultParticipant, SelfDescriptionMetadata> pairResult = validateSelfDescription(body);
-    VerificationResultParticipant verificationResult = pairResult.getLeft();
-    SelfDescriptionMetadata selfDescriptionMetadata = pairResult.getRight();
+    log.debug("addParticipant.enter; got credential of length: {}", body.length()); // it can be JWT?
+    Pair<CredentialVerificationResultParticipant, AssetMetadata> pairResult = validateCredential(body);
+    CredentialVerificationResultParticipant verificationResult = pairResult.getLeft();
+    AssetMetadata assetMetadata = pairResult.getRight();
 
-    sdStorePublisher.storeSelfDescription(selfDescriptionMetadata, verificationResult);
-    ParticipantMetaData participantMetaData = toParticipantMetaData(verificationResult, selfDescriptionMetadata);
+    assetStorePublisher.storeCredential(assetMetadata, verificationResult);
+    ParticipantMetaData participantMetaData = toParticipantMetaData(verificationResult, assetMetadata);
 
     participantMetaData = partDao.create(participantMetaData);
     setParticipantPublicKey(participantMetaData);
@@ -92,11 +92,11 @@ public class ParticipantsService implements ParticipantsApiDelegate {
     checkParticipantAccess(participantId);
     ParticipantMetaData participant = partDao.select(participantId)
         .orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
-    String selfDescription = sdStorePublisher.getByHash(participant.getSdHash()).getSelfDescription().getContentAsString();
-    sdStorePublisher.deleteSelfDescription(participant.getSdHash());
+    String credentialContent = assetStorePublisher.getByHash(participant.getAssetHash()).getContentAccessor().getContentAsString();
+    assetStorePublisher.deleteAsset(participant.getAssetHash());
     participant = partDao.delete(participant.getId()).get();
     log.debug("deleteParticipant.exit; returning: {}", participant);
-    participant.setSelfDescription(selfDescription);
+    participant.setAsset(credentialContent);
     setParticipantPublicKey(participant);
     return ResponseEntity.ok(participant);
   }
@@ -118,8 +118,8 @@ public class ParticipantsService implements ParticipantsApiDelegate {
     checkParticipantAccess(participantId);
     ParticipantMetaData part = partDao.select(participantId)
         .orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
-    SelfDescriptionMetadata selfDescriptionMetadata = sdStorePublisher.getByHash(part.getSdHash());
-    part.setSelfDescription(selfDescriptionMetadata.getSelfDescription().getContentAsString());
+    AssetMetadata assetMetadata = assetStorePublisher.getByHash(part.getAssetHash());
+    part.setAsset(assetMetadata.getContentAccessor().getContentAsString());
     setParticipantPublicKey(part);
     log.debug("getParticipant.exit; returning: {}", part);
     return ResponseEntity.ok(part);
@@ -163,17 +163,17 @@ public class ParticipantsService implements ParticipantsApiDelegate {
     PaginatedResults<ParticipantMetaData> results = partDao.search(offset, limit);
     int total = (int) results.getTotalCount();
     if (total > 0) {
-      //Adding actual SD from sd-store for each sd-hash present in keycloak
-      SdFilter filter = new SdFilter();
+      //Adding actual asset from asset-store for each hash present in keycloak
+      AssetFilter filter = new AssetFilter();
       filter.setLimit(results.getResults().size());
       filter.setOffset(0);
-      filter.setHashes(results.getResults().stream().map(ParticipantMetaData::getSdHash).collect(Collectors.toList()));
-      PaginatedResults<SelfDescriptionMetadata> page = sdStorePublisher.getByFilter(filter, true, true);
+      filter.setHashes(results.getResults().stream().map(ParticipantMetaData::getAssetHash).collect(Collectors.toList()));
+      PaginatedResults<AssetMetadata> page = assetStorePublisher.getByFilter(filter, true, true);
       if (page.getTotalCount() > 0) {
-        Map<String, ContentAccessor> sdsMap = page.getResults().stream().collect(
-    		  Collectors.toMap(SelfDescriptionMetadata::getSdHash, SelfDescriptionMetadata::getSelfDescription));
+        Map<String, ContentAccessor> assetsMap = page.getResults().stream().collect(
+    		  Collectors.toMap(AssetMetadata::getAssetHash, AssetMetadata::getContentAccessor));
         results.getResults().forEach(part -> {
-          part.setSelfDescription(sdsMap.get(part.getSdHash()).getContentAsString());
+          part.setAsset(assetsMap.get(part.getAssetHash()).getContentAsString());
           setParticipantPublicKey(part);
         });
       } else {
@@ -190,7 +190,7 @@ public class ParticipantsService implements ParticipantsApiDelegate {
    * PUT /participants/{participantId} : Update a participant in the catalogue.
    *
    * @param participantId The participant to update. (required)
-   * @param body          Participant Self-Description (required)
+   * @param body          Participant credential (required)
    * @return Updated Participant (status code 200)
    *         or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *         or Forbidden. The user does not have the permission to execute this request. (status code 403)
@@ -208,20 +208,20 @@ public class ParticipantsService implements ParticipantsApiDelegate {
     ParticipantMetaData participantExisted = partDao.select(participantId)
         .orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
 
-    Pair<VerificationResultParticipant, SelfDescriptionMetadata> pairResult = validateSelfDescription(body);
-    VerificationResultParticipant verificationResult = pairResult.getLeft();
-    SelfDescriptionMetadata selfDescriptionMetadata = pairResult.getRight();
+    Pair<CredentialVerificationResultParticipant, AssetMetadata> pairResult = validateCredential(body);
+    CredentialVerificationResultParticipant verificationResult = pairResult.getLeft();
+    AssetMetadata assetMetadata = pairResult.getRight();
 
-    ParticipantMetaData participantUpdated = toParticipantMetaData(verificationResult, selfDescriptionMetadata);
+    ParticipantMetaData participantUpdated = toParticipantMetaData(verificationResult, assetMetadata);
     if (!participantUpdated.getId().equals(participantExisted.getId())) {
       throw new ClientException("Participant ID cannot be changed");
     }
 
-    sdStorePublisher.storeSelfDescription(selfDescriptionMetadata, verificationResult);
+    assetStorePublisher.storeCredential(assetMetadata, verificationResult);
     ParticipantMetaData participantMetaData = partDao.update(participantId, participantUpdated)
         .orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
     log.debug("updateParticipant.exit; returning: {}", participantMetaData);
-    participantMetaData.setSelfDescription(sdStorePublisher.getByHash(participantMetaData.getSdHash()).getSelfDescription().getContentAsString());
+    participantMetaData.setAsset(assetStorePublisher.getByHash(participantMetaData.getAssetHash()).getContentAccessor().getContentAsString());
     setParticipantPublicKey(participantMetaData);
     return ResponseEntity.ok(participantMetaData);
   }
@@ -230,32 +230,32 @@ public class ParticipantsService implements ParticipantsApiDelegate {
    * Utility method to return {@link ParticipantMetaData}.
    *
    * @param verificationResult      Result of validation
-   * @param selfDescriptionMetadata Metadata of self-description
+   * @param assetMetadata Metadata of the asset
    * @return ParticipantMetaData
    */
-  private ParticipantMetaData toParticipantMetaData(VerificationResultParticipant verificationResult,
-                                                    SelfDescriptionMetadata selfDescriptionMetadata) {
+  private ParticipantMetaData toParticipantMetaData(CredentialVerificationResultParticipant verificationResult,
+                                                    AssetMetadata assetMetadata) {
     return new ParticipantMetaData(verificationResult.getId(), verificationResult.getParticipantName(),
-        verificationResult.getParticipantPublicKey(), selfDescriptionMetadata.getSelfDescription().getContentAsString(),
-        selfDescriptionMetadata.getSdHash());
+        verificationResult.getParticipantPublicKey(), assetMetadata.getContentAccessor().getContentAsString(),
+        assetMetadata.getAssetHash());
   }
 
   /**
-   * Validate self-Description.
+   * Validate credential.
    *
-   * @param body self description
-   * @return DTO object containing result and metadata of self-description
+   * @param body credential
+   * @return DTO object containing result and metadata of credential
    */
-  private Pair<VerificationResultParticipant, SelfDescriptionMetadata> validateSelfDescription(String body) {
+  private Pair<CredentialVerificationResultParticipant, AssetMetadata> validateCredential(String body) {
     ContentAccessorDirect contentAccessorDirect = new ContentAccessorDirect(body);
-    VerificationResultParticipant verificationResultParticipant =
-        verificationService.verifyParticipantSelfDescription(contentAccessorDirect);
-    log.debug("validateSelfDescription; verification result is: {}", verificationResultParticipant);
+    CredentialVerificationResultParticipant verificationResultParticipant =
+        verificationService.verifyParticipantCredential(contentAccessorDirect);
+    log.debug("validateCredential; verification result is: {}", verificationResultParticipant);
 
-    SelfDescriptionMetadata selfDescriptionMetadata = new SelfDescriptionMetadata(contentAccessorDirect, verificationResultParticipant);
-    log.debug("validateSelfDescription; SD metadata is: {}", selfDescriptionMetadata);
+    AssetMetadata assetMetadata = new AssetMetadata(contentAccessorDirect, verificationResultParticipant);
+    log.debug("validateCredential; asset metadata is: {}", assetMetadata);
 
-    return Pair.of(verificationResultParticipant, selfDescriptionMetadata);
+    return Pair.of(verificationResultParticipant, assetMetadata);
   }
 
   private void setParticipantPublicKey(ParticipantMetaData participant) {

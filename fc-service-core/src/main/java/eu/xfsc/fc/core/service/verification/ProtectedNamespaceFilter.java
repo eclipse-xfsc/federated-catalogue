@@ -11,9 +11,9 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
 import eu.xfsc.fc.core.pojo.FilteredModel;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -40,20 +40,20 @@ public class ProtectedNamespaceFilter {
    * even if they contain the namespace string.</p>
    *
    * @param claims the list of claims to filter
-   * @param source description of the source for logging (e.g. "self-description upload")
+   * @param source description of the source for logging (e.g. "asset upload")
    * @return {@link FilteredClaims} containing the allowed claims and an optional user-visible warning
    */
-  public FilteredClaims filterClaims(List<SdClaim> claims, String source) {
+  public FilteredClaims filterClaims(List<CredentialClaim> claims, String source) {
     if (claims == null || claims.isEmpty()) {
       return new FilteredClaims(claims, null);
     }
 
     String ns = properties.getNamespace();
     String namespaceIdentifier = "<" + ns;
-    List<SdClaim> allowed = new ArrayList<>(claims.size());
-    List<SdClaim> rejected = new ArrayList<>();
+    List<CredentialClaim> allowed = new ArrayList<>(claims.size());
+    List<CredentialClaim> rejected = new ArrayList<>();
 
-    for (SdClaim claim : claims) {
+    for (CredentialClaim claim : claims) {
       if (claimUsesProtectedNamespace(claim, namespaceIdentifier)) {
         rejected.add(claim);
         log.debug("filterClaims; rejected triple from {}: {}", source, claim);
@@ -70,12 +70,12 @@ public class ProtectedNamespaceFilter {
     return new FilteredClaims(allowed, null);
   }
 
-  private String buildUserWarning(List<SdClaim> rejected) {
+  private String buildUserWarning(List<CredentialClaim> rejected) {
     StringBuilder sb = new StringBuilder();
     sb.append(rejected.size()).append(" triple(s) were removed from your upload because they use the reserved")
         .append(" internal namespace <").append(properties.getNamespace()).append(">.")
         .append(" Removed triples:");
-    for (SdClaim claim : rejected) {
+    for (CredentialClaim claim : rejected) {
       sb.append("\n  · ").append(claim.getSubjectString())
         .append(" ").append(claim.getPredicateString())
         .append(" ").append(claim.getObjectString());
@@ -134,7 +134,7 @@ public class ProtectedNamespaceFilter {
     return sb.toString();
   }
 
-  private boolean claimUsesProtectedNamespace(SdClaim claim, String angleBracketNs) {
+  private boolean claimUsesProtectedNamespace(CredentialClaim claim, String angleBracketNs) {
     String subj = claim.getSubjectString();
     if (subj != null && subj.startsWith(angleBracketNs)) {
       return true;

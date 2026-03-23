@@ -13,21 +13,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.core.exception.VerificationException;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
-import eu.xfsc.fc.core.pojo.VerificationResult;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.pojo.VerificationResultResource;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * Implementation of the {@link VerificationService} interface.
- * Acts as the Context in the Strategy pattern, delegating verification
- * and data extraction logic to a {@link VerificationStrategy}.
- * Currently delegates to {@link CredentialVerificationStrategy}.
+ * Acts as the Context in the Strategy pattern, delegating RDF verification
+ * and data extraction logic to format-specific {@link VerificationStrategy} implementations.
+ * Routes by RDF serialization format (JSON-LD, Turtle, N-Triples, RDF/XML).
+ * 
+ * <p>Currently delegates all RDF credentials to {@link CredentialVerificationStrategy} (JSON-LD only).
  */
 @Slf4j
 @Component
@@ -60,7 +62,7 @@ public class VerificationServiceImpl implements VerificationService {
    * different verification logic (e.g., non-RDF, non-credential), this method is the
    * extension point for payload-based routing.
    *
-   * @param payload the Self-Description content used to determine which strategy to apply
+   * @param payload the RDF content used to determine which strategy to apply (currently always JSON-LD)
    * @return the resolved strategy
    */
   private VerificationStrategy resolveStrategy(ContentAccessor payload) {
@@ -68,67 +70,67 @@ public class VerificationServiceImpl implements VerificationService {
   }
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed Participant metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return a Participant metadata validation result. If the validation fails, the reason explains the issue.
    */
   @Override
-  public VerificationResultParticipant verifyParticipantSelfDescription(ContentAccessor payload) throws VerificationException {
-    return (VerificationResultParticipant) resolveStrategy(payload).verifySelfDescription(payload, true, PARTICIPANT,
+  public CredentialVerificationResultParticipant verifyParticipantCredential(ContentAccessor payload) throws VerificationException {
+    return (CredentialVerificationResultParticipant) resolveStrategy(payload).verifyCredential(payload, true, PARTICIPANT,
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed Offering metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return a Verification result. If the verification fails, the reason explains the issue.
    */
   @Override
-  public VerificationResultOffering verifyOfferingSelfDescription(ContentAccessor payload) throws VerificationException {
-    return (VerificationResultOffering) resolveStrategy(payload).verifySelfDescription(payload, true, SERVICE_OFFERING,
+  public CredentialVerificationResultOffering verifyOfferingCredential(ContentAccessor payload) throws VerificationException {
+    return (CredentialVerificationResultOffering) resolveStrategy(payload).verifyCredential(payload, true, SERVICE_OFFERING,
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed Resource metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return a Verification result. If the verification fails, the reason explains the issue.
    */
   @Override
-  public VerificationResultResource verifyResourceSelfDescription(ContentAccessor payload) throws VerificationException {
-    return (VerificationResultResource) resolveStrategy(payload).verifySelfDescription(payload, true, RESOURCE,
+  public CredentialVerificationResultResource verifyResourceCredential(ContentAccessor payload) throws VerificationException {
+    return (CredentialVerificationResultResource) resolveStrategy(payload).verifyCredential(payload, true, RESOURCE,
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts generic credential metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
-   * @return a Self-Description metadata validation result. If the validation fails, the reason explains the issue.
+   * @param payload ContentAccessor to credential which should be validated.
+   * @return a credential metadata validation result. If the validation fails, the reason explains the issue.
    */
   @Override
-  public VerificationResult verifySelfDescription(ContentAccessor payload) throws VerificationException {
-    return verifySelfDescription(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload) throws VerificationException {
+    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
   @Override
-  public VerificationResult verifySelfDescription(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException {
-    return resolveStrategy(payload).verifySelfDescription(payload, false, UNKNOWN,
+    return resolveStrategy(payload).verifyCredential(payload, false, UNKNOWN,
             verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
   }
 
   /**
-   * A method that returns a list of claims given a self-description's VerifiablePresentation
+   * A method that returns a list of claims from the given RDF credential payload without performing verification.
    *
-   * @param payload a self-description as Verifiable Presentation for claims extraction
+   * @param payload the RDF credential content to extract claims from
    * @return a list of claims.
    */
   @Override
-  public List<SdClaim> extractClaims(ContentAccessor payload) {
+  public List<CredentialClaim> extractClaims(ContentAccessor payload) {
     return resolveStrategy(payload).extractClaims(payload);
   }
 
@@ -143,24 +145,24 @@ public class VerificationServiceImpl implements VerificationService {
   }
 
 
-  /* SD validation against SHACL Schemas — delegated to SchemaValidationService */
+  /* Credential validation against SHACL Schemas — delegated to SchemaValidationService */
 
   /**
-   * @deprecated Use {@link SchemaValidationService#validateAgainstCompositeSchema} directly.
+   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstCompositeSchema} directly.
    */
   @Deprecated
   @Override
-  public SchemaValidationResult verifySelfDescriptionAgainstCompositeSchema(ContentAccessor payload) {
-    return schemaValidationService.validateSelfDescriptionAgainstCompositeSchema(payload);
+  public SchemaValidationResult verifyCredentialAgainstCompositeSchema(ContentAccessor payload) {
+    return schemaValidationService.validateCredentialAgainstCompositeSchema(payload);
   }
 
   /**
-   * @deprecated Use {@link SchemaValidationService#validateAgainstSchema} directly.
+   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstSchema} directly.
    */
   @Deprecated
   @Override
-  public SchemaValidationResult verifySelfDescriptionAgainstSchema(ContentAccessor payload, ContentAccessor schema) {
-    return schemaValidationService.validateSelfDescriptionAgainstSchema(payload, schema);
+  public SchemaValidationResult verifyCredentialAgainstSchema(ContentAccessor payload, ContentAccessor schema) {
+    return schemaValidationService.validateCredentialAgainstSchema(payload, schema);
   }
 
 }

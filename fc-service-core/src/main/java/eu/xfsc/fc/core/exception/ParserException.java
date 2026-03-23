@@ -1,7 +1,7 @@
 package eu.xfsc.fc.core.exception;
 
 /**
- * ParserException is an exception that can be thrown to customize the Self-Description parse error of the Federated
+ * ParserException is an exception that can be thrown to customize the asset parse error of the Federated
  * Catalogue server application.
  * Implementation of the {@link ServiceException} exception.
  */

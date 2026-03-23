@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 //import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStore;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -20,19 +20,19 @@ import lombok.extern.slf4j.Slf4j;
 public class CatalogueServerScheduler {
     
     @Autowired
-    private SelfDescriptionStore sdStorePublisher;
+    private AssetStore assetStorePublisher;
     
     @Autowired
     private SchemaStore smStore;
     
     /**
-     * Scheduler for invalidating expired SDs in store.
+     * Scheduler for invalidating expired assets in store.
      */
-    @Scheduled(cron = "${scheduler.sd.cron.expression}")
-    public void scheduleSdInvalidationTask() {
-      log.debug("scheduleSdInvalidationTask.enter; Launched scheduler to invalidate expired SDs in store.");
-      int numberOfExpiredSd = sdStorePublisher.invalidateSelfDescriptions();
-      log.debug("scheduleSdInvalidationTask.exit; {} expired SDs were found and invalidated.", numberOfExpiredSd);
+    @Scheduled(cron = "${scheduler.asset.cron.expression}")
+    public void scheduleAssetInvalidationTask() {
+      log.debug("scheduleAssetInvalidationTask.enter; Launched scheduler to invalidate expired assets in store.");
+      int numberOfExpiredAssets = assetStorePublisher.invalidateExpiredAssets();
+      log.debug("scheduleAssetInvalidationTask.exit; {} expired assets were found and invalidated.", numberOfExpiredAssets);
     }
     
     @Scheduled(initialDelayString = "${scheduler.schema.init-delay}", fixedDelay = Long.MAX_VALUE) 

@@ -6,7 +6,7 @@ import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.SdClaim;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -117,7 +117,7 @@ public class SparqlGraphStore implements GraphStore {
 
     /** {@inheritDoc} */
     @Override
-    public long getSdCountInGraph() {
+    public long getRDFAssetCountInGraph() {
         try {
             return Txn.calculateRead(rdfConnection, () -> {
                 String query = "SELECT (COUNT(DISTINCT ?cs) AS ?cnt) WHERE { "
@@ -131,17 +131,17 @@ public class SparqlGraphStore implements GraphStore {
                 return 0L;
             });
         } catch (Exception e) {
-            log.warn("Failed to get Fuseki SD count: {}", e.getMessage());
+            log.warn("Failed to get Fuseki asset count: {}", e.getMessage());
             return -1;
         }
     }
 
     @Override
-    public void addClaims(List<SdClaim> sdClaimList, String credentialSubject) {
-        log.debug("addClaims.enter; got claims: {}, subject: {}", sdClaimList, credentialSubject);
-        if (!sdClaimList.isEmpty()) {
+    public void addClaims(List<CredentialClaim> claimList, String credentialSubject) {
+        log.debug("addClaims.enter; got claims: {}, subject: {}", claimList, credentialSubject);
+        if (!claimList.isEmpty()) {
             final Model starmodel = ModelFactory.createDefaultModel();
-            final Model model = claimValidator.validateClaims(sdClaimList);
+            final Model model = claimValidator.validateClaims(claimList);
             model.listStatements().forEachRemaining(stmt -> {
                 final Triple triple = stmt.asTriple();
                 final Node qTripleNode = NodeFactory.createTripleNode(triple);
@@ -162,16 +162,16 @@ public class SparqlGraphStore implements GraphStore {
     }
 
     @Override
-    public PaginatedResults<Map<String, Object>> queryData(GraphQuery sdQuery) {
-        log.debug("queryData.enter; got query: {}", sdQuery);
+    public PaginatedResults<Map<String, Object>> queryData(GraphQuery query) {
+        log.debug("queryData.enter; got query: {}", query);
 
-        if (sdQuery.getQueryLanguage() != QueryLanguage.SPARQL) {
-            throw new UnsupportedOperationException(sdQuery.getQueryLanguage() + " query language is not supported");
+        if (query.getQueryLanguage() != QueryLanguage.SPARQL) {
+            throw new UnsupportedOperationException(query.getQueryLanguage() + " query language is not supported");
         }
         return Txn.calculateRead(rdfConnection, () -> {
             final QueryExecutionBuilder queryExecutionBuilder = rdfConnection.newQuery()
-                    .query(sdQuery.getQuery())
-                    .timeout(sdQuery.getTimeout(), TimeUnit.SECONDS);  // Fuseki timeout is in milliseconds per default
+                    .query(query.getQuery())
+                    .timeout(query.getTimeout(), TimeUnit.SECONDS);  // Fuseki timeout is in milliseconds per default
             try(final QueryExecution queryResults = queryExecutionBuilder.build()) {
                 final List<Map<String, Object>> parsedResults = new ArrayList<>(ResultSetFormatter.toList(queryResults.execSelect()).stream()
                         .map(qs -> (ResultBinding) qs)
@@ -183,16 +183,16 @@ public class SparqlGraphStore implements GraphStore {
                 // Shuffle list to guarantee results won't appear in a deterministic order thus giving certain results
                 // an advantage over others as they would always be in the top n result entries.
                 // However, the shuffling should only be performed if the query does not, by itself, return an ordered result.
-                if (!orderByRegex.matcher(sdQuery.getQuery()).find()) {
+                if (!orderByRegex.matcher(query.getQuery()).find()) {
                     Collections.shuffle(parsedResults);
                 }
                 return new PaginatedResults<>(parsedResults);
             } catch (Exception e) {
                 if (e.getCause() instanceof HttpConnectTimeoutException) {
-                    log.error("Timeout while executing query: {}", sdQuery.getQuery(), e);
+                    log.error("Timeout while executing query: {}", query.getQuery(), e);
                     throw new TimeoutException("Timeout while executing query");
                 } else {
-                    log.error("Error while executing query: {}", sdQuery.getQuery(), e);
+                    log.error("Error while executing query: {}", query.getQuery(), e);
                     throw new ServerException("error querying data " + e.getMessage(), e);
                 }
             }

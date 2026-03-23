@@ -32,16 +32,16 @@ import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
-import eu.xfsc.fc.core.dao.impl.SelfDescriptionDaoImpl;
+import eu.xfsc.fc.core.dao.impl.AssetDaoImpl;
 import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.GraphQuery;
-import eu.xfsc.fc.core.pojo.SdClaim;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.sdstore.SelfDescriptionStoreImpl;
+import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
@@ -56,18 +56,18 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {Neo4jGraphStoreAccuracyTest.TestApplication.class, DatabaseConfig.class, GraphDbConfig.class, FileStoreConfig.class, Neo4jGraphStoreAccuracyTest.class,
-	Neo4jGraphStore.class, SelfDescriptionStoreImpl.class, SelfDescriptionDaoImpl.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, ValidatorCacheDaoImpl.class,
+	Neo4jGraphStore.class, AssetStoreImpl.class, AssetDaoImpl.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, ValidatorCacheDaoImpl.class,
 	DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
 	CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)
 public class Neo4jGraphStoreAccuracyTest {
 	
-  //TODO:: We need to update SD  file when final implementation of claim parsing is done .
-  private final String SERVICE_SD_FILE_NAME = "serviceOfferingSD.jsonld";
-  private final String SERVICE_SD_FILE_NAME1 = "serviceOfferingSD1.jsonld";
-  private final String SERVICE_SD_FILE_NAME2 = "serviceOfferingSD2.jsonld";
-  private final String SERVICE_SD_FILE_NAME3 = "serviceOfferingSD3.jsonld";
+  //TODO:: We need to update credential file when final implementation of claim parsing is done .
+  private final String SERVICE_CREDENTIAL_FILE_NAME = "serviceOfferingCredential.jsonld";
+  private final String SERVICE_CREDENTIAL_FILE_NAME1 = "serviceOfferingCredential1.jsonld";
+  private final String SERVICE_CREDENTIAL_FILE_NAME2 = "serviceOfferingCredential2.jsonld";
+  private final String SERVICE_CREDENTIAL_FILE_NAME3 = "serviceOfferingCredential3.jsonld";
 
   @SpringBootApplication
   public static class TestApplication {
@@ -82,14 +82,14 @@ public class Neo4jGraphStoreAccuracyTest {
   @Autowired
   private Neo4jGraphStore neo4jGraphStore;
   @Autowired
-  private SelfDescriptionStoreImpl sdStore;
+  private AssetStoreImpl assetStore;
   @Autowired
   private VerificationServiceImpl verificationService;
 
   
   @BeforeAll
   void addDBEntries() throws Exception {
-    initialiseAllDataBaseWithManuallyAddingSD();
+    initialiseAllDataBaseWithManuallyAddingCredential();
   }
 
   @AfterAll
@@ -162,140 +162,140 @@ public class Neo4jGraphStoreAccuracyTest {
   @Test
   void testQueryForGroupBYAndLocation() {
     String credentialSubject1 = "http://example.org/test-issuer";
-    List<SdClaim> sdClaimList = Arrays.asList(
-            new SdClaim(
+    List<CredentialClaim> claimList = Arrays.asList(
+            new CredentialClaim(
                     "<http://example.org/test-issuer>",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                     "<http://w3id.org/gaia-x/participant#Provider>"
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer>",
                     "<http://w3id.org/gaia-x/participant#legalAddress>",
                     "_:23"
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer>",
                     "<http://w3id.org/gaia-x/participant#legalName>",
                     "\"deltaDAO AG\""
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer>",
                     "<http://w3id.org/gaia-x/participant#name>",
                     "\"deltaDAO AG\""
             ),
-            new SdClaim("_:23",
+            new CredentialClaim("_:23",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                     "<http://w3id.org/gaia-x/participant#Address>"
             ),
-            new SdClaim("_:23",
+            new CredentialClaim("_:23",
                     "<http://w3id.org/gaia-x/participant#country>",
                     "\"DE\""
             ),
-            new SdClaim("_:23",
+            new CredentialClaim("_:23",
                     "<http://w3id.org/gaia-x/participant#locality>",
                     "\"Hamburg\""
             ),
-            new SdClaim("_:23",
+            new CredentialClaim("_:23",
                     "<http://w3id.org/gaia-x/participant#postal-code>",
                     "\"22303\""
             ),
-            new SdClaim("_:23",
+            new CredentialClaim("_:23",
                     "<http://w3id.org/gaia-x/participant#street-address>",
                     "\"GeibelstraГџe 46b\""
             )
     );
 
     String credentialSubject2 = "http://example.org/test-issuer2";
-    List<SdClaim> sdClaimList2 = Arrays.asList(
-            new SdClaim(
+    List<CredentialClaim> claimList2 = Arrays.asList(
+            new CredentialClaim(
                     "<http://example.org/test-issuer2>",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                     "<http://w3id.org/gaia-x/participant#Provider>"
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer2>",
                     "<http://w3id.org/gaia-x/participant#legalAddress>",
                     "_:b1"
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer2>",
                     "<http://w3id.org/gaia-x/participant#legalName>",
                     "\"deltaDAO AGE\""
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer2>",
                     "<http://w3id.org/gaia-x/participant#name>",
                     "\"deltaDAO AGE\""
             ),
-            new SdClaim("_:b1",
+            new CredentialClaim("_:b1",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                     "<http://w3id.org/gaia-x/participant#Address>"
             ),
-            new SdClaim("_:b1",
+            new CredentialClaim("_:b1",
                     "<http://w3id.org/gaia-x/participant#country>",
                     "\"DE\""
             ),
-            new SdClaim("_:b1",
+            new CredentialClaim("_:b1",
                     "<http://w3id.org/gaia-x/participant#locality>",
                     "\"Dresden\""
             ),
-            new SdClaim("_:b1",
+            new CredentialClaim("_:b1",
                     "<http://w3id.org/gaia-x/participant#postal-code>",
                     "\"01067\""
             ),
-            new SdClaim("_:b1",
+            new CredentialClaim("_:b1",
                     "<http://w3id.org/gaia-x/participant#street-address>",
                     "\"Tried str 46b\""
             )
     );
 
     String credentialSubject3 = "http://example.org/test-issuer3";
-    List<SdClaim> sdClaimList3 = Arrays.asList(
-            new SdClaim(
+    List<CredentialClaim> claimList3 = Arrays.asList(
+            new CredentialClaim(
                     "<http://example.org/test-issuer3>",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                     "<http://w3id.org/gaia-x/participant#Provider>"
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer3>",
                     "<http://w3id.org/gaia-x/participant#legalAddress>",
                     "_:b2"
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer3>",
                     "<http://w3id.org/gaia-x/participant#legalName>",
                     "\"deltaDAO AGEF\""
             ),
-            new SdClaim(
+            new CredentialClaim(
                     "<http://example.org/test-issuer3>",
                     "<http://w3id.org/gaia-x/participant#name>",
                     "\"deltaDAO AGEF\""
             ),
-            new SdClaim("_:b2",
+            new CredentialClaim("_:b2",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                     "<http://w3id.org/gaia-x/participant#Address>"
             ),
-            new SdClaim("_:b2",
+            new CredentialClaim("_:b2",
                     "<http://w3id.org/gaia-x/participant#country>",
                     "\"DE\""
             ),
-            new SdClaim("_:b2",
+            new CredentialClaim("_:b2",
                     "<http://w3id.org/gaia-x/participant#locality>",
                     "\"Dresden\""
             ),
-            new SdClaim("_:b2",
+            new CredentialClaim("_:b2",
                     "<http://w3id.org/gaia-x/participant#postal-code>",
                     "\"01069\""
             ),
-            new SdClaim("_:b2",
+            new CredentialClaim("_:b2",
                     "<http://w3id.org/gaia-x/participant#street-address>",
                     "\"Fried str 46b\""
             )
     );
 
-    neo4jGraphStore.addClaims(sdClaimList, credentialSubject1);
-    neo4jGraphStore.addClaims(sdClaimList2, credentialSubject2);
-    neo4jGraphStore.addClaims(sdClaimList3, credentialSubject3);
+    neo4jGraphStore.addClaims(claimList, credentialSubject1);
+    neo4jGraphStore.addClaims(claimList2, credentialSubject2);
+    neo4jGraphStore.addClaims(claimList3, credentialSubject3);
 
     //Query for the group by locality
     GraphQuery queryCypher = new GraphQuery("MATCH (n) where n.locality IS NOT NULL return COUNT(n.locality)  as countLocation ,n" +
@@ -321,105 +321,105 @@ public class Neo4jGraphStoreAccuracyTest {
     neo4jGraphStore.deleteClaims(credentialSubject3);
   }
 
-  private void initialiseAllDataBaseWithManuallyAddingSD() throws Exception {
+  private void initialiseAllDataBaseWithManuallyAddingCredential() throws Exception {
 
-    ContentAccessorDirect contentAccessor = new ContentAccessorDirect(getMockFileDataAsString(SERVICE_SD_FILE_NAME));
-    VerificationResultOffering verificationResult =
-            (VerificationResultOffering) verificationService.verifySelfDescription(contentAccessor, true, false, false, false);
+    ContentAccessorDirect contentAccessor = new ContentAccessorDirect(getMockFileDataAsString(SERVICE_CREDENTIAL_FILE_NAME));
+    CredentialVerificationResultOffering verificationResult =
+            (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessor, true, false, false, false);
 
-    //TODO:: adding manually claims, after final implementation we will remove it and change the query according to sd
+    //TODO:: adding manually claims, after final implementation we will remove it and change the query according to credential file content
 
-    SdClaim sdClaim = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json>",
+    CredentialClaim claim = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
             "<http://w3id.org/gaia-x/service#ServiceOffering>");
 
-    SdClaim sdClaimName = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json>",
+    CredentialClaim claimName = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json>",
             "<http://w3id.org/gaia-x/service#name>",
             "\"Portal\"");
 
-    List<SdClaim> sdClaimFile = List.of(sdClaim, sdClaimName);
+    List<CredentialClaim> claimFile = List.of(claim, claimName);
 
-    verificationResult.setClaims(sdClaimFile);
-    verificationResult.setId(sdClaimFile.get(0).getSubjectValue());
+    verificationResult.setClaims(claimFile);
+    verificationResult.setId(claimFile.get(0).getSubjectValue());
 
-    SelfDescriptionMetadata sdMetadata = new SelfDescriptionMetadata(verificationResult.getId(),
+    AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(),
             verificationResult.getIssuer(), new ArrayList<>(), contentAccessor);
-    sdStore.storeSelfDescription(sdMetadata, verificationResult);
+    assetStore.storeCredential(assetMetadata, verificationResult);
 
-    //adding 2 sd skipping sd validation as we don't have full implementation
+    //adding 2 credential skipping credential validation as we don't have full implementation
     ContentAccessorDirect contentAccessorDirect2 =
-            new ContentAccessorDirect(getMockFileDataAsString(SERVICE_SD_FILE_NAME1));
-    VerificationResultOffering verificationResult2 =
-            (VerificationResultOffering) verificationService.verifySelfDescription(contentAccessor, true, false, false, false);
+            new ContentAccessorDirect(getMockFileDataAsString(SERVICE_CREDENTIAL_FILE_NAME1));
+    CredentialVerificationResultOffering verificationResult2 =
+            (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessor, true, false, false, false);
 
-    SdClaim sdClaim1 = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json>",
+    CredentialClaim claim1 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
             "<http://w3id.org/gaia-x/service#ServiceOffering>");
 
-    SdClaim sdClaimName1 = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json>",
+    CredentialClaim claimName1 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json>",
             "<http://w3id.org/gaia-x/service#name>",
             "\"Portal2\"");
 
-    List<SdClaim> sdClaimFile1 = List.of(sdClaim1, sdClaimName1);
+    List<CredentialClaim> claimFile1 = List.of(claim1, claimName1);
 
-    verificationResult2.setClaims(sdClaimFile1);
-    verificationResult2.setId(sdClaimFile1.get(0).getSubjectValue());
+    verificationResult2.setClaims(claimFile1);
+    verificationResult2.setId(claimFile1.get(0).getSubjectValue());
 
-    SelfDescriptionMetadata sdMetadata2 = new SelfDescriptionMetadata(
+    AssetMetadata assetMetadata2 = new AssetMetadata(
             verificationResult2.getId(),
             verificationResult2.getIssuer(), new ArrayList<>(), contentAccessorDirect2);
-    sdStore.storeSelfDescription(sdMetadata2, verificationResult2);
+    assetStore.storeCredential(assetMetadata2, verificationResult2);
 
-    //adding sd 3
+    //adding credential 3
     ContentAccessorDirect contentAccessorDirect3 =
-            new ContentAccessorDirect(getMockFileDataAsString(SERVICE_SD_FILE_NAME2));
-    VerificationResultOffering verificationResult3 =
-            (VerificationResultOffering) verificationService.verifySelfDescription(contentAccessor, true, false, false, false);
+            new ContentAccessorDirect(getMockFileDataAsString(SERVICE_CREDENTIAL_FILE_NAME2));
+    CredentialVerificationResultOffering verificationResult3 =
+            (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessorDirect3, true, false, false, false);
 
-    SdClaim sdClaim3 = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json>",
+    CredentialClaim claim3 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
             "<http://w3id.org/gaia-x/service#ServiceOffering>");
 
-    SdClaim sdClaimName3 = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json>",
+    CredentialClaim claimName3 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json>",
             "<http://w3id.org/gaia-x/service#name>",
             " \"Portal3\"");
 
-    List<SdClaim> sdClaimFile3 = List.of(sdClaim3, sdClaimName3);
+    List<CredentialClaim> claimFile3 = List.of(claim3, claimName3);
 
-    verificationResult3.setClaims(sdClaimFile3);
-    verificationResult3.setId(sdClaimFile3.get(0).getSubjectValue());
+    verificationResult3.setClaims(claimFile3);
+    verificationResult3.setId(claimFile3.get(0).getSubjectValue());
 
-    SelfDescriptionMetadata sdMetadata3 = new SelfDescriptionMetadata(
+    AssetMetadata assetMetadata3 = new AssetMetadata(
             verificationResult3.getId(),
             verificationResult3.getIssuer(), new ArrayList<>(), contentAccessorDirect3);
-    sdStore.storeSelfDescription(sdMetadata3, verificationResult3);
+    assetStore.storeCredential(assetMetadata3, verificationResult3);
 
 
-    //adding sd 3
+    //adding credential 4
     ContentAccessorDirect contentAccessorDirect4 =
-            new ContentAccessorDirect(getMockFileDataAsString(SERVICE_SD_FILE_NAME3));
-    VerificationResultOffering verificationResult4 =
-            (VerificationResultOffering) verificationService.verifySelfDescription(contentAccessor, true, false, false, false);
+            new ContentAccessorDirect(getMockFileDataAsString(SERVICE_CREDENTIAL_FILE_NAME3));
+    CredentialVerificationResultOffering verificationResult4 =
+            (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessor, true, false, false, false);
 
 
-    SdClaim sdClaim4 = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json>",
+    CredentialClaim claim4 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
             "<http://w3id.org/gaia-x/service#ServiceOffering>");
 
-    SdClaim sdClaimName4 = new SdClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json>",
+    CredentialClaim claimName4 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json>",
             "<http://w3id.org/gaia-x/service#name>",
             "\"Portal2\"");
 
 
-    List<SdClaim> sdClaimFile4 = List.of(sdClaim4, sdClaimName4);
+    List<CredentialClaim> claimFile4 = List.of(claim4, claimName4);
 
-    verificationResult4.setClaims(sdClaimFile4);
-    verificationResult4.setId(sdClaimFile4.get(0).getSubjectValue());
+    verificationResult4.setClaims(claimFile4);
+    verificationResult4.setId(claimFile4.get(0).getSubjectValue());
 
-    SelfDescriptionMetadata sdMetadata4 = new SelfDescriptionMetadata(
+    AssetMetadata assetMetadata4 = new AssetMetadata(
             verificationResult4.getId(),
             verificationResult4.getIssuer(), new ArrayList<>(), contentAccessorDirect4);
-    sdStore.storeSelfDescription(sdMetadata4, verificationResult4);
+    assetStore.storeCredential(assetMetadata4, verificationResult4);
   }
 
   public static String getMockFileDataAsString(String filename) throws IOException {

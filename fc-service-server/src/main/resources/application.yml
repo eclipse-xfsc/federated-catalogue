@@ -58,7 +58,7 @@ spring:
     default-timeout: 10
 
 scheduler:
-  sd:
+  asset:
     cron:
       expression: 0 1 0 * * *
   schema:

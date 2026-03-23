@@ -10,7 +10,7 @@ import java.time.temporal.ChronoUnit;
 
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorFile;
-import eu.xfsc.fc.core.pojo.SelfDescriptionMetadata;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
 
 public class TestUtil {
 
@@ -24,15 +24,15 @@ public class TestUtil {
     return new ContentAccessorFile(new File(str));
   }
 
-  // Since SdMetaRecord class extends SelfDescriptionMetadata class instead of being formed from it, then check
-  // in the equals method will always be false. Because we are downcasting SdMetaRecord to SelfDescriptionMetadata.
-  public static void assertThatSdHasTheSameData(final SelfDescriptionMetadata expected, final SelfDescriptionMetadata actual, final boolean precise) {
+  // Since AssetRecord class extends AssetMetadata class instead of being formed from it, then check
+  // in the equals method will always be false. Because we are downcasting AssetRecord to AssetMetadata.
+  public static void assertThatAssetHasTheSameData(final AssetMetadata expected, final AssetMetadata actual, final boolean precise) {
     assertEquals(expected.getId(), actual.getId());
-    assertEquals(expected.getSdHash(), actual.getSdHash());
+    assertEquals(expected.getAssetHash(), actual.getAssetHash());
     assertEquals(expected.getStatus(), actual.getStatus());
     assertEquals(expected.getIssuer(), actual.getIssuer());
     assertEquals(expected.getValidatorDids(), actual.getValidatorDids());
-    assertEquals(expected.getSelfDescription().getContentAsString(), actual.getSelfDescription().getContentAsString());
+    assertEquals(expected.getContentAccessor().getContentAsString(), actual.getContentAccessor().getContentAsString());
     if (precise) {
       assertEquals(expected.getUploadDatetime(), actual.getUploadDatetime());
       assertEquals(expected.getStatusDatetime(), actual.getStatusDatetime());

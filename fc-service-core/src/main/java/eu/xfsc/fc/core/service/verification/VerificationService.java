@@ -1,57 +1,62 @@
 package eu.xfsc.fc.core.service.verification;
 
 import eu.xfsc.fc.core.exception.VerificationException;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SdClaim;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
-import eu.xfsc.fc.core.pojo.VerificationResult;
-import eu.xfsc.fc.core.pojo.VerificationResultOffering;
-import eu.xfsc.fc.core.pojo.VerificationResultParticipant;
-import eu.xfsc.fc.core.pojo.VerificationResultResource;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
- * Validation Self-Description interface.
+ * RDF data validation and verification interface.
+ * Supports W3C Verifiable Credentials (with signature verification) and
+ * generic RDF data (parsing + claim extraction only).
+ * 
+ * <p>Current implementation handles JSON-LD W3C Verifiable Credentials/Presentations.
+ * Future: Support for plain RDF formats (Turtle, N-Triples, RDF/XML) without credentials.</p>
  */
 @Service
 public interface VerificationService {
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return a Participant metadata validation result. If the validation fails, the reason explains the issue.
    */
-  VerificationResultParticipant verifyParticipantSelfDescription(ContentAccessor payload) throws VerificationException;
+  CredentialVerificationResultParticipant verifyParticipantCredential(ContentAccessor payload) throws VerificationException;
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return a Verification result. If the verification fails, the reason explains the issue.
    */
-  VerificationResultOffering verifyOfferingSelfDescription(ContentAccessor payload) throws VerificationException;
+  CredentialVerificationResultOffering verifyOfferingCredential(ContentAccessor payload) throws VerificationException;
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
    *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return a Verification result. If the verification fails, the reason explains the issue.
    */
-  VerificationResultResource verifyResourceSelfDescription(ContentAccessor payload) throws VerificationException;
-  
-  /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
-   *
-   * @param payload ContentAccessor to SD which should be syntactically validated.
-   * @return a Self-Description metadata validation result. If the validation fails, the reason explains the issue.
-   */
-  VerificationResult verifySelfDescription(ContentAccessor payload) throws VerificationException;
+  CredentialVerificationResultResource verifyResourceCredential(ContentAccessor payload) throws VerificationException;
 
   /**
-   * The function validates the Self-Description as JSON and tries to parse the json handed over.
+   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
+   *
+   * @param payload ContentAccessor to credential which should be validated.
+   * @return a credential metadata validation result. If the validation fails, the reason explains the issue.
+   */
+  CredentialVerificationResult verifyCredential(ContentAccessor payload) throws VerificationException;
+
+  /**
+   * Validates the credential payload with custom verification toggles (JSON-LD format).
    *
    * @param payload
    * @param verifySemantics
@@ -61,36 +66,36 @@ public interface VerificationService {
    * @return
    * @throws VerificationException
    */
-  VerificationResult verifySelfDescription(ContentAccessor payload, boolean verifySemantics, boolean verifySchema, 
+  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException;
 
   /**
-   * Extract claims from the given payload. This does not do any validation of the payload.
+   * Extract claims from the given RDF payload. This does not do any validation of the payload.
    *
-   * @param payload The payload to extract claims from.
+   * @param payload The RDF payload to extract claims from.
    * @return The list of extracted claims.
    */
-  List<SdClaim> extractClaims(ContentAccessor payload);
+  List<CredentialClaim> extractClaims(ContentAccessor payload);
 
   /**
-   * The function validates the Self-Description against the given schema.
+   * The function validates the credential against the given schema.
    *
-   * @param payload ContentAccessor to SD which should be validated.
-   * @param schema ContentAccessor - the schema to validate SD against (null = composite)
+   * @param payload ContentAccessor to credential which should be validated.
+   * @param schema ContentAccessor - the schema to validate credential against (null = composite)
    * @return the result of the semantic validation.
-   * @deprecated Use {@link SchemaValidationService#validateSelfDescriptionAgainstSchema} directly.
+   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstSchema} directly.
    */
   @Deprecated
-  SchemaValidationResult verifySelfDescriptionAgainstSchema(ContentAccessor payload, ContentAccessor schema);
+  SchemaValidationResult verifyCredentialAgainstSchema(ContentAccessor payload, ContentAccessor schema);
 
   /**
-   * The function validates the Self-Description against the composite schema.
+   * The function validates the credential against the composite schema.
    *
-   * @param payload ContentAccessor to SD which should be validated.
+   * @param payload ContentAccessor to credential which should be validated.
    * @return the result of the semantic validation.
-   * @deprecated Use {@link SchemaValidationService#validateSelfDescriptionAgainstCompositeSchema} directly.
+   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstCompositeSchema} directly.
    */
   @Deprecated
-  SchemaValidationResult verifySelfDescriptionAgainstCompositeSchema(ContentAccessor payload);
+  SchemaValidationResult verifyCredentialAgainstCompositeSchema(ContentAccessor payload);
 
 }
