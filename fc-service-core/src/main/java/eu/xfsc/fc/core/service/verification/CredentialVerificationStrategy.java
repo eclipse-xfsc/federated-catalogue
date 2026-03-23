@@ -257,13 +257,15 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         payload = new ContentAccessorDirect(body, payload.getContentType());
 
         CredentialFormat format = formatDetector.detect(payload);
-        if (format == CredentialFormat.UNKNOWN) {
+        // Reject ambiguous/unrecognizable JWTs — non-JWT payloads fall through to
+        // vc11Processor which provides more specific syntactic error messages.
+        if (format == CredentialFormat.UNKNOWN && body.startsWith("eyJ")) {
             throw new ClientException(
-                "Unrecognizable credential format — payload is neither a known JSON-LD "
-                    + "credential nor a JWT with recognized headers");
+                "Unrecognizable JWT credential format — JWT does not have recognized "
+                    + "typ header or vc/vp wrapper claims");
         }
         boolean isJwt = format == CredentialFormat.GAIAX_V2_LOIRE
-            || format == CredentialFormat.VC2_DANUBETECH;
+            || (format == CredentialFormat.VC2_DANUBETECH && body.startsWith("eyJ"));
 
         Validator jwtValidator = null;
         if (isJwt && verifySigs) {
@@ -802,6 +804,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     iss);
                 return;
             }
+            if (iss == null) {
+                log.warn("checkVpJwtHolder; VP JWT has holder '{}' but no iss claim", holder);
+                return;
+            }
             if (!iss.equals(holder)) {
                 throw new VerificationException(
                         "VP JWT iss '" + iss + "' does not match VP holder '" + holder + "'");
@@ -940,6 +946,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return validator;
     }
 
+    /**
+     * Fetches the certificate chain from the given x5u URL, validates certificate expiry,
+     * and checks the URI against the Gaia-X Trust Anchor Registry (when gaiax.enabled=true).
+     *
+     * <p>Note: does not perform PKIX path validation (RFC 5280) or revocation checking.
+     * ICAM 24.07 does not explicitly require these — it requires x5c/x5u presence (MUST)
+     * and x5u trust anchor resolution (SHOULD).
+     */
     @SuppressWarnings("unchecked")
     private Instant hasPEMTrustAnchorAndIsNotExpired(String uri) throws VerificationException {
         log.debug("hasPEMTrustAnchorAndIsNotExpired.enter; got uri: {}, gaiaxTrustFrameworkEnabled: {}", uri, gaiaxTrustFrameworkEnabled);
@@ -1037,6 +1051,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      * Validates certificates from the JWK {@code x5c} array: decodes base64 DER entries,
      * checks each certificate is currently valid (not expired), and verifies that the chain
      * is non-empty (ICAM 24.07).
+     *
+     * <p><strong>Known gap:</strong> validates certificate expiry only. Unlike the x5u path
+     * ({@link #hasPEMTrustAnchorAndIsNotExpired}), this does not call the Trust Anchor Registry
+     * because the registry API expects a URI, not inline certificates.
      */
     private void validateX5cChain(JsonNode x5cArray, String kid) {
         if (!x5cArray.isArray() || x5cArray.isEmpty()) {
@@ -1046,7 +1064,13 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         try {
             CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             for (JsonNode entry : x5cArray) {
-                byte[] certBytes = java.util.Base64.getDecoder().decode(entry.asText());
+                byte[] certBytes;
+                try {
+                    certBytes = java.util.Base64.getDecoder().decode(entry.asText());
+                } catch (IllegalArgumentException ex) {
+                    throw new VerificationException(
+                        "Loire trust chain: x5c entry is not valid base64. kid: " + kid, ex);
+                }
                 X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
                     new ByteArrayInputStream(certBytes));
                 cert.checkValidity();
@@ -1069,28 +1093,38 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private void enforceDidWebRestriction(String compactJwt) {
         try {
             JWTClaimsSet claims = SignedJWT.parse(compactJwt).getJWTClaimsSet();
-            // Loire uses top-level issuer in payload; fall back to JWT iss claim
-            String issuer = claims.getStringClaim("issuer");
-            if (issuer == null) {
-                issuer = claims.getIssuer();
+            String iss = claims.getIssuer();
+            String issuerClaim = claims.getStringClaim("issuer");
+            // Validate both when present — prevents spoofing via injected issuer claim
+            if (iss != null) {
+                validateDidWeb(iss);
             }
-            if (issuer == null) {
+            if (issuerClaim != null && !issuerClaim.equals(iss)) {
+                validateDidWeb(issuerClaim);
+            }
+            if (iss == null && issuerClaim == null) {
                 throw new VerificationException(
-                    "Loire DID method restriction: no issuer found in JWT payload or iss claim "
+                    "Loire DID method restriction: no issuer found in JWT iss or payload issuer "
                         + "(ICAM 24.07 requires did:web)");
             }
-            if (issuer.startsWith("did:key")) {
-                throw new VerificationException(
-                    "Loire DID method restriction: did:key is not accepted "
-                        + "(ICAM 24.07 requires did:web with JWK + x5c/x5u). Issuer: " + issuer);
-            }
-            if (!issuer.startsWith("did:web:")) {
-                throw new VerificationException(
-                    "Loire DID method restriction: only did:web is accepted "
-                        + "(ICAM 24.07). Found: " + issuer);
-            }
+        } catch (VerificationException ex) {
+            throw ex;
         } catch (ParseException ex) {
-            log.warn("enforceDidWebRestriction; JWT claims parse error: {}", ex.getMessage());
+            throw new VerificationException(
+                "Loire DID method restriction: JWT claims parse error: " + ex.getMessage(), ex);
+        }
+    }
+
+    private void validateDidWeb(String did) {
+        if (did.startsWith("did:key")) {
+            throw new VerificationException(
+                "Loire DID method restriction: did:key is not accepted "
+                    + "(ICAM 24.07 requires did:web with JWK + x5c/x5u). Issuer: " + did);
+        }
+        if (!did.startsWith("did:web:")) {
+            throw new VerificationException(
+                "Loire DID method restriction: only did:web is accepted "
+                    + "(ICAM 24.07). Found: " + did);
         }
     }
 }

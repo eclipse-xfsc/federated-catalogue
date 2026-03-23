@@ -73,6 +73,21 @@ class FormatDetectorTest {
     assertEquals(CredentialFormat.GAIAX_V1_TAGUS, result);
   }
 
+  @Test
+  void detect_vc11WithoutProofBlock_returnsTagus() {
+    String body = """
+        {
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "type": ["VerifiablePresentation"],
+          "verifiableCredential": {}
+        }
+        """;
+
+    CredentialFormat result = detector.detect(new ContentAccessorDirect(body));
+
+    assertEquals(CredentialFormat.GAIAX_V1_TAGUS, result);
+  }
+
   // --- Path 2: Gaia-X v2 (Loire) ---
 
   @Test
@@ -181,7 +196,7 @@ class FormatDetectorTest {
   }
 
   @Test
-  void detect_nonJwtWithoutProof_returnsUnknown() {
+  void detect_vc2NonJwtWithoutProof_returnsDanubetech() {
     String body = """
         {
           "@context": ["https://www.w3.org/ns/credentials/v2"],
@@ -191,15 +206,29 @@ class FormatDetectorTest {
 
     CredentialFormat result = detector.detect(new ContentAccessorDirect(body));
 
-    assertEquals(CredentialFormat.UNKNOWN, result);
+    assertEquals(CredentialFormat.VC2_DANUBETECH, result);
   }
 
   @Test
-  void detect_proofWithoutVc11Context_returnsUnknown() {
+  void detect_vc2WithProofButNoVc11Context_returnsDanubetech() {
     String body = """
         {
           "@context": ["https://www.w3.org/ns/credentials/v2"],
           "proof": { "type": "DataIntegrityProof" }
+        }
+        """;
+
+    CredentialFormat result = detector.detect(new ContentAccessorDirect(body));
+
+    assertEquals(CredentialFormat.VC2_DANUBETECH, result);
+  }
+
+  @Test
+  void detect_nonJwtWithoutRecognizedContext_returnsUnknown() {
+    String body = """
+        {
+          "@context": ["https://example.org/custom"],
+          "type": ["SomethingElse"]
         }
         """;
 

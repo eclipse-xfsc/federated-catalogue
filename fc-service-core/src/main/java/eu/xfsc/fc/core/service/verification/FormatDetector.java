@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Decision tree:
  * <ol>
- *   <li>Not a JWT ({@code eyJ} prefix absent) and has {@code proof} block → Path 1 (Tagus)</li>
+ *   <li>Not a JWT ({@code eyJ} prefix absent) and has VC 1.1 {@code @context} → Path 1 (Tagus)</li>
  *   <li>JWT with {@code typ: vc+ld+json+jwt} or {@code vp+ld+jwt} and top-level {@code @context}
  *       (no {@code vc}/{@code vp} wrapper claim) → Path 2 (Loire)</li>
  *   <li>JWT with {@code vc} or {@code vp} wrapper claim → Path 3 (danubetech)</li>
@@ -36,6 +36,7 @@ public class FormatDetector {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final String VC_11_CONTEXT = "https://www.w3.org/2018/credentials/v1";
+  private static final String VC_20_CONTEXT = "https://www.w3.org/ns/credentials/v2";
 
   private static final Set<String> LOIRE_VC_TYP_VALUES = Set.of(
       "vc+ld+json+jwt"
@@ -62,20 +63,18 @@ public class FormatDetector {
   private CredentialFormat detectNonJwt(String body) {
     try {
       JsonNode root = OBJECT_MAPPER.readTree(body);
-      if (root.has("proof")) {
-        JsonNode ctx = root.get("@context");
-        if (ctx != null && containsValue(ctx, VC_11_CONTEXT)) {
-          log.debug("detect; VC 1.1 context with proof block → GAIAX_V1_TAGUS");
-          return CredentialFormat.GAIAX_V1_TAGUS;
-        }
-        // VC 2.0 with Linked Data Proof (LDP); future-proof; treat as unknown for now.
-        // This would be a VC 2.0 credential secured with a Linked Data Proof instead of a JWT envelope
-        // - a valid W3C format but not currently used in the Gaia-X ecosystem. We return UNKNOWN
-        // as a future-proof slot; if this format becomes relevant, a fourth path can be added.
-        log.debug("detect; proof block present but no VC 1.1 context → UNKNOWN");
-        return CredentialFormat.UNKNOWN;
+      JsonNode ctx = root.get("@context");
+      // VC 1.1 detection by context — proof block is per-VC, not always at VP level
+      if (ctx != null && containsValue(ctx, VC_11_CONTEXT)) {
+        log.debug("detect; VC 1.1 context → GAIAX_V1_TAGUS");
+        return CredentialFormat.GAIAX_V1_TAGUS;
       }
-      log.debug("detect; non-JWT without proof block → UNKNOWN");
+      // VC 2.0 non-JWT JSON-LD (inline credential, no JWT envelope)
+      if (ctx != null && containsValue(ctx, VC_20_CONTEXT)) {
+        log.debug("detect; VC 2.0 context (non-JWT) → VC2_DANUBETECH");
+        return CredentialFormat.VC2_DANUBETECH;
+      }
+      log.debug("detect; non-JWT without recognized context → UNKNOWN");
       return CredentialFormat.UNKNOWN;
     } catch (JsonProcessingException ex) {
       log.debug("detect; body is not valid JSON → UNKNOWN");
