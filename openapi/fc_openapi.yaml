@@ -710,12 +710,29 @@ paths:
         - jwt: []
       requestBody:
         description: >-
-          The asset content. For RDF credentials, use application/json with a
-          JSON-LD body. For non-RDF assets, use multipart/form-data or
-          application/octet-stream (handled by the server outside the generated
-          delegate pattern).
+          The asset content. For JSON-LD credentials, use application/json,
+          application/vc+ld+json, or application/vp+ld+json. For JWT-wrapped
+          Gaia-X credentials per ICAM 24.07 (Loire release), use application/vc+ld+json+jwt
+          (VC) or application/vp+ld+json+jwt (VP). For non-RDF assets, use
+          multipart/form-data or application/octet-stream (handled by the
+          server outside the generated delegate pattern).
         content:
           application/json:
+            schema:
+              type: string
+          application/ld+json:
+            schema:
+              type: string
+          application/vc+ld+json:
+            schema:
+              type: string
+          application/vp+ld+json:
+            schema:
+              type: string
+          application/vc+ld+json+jwt:
+            schema:
+              type: string
+          application/vp+ld+json+jwt:
             schema:
               type: string
         required: true

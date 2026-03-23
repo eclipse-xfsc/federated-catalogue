@@ -44,7 +44,7 @@ COMMANDS:
               Always rebuilds container images from locally-built JARs
               Example: ./dev.sh build && ./dev.sh full
 
-  strict      Start full stack with strict config (Gaia-X on, schema validation on)
+  strict      Start full stack with strict config (schema validation on, signatures on)
               Use for running @cfg.strict BDD tests
               Example: ./dev.sh strict
 

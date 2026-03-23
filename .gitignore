@@ -40,3 +40,5 @@ fc-service-server/logs/
 
 ### vim ###
 *.swp
+
+docker/certs/

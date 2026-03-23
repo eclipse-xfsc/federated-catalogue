@@ -72,11 +72,12 @@
       } ]
     },
     "proof" : {
+      "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
       "type" : "JsonWebSignature2020",
-      "created" : "2026-03-03T18:41:00Z",
+      "created" : "2026-03-19T11:04:34Z",
       "verificationMethod" : "did:web:compliance.lab.gaia-x.eu",
       "proofPurpose" : "assertionMethod",
-      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..V3fu15yh8FaX5TtNg7aDvgTi8Hnlx5ZRKIj3uqE7-LhaBEosOPGBYbaGzc5nVgqCYx6dOCweX8eqW3e_JxDe7w2LF3Cz0bluUSEQteGoqkYob-YuHkYC-AN5tsDnI-bw69tfGovD6LFraBtK3wFC7l9DqM1_XhrOZXu8fGYJGz3r8wZ1d0nflI1bzL6tx6Bo_fMoS7xQIPghZ34o9VGSxWYP7ci9w6iFW_F39D8EFgOUVe_kR-qTS1z-0esvg_iN5qb-ZqyPrWNQqobMX6iUkRqdAoDmhEglc3sSt--Dv3-LwWLNswdDQv0mYcfidxhOWR20wVxIxwAsJjv0uKMOVt6cng9uI60Is6fgOwFpISbPN2xpoGVQkS6mtR86ImSggGXYL0YziLVNzro83qaQzVzq7QKg6nKYGgN9XO4OC00_ecxdNuD4S0FDjb1zPNA7KlDpkdle124USSSsFsPetw0k2jthBQFsE3kvqcMjml-5y27AM_aFqrVlimU2WvG1iyItnSZHaR2yUAn27ryjZ68x8pEdbHwXEEp7tnGJYs-dChKIaQRJao88AK1xjFl4CN9d9yu7DGhvjh1i1mCLzrK3MHvaXbuK13GIEnRaEfB8o4VoR57kDR5SMzFSUGdu2BSKgvMp7Dhn4md5BffT6BGE6SDB_KlWmtcFaCXlmeM"
+      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..tZV1Entut4-LrPmnKpYet8BEm1Meo9lPXw5N_xIQTqjAcAvCMJ8OJ4G3rSehhvK-1ghKuAfH-4yP2gb89vyhIq72NyyM259Vz9B3bnOQ6FTwAuF5IUMwYhflHyH3QVbHF9RkPQKsxSSSYgqTB9xp9YB7LzXmUiRVbY6_TGTq2CVZSQPXrgxljpey4eWZKpWj8SHh2ewpP3v7AzbveISJf27tE5UrFcndyQ2HNiBkzAUwSQo5XRai5V1RVEelgPR9jZ6XoeKillOM4AZ_-tIOrP2W_oKc8XFQMkQrG6rJ_GvsRw94qaZYimN1DidEzC_SYBQ8uuM_i5_4estliHVCzFjivgIpf762V08S2rJF71qrJwBdBQ1DY4qQ7sfdooPkr8Wn94XYrv22d9E8OIxWzwv8loxQXyjdv12FzyIkh2OD4dQUh2l7DZQqGqgzCN0dq0bXfV7tmCVVBcgQclRyHFJQUc77Ebres9z-3SyO6Z6NuugRFAXe_xI1oDFOR8wqGie5wF2ZgbTtPmVqWZB-4qEe4hgrFsJpCdgOL5wYR1IaU5txCfUjPVopR3kWIFVh2KMSCT4r86NmWb-upJkuNRC1MmjiXPds1kPUVA0xZt7EBpgwIK7dIqDvms5ar8DucLrPleWWb-AOMgJ3rlZtWl3DzL2vhAzWtIc3Wj_OQaE"
     }
   }, {
     "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
@@ -148,18 +149,20 @@
       } ]
     },
     "proof" : {
+      "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
       "type" : "JsonWebSignature2020",
-      "created" : "2026-03-03T18:41:01Z",
+      "created" : "2026-03-19T11:04:34Z",
       "verificationMethod" : "did:web:compliance.lab.gaia-x.eu",
       "proofPurpose" : "assertionMethod",
-      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..PZi8b1hCPJeei4s1lAiePc4BGBOtF8Tetat6hQtzsH8wy856to4DSZ1cNTkFwQYWb-vJ14d6BrazXzVIixcwgMKYHVDzzviUZUN_dEurNyXd4tIErguN0mQ0xijLsTaEG3PCdRgYfyRbEuU-rM7boTfN5IcSNfc_MQaatAwIOKcOPnNEpPtguLW1iE8rXJhEPxZyaOBLULDxOZoCuO1RlpeVtksarX6fxvf7P0atj4GL__sHUZ1rLpfDX-nBMaTuV-btoW0nOyxpEtf7SmoOulrRRLxS8rZLyoauGDXhr8x1MCk76dzC2JWULOmECH9UlXyGetTeozOUpwpZF8UEDGp6Lgu5Lvv6sRnpf9VIsoTi-hr5xCoCLhazaIdYw3ehLPejVM68cf1wV1pLnVFdX1oBbfmCIkMERz7PM19BXwnBFLrZSIRLSzTN6mAAKdWPTeJn8GTkoSm_IK9oQ6DtzyCFdz_5uIKVeGCE9Z6TdqghQYyVIE6xKhGlTXAoedVMujareVTRYw5unDWJLXilJt7oUyoFo0f0ZORfzRSDi_HiObKekILrO1BosDRRas2fuxRmcL_EPObI17GHc0rWQZMfT1D2_fnE91WO-ShtGbX-T4AFJqdmGVOEj5P5QbkaYCHNb1GZyY4yV-s189stx0NJ-_zyXwJfrdOP0RftfEo"
+      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..EFud5g-3j87eTBrDZzssfRVhFfiaMRk4-U08ydudfnw-FbnLUgx23oGEE8eP4vEvtCYwO51Eg18JLbifSCglrqWS8ECaYnXyFLzcfbRzFTYBoa3XLA9HPItvK6DtdI7Xamcz0dfiB-ilNsqkIz1HazKhb6gJ81Svq4bu5JhQI0ws-dQssNJRJ4rB-axXeUxSpcae6gLD8VfO4gLviweTa8C5XazlfEUn0izQVhDvvmn9n16d-j-iAnnnjKWhn-z5MxZ9qHOF86TkIrLQw3bILrdCgZljl-h_a7izVpGOp5MZEf9d2aO1B-kNFdjZSkihj_STM3CuOBAKVa4dQSry7hByLxFOIUXmcPWkbq6HeH72I1feZt4d16Ntlxegz6Q7vpANqmoBBs-FO798e0zrjzg78iyf2fxnGVvsKFpr-BQyf4JJ19xEs9-AeCAE9hGGXwEbgJJ3g38nsWtPI6s5h4oYmaD8G6bjneoOc2JnTtbUH19awUwRMYxf4i_fo7x3i3ONr2SsAeBGBG6kNWpQ7axzFhusczJjQzbHZGlN9ZtXLrYnAVQuzyVIHzz8vtX0NMZXQ1piFNMfOcAyLwW_zIzcFmRWdDwq4XaxrfdoGNcHOcPivWvmjNX3RwEqxhRbTbj14VfhPoWY_8Bc91aNJ7i6Jk9HiFpk4hE2UOQHwyo"
     }
   } ],
   "proof" : {
+    "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
     "type" : "JsonWebSignature2020",
-    "created" : "2026-03-03T18:41:01Z",
+    "created" : "2026-03-19T11:04:34Z",
     "verificationMethod" : "did:web:compliance.lab.gaia-x.eu",
     "proofPurpose" : "assertionMethod",
-    "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..aepz_NIQxxsY10SU3RZ0XvKXCS-XHcHZ2HXGN3HY-MZQ4K1NXjP_A_0XmIbMJtKoSlGVTwIr-ejK-g0vx7Z6XpapuEex5l8IKEp52gCF3P4q8uTswD560DLR6-_aoRZ-QdQBoKStQxY1emjs_mMr9caN-vrmHnfBWsc6-4LB6wlAC_U8w5rKN4oSZPGsI044RTHeGmB0wqWzUDFwGqP2MsGgdvCC8OX5QTyxBUIGf_XE6hCmaqN60iFbLFnR2-iw8Be34edppCgYvVvv4N5eT80EMuvkcBlH5cFoxJaMFRZAmnApgflYtpdTTTcCpuVEAY6p4oua9zGv0TzWkjewZyaHyiVOzKyBfex0ur4LoziiuUf9nX9T8cj2F9lCryitibuzI71ewGfnxA9I7Kj4bXMOJ47cO_Dh4WwrftB2fJqxkyNrHE0VqR9KK6MdB7TdX9QzUfdm-6_e3qeoIUYmwwD81vqYdyWyTyx3w18bocol7FPJi6P4noB1DTYCWkeN1bbDxJQb4ngRMnvo6LZvekTC3_xPxkUMsuIMr1JsKBJGyflKf2gvBdwNVCskNMB10dKdOtqf88FuUbxJfuRrfEyW4tv8a_f0KBUDLwzIwDBwczfWvmA8Dy9fFqK2QvrodG6JszRHtvUIjBurMCMqchC1D8F8aY12yXsUc0hMpJE"
+    "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..eqBqUx_SsweOWmDsB90B_yHIhTMec8L-hBxEkkPyPiilXlLJPrwImKlgcvUQpzBPX4OkiBW1mUiDJqu6digSa6C5fjxwCvhcbHiCX_FVP7oWCMMO4g78qeMRNsgH9OB2-YxDN4J-DcY6V807RM-u62JIMo-4S5GHIeWY7NVBi7Z1yDtW6AkOqVdcB5DJyed8-POOGHD3y1xO_3sCMXqGDDa1DysSFAGcKtabBWdFLKQgIO-j-ofEEwlrN6zP8zoUm6k-D-8-oCLXvgnNJSc2HBgNS2qXbIkmB_xItWYyq3d2boGmjUyptMZ8DjT423i86r6DY1sXjoR1VcPM0gd0Fqbd-SAjkIz9qklWKfwwqyLjY4y6Zqt_OqKxR7f5IHgKXCa-VYeIWCOaDnyqdGWy8aDWiT-nCY1mirVWd5M2TfTi3YbEztxc7VOJNiFYe30DP-nxZyE-FyijgqWKzCkJ1ksSE4kr6XfMoEAcIevN6eXSZcqVSbkSltQQIsLbuedpsFJbQQhx4ukmErxwPJbMji9_9WXc23ik2Fxv7MLBAYU2aeRvthLdmxaJOVDEsBdf_hF2FvoZPQ1TgGa4kXN4oq_0Ob0DJvfNA5j5M5lDu1fV57dTBlpm1GBV0jO-ah_BGFIosOxuB_2PP35Q4vV8W8ZyBrTsxjnCelIhJV8FDPU"
   }
 }

@@ -17,12 +17,25 @@
         "alg": "PS256",
         "x5u": "https://did-server/certs/chain.pem"
       }
+    },
+    {
+      "id": "did:web:did-server#jwt-key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:did-server",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": "did:web:did-server#jwt-key-1",
+        "x": "8pdnNUSGyY_2ATHUu7ogCXWsQYU5K2KJgY1qQT3QQeo",
+        "use": "sig"
+      }
     }
   ],
   "authentication": [
     "did:web:did-server#0"
   ],
   "assertionMethod": [
-    "did:web:did-server#0"
+    "did:web:did-server#0",
+    "did:web:did-server#jwt-key-1"
   ]
 }

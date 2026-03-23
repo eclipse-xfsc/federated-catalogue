@@ -34,4 +34,12 @@ public interface ContentAccessor {
     return getContentAsString().getBytes(StandardCharsets.UTF_8);
   }
 
+  /**
+   * Returns the HTTP Content-Type associated with this content, or {@code null} if unknown.
+   * Implementations that carry content-type information should override this method.
+   */
+  default String getContentType() {
+    return null;
+  }
+
 }

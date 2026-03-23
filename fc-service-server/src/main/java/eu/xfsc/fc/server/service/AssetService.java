@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,12 +42,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AssetService implements AssetsApiDelegate {
 
-  @Autowired
-  private VerificationService verificationService;
-  @Autowired
-  private AssetStore assetStorePublisher;
+  private final VerificationService verificationService;
+  private final AssetStore assetStorePublisher;
+  private final HttpServletRequest httpServletRequest;
 
   /**
    * Service method for GET /assets : Get the list of metadata of assets in the Catalogue.
@@ -176,7 +177,8 @@ public class AssetService implements AssetsApiDelegate {
     try {
      // TODO: 27.07.2022 Need to change the description and the order of actions in the documentation.
      //  The FH scheme is different from the real process.
-      ContentAccessorDirect contentAccessor = new ContentAccessorDirect(body);
+      String contentType = httpServletRequest.getHeader(HttpHeaders.CONTENT_TYPE);
+      ContentAccessorDirect contentAccessor = new ContentAccessorDirect(body, contentType);
 
       CredentialVerificationResult verificationResult = verificationService.verifyCredential(contentAccessor);
 
