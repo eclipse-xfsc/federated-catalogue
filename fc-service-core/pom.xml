@@ -58,6 +58,10 @@
             <type>pom</type>
         </dependency>
         <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.topbraid</groupId>
             <artifactId>shacl</artifactId>
         </dependency>

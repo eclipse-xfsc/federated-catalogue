@@ -86,6 +86,7 @@
         <bcpkix-jdk18on.version>1.82</bcpkix-jdk18on.version>
         <jnats.version>2.23.0</jnats.version>
         <jackson-bom.version>2.20.1</jackson-bom.version>
+        <json-schema-validator.version>2.0.1</json-schema-validator.version>
         <!-- test libs -->
         <junit-platform.version>1.14.1</junit-platform.version>
         <spring-cloud-contract-wiremock.version>4.3.0</spring-cloud-contract-wiremock.version>
@@ -153,6 +154,12 @@
                 <groupId>eu.xfsc.cat</groupId>
                 <artifactId>fc-graphdb-fuseki</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${json-schema-validator.version}</version>
             </dependency>
 
             <dependency>

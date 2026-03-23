@@ -318,6 +318,18 @@ components:
           items:
             type: string
             example: schemaId
+        jsonSchemas:
+          description: 'SchemaIds of JSON Schemas used to validate JSON assets.'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        xmlSchemas:
+          description: 'SchemaIds of XML Schemas (XSD) used to validate XML assets.'
+          type: array
+          items:
+            type: string
+            example: schemaId
     ResultPage:
       type: object
       properties:
@@ -370,6 +382,10 @@ components:
           items:
             type: string
           description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
+        uploadTime:
+          type: string
+          format: date-time
+          description: 'Timestamp when the schema was uploaded.'
     QueryInfo:
       type: object
       properties:
@@ -518,8 +534,9 @@ tags:
     description: Send graph queries to this Catalogue.
   - name: Schemas
     description: >-
-      The format of RDF assets is defined by schemas in the catalogue.
-      Here you get information about the latest schema.
+      Schemas define the format of assets in the catalogue. Supported types include
+      RDF schemas (ontologies, shapes, vocabularies) as well as non-RDF schemas
+      (JSON Schema, XML Schema).
   - name: Verification
     description: The Catalogue provides a verification service for e.g. checking the syntax
   - name: Participants
@@ -980,8 +997,8 @@ paths:
     get:
       tags:
         - Schemas
-      summary: 'Get the full list of ontologies, shapes and vocabularies.'
-      description: 'The schema identifiers, returned by this endpoint can be used to download the schema files. Required permission: SCHEMA_READ or ADMIN_ALL'
+      summary: 'Get the full list of schemas (ontologies, shapes, vocabularies, JSON schemas, XML schemas).'
+      description: 'The schema identifiers, returned by this endpoint can be used to download the schema files. Includes both RDF and non-RDF schema types. Required permission: SCHEMA_READ or ADMIN_ALL'
       operationId: getSchemas
       security:
         - jwt: []
@@ -1002,12 +1019,12 @@ paths:
       tags:
         - Schemas
       summary: 'Add a new Schema to the catalogue.'
-      description: 'This endpoint accepts either an ontology (OWL file), shape (SHACL file) or controlled vocabulary (SKOS file), which is added to the schemas of the catalogue. Required permission: SCHEMA_CREATE or ADMIN_ALL'
+      description: 'This endpoint accepts an ontology (OWL), shape (SHACL), controlled vocabulary (SKOS), JSON Schema, or XML Schema (XSD), which is added to the schemas of the catalogue. Required permission: SCHEMA_CREATE or ADMIN_ALL'
       operationId: addSchema
       security:
         - jwt: []
       requestBody:
-        description: 'The file of the new schema. either an ontology (OWL file), shape (SHACL file) or controlled vocabulary (SKOS file).'
+        description: 'The file of the new schema: an ontology (OWL), shape (SHACL), controlled vocabulary (SKOS), JSON Schema, or XML Schema (XSD).'
         content:
           application/rdf+xml:
             schema:
@@ -1025,6 +1042,14 @@ paths:
             schema:
               type: string
               description: 'SHACL file describing the ontology of the schema.'
+          application/schema+json:
+            schema:
+              type: string
+              description: 'JSON Schema file (Draft 2020-12).'
+          application/xml:
+            schema:
+              type: string
+              description: 'XML Schema (XSD) file.'
         required: true
       responses:
         '201':
@@ -1042,6 +1067,12 @@ paths:
           $ref: '#/components/responses/ClientError'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          description: 'Unprocessable Entity. The schema content is syntactically invalid.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServerError'
   /schemas/{schemaId}:
@@ -1072,6 +1103,14 @@ paths:
               schema:
                 type: string
                 description: 'SHACL file describing the ontology of the schema.'
+            application/schema+json:
+              schema:
+                type: string
+                description: 'JSON Schema file.'
+            application/xml:
+              schema:
+                type: string
+                description: 'XML Schema (XSD) file.'
         '400':
           $ref: '#/components/responses/ClientError'
         '403':
@@ -1162,7 +1201,17 @@ paths:
     get: 
       tags:
         - Schemas
-      summary: 'Get the latest schema for a given type. If no term is specified, then the composite schema is returned.'
+      summary: 'Get the latest schema for a given type.'
+      description: >-
+        Behavior depends on schema type:
+
+        **RDF types** (ontology, shape, vocabulary): Returns the **composite schema** — a merged union
+        of all stored schemas of that type. This is meaningful because RDF schemas are additive
+        (shapes and ontologies can be combined into a single graph).
+
+        **Non-RDF types** (json, xml): Returns the **most recently uploaded** schema of that type.
+        Compositing does not apply because JSON and XML schemas are self-contained and cannot be
+        meaningfully merged.
       operationId: getLatestSchema
       parameters:
         - name: type
@@ -1175,6 +1224,8 @@ paths:
               - ontology
               - shape
               - vocabulary
+              - json
+              - xml
         - name: term
           in: query
           description: 'The URI of the term of the requested schema e.g. `http://w3id.org/gaia-x/service#ServiceOffering`'
@@ -1193,10 +1244,20 @@ paths:
               schema:
                 type: string
                 description: 'SHACL file describing the ontology of the schema.'
+            application/schema+json:
+              schema:
+                type: string
+                description: 'JSON Schema file.'
+            application/xml:
+              schema:
+                type: string
+                description: 'XML Schema (XSD) file.'
         '400':
           $ref: '#/components/responses/ClientError'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
   /verification:
