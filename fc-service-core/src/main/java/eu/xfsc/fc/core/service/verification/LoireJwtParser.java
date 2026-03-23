@@ -98,8 +98,9 @@ public class LoireJwtParser {
     }
 
     if (cty == null) {
-      log.debug("validateHeaders; Loire JWT missing optional 'cty' header (typ='{}')", typ);
-      return;
+      throw new ClientException(
+          "Loire JWT missing required 'cty' header (ICAM 24.07); "
+              + "expected: " + (isVc ? "vc+ld+json" : "vp+ld+json"));
     }
 
     if (isVc && !VALID_VC_CTY.contains(cty)) {

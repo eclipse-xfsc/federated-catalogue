@@ -115,12 +115,6 @@ public class FormatDetector {
       return CredentialFormat.VC2_DANUBETECH;
     }
 
-    // Fallback: top-level @context + type without standardized typ header (lenient Loire)
-    if (payload.has("@context") && (payload.has("type") || payload.has("@type"))) {
-      log.debug("detect; JWT with top-level @context+type but no Loire typ → GAIAX_V2_LOIRE");
-      return CredentialFormat.GAIAX_V2_LOIRE;
-    }
-
     log.debug("detect; unrecognizable JWT → UNKNOWN");
     return CredentialFormat.UNKNOWN;
   }

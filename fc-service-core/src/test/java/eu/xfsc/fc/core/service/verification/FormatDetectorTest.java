@@ -94,8 +94,8 @@ class FormatDetectorTest {
   }
 
   @Test
-  void detect_jwtWithTopLevelContextButNoTypHeader_returnsLoire() throws Exception {
-    // Lenient Loire: top-level @context + type but missing typ header
+  void detect_jwtWithTopLevelContextButNoTypHeader_returnsUnknown() throws Exception {
+    // Missing typ header → UNKNOWN (no lenient fallback)
     JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
         .keyID("did:web:example.com#test-key")
         .build();
@@ -110,7 +110,7 @@ class FormatDetectorTest {
 
     CredentialFormat result = detector.detect(new ContentAccessorDirect(signedJwt.serialize()));
 
-    assertEquals(CredentialFormat.GAIAX_V2_LOIRE, result);
+    assertEquals(CredentialFormat.UNKNOWN, result);
   }
 
   // --- Path 3: Non-Gaia-X VC 2.0 (danubetech) ---

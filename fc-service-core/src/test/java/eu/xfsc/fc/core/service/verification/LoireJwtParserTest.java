@@ -117,13 +117,13 @@ class LoireJwtParserTest {
   }
 
   @Test
-  void unwrap_missingCtyHeader_succeeds() throws Exception {
-    // cty is logged as missing but not required per lenient handling
+  void unwrap_missingCtyHeader_throwsClientException() throws Exception {
     String jwt = buildJwtWithHeaders("vc+ld+json+jwt", null);
 
-    ContentAccessor result = parser.unwrap(new ContentAccessorDirect(jwt));
+    ClientException ex = assertThrows(ClientException.class,
+        () -> parser.unwrap(new ContentAccessorDirect(jwt)));
 
-    assertNotNull(result.getContentAsString());
+    assertTrue(ex.getMessage().contains("missing required 'cty' header"));
   }
 
   // --- wrapper claim rejection ---

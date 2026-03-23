@@ -257,12 +257,13 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         payload = new ContentAccessorDirect(body, payload.getContentType());
 
         CredentialFormat format = formatDetector.detect(payload);
+        if (format == CredentialFormat.UNKNOWN) {
+            throw new ClientException(
+                "Unrecognizable credential format — payload is neither a known JSON-LD "
+                    + "credential nor a JWT with recognized headers");
+        }
         boolean isJwt = format == CredentialFormat.GAIAX_V2_LOIRE
             || format == CredentialFormat.VC2_DANUBETECH;
-        if (format == CredentialFormat.UNKNOWN && jwtPreprocessor.isJwtWrapped(payload)) {
-            isJwt = true;
-            format = CredentialFormat.VC2_DANUBETECH;
-        }
 
         Validator jwtValidator = null;
         if (isJwt && verifySigs) {
@@ -778,7 +779,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             return;
         }
         try {
-            // ICAM v24.07: holder is a top-level claim; older format: nested in vp claim
+            // ICAM v24.07 (Loire): holder is a top-level claim; older format: nested in vp claim
             String holder = claims.getStringClaim("holder");
             if (holder == null) {
                 @SuppressWarnings("unchecked")
@@ -788,9 +789,18 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 }
             }
             String iss = claims.getIssuer();
+            // Loire VPs: holder is optional per VCDM 2.0; when absent, the VP issuer (iss)
+            // is implicitly the holder. Also check top-level "issuer" claim as Loire fallback.
             if (holder == null) {
-                throw new VerificationException(
-                        "VP JWT missing 'holder' claim — iss/holder binding cannot be verified");
+                String issuerClaim = claims.getStringClaim("issuer");
+                if (issuerClaim != null && iss != null && !iss.equals(issuerClaim)) {
+                    throw new VerificationException(
+                        "VP JWT iss '" + iss + "' does not match VP issuer '" + issuerClaim + "'");
+                }
+                // holder absent: iss is implicitly the holder — binding passes
+                log.debug("checkVpJwtHolder; holder absent, iss '{}' accepted as implicit holder",
+                    iss);
+                return;
             }
             if (!iss.equals(holder)) {
                 throw new VerificationException(
@@ -1006,6 +1016,9 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     "Loire trust chain: publicKeyJwk must contain x5c or x5u certificate chain "
                         + "(ICAM 24.07 mandatory trust anchor). kid: " + jwtValidator.getDidURI());
             }
+            if (hasX5c) {
+                validateX5cChain(jwkNode.get("x5c"), jwtValidator.getDidURI());
+            }
             if (hasX5u) {
                 String x5uUrl = jwkNode.get("x5u").asText();
                 hasPEMTrustAnchorAndIsNotExpired(x5uUrl);
@@ -1021,6 +1034,32 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
+     * Validates certificates from the JWK {@code x5c} array: decodes base64 DER entries,
+     * checks each certificate is currently valid (not expired), and verifies that the chain
+     * is non-empty (ICAM 24.07).
+     */
+    private void validateX5cChain(JsonNode x5cArray, String kid) {
+        if (!x5cArray.isArray() || x5cArray.isEmpty()) {
+            throw new VerificationException(
+                "Loire trust chain: x5c array is empty. kid: " + kid);
+        }
+        try {
+            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+            for (JsonNode entry : x5cArray) {
+                byte[] certBytes = java.util.Base64.getDecoder().decode(entry.asText());
+                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
+                    new ByteArrayInputStream(certBytes));
+                cert.checkValidity();
+            }
+            log.debug("validateX5cChain; {} certificate(s) valid for kid: {}",
+                x5cArray.size(), kid);
+        } catch (CertificateException ex) {
+            throw new VerificationException(
+                "Loire trust chain: x5c certificate validation failed: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Enforces the Loire DID method restriction: only {@code did:web} is accepted
      * when Gaia-X trust framework is enabled (ICAM 24.07).
      *
@@ -1030,19 +1069,25 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private void enforceDidWebRestriction(String compactJwt) {
         try {
             JWTClaimsSet claims = SignedJWT.parse(compactJwt).getJWTClaimsSet();
-            String iss = claims.getIssuer();
-            if (iss == null) {
-                return;
+            // Loire uses top-level issuer in payload; fall back to JWT iss claim
+            String issuer = claims.getStringClaim("issuer");
+            if (issuer == null) {
+                issuer = claims.getIssuer();
             }
-            if (iss.startsWith("did:key")) {
+            if (issuer == null) {
+                throw new VerificationException(
+                    "Loire DID method restriction: no issuer found in JWT payload or iss claim "
+                        + "(ICAM 24.07 requires did:web)");
+            }
+            if (issuer.startsWith("did:key")) {
                 throw new VerificationException(
                     "Loire DID method restriction: did:key is not accepted "
-                        + "(ICAM 24.07 requires did:web with JWK + x5c/x5u). Issuer: " + iss);
+                        + "(ICAM 24.07 requires did:web with JWK + x5c/x5u). Issuer: " + issuer);
             }
-            if (!iss.startsWith("did:web:")) {
+            if (!issuer.startsWith("did:web:")) {
                 throw new VerificationException(
                     "Loire DID method restriction: only did:web is accepted "
-                        + "(ICAM 24.07). Found: " + iss);
+                        + "(ICAM 24.07). Found: " + issuer);
             }
         } catch (ParseException ex) {
             log.warn("enforceDidWebRestriction; JWT claims parse error: {}", ex.getMessage());
