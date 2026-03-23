@@ -24,6 +24,10 @@ import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
+import eu.xfsc.fc.core.service.assetstore.IriGenerator;
+import eu.xfsc.fc.core.service.assetstore.IriValidator;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -63,7 +67,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ContextConfiguration(classes = {RevalidationServiceTest.TestApplication.class, RevalidationServiceImpl.class, RevalidatorChunksDaoImpl.class, FileStoreConfig.class, DummyGraphStore.class,
   VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, DatabaseConfig.class, ValidatorCacheDaoImpl.class, AssetStoreImpl.class, AssetDaoImpl.class,
   DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
-  JwtSignatureVerifier.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
+  JwtSignatureVerifier.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
+  IriGenerator.class, IriValidator.class, ObjectMapper.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 //@Import(EmbeddedNeo4JConfig.class)
 public class RevalidationServiceTest {

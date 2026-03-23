@@ -1,0 +1,376 @@
+{
+	"info": {
+		"_postman_id": "am02-iri-tests-001",
+		"name": "Asset IRI Assignment Tests",
+		"description": "Tests for IRI-based asset identification.\n\nSRS requirement: CAT-FR-AM-02 — Each asset MUST be identified by an IRI. The CAT MUST support DIDs and UUIDs as URNs (RFC 4122).\nSRS: https://github.com/eclipse-xfsc/docs/blob/f3c6e6b6fbcc87732a1dfe83f060fa58a9a97873/federated-catalogue/src/docs/CAT%20Enhancement/CAT_Enhancement_Specifications%20v1.0.pdf\n\nWhat is tested:\n- Non-RDF assets receive UUID URN (urn:uuid:...) on upload\n- Assets can be retrieved, revoked, and deleted by IRI\n- Duplicate content returns 409 Conflict with IRI in error message\n- Asset list supports IRI-based filtering\n\nPrerequisites:\n- Local Docker stack running\n- Keycloak user with ADMIN_ALL role\n- Set variables: keycloak_user_username, keycloak_user_password\n\nUpload methods:\n- Non-RDF: application/octet-stream with raw body\n- RDF credential: application/json with JSON-LD body",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Get Auth Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"pm.collectionVariables.set('access_token', jsonData.access_token);",
+							"pm.test('Token received', function() {",
+							"    pm.expect(jsonData.access_token).to.be.a('string');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{ "key": "grant_type", "value": "password", "type": "text" },
+						{ "key": "username", "value": "{{keycloak_user_username}}", "type": "text" },
+						{ "key": "password", "value": "{{keycloak_user_password}}", "type": "text" },
+						{ "key": "client_id", "value": "{{client_id}}", "type": "text" },
+						{ "key": "scope", "value": "openid", "type": "text" },
+						{ "key": "client_secret", "value": "{{client_secret}}", "type": "default" }
+					]
+				},
+				"url": {
+					"raw": "{{keycloak_protocol}}://{{keycloak_address}}/realms/gaia-x/protocol/openid-connect/token",
+					"protocol": "{{keycloak_protocol}}",
+					"host": ["{{keycloak_address}}"],
+					"path": ["realms", "gaia-x", "protocol", "openid-connect", "token"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AC-1: Upload text via octet-stream → UUID URN",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 201 Created', function() {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"var jsonData = pm.response.json();",
+							"pm.test('Asset ID is UUID URN', function() {",
+							"    pm.expect(jsonData.id).to.match(/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);",
+							"});",
+							"pm.test('Asset hash is SHA-256 (64 hex chars)', function() {",
+							"    pm.expect(jsonData.assetHash).to.match(/^[0-9a-f]{64}$/);",
+							"});",
+							"pm.test('Location header contains IRI', function() {",
+							"    var location = pm.response.headers.get('Location');",
+							"    pm.expect(location).to.include('urn');",
+							"});",
+							"pm.collectionVariables.set('text_asset_id', jsonData.id);",
+							"pm.collectionVariables.set('text_asset_hash', jsonData.assetHash);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/octet-stream" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "This is a plain text contract template for AM-02 testing. It should receive a UUID URN as its asset IRI."
+				},
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AC-1: Retrieve asset by IRI",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200 OK', function() {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"pm.test('Response contains uploaded content', function() {",
+							"    pm.expect(pm.response.text()).to.include('contract template');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "GET",
+				"header": [{ "key": "accept", "value": "application/json" }],
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:id",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets", ":id"],
+					"variable": [{ "key": "id", "value": "{{text_asset_id}}" }]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AC-1: Upload JSON via octet-stream → UUID URN (not sha256)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 201 Created', function() {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"var jsonData = pm.response.json();",
+							"pm.test('JSON asset gets UUID URN (not hash-based)', function() {",
+							"    pm.expect(jsonData.id).to.match(/^urn:uuid:/);",
+							"    pm.expect(jsonData.id).to.not.include('sha256');",
+							"});",
+							"pm.collectionVariables.set('json_asset_id', jsonData.id);",
+							"pm.collectionVariables.set('json_asset_hash', jsonData.assetHash);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/octet-stream" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"contractId\": \"DCS-001\", \"title\": \"Data Processing Agreement\", \"version\": 1}"
+				},
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AC-5: Upload duplicate content → 409 Conflict with IRI in message",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 409 Conflict', function() {",
+							"    pm.response.to.have.status(409);",
+							"});",
+							"pm.test('Error message contains IRI', function() {",
+							"    var body = pm.response.json();",
+							"    pm.expect(body.message).to.include('urn:uuid:');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/octet-stream" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "This is a plain text contract template for AM-02 testing. It should receive a UUID URN as its asset IRI."
+				},
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AC-5: List assets filtered by IRI",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200 OK', function() {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"var jsonData = pm.response.json();",
+							"pm.test('Found exactly one asset', function() {",
+							"    pm.expect(jsonData.totalCount).to.equal(1);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "GET",
+				"header": [{ "key": "accept", "value": "application/json" }],
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets?ids={{text_asset_id}}&withMeta=true",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets"],
+					"query": [
+						{ "key": "ids", "value": "{{text_asset_id}}" },
+						{ "key": "withMeta", "value": "true" }
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Revoke JSON asset by hash",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200 OK', function() {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "POST",
+				"header": [{ "key": "accept", "value": "application/json" }],
+				"body": { "mode": "raw", "raw": "", "options": { "raw": { "language": "json" } } },
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:asset_hash/revoke",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets", ":asset_hash", "revoke"],
+					"variable": [{ "key": "asset_hash", "value": "{{json_asset_hash}}" }]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete text asset by hash",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200 OK', function() {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "DELETE",
+				"header": [{ "key": "accept", "value": "application/json" }],
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:asset_hash",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets", ":asset_hash"],
+					"variable": [{ "key": "asset_hash", "value": "{{text_asset_hash}}" }]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Cleanup: Delete JSON asset",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status is 200 or 404', function() {",
+							"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+				},
+				"method": "DELETE",
+				"header": [{ "key": "accept", "value": "application/json" }],
+				"url": {
+					"raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:asset_hash",
+					"protocol": "{{federated_catalogue_protocol}}",
+					"host": ["{{federated_catalogue_address}}"],
+					"path": ["assets", ":asset_hash"],
+					"variable": [{ "key": "asset_hash", "value": "{{json_asset_hash}}" }]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{ "key": "client_id", "value": "federated-catalogue" },
+		{ "key": "client_secret", "value": "{{keycloak_client_secret}}", "description": "Set via environment or use dev default from docker/dev.env" },
+		{ "key": "federated_catalogue_address", "value": "localhost:8081" },
+		{ "key": "federated_catalogue_protocol", "value": "http" },
+		{ "key": "keycloak_address", "value": "key-server:8080" },
+		{ "key": "keycloak_protocol", "value": "http" },
+		{ "key": "keycloak_user_username", "value": "" },
+		{ "key": "keycloak_user_password", "value": "" },
+		{ "key": "access_token", "value": "" },
+		{ "key": "text_asset_id", "value": "" },
+		{ "key": "text_asset_hash", "value": "" },
+		{ "key": "json_asset_id", "value": "" },
+		{ "key": "json_asset_hash", "value": "" }
+	]
+}

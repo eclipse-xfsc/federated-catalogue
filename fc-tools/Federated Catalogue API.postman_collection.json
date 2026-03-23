@@ -905,7 +905,7 @@
           "response": []
         },
         {
-          "name": "/assets/{hash}/revoke",
+          "name": "/assets/{asset_hash}/revoke",
           "protocolProfileBehavior": {
             "disabledSystemHeaders": {}
           },
@@ -937,19 +937,19 @@
               }
             },
             "url": {
-              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash/revoke",
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:asset_hash/revoke",
               "protocol": "{{federated_catalogue_protocol}}",
               "host": [
                 "{{federated_catalogue_address}}"
               ],
               "path": [
                 "assets",
-                ":hash",
+                ":asset_hash",
                 "revoke"
               ],
               "variable": [
                 {
-                  "key": "hash",
+                  "key": "asset_hash",
                   "value": ""
                 }
               ]
@@ -1010,7 +1010,7 @@
           "response": []
         },
         {
-          "name": "/assets/{hash}",
+          "name": "/assets/{id}",
           "protocolProfileBehavior": {
             "disabledSystemHeaders": {},
             "disableBodyPruning": true
@@ -1043,18 +1043,18 @@
               }
             },
             "url": {
-              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash",
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:id",
               "protocol": "{{federated_catalogue_protocol}}",
               "host": [
                 "{{federated_catalogue_address}}"
               ],
               "path": [
                 "assets",
-                ":hash"
+                ":id"
               ],
               "variable": [
                 {
-                  "key": "hash",
+                  "key": "id",
                   "value": ""
                 }
               ]
@@ -1063,7 +1063,7 @@
           "response": []
         },
         {
-          "name": "/assets/{hash}",
+          "name": "/assets/{asset_hash}",
           "protocolProfileBehavior": {
             "disabledSystemHeaders": {}
           },
@@ -1095,18 +1095,18 @@
               }
             },
             "url": {
-              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:hash",
+              "raw": "{{federated_catalogue_protocol}}://{{federated_catalogue_address}}/assets/:asset_hash",
               "protocol": "{{federated_catalogue_protocol}}",
               "host": [
                 "{{federated_catalogue_address}}"
               ],
               "path": [
                 "assets",
-                ":hash"
+                ":asset_hash"
               ],
               "variable": [
                 {
-                  "key": "hash",
+                  "key": "asset_hash",
                   "value": ""
                 }
               ]
@@ -2654,7 +2654,7 @@
     },
     {
       "key": "client_secret",
-      "value": "UXvntBMlmn6m05u2Nxko0vDri8gJj2HU"
+      "value": ""
     },
     {
       "key": "federated_catalogue_address",

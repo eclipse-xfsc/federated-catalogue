@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,6 +53,21 @@ public class AssetDaoImpl implements AssetDao {
 	    return assetRecord;
 	}
 	
+	@Override
+	public Optional<AssetRecord> selectBySubjectId(String subjectId) {
+	    String sql = "select asset_hash, subjectid, status, issuer, uploadtime, statustime, expirationtime, "
+	        + "validators, content_type, file_size, original_filename, content "
+	        + "from assets where subjectid = :subjectId and status = :activeStatus";
+	    try {
+	      AssetRecord assetRecord = jdbc.queryForObject(sql,
+	          Map.of("subjectId", subjectId, "activeStatus", AssetStatus.ACTIVE.ordinal()),
+	          new AssetMetaMapper());
+	      return Optional.of(assetRecord);
+	    } catch (EmptyResultDataAccessException ex) {
+	      return Optional.empty();
+	    }
+	}
+
 	@Override
     public PaginatedResults<AssetRecord> selectByFilter(AssetFilter filter, boolean withMeta, boolean withContent) {
 	    log.debug("selectByFilter.enter; got filter: {}, withMeta: {}, withContent: {}", filter, withMeta, withContent);

@@ -56,9 +56,9 @@ import lombok.extern.slf4j.Slf4j;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {AssetStoreTest.TestApplication.class, AssetStoreImpl.class, AssetDaoImpl.class, AssetStoreTest.class,
-  Neo4jGraphStore.class, DatabaseConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, HttpDocumentResolver.class,
-  FileStoreConfig.class, RdfContentTypeProperties.class})
+@ContextConfiguration(classes = {AssetStoreTest.TestApplication.class, AssetStoreImpl.class, AssetDaoImpl.class, IriGenerator.class, IriValidator.class,
+  AssetStoreTest.class, Neo4jGraphStore.class, DatabaseConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
+  DidResolverConfig.class, HttpDocumentResolver.class, FileStoreConfig.class, RdfContentTypeProperties.class})
 @Slf4j
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)

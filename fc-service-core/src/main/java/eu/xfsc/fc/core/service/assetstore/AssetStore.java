@@ -91,16 +91,38 @@ public interface AssetStore {
   /**
    * Store a non-RDF asset. The content is stored in the FileStore and metadata
    * (with content=NULL) is inserted into the database. No verification or graph
-   * interaction is performed. If the metadata has no subject ID, one is generated
-   * from the configured prefix and the content hash.
+   * interaction is performed. If the asset ID is not set on the metadata, a UUID
+   * URN will be generated automatically via {@link IriGenerator#generateUuidUrn()}.
    *
-   * @param assetMetadata The asset metadata to store.
+   * @param assetMetadata The asset metadata to store (ID may be null — a UUID URN
+   *                      will be generated).
    * @param originalFilename The original filename from the upload, or null.
-   * @return the stored metadata, including the generated subject ID.
+   * @return the stored metadata.
    * @throws eu.xfsc.fc.core.exception.ServerException if the file store write fails.
    * @throws eu.xfsc.fc.core.exception.ConflictException if an asset with the same hash already exists.
    */
   AssetMetadata storeUnverified(AssetMetadata assetMetadata, String originalFilename);
+
+  // --- IRI-based methods for public API ---
+  // Note: All IRI-based methods resolve to the active asset only.
+
+  /**
+   * Fetch an active asset by its IRI (subjectId).
+   *
+   * @param id The IRI that identifies the asset.
+   * @return The asset meta data.
+   * @throws eu.xfsc.fc.core.exception.NotFoundException if no asset with the given IRI exists.
+   */
+  AssetMetadata getById(String id);
+
+  /**
+   * Fetch an active asset's file content by its IRI (subjectId).
+   *
+   * @param id The IRI that identifies the asset.
+   * @return The asset file content.
+   * @throws eu.xfsc.fc.core.exception.NotFoundException if no asset with the given IRI exists.
+   */
+  ContentAccessor getFileById(String id);
 
   /**
    * Remove all assets from the AssetStore.

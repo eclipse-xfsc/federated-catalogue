@@ -7,6 +7,7 @@ import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -92,7 +93,10 @@ public class AssetUploadControllerTest {
 
         Asset asset = objectMapper.readValue(result.getResponse().getContentAsString(), Asset.class);
         assertNotNull(asset.getAssetHash());
-        assertEquals("urn:asset:sha256:" + asset.getAssetHash(), asset.getId());
+        assertNotNull(asset.getId());
+        assertTrue(asset.getId().startsWith("urn:uuid:"), "Non-RDF asset ID should be UUID URN, got: " + asset.getId());
+        assertTrue(asset.getId().matches("urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"),
+                "UUID URN should match RFC 4122 format, got: " + asset.getId());
         assertEquals("text/plain", asset.getContentType());
         assertEquals(content.length, asset.getFileSize());
         assertNull(asset.getValidatorDids());
