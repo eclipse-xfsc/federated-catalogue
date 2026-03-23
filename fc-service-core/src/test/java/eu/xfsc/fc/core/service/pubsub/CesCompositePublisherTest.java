@@ -20,22 +20,24 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
+import eu.xfsc.fc.core.service.assetstore.IriGenerator;
+import eu.xfsc.fc.core.service.assetstore.IriValidator;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.assetstore.IriGenerator;
-import eu.xfsc.fc.core.service.assetstore.IriValidator;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
+import eu.xfsc.fc.core.service.verification.FormatDetector;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
+import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
 import eu.xfsc.fc.core.service.verification.Vc11Processor;
 import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
+import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import okhttp3.mockwebserver.MockResponse;
@@ -69,12 +71,37 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest(properties = {"publisher.impl=ces", "publisher.url=http://localhost:9091", "publisher.comp-url=http://localhost:9090"})
 @ActiveProfiles({"test"})
-@ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, AssetStoreConfig.class, AssetDaoImpl.class,
-		DummyGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
-		DocumentLoaderConfig.class, DocumentLoaderProperties.class, ValidatorCacheDaoImpl.class, CesTrackerDaoImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
-		JwtContentPreprocessor.class, Vc11Processor.class, Vc2Processor.class, JwtSignatureVerifier.class,
-		IriGenerator.class, IriValidator.class})
-//@Import(EmbeddedNeo4JConfig.class)
+@ContextConfiguration(classes = {
+        AssetDaoImpl.class,
+        AssetStoreConfig.class,
+        CesCompositePublisherTest.TestApplication.class,
+        CesTrackerDaoImpl.class,
+        CredentialVerificationStrategy.class,
+        DatabaseConfig.class,
+        DidDocumentResolver.class,
+        DidResolverConfig.class,
+        DocumentLoaderConfig.class,
+        DocumentLoaderProperties.class,
+        DummyGraphStore.class,
+        FileStoreConfig.class,
+        FormatDetector.class,
+        HttpDocumentResolver.class,
+        IriGenerator.class,
+        IriValidator.class,
+        JwtContentPreprocessor.class,
+        JwtSignatureVerifier.class,
+        LoireJwtParser.class,
+        ProtectedNamespaceFilter.class,
+        ProtectedNamespaceProperties.class,
+        PubSubConfig.class, JacksonConfig.class,
+        SchemaDaoImpl.class,
+        SchemaStoreImpl.class,
+        SchemaValidationServiceImpl.class,
+        ValidatorCacheDaoImpl.class,
+        Vc11Processor.class,
+        Vc2Processor.class,
+        VerificationServiceImpl.class,
+})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class CesCompositePublisherTest {
 
@@ -88,8 +115,7 @@ public class CesCompositePublisherTest {
 
     @Autowired
     private AssetPublisher cesPublisher;
-    //@Autowired
-    //private Neo4j embeddedDatabaseServer;
+
     @Autowired
     private GraphStore graphStore;
     @Autowired
@@ -116,7 +142,6 @@ public class CesCompositePublisherTest {
     void cleanUpStores() throws Exception {
         mockCompService.shutdown();
         mockCesService.shutdown();
-        //embeddedDatabaseServer.close();
     }
 
     @AfterEach
@@ -124,10 +149,8 @@ public class CesCompositePublisherTest {
         schemaStore.clear();
     }
 
-
     @Test
     public void test01AssetStoreRollback() {
-        //ContentAccessor content = getAccessor("Pub-Sub-Tests/sag-research.jsonld");
         cesPublisher.setTransactional(true);
         ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
         schemaStore.initializeDefaultSchemas();
@@ -151,7 +174,6 @@ public class CesCompositePublisherTest {
 
     @Test
     public void test02AssetStoreCommit() {
-        //ContentAccessor content = getAccessor("Pub-Sub-Tests/sag-research.jsonld");
         cesPublisher.setTransactional(false);
         ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
         schemaStore.initializeDefaultSchemas();
@@ -165,9 +187,6 @@ public class CesCompositePublisherTest {
                 .addHeader("Content-Type", "application/json")
                 .setResponseCode(409));
         assetStorePublisher.storeCredential(assetMetadata, vr);
-        //List<Map<String, Object>> claims = graphStore.queryData(
-        //        new GraphQuery("MATCH (n {uri: $uri}) RETURN labels(n), n", Map.of("uri", assetMetadata.getId()))).getResults();
-        //Assertions.assertTrue(claims.size() > 0);
         AssetMetadata assetMetadata2 = assetStorePublisher.getByHash(assetMetadata.getAssetHash());
         assertNotNull(assetMetadata2);
         assertEquals(assetMetadata.getAssetHash(), assetMetadata2.getAssetHash());

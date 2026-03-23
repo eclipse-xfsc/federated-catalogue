@@ -53,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -120,6 +121,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private final Vc11Processor vc11Processor;
     private final Vc2Processor vc2Processor;
     private final JwtSignatureVerifier jwtSignatureVerifier;
+    private final FormatDetector formatDetector;
+    private final LoireJwtParser loireJwtParser;
 
     @Value("${federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url:}")
     private String trustAnchorAddr;
@@ -162,16 +165,42 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         // Read content once (fixes double-read)
         String body = payload.getContentAsString().strip();
         payload = new ContentAccessorDirect(body, payload.getContentType());
-        boolean isJwt = jwtPreprocessor.isJwtWrapped(payload);
+
+        // Format detection — determines processing path
+        CredentialFormat format = formatDetector.detect(payload);
+        boolean isJwt = format == CredentialFormat.GAIAX_V2_LOIRE
+            || format == CredentialFormat.VC2_DANUBETECH;
+        // Fallback: if FormatDetector returns UNKNOWN but body looks like JWT, use legacy detection
+        if (format == CredentialFormat.UNKNOWN && jwtPreprocessor.isJwtWrapped(payload)) {
+            isJwt = true;
+            format = CredentialFormat.VC2_DANUBETECH;
+        }
+
         // JWT signature verification — fires before unwrap (Issue #12)
         Validator jwtValidator = null;
         if (isJwt && (verifyVCSignatures || verifyVPSignatures)) {
             jwtValidator = jwtSignatureVerifier.verify(body);
         }
+
+        // Loire + Gaia-X: DID method restriction (ICAM 24.07 — only did:web accepted)
+        if (format == CredentialFormat.GAIAX_V2_LOIRE && gaiaxTrustFrameworkEnabled) {
+            enforceDidWebRestriction(body);
+            if (jwtValidator != null) {
+                enforceLoireTrustChain(jwtValidator);
+            }
+        }
+
         // Version dispatch — payload is unwrapped JSON-LD after this point
-        // JWT-wrapped payloads are VC 2.0-only; fall back to vc2Processor when context parse fails
-        boolean isVc2 = isVc2Context(body) || isJwt;
-        payload = (isVc2 ? vc2Processor : vc11Processor).preProcess(payload);
+        boolean isVc2;
+        if (format == CredentialFormat.GAIAX_V2_LOIRE) {
+            payload = loireJwtParser.unwrap(payload);
+        } else if (format == CredentialFormat.GAIAX_V1_TAGUS) {
+            payload = vc11Processor.preProcess(payload);
+        } else {
+            // VC2_DANUBETECH or UNKNOWN fallback
+            isVc2 = isVc2Context(body) || isJwt;
+            payload = (isVc2 ? vc2Processor : vc11Processor).preProcess(payload);
+        }
         // NOTE: CAT-FR-GD-02's VcStructureDetector.isVcStructured() call MUST be placed AFTER this
         // line, not before — a JWT-wrapped VC 2.0 payload would not be recognised as a VC until unwrapped.
 
@@ -188,9 +217,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics);
         log.debug("verifyCredential; credentials processed, time taken: {}", System.currentTimeMillis() - stamp2);
 
-        // Gate on gaiaxTrustFrameworkEnabled: non-Gaia-X VC 2.0 credentials have no known TrustFrameworkBaseClass
-        // TODO(gaia-x-loire): when Loire ontology support lands, resolveBaseClass should return the correct
-        //   Loire type for Gaia-X credentials. Remove this gate and let hasClasses() enforce the check unconditionally.
+        // Gate on gaiaxTrustFrameworkEnabled: non-Gaia-X VC 2.0 credentials have no known TrustFrameworkBaseClass.
+        // Story 035 (Loire Ontology Migration) will update resolveBaseClass to handle 2511 namespace types.
         if (verifySemantics && gaiaxTrustFrameworkEnabled && !typedCredentials.hasClasses()) {
             throw new VerificationException("Semantic Error: no proper CredentialSubject found");
         }
@@ -293,11 +321,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             if (verifyVCSignatures && isVpJwt) {
                 List<Validator> innerValidators = verifyInnerVcCredentials(ld);
                 if (!innerValidators.isEmpty()) {
-                    if (validators == null) {
-                        validators = innerValidators;
-                    } else {
-                        validators.addAll(innerValidators);
-                    }
+                    validators.addAll(innerValidators);
                 }
             }
         } else if (verifyVPSignatures || verifyVCSignatures) {
@@ -467,36 +491,102 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         log.trace("getCredentials.enter; got VP: {}", vp);
         Object obj = vp.getJsonObject().get("verifiableCredential");
         Map<VerifiableCredential, TrustFrameworkBaseClass> creds;
-        if (obj == null) {
-            creds = Collections.emptyMap();
-        } else if (obj instanceof List) {
-            List<?> l = (List<?>) obj;
-            creds = new LinkedHashMap<>(l.size());
-            for (Object entry : l) {
-                if (entry instanceof String) {
-                    // Compact JWT VC — opaque for semantic processing; signatures handled by verifyInnerVcCredentials
-                    // TODO(gaia-x-loire): if Loire requires semantic validation of embedded JWT VCs, unwrap and
-                    //   resolve their base class here instead of skipping.
-                    continue;
+        switch (obj) {
+            case null -> creds = Collections.emptyMap();
+            case List<?> l -> {
+                creds = new LinkedHashMap<>(l.size());
+                for (Object entry : l) {
+                    if (entry instanceof String jwtStr) {
+                        VerifiableCredential unwrapped = tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
+                        if (unwrapped != null) {
+                            creds.put(unwrapped, resolveBaseClass(unwrapped));
+                        }
+                        continue;
+                    }
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> entryMap = (Map<String, Object>) entry;
+                    if (isEnvelopedVerifiableCredential(entryMap.get("type"), entryMap.get("@context"))) {
+                        VerifiableCredential unwrapped = tryUnwrapEnvelopedVc(entryMap, vp.getDocumentLoader());
+                        if (unwrapped != null) {
+                            creds.put(unwrapped, resolveBaseClass(unwrapped));
+                        }
+                        continue;
+                    }
+                    VerifiableCredential vc = VerifiableCredential.fromMap(entryMap);
+                    vc.setDocumentLoader(vp.getDocumentLoader());
+                    creds.put(vc, resolveBaseClass(vc));
                 }
-                @SuppressWarnings("unchecked")
-                VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) entry);
-                vc.setDocumentLoader(vp.getDocumentLoader());
-                creds.put(vc, resolveBaseClass(vc));
             }
-        } else if (obj instanceof String) {
-            // Single compact JWT VC — opaque for semantic processing
-            // TODO(gaia-x-loire): same as list case above — unwrap if Loire requires semantic validation.
-            creds = Collections.emptyMap();
-        } else {
-            @SuppressWarnings("unchecked")
-            VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) obj);
-            vc.setDocumentLoader(vp.getDocumentLoader());
-            creds = Map.of(vc, resolveBaseClass(vc));
+            case String jwtStr -> {
+                VerifiableCredential unwrapped = tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
+                if (unwrapped != null) {
+                    creds = Map.of(unwrapped, resolveBaseClass(unwrapped));
+                } else {
+                    creds = Collections.emptyMap();
+                }
+            }
+            default -> {
+                @SuppressWarnings("unchecked")
+                VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) obj);
+                vc.setDocumentLoader(vp.getDocumentLoader());
+                creds = Map.of(vc, resolveBaseClass(vc));
+            }
         }
         TypedCredentials tcs = new TypedCredentials(vp, creds);
         log.trace("getCredentials.exit; returning: {}", tcs);
         return tcs;
+    }
+
+    /**
+     * Attempts to unwrap an EnvelopedVerifiableCredential (Loire data: URI) to a VC.
+     */
+    private VerifiableCredential tryUnwrapEnvelopedVc(Map<String, Object> entryMap,
+        DocumentLoader docLoader) {
+        Object idObj = entryMap.get("id");
+        if (!(idObj instanceof String idStr) || !idStr.startsWith("data:")) {
+            log.debug("tryUnwrapEnvelopedVc; no data: URI in EnvelopedVerifiableCredential");
+            return null;
+        }
+        try {
+            int commaIdx = idStr.indexOf(',');
+            if (commaIdx < 0) {
+                int semiIdx = idStr.indexOf(';');
+                if (semiIdx < 0) {
+                    return null;
+                }
+                commaIdx = semiIdx;
+            }
+            String jwtStr = idStr.substring(commaIdx + 1);
+            return tryUnwrapJwtVc(jwtStr, docLoader);
+        } catch (Exception ex) {
+            log.debug("tryUnwrapEnvelopedVc; failed to unwrap: {}", ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Attempts to unwrap a compact JWT VC string to a VerifiableCredential for semantic processing.
+     */
+    private VerifiableCredential tryUnwrapJwtVc(String jwtStr, DocumentLoader docLoader) {
+        if (!jwtStr.startsWith("eyJ")) {
+            return null;
+        }
+        try {
+            ContentAccessor jwtContent = new ContentAccessorDirect(jwtStr);
+            CredentialFormat innerFormat = formatDetector.detect(jwtContent);
+            ContentAccessor unwrapped;
+            if (innerFormat == CredentialFormat.GAIAX_V2_LOIRE) {
+                unwrapped = loireJwtParser.unwrap(jwtContent);
+            } else {
+                unwrapped = jwtPreprocessor.unwrap(jwtContent);
+            }
+            VerifiableCredential vc = VerifiableCredential.fromJson(unwrapped.getContentAsString());
+            vc.setDocumentLoader(docLoader);
+            return vc;
+        } catch (Exception ex) {
+            log.debug("tryUnwrapJwtVc; failed to unwrap JWT VC: {}", ex.getMessage());
+            return null;
+        }
     }
 
     private TypedCredentials getCredentials(VerifiableCredential vc) {
@@ -829,5 +919,70 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         Instant exp = relevant == null ? null : relevant.getNotAfter().toInstant();
         log.debug("hasPEMTrustAnchorAndIsNotExpired.exit; returning: {}", exp);
         return exp;
+    }
+
+    /**
+     * Enforces mandatory x5c/x5u trust chain validation for Loire credentials
+     * when Gaia-X trust framework is enabled (ICAM 24.07).
+     *
+     * @param jwtValidator the validator from JWT signature verification
+     * @throws VerificationException if x5c or x5u is missing in the publicKeyJwk
+     */
+    private void enforceLoireTrustChain(Validator jwtValidator) {
+        String publicKeyJson = jwtValidator.getPublicKey();
+        if (publicKeyJson == null) {
+            throw new VerificationException(
+                "Loire trust chain: publicKeyJwk is required but not available");
+        }
+        try {
+            JsonNode jwkNode = OBJECT_MAPPER.readTree(publicKeyJson);
+            boolean hasX5c = jwkNode.has("x5c") && !jwkNode.get("x5c").isEmpty();
+            boolean hasX5u = jwkNode.has("x5u") && !jwkNode.get("x5u").asText().isBlank();
+            if (!hasX5c && !hasX5u) {
+                throw new VerificationException(
+                    "Loire trust chain: publicKeyJwk must contain x5c or x5u certificate chain "
+                        + "(ICAM 24.07 mandatory trust anchor). kid: " + jwtValidator.getDidURI());
+            }
+            if (hasX5u) {
+                String x5uUrl = jwkNode.get("x5u").asText();
+                hasPEMTrustAnchorAndIsNotExpired(x5uUrl);
+            }
+            log.debug("enforceLoireTrustChain; trust chain validated for kid: {}",
+                jwtValidator.getDidURI());
+        } catch (VerificationException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new VerificationException(
+                "Loire trust chain validation failed: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Enforces the Loire DID method restriction: only {@code did:web} is accepted
+     * when Gaia-X trust framework is enabled (ICAM 24.07).
+     *
+     * @param compactJwt the original compact JWT body
+     * @throws VerificationException if the issuer uses a non-did:web DID method
+     */
+    private void enforceDidWebRestriction(String compactJwt) {
+        try {
+            JWTClaimsSet claims = SignedJWT.parse(compactJwt).getJWTClaimsSet();
+            String iss = claims.getIssuer();
+            if (iss == null) {
+                return;
+            }
+            if (iss.startsWith("did:key")) {
+                throw new VerificationException(
+                    "Loire DID method restriction: did:key is not accepted "
+                        + "(ICAM 24.07 requires did:web with JWK + x5c/x5u). Issuer: " + iss);
+            }
+            if (!iss.startsWith("did:web:")) {
+                throw new VerificationException(
+                    "Loire DID method restriction: only did:web is accepted "
+                        + "(ICAM 24.07). Found: " + iss);
+            }
+        } catch (ParseException ex) {
+            log.warn("enforceDidWebRestriction; JWT claims parse error: {}", ex.getMessage());
+        }
     }
 }
