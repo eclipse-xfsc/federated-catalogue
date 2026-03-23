@@ -1,8 +1,13 @@
 package eu.xfsc.fc.core.service.schemastore;
 
+import static eu.xfsc.fc.core.service.schemastore.SchemaStore.MEDIA_TYPE_LD_JSON;
+import static eu.xfsc.fc.core.service.schemastore.SchemaStore.MEDIA_TYPE_RDF_XML;
+import static eu.xfsc.fc.core.service.schemastore.SchemaStore.MEDIA_TYPE_TEXT_TURTLE;
+import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.JSON;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.ONTOLOGY;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.SHAPE;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.VOCABULARY;
+import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.XML;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,6 +54,8 @@ import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.NotFoundException;
+import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
@@ -497,6 +504,193 @@ public class SchemaStoreTest {
     SchemaAnalysisResult result = schemaStore.analyzeSchema(new ContentAccessorDirect(ttl));
     assertFalse(result.isValid());
     assertEquals("Schema type not supported", result.getErrorMessage());
+  }
+
+  @Test
+  void addSchema_validJsonSchema_returnsResult() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema.json");
+
+    SchemaStoreResult result = schemaStore.addSchema(content, JSON);
+
+    assertEquals("https://example.org/schemas/person", result.id());
+    assertNotNull(result.uploadTime());
+  }
+
+  @Test
+  void addSchema_jsonSchemaWithoutId_generatesUuidUrn() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema-no-id.json");
+
+    SchemaStoreResult result = schemaStore.addSchema(content, JSON);
+
+    assertTrue(result.id().startsWith("urn:uuid:"));
+    assertNotNull(result.uploadTime());
+  }
+
+  @Test
+  void addSchema_invalidJsonSchema_throwsVerificationException() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/invalid-json-schema.json");
+
+    assertThrowsExactly(VerificationException.class, () -> schemaStore.addSchema(content, JSON));
+  }
+
+  @Test
+  void addSchema_validXmlSchema_returnsResult() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-xml-schema.xsd");
+
+    SchemaStoreResult result = schemaStore.addSchema(content, XML);
+
+    assertEquals("http://example.org/config", result.id());
+    assertNotNull(result.uploadTime());
+  }
+
+  @Test
+  void addSchema_xmlSchemaWithoutNamespace_generatesUuidUrn() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-xml-schema-no-namespace.xsd");
+
+    SchemaStoreResult result = schemaStore.addSchema(content, XML);
+
+    assertTrue(result.id().startsWith("urn:uuid:"));
+    assertNotNull(result.uploadTime());
+  }
+
+  @Test
+  void addSchema_invalidXmlSchema_throwsVerificationException() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/invalid-xml-schema.xsd");
+
+    assertThrowsExactly(VerificationException.class, () -> schemaStore.addSchema(content, XML));
+  }
+
+  @Test
+  void addSchema_duplicateJsonSchema_throwsConflictException() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema.json");
+    schemaStore.addSchema(content, JSON);
+
+    assertThrowsExactly(ConflictException.class, () -> schemaStore.addSchema(content, JSON));
+  }
+
+  @Test
+  void getSchema_jsonSchema_returnsContent() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema.json");
+    schemaStore.addSchema(content, JSON);
+
+    ContentAccessor retrieved = schemaStore.getSchema("https://example.org/schemas/person");
+
+    assertNotNull(retrieved);
+    assertTrue(retrieved.getContentAsString().contains("https://example.org/schemas/person"));
+  }
+
+  @Test
+  void getSchema_xmlSchema_returnsContent() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-xml-schema.xsd");
+    schemaStore.addSchema(content, XML);
+
+    ContentAccessor retrieved = schemaStore.getSchema("http://example.org/config");
+
+    assertNotNull(retrieved);
+    assertTrue(retrieved.getContentAsString().contains("xs:schema"));
+  }
+
+  @Test
+  void deleteSchema_jsonSchema_succeeds() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema.json");
+    schemaStore.addSchema(content, JSON);
+
+    assertNotNull(schemaStore.getSchemaList().get(JSON));
+
+    schemaStore.deleteSchema("https://example.org/schemas/person");
+
+    Map<SchemaType, List<String>> list = schemaStore.getSchemaList();
+    assertNull(list.get(JSON));
+  }
+
+  @Test
+  void getSchemaList_withNonRdfSchemas_includesAllTypes() {
+    ContentAccessor jsonContent = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema.json");
+    ContentAccessor xsdContent = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-xml-schema.xsd");
+    schemaStore.addSchema(jsonContent, JSON);
+    schemaStore.addSchema(xsdContent, XML);
+
+    Map<SchemaType, List<String>> list = schemaStore.getSchemaList();
+
+    assertNotNull(list.get(JSON));
+    assertEquals(1, list.get(JSON).size());
+    assertTrue(list.get(JSON).contains("https://example.org/schemas/person"));
+    assertNotNull(list.get(XML));
+    assertEquals(1, list.get(XML).size());
+    assertTrue(list.get(XML).contains("http://example.org/config"));
+  }
+
+  @Test
+  void getCompatibleAssetContentTypes_json_returnsExpected() {
+    List<String> types = JSON.getCompatibleAssetContentTypes();
+
+    assertEquals(2, types.size());
+    assertTrue(types.contains("application/json"));
+    assertTrue(types.contains("application/schema+json"));
+  }
+
+  @Test
+  void getCompatibleAssetContentTypes_xml_returnsExpected() {
+    List<String> types = XML.getCompatibleAssetContentTypes();
+
+    assertEquals(1, types.size());
+    assertTrue(types.contains("application/xml"));
+  }
+
+  @Test
+  void getCompatibleAssetContentTypes_rdfTypes_returnRdfMediaTypes() {
+    List<String> types = SchemaType.ONTOLOGY.getCompatibleAssetContentTypes();
+
+    assertEquals(3, types.size());
+    assertTrue(types.contains(MEDIA_TYPE_TEXT_TURTLE));
+    assertTrue(types.contains(MEDIA_TYPE_RDF_XML));
+    assertTrue(types.contains(MEDIA_TYPE_LD_JSON));
+  }
+
+  @Test
+  void getLatestSchemaByType_jsonType_returnsLatestContent() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-json-schema.json");
+    schemaStore.addSchema(content, JSON);
+
+    ContentAccessor latest = schemaStore.getLatestSchemaByType(JSON);
+
+    assertNotNull(latest);
+    assertTrue(latest.getContentAsString().contains("https://example.org/schemas/person"));
+  }
+
+  @Test
+  void getLatestSchemaByType_emptyJsonStore_throwsNotFoundException() {
+    assertThrowsExactly(NotFoundException.class, () -> schemaStore.getLatestSchemaByType(JSON));
+  }
+
+  @Test
+  void getLatestSchemaByType_emptyXmlStore_throwsNotFoundException() {
+    assertThrowsExactly(NotFoundException.class, () -> schemaStore.getLatestSchemaByType(XML));
+  }
+
+  @Test
+  void addSchema_xmlSchemaWithDoctype_throwsVerificationException() {
+    String xxeSchema = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<!DOCTYPE foo [\n"
+        + "  <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n"
+        + "]>\n"
+        + "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n"
+        + "  <xs:element name=\"test\" type=\"xs:string\"/>\n"
+        + "</xs:schema>";
+
+    assertThrowsExactly(VerificationException.class,
+        () -> schemaStore.addSchema(new ContentAccessorDirect(xxeSchema), XML));
+  }
+
+  @Test
+  void updateSchema_xmlSchema_succeeds() {
+    ContentAccessor content = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-xml-schema.xsd");
+    SchemaStoreResult addResult = schemaStore.addSchema(content, XML);
+
+    ContentAccessor updatedContent = TestUtil.getAccessor(getClass(), "Schema-Tests/valid-xml-schema.xsd");
+    SchemaStoreResult updateResult = schemaStore.updateSchema(addResult.id(), updatedContent);
+
+    assertEquals(addResult.id(), updateResult.id());
   }
 
   private static boolean isExistTriple(Model model, String sub, String pre, String obj) {

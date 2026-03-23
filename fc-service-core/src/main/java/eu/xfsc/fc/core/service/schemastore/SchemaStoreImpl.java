@@ -1,19 +1,23 @@
 package eu.xfsc.fc.core.service.schemastore;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import eu.xfsc.fc.core.dao.SchemaDao;
+import eu.xfsc.fc.core.exception.ClientException;
+import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.NotFoundException;
+import eu.xfsc.fc.core.exception.ServerException;
+import eu.xfsc.fc.core.exception.VerificationException;
+import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.FilteredModel;
+import eu.xfsc.fc.core.service.filestore.FileStore;
+import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
+import eu.xfsc.fc.core.util.HashUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.RDFNode;
@@ -33,23 +37,29 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.w3c.dom.Document;
 
-import eu.xfsc.fc.core.dao.SchemaDao;
-import eu.xfsc.fc.core.exception.ClientException;
-import eu.xfsc.fc.core.exception.ConflictException;
-import eu.xfsc.fc.core.exception.NotFoundException;
-import eu.xfsc.fc.core.exception.ServerException;
-import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.FilteredModel;
-import eu.xfsc.fc.core.service.filestore.FileStore;
-import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.util.HashUtils;
-
-import com.google.common.base.Strings;
-
-import lombok.extern.slf4j.Slf4j;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.validation.SchemaFactory;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.time.Instant;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -70,6 +80,7 @@ public class SchemaStoreImpl implements SchemaStore {
   private ProtectedNamespaceFilter protectedNamespaceFilter;
 
   private static final Map<SchemaType, ContentAccessor> COMPOSITE_SCHEMAS = new ConcurrentHashMap<>();
+  private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
 
   @Override
@@ -208,7 +219,6 @@ public class SchemaStoreImpl implements SchemaStore {
 
   private ContentAccessor createCompositeSchema(SchemaType type) {
     log.debug("createCompositeSchema.enter; got type: {}", type);
-
     StringWriter out = new StringWriter();
     Map<SchemaType, List<String>> schemaList = getSchemaList();
 
@@ -259,6 +269,73 @@ public class SchemaStoreImpl implements SchemaStore {
     return result;
   }
 
+  private SchemaAnalysisResult analyzeNonRdfSchema(ContentAccessor schema, SchemaType type) {
+    SchemaAnalysisResult result = switch (type) {
+      case JSON -> analyzeJsonSchema(schema);
+      case XML -> analyzeXmlSchema(schema);
+      default -> new SchemaAnalysisResult()
+              .setValid(false)
+              .setErrorMessage("Unsupported non-RDF schema type: " + type + ". Supported types: JSON, XML");
+    };
+    result.setSchemaType(type);
+    result.setExtractedUrls(Collections.emptySet());
+    return result;
+  }
+
+  private SchemaAnalysisResult analyzeJsonSchema(ContentAccessor schema) {
+    try {
+      JsonNode schemaNode = JSON_MAPPER.readTree(schema.getContentAsString());
+      SchemaRegistry registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
+      registry.getSchema(schemaNode);
+      String extractedId = schemaNode.has("$id")
+          ? schemaNode.get("$id").asText()
+          : "urn:uuid:" + UUID.randomUUID();
+      return new SchemaAnalysisResult()
+              .setValid(true)
+              .setExtractedId(extractedId);
+    } catch (Exception e) {
+      return new SchemaAnalysisResult()
+              .setValid(false)
+              .setErrorMessage("Invalid JSON Schema: " + e.getMessage());
+    }
+  }
+
+  private SchemaAnalysisResult analyzeXmlSchema(ContentAccessor schema) {
+    try {
+      byte[] content = schema.getContentAsString().getBytes(StandardCharsets.UTF_8);
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setNamespaceAware(true);
+      // Disable DTDs entirely to prevent XXE attacks;
+      // uses a Xerces-specific feature URI as it's not part of standard XMLConstants.
+      dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+      dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      Document doc = dbf.newDocumentBuilder().parse(new ByteArrayInputStream(content));
+
+      SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+      factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+      factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+      factory.newSchema(new DOMSource(doc));
+
+      String targetNs = doc.getDocumentElement().getAttribute("targetNamespace");
+      String extractedId = !targetNs.isEmpty() ? targetNs : "urn:uuid:" + UUID.randomUUID();
+      return new SchemaAnalysisResult()
+              .setValid(true)
+              .setExtractedId(extractedId);
+    } catch (Exception e) {
+      return new SchemaAnalysisResult()
+              .setValid(false)
+              .setErrorMessage("Invalid XML Schema: " + e.getMessage());
+    }
+  }
+
+  private SchemaAnalysisResult analyzeAndValidateNonRdf(ContentAccessor schema, SchemaType type) {
+    SchemaAnalysisResult result = analyzeNonRdfSchema(schema, type);
+    if (!result.isValid()) {
+      throw new VerificationException("Schema is not valid: " + result.getErrorMessage());
+    }
+    return result;
+  }
+
   private SchemaRecord buildSchemaRecord(SchemaAnalysisResult result, ContentAccessor schema) {
     String schemaId = result.getExtractedId();
     String nameHash = Strings.isNullOrEmpty(schemaId)
@@ -271,6 +348,16 @@ public class SchemaStoreImpl implements SchemaStore {
   @Override
   public SchemaStoreResult addSchema(ContentAccessor schema) {
     SchemaAnalysisResult analysis = analyzeAndValidate(schema);
+    return insertSchema(analysis, schema);
+  }
+
+  @Override
+  public SchemaStoreResult addSchema(ContentAccessor schema, SchemaType type) {
+    SchemaAnalysisResult analysis = analyzeAndValidateNonRdf(schema, type);
+    return insertSchema(analysis, schema);
+  }
+
+  private SchemaStoreResult insertSchema(SchemaAnalysisResult analysis, ContentAccessor schema) {
     SchemaRecord newRecord = buildSchemaRecord(analysis, schema);
     try {
       if (!dao.insert(newRecord)) {
@@ -288,27 +375,24 @@ public class SchemaStoreImpl implements SchemaStore {
     }
 
     COMPOSITE_SCHEMAS.remove(newRecord.type());
-    return new SchemaStoreResult(newRecord.getId(), analysis.getWarning());
+    return new SchemaStoreResult(newRecord.getId(), analysis.getWarning(), newRecord.uploadTime());
   }
 
   @Override
   public SchemaStoreResult updateSchema(String identifier, ContentAccessor schema) {
-    SchemaAnalysisResult analysis = analyzeAndValidate(schema);
+    SchemaRecord existing = dao.select(identifier)
+        .orElseThrow(() -> new NotFoundException("Schema with id " + identifier + " was not found"));
+    SchemaAnalysisResult analysis = existing.type() == SchemaType.JSON || existing.type() == SchemaType.XML
+        ? analyzeAndValidateNonRdf(schema, existing.type())
+        : analyzeAndValidate(schema);
     SchemaRecord newRecord = buildSchemaRecord(analysis, schema);
     if (newRecord.schemaId() != null && !identifier.equals(newRecord.schemaId())) {
       throw new ClientException("Given schema does not have the same Identifier as the old schema: " + identifier + " <> " + newRecord.schemaId());
     }
 
     try {
-      if (dao.update(identifier, newRecord.content(), newRecord.terms()) == 0) {
-        throw new NotFoundException("Schema with id " + identifier + " was not found");
-      }
+      dao.update(identifier, newRecord.content(), newRecord.terms());
     } catch (DuplicateKeyException ex) {
-      //try {
-      //  ((SchemaDaoImpl) dao).getDataSource().getConnection().rollback();
-      //} catch (SQLException se) {
-      //  log.debug("updateSchema; error at rollback", se);
-      //}
       if (ex.getMessage().contains("schematerms_pkey")) {
         throw new ConflictException("Schema redefines existing terms");
       }
@@ -317,54 +401,58 @@ public class SchemaStoreImpl implements SchemaStore {
     }
 
     COMPOSITE_SCHEMAS.remove(newRecord.type());
-    //Assets  will be revalidated in a separate thread.
     return new SchemaStoreResult(identifier, analysis.getWarning());
   }
 
   @Override
   public void deleteSchema(String identifier) {
-	Integer type = dao.delete(identifier);
-    log.debug("deleteSchema; delete result: {} for id: {}", type, identifier);
-    if (type == null) {
+	String typeName = dao.delete(identifier);
+    log.debug("deleteSchema; delete result: {} for id: {}", typeName, identifier);
+    if (typeName == null) {
       throw new NotFoundException("Schema with id " + identifier + " was not found");
     }
-    COMPOSITE_SCHEMAS.remove(SchemaType.values()[type]);
+    COMPOSITE_SCHEMAS.remove(SchemaType.valueOf(typeName));
   }
 
   @Override
   public Map<SchemaType, List<String>> getSchemaList() {
-    Map<Integer, Collection<String>> res = dao.selectSchemas();
-    //return res.entrySet().stream().map(e -> Pair.of(SchemaType.values()[e.getKey()], e.getValue()).collect(Collectors.toMap(p.getLeft(), p.getRight())));
-    Map<SchemaType, List<String>> result = new HashMap<>();
-    for (Map.Entry<Integer, Collection<String>> e: res.entrySet()) {
-      result.put(SchemaType.values()[e.getKey()], new ArrayList<>(e.getValue()));	
-    }
-    return result;
+    return toSchemaTypeMap(dao.selectSchemas());
   }
 
   @Override
   public ContentAccessor getSchema(String identifier) {
-	SchemaRecord existing = dao.select(identifier);  
-    if (existing == null) {
-      throw new NotFoundException("Schema with id " + identifier + " was not found");
-    }
-    return new ContentAccessorDirect(existing.content());
+    return new ContentAccessorDirect(getSchemaRecord(identifier).content());
+  }
+
+  @Override
+  public SchemaRecord getSchemaRecord(String identifier) {
+      return dao.select(identifier)
+              .orElseThrow(() -> new NotFoundException("Schema with id " + identifier + " was not found"));
   }
 
   @Override
   public Map<SchemaType, List<String>> getSchemasForTerm(String entity) {
-    Map<Integer, Collection<String>> res = dao.selectSchemasByTerm(entity);
-    //return result.entrySet().stream().map(e -> SchemaType.values()[e.getKey()]).collect(Collectors.toMap(e.null, null))
+    return toSchemaTypeMap(dao.selectSchemasByTerm(entity));
+  }
+
+  private Map<SchemaType, List<String>> toSchemaTypeMap(Map<String, Collection<String>> input) {
     Map<SchemaType, List<String>> result = new HashMap<>();
-    for (Map.Entry<Integer, Collection<String>> e: res.entrySet()) {
-      result.put(SchemaType.values()[e.getKey()], new ArrayList<>(e.getValue()));	
+    for (Map.Entry<String, Collection<String>> e : input.entrySet()) {
+      result.put(SchemaType.valueOf(e.getKey()), new ArrayList<>(e.getValue()));
     }
     return result;
   }
 
   @Override
   public ContentAccessor getCompositeSchema(SchemaType type) {
-    return COMPOSITE_SCHEMAS.computeIfAbsent(type, t -> createCompositeSchema(t));
+    return COMPOSITE_SCHEMAS.computeIfAbsent(type, this::createCompositeSchema);
+  }
+
+  @Override
+  public ContentAccessor getLatestSchemaByType(SchemaType type) {
+    String content = dao.selectLatestContentByType(type.name())
+        .orElseThrow(() -> new NotFoundException("No " + type + " schemas found"));
+    return new ContentAccessorDirect(content);
   }
 
   @Override

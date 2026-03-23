@@ -30,7 +30,7 @@ public class RevalidatorChunksDaoImpl implements RevalidatorChunksDao {
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-	public int findChunkForWork(int schemaType) {
+	public int findChunkForWork(String schemaType) {
 		int chunkId = -1;
 	    final String query = """
     		update revalidatorchunks set lastcheck = now() 
@@ -39,7 +39,7 @@ public class RevalidatorChunksDaoImpl implements RevalidatorChunksDao {
 	          order by chunkid limit 1)
 	        returning chunkid""";
 
-	    List<Integer> result = jdbc.queryForList(query, new Object[] {schemaType}, new int[] {INTEGER}, Integer.class);
+	    List<Integer> result = jdbc.queryForList(query, new Object[] {schemaType}, new int[] {VARCHAR}, Integer.class);
         log.debug("findChunkForWork; found chunk: {}", result);
         if (!result.isEmpty()) {
 	        chunkId = result.get(0);

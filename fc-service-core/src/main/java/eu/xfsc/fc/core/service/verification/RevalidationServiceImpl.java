@@ -119,7 +119,7 @@ public class RevalidationServiceImpl implements RevalidationService {
         taskQueue.clear();
       }
       if (workingOnChunk < 0) {
-        workingOnChunk = dao.findChunkForWork(SchemaStore.SchemaType.SHAPE.ordinal());
+        workingOnChunk = dao.findChunkForWork(SchemaStore.SchemaType.SHAPE.name());
       }
       if (workingOnChunk >= 0) {
         if (taskQueue.size() < 0.5 * batchSize) {

@@ -1,17 +1,21 @@
 package eu.xfsc.fc.core.service.schemastore;
 
-import java.util.Set;
-
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
+import java.util.Set;
 
 /**
  *
  * @author hylke
  */
-@lombok.AllArgsConstructor
-@lombok.NoArgsConstructor
-@lombok.Getter
-@lombok.Setter
+@NoArgsConstructor
+@Getter
+@Setter
+@Accessors(chain = true)
 public class SchemaAnalysisResult {
 
   /**

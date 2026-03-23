@@ -65,5 +65,30 @@
         </createTable>
     </changeSet>
 
+    <changeSet author="Fabian Saacke" id="2026-03-17-schema-type-to-string">
+        <comment>Migrate type column from integer ordinal to stable enum name string</comment>
+        <modifyDataType tableName="schemafiles" columnName="type" newDataType="VARCHAR(20)"/>
+        <update tableName="schemafiles">
+            <column name="type" value="ONTOLOGY"/>
+            <where>type = '0'</where>
+        </update>
+        <update tableName="schemafiles">
+            <column name="type" value="SHAPE"/>
+            <where>type = '1'</where>
+        </update>
+        <update tableName="schemafiles">
+            <column name="type" value="VOCABULARY"/>
+            <where>type = '2'</where>
+        </update>
+        <update tableName="schemafiles">
+            <column name="type" value="JSON"/>
+            <where>type = '3'</where>
+        </update>
+        <update tableName="schemafiles">
+            <column name="type" value="XML"/>
+            <where>type = '4'</where>
+        </update>
+    </changeSet>
+
 </databaseChangeLog>
 
