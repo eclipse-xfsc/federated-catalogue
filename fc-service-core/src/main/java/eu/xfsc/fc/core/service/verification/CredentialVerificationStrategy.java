@@ -87,6 +87,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private static final ClaimExtractor[] extractors = new ClaimExtractor[]{new TitaniumClaimExtractor(), new DanubeTechClaimExtractor()};
     private static final String VC2_CONTEXT = "https://www.w3.org/ns/credentials/v2";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final String RDF_CONTEXT_KEY = "@context";
 
     @Value("${federated-catalogue.verification.require-vp:true}")
     private boolean requireVP;
@@ -155,6 +156,17 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         trustFrameworkBaseClassUris.put(PARTICIPANT, participantType);
     }
 
+    /**
+     * Pipeline state carried between verification phases.
+     */
+    private record VerificationContext(
+        String body,
+        CredentialFormat format,
+        boolean isJwt,
+        ContentAccessor payload,
+        Validator jwtValidator
+    ) {}
+
     public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
                                                          boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
                                                          boolean verifyVCSignatures) throws VerificationException {
@@ -162,27 +174,83 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 strict, expectedClass, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
         long stamp = System.currentTimeMillis();
 
-        // Read content once (fixes double-read)
+        VerificationContext ctx = detectAndUnwrap(payload, verifyVCSignatures || verifyVPSignatures);
+
+        // syntactic + semantic validation
+        JsonLDObject ld = parseContent(ctx.payload());
+        ld.setDocumentLoader(this.documentLoader);
+        log.debug("verifyCredential; content parsed, time taken: {}", System.currentTimeMillis() - stamp);
+
+        TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics);
+
+        // TODO(loire-compatibility): CAT-FR-GD-01 part 3 - Loire Ontology Migration will update resolveBaseClass to handle 2511 namespace types.
+        if (verifySemantics && gaiaxTrustFrameworkEnabled && !typedCredentials.hasClasses()) {
+            throw new VerificationException("Semantic Error: no proper CredentialSubject found");
+        }
+
+        TrustFrameworkBaseClass baseClass = resolvePrimaryBaseClass(typedCredentials, verifySemantics, expectedClass);
+
+        FilteredClaims filtered = extractAndValidateClaims(ctx.payload(), verifySemantics && strict);
+
+        if (verifySchema) {
+            validateSchema(filtered.claims());
+        }
+
+        List<Validator> validators = collectValidators(ctx, ld, typedCredentials,
+                verifySemantics, verifyVCSignatures, verifyVPSignatures);
+
+        CredentialVerificationResult result = assembleResult(baseClass, typedCredentials, filtered.claims(), validators);
+        if (filtered.hasWarning()) {
+            result.setWarnings(List.of(filtered.warning()));
+        }
+
+        stamp = System.currentTimeMillis() - stamp;
+        log.debug("verifyCredential.exit; returning: {}; time taken: {}", result, stamp);
+        return result;
+    }
+
+    public List<CredentialClaim> extractClaims(ContentAccessor payload) {
+        // Make sure our interceptors are in place.
+        initLoaders();
+        List<CredentialClaim> claims = null;
+        for (ClaimExtractor extra : extractors) {
+            try {
+                claims = extra.extractClaims(payload);
+                if (claims != null) {
+                    break;
+                }
+            } catch (Exception ex) {
+                log.error("extractClaims.error using {}: {}", extra.getClass().getName(), ex.getMessage());
+            }
+        }
+        return claims;
+    }
+
+    public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
+        trustFrameworkBaseClassUris.put(baseClass, uri);
+    }
+
+    /**
+     * Phase 1: Detect credential format, verify JWT signature, enforce Loire policies, and
+     * unwrap to JSON-LD. After this method, the payload is always JSON-LD.
+     */
+    private VerificationContext detectAndUnwrap(ContentAccessor payload, boolean verifySigs) {
         String body = payload.getContentAsString().strip();
         payload = new ContentAccessorDirect(body, payload.getContentType());
 
-        // Format detection — determines processing path
         CredentialFormat format = formatDetector.detect(payload);
         boolean isJwt = format == CredentialFormat.GAIAX_V2_LOIRE
             || format == CredentialFormat.VC2_DANUBETECH;
-        // Fallback: if FormatDetector returns UNKNOWN but body looks like JWT, use legacy detection
         if (format == CredentialFormat.UNKNOWN && jwtPreprocessor.isJwtWrapped(payload)) {
             isJwt = true;
             format = CredentialFormat.VC2_DANUBETECH;
         }
 
-        // JWT signature verification — fires before unwrap (Issue #12)
         Validator jwtValidator = null;
-        if (isJwt && (verifyVCSignatures || verifyVPSignatures)) {
+        if (isJwt && verifySigs) {
             jwtValidator = jwtSignatureVerifier.verify(body);
         }
 
-        // Loire + Gaia-X: DID method restriction (ICAM 24.07 — only did:web accepted)
         if (format == CredentialFormat.GAIAX_V2_LOIRE && gaiaxTrustFrameworkEnabled) {
             enforceDidWebRestriction(body);
             if (jwtValidator != null) {
@@ -190,53 +258,36 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             }
         }
 
-        // Version dispatch — payload is unwrapped JSON-LD after this point
-        boolean isVc2;
+        // Version dispatch — unwrap to JSON-LD
+        // NOTE: CAT-FR-GD-02's VcStructureDetector.isVcStructured() call MUST be placed AFTER
+        // unwrapping, not before — a JWT-wrapped VC 2.0 payload would not be recognised as a VC.
         if (format == CredentialFormat.GAIAX_V2_LOIRE) {
             payload = loireJwtParser.unwrap(payload);
         } else if (format == CredentialFormat.GAIAX_V1_TAGUS) {
             payload = vc11Processor.preProcess(payload);
         } else {
-            // VC2_DANUBETECH or UNKNOWN fallback
-            isVc2 = isVc2Context(body) || isJwt;
+            boolean isVc2 = isVc2Context(body) || isJwt;
             payload = (isVc2 ? vc2Processor : vc11Processor).preProcess(payload);
         }
-        // NOTE: CAT-FR-GD-02's VcStructureDetector.isVcStructured() call MUST be placed AFTER this
-        // line, not before — a JWT-wrapped VC 2.0 payload would not be recognised as a VC until unwrapped.
 
-        // syntactic validation
-        JsonLDObject ld = parseContent(payload);
-        log.debug("verifyCredential; content parsed, time taken: {}", System.currentTimeMillis() - stamp);
+        return new VerificationContext(body, format, isJwt, payload, jwtValidator);
+    }
 
-        // see https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/issues/200
-        // add GAIA-X context(s) if present
-        ld.setDocumentLoader(this.documentLoader);
-
-        // semantic verification
-        long stamp2 = System.currentTimeMillis();
-        TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics);
-        log.debug("verifyCredential; credentials processed, time taken: {}", System.currentTimeMillis() - stamp2);
-
-        // Gate on gaiaxTrustFrameworkEnabled: non-Gaia-X VC 2.0 credentials have no known TrustFrameworkBaseClass.
-        // Story 035 (Loire Ontology Migration) will update resolveBaseClass to handle 2511 namespace types.
-        if (verifySemantics && gaiaxTrustFrameworkEnabled && !typedCredentials.hasClasses()) {
-            throw new VerificationException("Semantic Error: no proper CredentialSubject found");
-        }
-
+    /**
+     * Phase 2: Resolve the dominant base class from typed credentials and validate type constraints.
+     */
+    private TrustFrameworkBaseClass resolvePrimaryBaseClass(TypedCredentials typedCredentials,
+        boolean verifySemantics, TrustFrameworkBaseClass expectedClass) {
         int partCount = 0;
         int soffCount = 0;
         TrustFrameworkBaseClass baseClass = UNKNOWN;
         Collection<TrustFrameworkBaseClass> baseClasses = typedCredentials.getBaseClasses();
+
         if (baseClasses.size() > 1) {
-            Map<TrustFrameworkBaseClass, Integer> classMap = baseClasses.stream().reduce(new HashMap<>(), (map, e) -> {
-                        map.merge(e, 1, Integer::sum);
-                        return map;
-                    },
-                    (m, m2) -> {
-                        m.putAll(m2);
-                        return m;
-                    }
-            );
+            Map<TrustFrameworkBaseClass, Integer> classMap = baseClasses.stream()
+                .reduce(new HashMap<>(),
+                    (map, e) -> { map.merge(e, 1, Integer::sum); return map; },
+                    (m, m2) -> { m.putAll(m2); return m; });
             partCount = classMap.getOrDefault(PARTICIPANT, 0);
             soffCount = classMap.getOrDefault(SERVICE_OFFERING, 0);
             if (partCount > 0) {
@@ -255,86 +306,110 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 throw new VerificationException("Semantic error: credential has several types: " + baseClasses);
             }
             if (expectedClass != UNKNOWN && baseClass != expectedClass) {
-                throw new VerificationException("Semantic error: expected credential of type " + expectedClass + " but found " + baseClass);
+                throw new VerificationException(
+                    "Semantic error: expected credential of type " + expectedClass + " but found " + baseClass);
             }
         }
+        return baseClass;
+    }
 
-        stamp2 = System.currentTimeMillis();
+    /**
+     * Phase 3: Extract claims, filter protected namespaces, and validate subject uniqueness.
+     */
+    private FilteredClaims extractAndValidateClaims(ContentAccessor payload, boolean strictSemantics) {
+        long stamp = System.currentTimeMillis();
         List<CredentialClaim> claims = extractClaims(payload);
-
         FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "claims extraction");
         claims = filtered.claims();
+        log.debug("verifyCredential; claims extracted: {}, time taken: {}",
+                (claims == null ? "null" : claims.size()), System.currentTimeMillis() - stamp);
 
-        log.debug("verifyCredential; claims extracted: {}, time taken: {}", (claims == null ? "null" : claims.size()),
-                System.currentTimeMillis() - stamp2);
+        if (strictSemantics) {
+            validateSubjectUniqueness(claims);
+        }
+        return filtered;
+    }
 
-        if (verifySemantics && strict) {
-            Set<String> subjects = new HashSet<>();
-            Set<String> objects = new HashSet<>();
-            if (claims != null && !claims.isEmpty()) {
-                for (CredentialClaim claim : claims) {
-                    subjects.add(claim.getSubjectString());
-                    objects.add(claim.getObjectString());
-                }
-            }
-            subjects.removeAll(objects);
-
-            if (subjects.size() > 1) {
-                String sep = System.lineSeparator();
-                StringBuilder sb = new StringBuilder("Semantic Errors: There are different subject ids in credential subjects: ").append(sep);
-                for (String s : subjects) {
-                    sb.append(s).append(sep);
-                }
-                throw new VerificationException(sb.toString());
-            } else if (subjects.isEmpty()) {
-                throw new VerificationException("Semantic Errors: There is no uniquely identified credential subject");
+    private void validateSubjectUniqueness(List<CredentialClaim> claims) {
+        Set<String> subjects = new HashSet<>();
+        Set<String> objects = new HashSet<>();
+        if (claims != null && !claims.isEmpty()) {
+            for (CredentialClaim claim : claims) {
+                subjects.add(claim.getSubjectString());
+                objects.add(claim.getObjectString());
             }
         }
+        subjects.removeAll(objects);
 
-        // schema verification
-        if (verifySchema) {
-            eu.xfsc.fc.core.pojo.SchemaValidationResult result = schemaValidationService.validateClaimsAgainstCompositeSchema(claims);
-            if (result == null || !result.isConforming()) {
-                throw new VerificationException("Schema error: " + (result == null ? "unknown" : result.getValidationReport()));
+        if (subjects.size() > 1) {
+            String sep = System.lineSeparator();
+            StringBuilder sb = new StringBuilder(
+                "Semantic Errors: There are different subject ids in credential subjects: ").append(sep);
+            for (String s : subjects) {
+                sb.append(s).append(sep);
             }
+            throw new VerificationException(sb.toString());
+        } else if (subjects.isEmpty()) {
+            throw new VerificationException("Semantic Errors: There is no uniquely identified credential subject");
         }
+    }
 
-        // VP JWT: detect VP type, run semantic holder check, and guard inner VC verification
+    private void validateSchema(List<CredentialClaim> claims) {
+        eu.xfsc.fc.core.pojo.SchemaValidationResult result =
+            schemaValidationService.validateClaimsAgainstCompositeSchema(claims);
+        if (result == null || !result.isConforming()) {
+            throw new VerificationException(
+                "Schema error: " + (result == null ? "unknown" : result.getValidationReport()));
+        }
+    }
+
+    /**
+     * Phase 4: Collect all signature validators — JWT outer, JWT inner VCs, and LD proofs.
+     */
+    private List<Validator> collectValidators(VerificationContext ctx, JsonLDObject ld,
+        TypedCredentials typedCredentials, boolean verifySemantics,
+        boolean verifyVCSignatures, boolean verifyVPSignatures) {
         boolean isVpJwt = false;
-        if (isJwt && jwtValidator != null) {
+        if (ctx.isJwt() && ctx.jwtValidator() != null) {
             try {
-                JWTClaimsSet jwtClaims = SignedJWT.parse(body).getJWTClaimsSet();
+                JWTClaimsSet jwtClaims = SignedJWT.parse(ctx.body()).getJWTClaimsSet();
                 isVpJwt = isVpJwtClaims(jwtClaims);
                 if (verifySemantics) {
                     checkVpJwtHolder(jwtClaims);
                 }
             } catch (java.text.ParseException ex) {
-                // body was already verified by JwtSignatureVerifier — unexpected
-                log.warn("verifyCredential; JWT claims re-parse error: {}", ex.getMessage());
+                log.warn("collectValidators; JWT claims re-parse error: {}", ex.getMessage());
             }
         }
 
-        // signature verification
-        List<Validator> validators;
-        if (isJwt) {
-            validators = jwtValidator != null ? new ArrayList<>(List.of(jwtValidator)) : null;
+        if (ctx.isJwt()) {
+            List<Validator> validators = ctx.jwtValidator() != null
+                ? new ArrayList<>(List.of(ctx.jwtValidator())) : null;
             if (verifyVCSignatures && isVpJwt) {
-                List<Validator> innerValidators = verifyInnerVcCredentials(ld);
-                if (!innerValidators.isEmpty()) {
-                    validators.addAll(innerValidators);
+                List<Validator> inner = verifyInnerVcCredentials(ld);
+                if (!inner.isEmpty()) {
+                    validators.addAll(inner);
                 }
             }
-        } else if (verifyVPSignatures || verifyVCSignatures) {
-            validators = checkCryptography(typedCredentials, verifyVPSignatures, verifyVCSignatures);
-        } else {
-            validators = null;
+            return validators;
         }
+        if (verifyVPSignatures || verifyVCSignatures) {
+            return checkCryptography(typedCredentials, verifyVPSignatures, verifyVCSignatures);
+        }
+        return null;
+    }
 
+    /**
+     * Phase 5: Build the typed result object based on the resolved base class.
+     */
+    private CredentialVerificationResult assembleResult(TrustFrameworkBaseClass baseClass,
+        TypedCredentials typedCredentials, List<CredentialClaim> claims, List<Validator> validators) {
         String id = typedCredentials.getID();
         String issuer = typedCredentials.getIssuer();
         Instant issuedDate = typedCredentials.getIssuanceDate();
+        Instant now = Instant.now();
+        String status = AssetStatus.ACTIVE.getValue();
 
-        CredentialVerificationResult result;
         if (baseClass == PARTICIPANT) {
             if (issuer == null) {
                 issuer = id;
@@ -342,26 +417,19 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             String method = typedCredentials.getProofMethod();
             String holder = typedCredentials.getHolder();
             String name = holder == null ? issuer : holder;
-            result = new CredentialVerificationResultParticipant(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
+            return new CredentialVerificationResultParticipant(now, status, issuer, issuedDate,
                     claims, validators, name, method);
-        } else if (baseClass == SERVICE_OFFERING) {
-            result = new CredentialVerificationResultOffering(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
-                    id, claims, validators);
-        } else if (baseClass == RESOURCE) {
-            result = new CredentialVerificationResultResource(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
-                    id, claims, validators);
-        } else {
-            result = new CredentialVerificationResult(Instant.now(), AssetStatus.ACTIVE.getValue(), issuer, issuedDate,
+        }
+        if (baseClass == SERVICE_OFFERING) {
+            return new CredentialVerificationResultOffering(now, status, issuer, issuedDate,
                     id, claims, validators);
         }
-
-        if (filtered.hasWarning()) {
-            result.setWarnings(List.of(filtered.warning()));
+        if (baseClass == RESOURCE) {
+            return new CredentialVerificationResultResource(now, status, issuer, issuedDate,
+                    id, claims, validators);
         }
-
-        stamp = System.currentTimeMillis() - stamp;
-        log.debug("verifyCredential.exit; returning: {}; time taken: {}", result, stamp);
-        return result;
+        return new CredentialVerificationResult(now, status, issuer, issuedDate,
+                id, claims, validators);
     }
 
     private TypedCredentials parseCredentials(JsonLDObject ld, boolean vpRequired, boolean verifySemantics) {
@@ -391,7 +459,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private boolean isVc2Context(String body) {
         try {
             JsonNode root = OBJECT_MAPPER.readTree(body);
-            JsonNode ctx = root.get("@context");
+            JsonNode ctx = root.get(RDF_CONTEXT_KEY);
             if (ctx == null) {
                 return false;
             }
@@ -423,7 +491,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         log.debug("verifyPresentation.enter; got presentation with id: {}", presentation.getId());
         StringBuilder sb = new StringBuilder();
         String sep = System.lineSeparator();
-        if (checkAbsence(presentation, "@context")) {
+        if (checkAbsence(presentation, RDF_CONTEXT_KEY)) {
             sb.append(" - VerifiablePresentation must contain '@context' property").append(sep);
         }
         if (checkAbsence(presentation, "type", "@type")) {
@@ -454,8 +522,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private String verifyCredential(VerifiableCredential credential, int idx) {
         StringBuilder sb = new StringBuilder();
         String sep = System.lineSeparator();
-        if (checkAbsence(credential, "@context")) {
-            sb.append(" - VerifiableCredential[").append(idx).append("] must contain '@context' property").append(sep);
+        if (checkAbsence(credential, RDF_CONTEXT_KEY)) {
+            sb.append(" - VerifiableCredential[").append(idx).append("] must contain ").append(RDF_CONTEXT_KEY).append(" property").append(sep);
         }
         if (checkAbsence(credential, "type", "@type")) {
             sb.append(" - VerifiableCredential[").append(idx).append("] must contain 'type' property").append(sep);
@@ -471,7 +539,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     private VersionedCredentialProcessor getVersionProcessor(VerifiableCredential credential) {
-        Object ctx = credential.getJsonObject().get("@context");
+        Object ctx = credential.getJsonObject().get(RDF_CONTEXT_KEY);
         boolean isVc2 = (ctx instanceof java.util.List<?>)
                 ? ((java.util.List<?>) ctx).contains(VC2_CONTEXT)
                 : VC2_CONTEXT.equals(ctx);
@@ -505,7 +573,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     }
                     @SuppressWarnings("unchecked")
                     Map<String, Object> entryMap = (Map<String, Object>) entry;
-                    if (isEnvelopedVerifiableCredential(entryMap.get("type"), entryMap.get("@context"))) {
+                    if (isEnvelopedVerifiableCredential(entryMap.get("type"), entryMap.get(RDF_CONTEXT_KEY))) {
                         VerifiableCredential unwrapped = tryUnwrapEnvelopedVc(entryMap, vp.getDocumentLoader());
                         if (unwrapped != null) {
                             creds.put(unwrapped, resolveBaseClass(unwrapped));
@@ -596,23 +664,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return tcs;
     }
 
-    public List<CredentialClaim> extractClaims(ContentAccessor payload) {
-        // Make sure our interceptors are in place.
-        initLoaders();
-        List<CredentialClaim> claims = null;
-        for (ClaimExtractor extra : extractors) {
-            try {
-                claims = extra.extractClaims(payload);
-                if (claims != null) {
-                    break;
-                }
-            } catch (Exception ex) {
-                log.error("extractClaims.error using {}: {}", extra.getClass().getName(), ex.getMessage());
-            }
-        }
-        return claims;
-    }
-
     private void initLoaders() {
         if (!loadersInitialised) {
             synchronized (this) {
@@ -643,10 +694,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             }
         }
         return streamManager;
-    }
-
-    public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
-        trustFrameworkBaseClassUris.put(baseClass, uri);
     }
 
     private TrustFrameworkBaseClass resolveBaseClass(VerifiableCredential credential) {
@@ -763,7 +810,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 // Plain compact JWT string
                 validators.add(jwtSignatureVerifier.verify(jwtStr));
             } else if (entry instanceof Map<?, ?> vcMap) {
-                if (isEnvelopedVerifiableCredential(vcMap.get("type"), vcMap.get("@context"))) {
+                if (isEnvelopedVerifiableCredential(vcMap.get("type"), vcMap.get(RDF_CONTEXT_KEY))) {
                     // ICAM v24.07 EnvelopedVerifiableCredential: extract JWT from data: URL
                     Object idObj = vcMap.get("id");
                     if (!(idObj instanceof String idStr)) {
@@ -784,8 +831,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return validators;
     }
 
-    private static final String VC_2_CONTEXT = "https://www.w3.org/ns/credentials/v2";
-
     private boolean isEnvelopedVerifiableCredential(Object typeObj, Object contextObj) {
         boolean hasType = false;
         if (typeObj instanceof String typeStr) {
@@ -798,10 +843,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
         // Also verify the VC 2.0 context to avoid false-positives from other vocabularies
         if (contextObj instanceof String ctx) {
-            return VC_2_CONTEXT.equals(ctx);
+            return VC2_CONTEXT.equals(ctx);
         }
         if (contextObj instanceof List<?> contexts) {
-            return contexts.contains(VC_2_CONTEXT);
+            return contexts.contains(VC2_CONTEXT);
         }
         return false;
     }
