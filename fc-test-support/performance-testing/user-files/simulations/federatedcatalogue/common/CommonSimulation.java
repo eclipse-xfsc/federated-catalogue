@@ -26,6 +26,7 @@ public abstract class CommonSimulation extends Simulation {
   private static final String VC_FILENAME = "vc.json";
   public static final String IS_ADDED_PARAM = "isAdded";
   public static final String ASSET_HASH_PARAM = "assetHash";
+  public static final String ASSET_ID_PARAM = "assetId";
 
   private String credentialContent;
 

@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,9 +47,8 @@ public class AssetStoreImpl implements AssetStore {
   @Qualifier("assetFileStore")
   private FileStore fileStore;
 
-  /** Prefix for generating asset subject IDs from content hashes. */
-  @Value("${federated-catalogue.asset.subject-id-prefix:urn:asset:sha256:}")
-  private String assetSubjectIdPrefix;
+  @Autowired
+  private IriGenerator iriGenerator;
 
   @Override
   public ContentAccessor getFileByHash(final String hash) {
@@ -84,6 +82,9 @@ public class AssetStoreImpl implements AssetStore {
     if (verificationResult == null) {
       throw new IllegalArgumentException("verification result must not be null");
     }
+    if (assetMetadata.getId() == null) {
+      throw new IllegalStateException("Asset ID must be resolved before storing credential");
+    }
     log.debug("storeCredential.enter; got meta: {}", assetMetadata);
 
     Instant expirationTime = null;
@@ -110,10 +111,10 @@ public class AssetStoreImpl implements AssetStore {
       subjectHash = dao.insert(assetRecord);
     } catch (DuplicateKeyException ex) {
       if (ex.getMessage().contains("assets_pkey")) {
-        throw new ConflictException(String.format("asset with hash %s already exists", assetMetadata.getAssetHash()));
+        throw new ConflictException(String.format("asset with id %s already exists (hash: %s)", assetMetadata.getId(), assetMetadata.getAssetHash()));
       }
       if (ex.getMessage().contains("idx_asset_active")) {
-        throw new ConflictException(String.format("active asset with subjectId %s already exists", assetMetadata.getId()));
+        throw new ConflictException(String.format("active asset with id %s already exists", assetMetadata.getId()));
       }
       log.error("storeCredential.error 2", ex);
       throw new ServerException(ex);
@@ -128,7 +129,12 @@ public class AssetStoreImpl implements AssetStore {
   @Override
   public AssetMetadata storeUnverified(final AssetMetadata assetMetadata, final String originalFilename) {
     log.debug("storeAsset.enter; got meta: {}", assetMetadata);
-    String subjectId = assetMetadata.getId() != null ? assetMetadata.getId() : assetSubjectIdPrefix + assetMetadata.getAssetHash();
+    String subjectId = assetMetadata.getId();
+    if (subjectId == null) {
+      subjectId = iriGenerator.generateUuidUrn();
+      assetMetadata.setId(subjectId);
+      log.debug("storeAsset; generated IRI for non-RDF asset: {}", subjectId);
+    }
     AssetRecord assetRecord = AssetRecord.builder()
         .assetHash(assetMetadata.getAssetHash())
         .id(subjectId)
@@ -145,7 +151,10 @@ public class AssetStoreImpl implements AssetStore {
       dao.insert(assetRecord);
     } catch (DuplicateKeyException ex) {
       if (ex.getMessage().contains("assets_pkey")) {
-        throw new ConflictException(String.format("asset with hash %s already exists", assetMetadata.getAssetHash()));
+        throw new ConflictException(String.format("asset with id %s already exists (hash: %s)", subjectId, assetMetadata.getAssetHash()));
+      }
+      if (ex.getMessage().contains("idx_asset_active")) {
+        throw new ConflictException(String.format("active asset with id %s already exists", subjectId));
       }
       throw new ServerException(ex);
     }
@@ -212,6 +221,19 @@ public class AssetStoreImpl implements AssetStore {
   @Override
   public List<String> getActiveAssetHashes(String afterHash, int count, int chunks, int chunkId) {
     return dao.selectHashes(afterHash, count, chunks, chunkId);
+  }
+
+  @Override
+  public AssetMetadata getById(final String id) {
+    return dao.selectBySubjectId(id)
+        .orElseThrow(() -> new NotFoundException(
+            String.format("no active asset found for id %s", id)));
+  }
+
+  @Override
+  public ContentAccessor getFileById(final String id) {
+    AssetRecord record = (AssetRecord) getById(id);
+    return record.getContentAccessor();
   }
 
   @Override

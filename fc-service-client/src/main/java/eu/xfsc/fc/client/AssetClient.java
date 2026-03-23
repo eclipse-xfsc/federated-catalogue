@@ -45,17 +45,35 @@ public class AssetClient extends ServiceClient {
         return doPost("/assets", asset, Map.of(), Map.of(), Asset.class);
     }
 
-    public Asset getAsset(String hash) {
-        Map<String, Object> pathParams = Map.of("asset_hash", hash);
-        return doGet("/assets/{asset_hash}", pathParams, Map.of(), Asset.class);
+    public Asset getAsset(String id) {
+        Map<String, Object> pathParams = Map.of("id", id);
+        return doGet("/assets/{id}", pathParams, Map.of(), Asset.class);
     }
-    public void deleteAsset(String hash) {
-        Map<String, Object> pathParams = Map.of("asset_hash", hash);
+
+    /**
+     * Delete an asset by its content hash.
+     *
+     * <p>Unlike {@link #getAsset(String)} which uses the asset's IRI, this method and
+     * {@link #revokeAsset(String)} require the SHA-256 content hash. Hash-based targeting
+     * guarantees unambiguous single-row deletion — see ADR 7, Delete Operation Exception.</p>
+     *
+     * @param assetHash the SHA-256 content hash of the asset to delete
+     */
+    public void deleteAsset(String assetHash) {
+        Map<String, Object> pathParams = Map.of("asset_hash", assetHash);
         doDelete("/assets/{asset_hash}", pathParams, Map.of(), Void.class);
     }
 
-    public void updateAsset(String hash) {
-        Map<String, Object> pathParams = Map.of("asset_hash", hash);
+    /**
+     * Revoke an asset by its content hash.
+     *
+     * <p>Like {@link #deleteAsset(String)}, this method uses the SHA-256 content hash
+     * rather than the IRI. See ADR 7 — Delete Operation Exception.</p>
+     *
+     * @param assetHash the SHA-256 content hash of the asset to revoke
+     */
+    public void revokeAsset(String assetHash) {
+        Map<String, Object> pathParams = Map.of("asset_hash", assetHash);
         doPost("/assets/{asset_hash}/revoke", null, pathParams, Map.of(), Void.class);
     }
 

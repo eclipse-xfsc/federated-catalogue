@@ -775,41 +775,63 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/ServerError'
-  /assets/{asset_hash}:
+  /assets/{id}:
     get:
       tags:
         - Assets
-      summary: Read an asset by its hash.
-      description: Returns the content of a single asset.
-      operationId: readAssetByHash
+      summary: Read an asset by its IRI.
+      description: >
+        Returns the content of a single RDF asset identified by its IRI.
+        Non-RDF assets (PDF, images, binary files) are stored in the FileStore
+        and cannot be retrieved via this endpoint — a 400 error is returned
+        with the asset's hash and content-type for reference.
+      operationId: readAssetById
       parameters:
-        - name: asset_hash
+        - name: id
           in: path
-          description: Hash identifier of the asset
+          description: IRI identifier of the asset (DID, URN, or HTTP IRI)
           required: true
           schema:
             type: string
+          examples:
+            did:
+              summary: DID Web identifier
+              value: 'did:web:example.com:participant'
+            urn:
+              summary: UUID URN (non-RDF assets)
+              value: 'urn:uuid:550e8400-e29b-41d4-a716-446655440000'
+            http:
+              summary: HTTP IRI
+              value: 'https://example.org/asset/123'
       security:
         - jwt: []
       responses:
         '200':
-          description: The requested asset
+          description: The requested asset (RDF content)
           content:
             application/json:
               schema:
                 type: string
         '400':
-          $ref: '#/components/responses/ClientError'
+          description: >
+            The asset exists but is a non-RDF asset (e.g., PDF, image, binary).
+            Raw content download is not supported via this endpoint.
+            The response includes the asset's hash and content-type.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /assets/{asset_hash}:
     delete:
       tags:
         - Assets
-      summary: Completely delete an asset
+      summary: Completely delete an asset by its content hash
+      description: >
+        Unlike other asset endpoints which use IRI-based identification (/assets/{id}),
+        the delete operation uses the SHA-256 content hash to guarantee unambiguous
+        single-row targeting. See ADR 7 — Delete Operation Exception.
       operationId: deleteAsset
       security:
         - jwt: []
@@ -837,8 +859,14 @@ paths:
     post:
       tags:
         - Assets
-      summary: Change the lifecycle state of an asset to revoked.
-      operationId: updateAsset
+      summary: Change the lifecycle state of an asset to revoked
+      description: >
+        Like the delete operation, the revoke endpoint uses the SHA-256 content hash
+        to guarantee unambiguous single-row targeting. Only ACTIVE assets can be revoked.
+        When versioning is introduced (CAT-FR-LM-01), this endpoint will be replaced by
+        version-specific revocation (POST /assets/{id}/versions/{v}/revoke).
+        See ADR 7 — Delete Operation Exception.
+      operationId: revokeAsset
       security:
         - jwt: []
       parameters:

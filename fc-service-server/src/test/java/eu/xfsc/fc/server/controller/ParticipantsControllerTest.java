@@ -313,11 +313,11 @@ public class ParticipantsControllerTest {
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
     Assets assets = objectMapper.readValue(response, Assets.class);
-    String assetHash = assets.getItems().get(0).getMeta().getAssetHash();
+    String assetId = assets.getItems().get(0).getMeta().getId();
     String content = assets.getItems().get(0).getContent();
 
     String responseOfCredentialContent = mockMvc
-            .perform(MockMvcRequestBuilders.get("/assets/" + assetHash)
+            .perform(MockMvcRequestBuilders.get("/assets/{id}", assetId)
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 

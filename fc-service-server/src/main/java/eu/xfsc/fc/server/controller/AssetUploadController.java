@@ -2,8 +2,10 @@ package eu.xfsc.fc.server.controller;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.util.UriUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,7 +53,9 @@ public class AssetUploadController {
 
         String contentType = file.getContentType() != null ? file.getContentType() : DEFAULT_CONTENT_TYPE;
         AssetMetadata result = assetUploadService.processUpload(content, contentType, file.getOriginalFilename());
-        return ResponseEntity.created(URI.create("/assets/" + result.getAssetHash())).body(result);
+        // encodePathSegment encodes colons (:) and slashes (/) in IRIs like urn:uuid:... or http://...
+        // so the Location header contains a valid single path segment after /assets/
+        return ResponseEntity.created(URI.create("/assets/" + UriUtils.encodePathSegment(result.getId(), StandardCharsets.UTF_8))).body(result);
     }
 
     @PostMapping(value = "/assets", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
@@ -62,6 +66,6 @@ public class AssetUploadController {
         log.debug("addAssetOctetStream.enter; contentType: {}, size: {}", contentType, content.length);
 
         AssetMetadata result = assetUploadService.processUpload(content, contentType, null);
-        return ResponseEntity.created(URI.create("/assets/" + result.getAssetHash())).body(result);
+        return ResponseEntity.created(URI.create("/assets/" + UriUtils.encodePathSegment(result.getId(), StandardCharsets.UTF_8))).body(result);
     }
 }
