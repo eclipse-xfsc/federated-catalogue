@@ -89,6 +89,24 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     public static final String RDF_CONTEXT_KEY = "@context";
 
+    /**
+     * Resolves the {@code type} or {@code @type} value from a JSON-LD map.
+     * ICAM 24.07: "{@code @type} is aliased to {@code type}. Consequently, we MAY also use this alias."
+     */
+    private static Object resolveType(Map<?, ?> map) {
+        Object val = map.get("type");
+        return val != null ? val : map.get("@type");
+    }
+
+    /**
+     * Resolves the {@code id} or {@code @id} value from a JSON-LD map.
+     * ICAM 24.07: "{@code @id} is aliased to {@code id}. Consequently, we MAY also use this alias."
+     */
+    private static Object resolveId(Map<?, ?> map) {
+        Object val = map.get("id");
+        return val != null ? val : map.get("@id");
+    }
+
     @Value("${federated-catalogue.verification.require-vp:true}")
     private boolean requireVP;
     @Value("${federated-catalogue.verification.drop-validarors:false}")
@@ -573,7 +591,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     }
                     @SuppressWarnings("unchecked")
                     Map<String, Object> entryMap = (Map<String, Object>) entry;
-                    if (isEnvelopedVerifiableCredential(entryMap.get("type"), entryMap.get(RDF_CONTEXT_KEY))) {
+                    if (isEnvelopedVerifiableCredential(resolveType(entryMap), entryMap.get(RDF_CONTEXT_KEY))) {
                         VerifiableCredential unwrapped = tryUnwrapEnvelopedVc(entryMap, vp.getDocumentLoader());
                         if (unwrapped != null) {
                             creds.put(unwrapped, resolveBaseClass(unwrapped));
@@ -610,7 +628,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      */
     private VerifiableCredential tryUnwrapEnvelopedVc(Map<String, Object> entryMap,
         DocumentLoader docLoader) {
-        Object idObj = entryMap.get("id");
+        Object idObj = resolveId(entryMap);
         if (!(idObj instanceof String idStr) || !idStr.startsWith("data:")) {
             log.debug("tryUnwrapEnvelopedVc; no data: URI in EnvelopedVerifiableCredential");
             return null;
@@ -810,9 +828,9 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 // Plain compact JWT string
                 validators.add(jwtSignatureVerifier.verify(jwtStr));
             } else if (entry instanceof Map<?, ?> vcMap) {
-                if (isEnvelopedVerifiableCredential(vcMap.get("type"), vcMap.get(RDF_CONTEXT_KEY))) {
+                if (isEnvelopedVerifiableCredential(resolveType(vcMap), vcMap.get(RDF_CONTEXT_KEY))) {
                     // ICAM v24.07 EnvelopedVerifiableCredential: extract JWT from data: URL
-                    Object idObj = vcMap.get("id");
+                    Object idObj = resolveId(vcMap);
                     if (!(idObj instanceof String idStr)) {
                         throw new ClientException(
                                 "EnvelopedVerifiableCredential missing 'id' field");
