@@ -1,0 +1,19 @@
+{
+  "@context": ["https://www.w3.org/ns/credentials/v2"],
+  "type": ["VerifiablePresentation"],
+  "id": "https://example.com/vp/vp2-1",
+  "verifiableCredential": [
+    {
+      "@context": ["https://www.w3.org/ns/credentials/v2"],
+      "type": ["VerifiableCredential"],
+      "id": "https://example.com/vc/vc2-participant-1",
+      "issuer": "did:web:issuer.example.com",
+      "validFrom": "2026-01-30T00:00:00Z",
+      "credentialSubject": {
+        "id": "did:web:participant.example.com",
+        "@type": ["https://w3id.org/gaia-x/core#Participant"],
+        "https://w3id.org/gaia-x/core#legalName": [{"@value": "Example Corp"}]
+      }
+    }
+  ]
+}

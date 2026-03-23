@@ -1,0 +1,12 @@
+{
+  "@context": ["https://www.w3.org/ns/credentials/v2"],
+  "type": ["VerifiableCredential"],
+  "id": "https://example.com/vc/vc2-non-gaiax-1",
+  "issuer": "did:web:issuer.example.com",
+  "validFrom": "2026-01-30T00:00:00Z",
+  "credentialSubject": {
+    "id": "did:web:subject.example.com",
+    "https://schema.org/name": "Example Subject",
+    "https://schema.org/description": "A non-Gaia-X VC 2.0 credential for testing"
+  }
+}

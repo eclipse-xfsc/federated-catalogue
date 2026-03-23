@@ -1,15 +1,17 @@
-# Strict verification overlay — enables all verification flags.
-# Matches the original 2.0.0 implementation behaviour (Gaia-X + schema validation).
+# Strict verification overlay — enables signature and schema verification.
+# Gaia-X Trust Framework is disabled pending Loire ontology compatibility (see TODO below).
 #
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.strict.yml --env-file dev.env up
+#   ./dev.sh strict
 #
 # See: cat-integration-tests/docs/adr/003-interim-two-config-test-strategy.md
 
 services:
   server:
     environment:
-      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "true"
+      # TODO(gaia-x-loire): flip to "true" once Loire ontology-based type resolution works for JWT-wrapped VCs
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "false"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "true"
