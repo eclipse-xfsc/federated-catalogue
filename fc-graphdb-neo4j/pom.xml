@@ -16,7 +16,7 @@
     <description>Eclipse XFSC Federated Catalogue graph DB: Neo4j implementation</description>
 
     <properties>
-        <neo4j.driver.version>5.18.0</neo4j.driver.version>
+        <neo4j.driver.version>6.0.2</neo4j.driver.version>
         <neo4j.gds.version>2.6.6</neo4j.gds.version>
         <neo4j.apoc.version>5.18.0</neo4j.apoc.version>
         <neo4j.neosemantics.version>5.18.0</neo4j.neosemantics.version>
