@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.dao;
+package eu.xfsc.fc.core.dao.revalidator;
 
 public interface RevalidatorChunksDao {
 

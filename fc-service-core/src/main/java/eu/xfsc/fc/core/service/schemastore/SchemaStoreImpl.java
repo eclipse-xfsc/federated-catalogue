@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
-import eu.xfsc.fc.core.dao.SchemaDao;
+import eu.xfsc.fc.core.dao.schemas.SchemaDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -34,7 +34,7 @@ import org.apache.jena.vocabulary.SKOS;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
@@ -56,7 +56,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -363,11 +362,12 @@ public class SchemaStoreImpl implements SchemaStore {
       if (!dao.insert(newRecord)) {
         throw new ServerException("DB error, schema not inserted");
       }
-    } catch (DuplicateKeyException ex) {
-      if (ex.getMessage().contains("schematerms_pkey")) {
+    } catch (DataIntegrityViolationException ex) {
+      String msg = ex.getMessage();
+      if (msg.contains("schematerms_pkey") || msg.contains("SchemaTermEntity")) {
         throw new ConflictException("Schema redefines existing terms");
       }
-      if (ex.getMessage().contains("schemafiles_pkey")) {
+      if (msg.contains("schemafiles_pkey") || msg.contains("SchemaFileEntity")) {
         throw new ConflictException("A schema with id " + newRecord.getId() + " already exists.");
       }
       log.info("addSchema; conflict: {}", ex.getMessage());
@@ -392,7 +392,7 @@ public class SchemaStoreImpl implements SchemaStore {
 
     try {
       dao.update(identifier, newRecord.content(), newRecord.terms());
-    } catch (DuplicateKeyException ex) {
+    } catch (DataIntegrityViolationException ex) {
       if (ex.getMessage().contains("schematerms_pkey")) {
         throw new ConflictException("Schema redefines existing terms");
       }

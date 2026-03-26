@@ -7,12 +7,12 @@ import java.util.List;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.core.dao.AssetDao;
+import eu.xfsc.fc.core.dao.assets.AssetDao;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
@@ -109,7 +109,7 @@ public class AssetStoreImpl implements AssetStore {
     SubjectHashRecord subjectHash = null;
     try {
       subjectHash = dao.insert(assetRecord);
-    } catch (DuplicateKeyException ex) {
+    } catch (DataIntegrityViolationException ex) {
       if (ex.getMessage().contains("assets_pkey")) {
         throw new ConflictException(String.format("asset with id %s already exists (hash: %s)", assetMetadata.getId(), assetMetadata.getAssetHash()));
       }
@@ -149,7 +149,7 @@ public class AssetStoreImpl implements AssetStore {
         .build();
     try {
       dao.insert(assetRecord);
-    } catch (DuplicateKeyException ex) {
+    } catch (DataIntegrityViolationException ex) {
       if (ex.getMessage().contains("assets_pkey")) {
         throw new ConflictException(String.format("asset with id %s already exists (hash: %s)", subjectId, assetMetadata.getAssetHash()));
       }
