@@ -14,12 +14,12 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 public interface SchemaFileRepository
     extends JpaRepository<SchemaFile, String> {
 
-  @Query("SELECT e.type, e.schemaId FROM SchemaFileEntity e")
+  @Query("SELECT e.type, e.schemaId FROM SchemaFile e")
   List<Object[]> findAllTypeAndSchemaId();
 
   @Query("""
     SELECT e.type, e.schemaId
-    FROM SchemaFileEntity e
+    FROM SchemaFile e
     JOIN e.terms t
     WHERE t.term = :term
   """)
@@ -27,16 +27,16 @@ public interface SchemaFileRepository
 
   @Query("""
     SELECT e.content
-    FROM SchemaFileEntity e
+    FROM SchemaFile e
     WHERE e.type = :type
     ORDER BY e.uploadTime DESC LIMIT 1
   """)
   Optional<String> findLatestContentByType(@Param("type") SchemaType type);
 
-  @Query("SELECT t.term FROM SchemaTermEntity t WHERE t.term IN :terms")
+  @Query("SELECT t.term FROM SchemaTerm t WHERE t.term IN :terms")
   List<String> findExistingTerms(@Param("terms") Collection<String> terms);
 
   @Modifying
-  @Query("DELETE FROM SchemaFileEntity")
+  @Query("DELETE FROM SchemaFile")
   int deleteAllReturningCount();
 }
