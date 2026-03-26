@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.dao;
+package eu.xfsc.fc.core.dao.validatorcache;
 
 import eu.xfsc.fc.core.pojo.Validator;
 
