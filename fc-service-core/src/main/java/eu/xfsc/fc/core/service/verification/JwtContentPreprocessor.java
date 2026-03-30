@@ -1,5 +1,7 @@
 package eu.xfsc.fc.core.service.verification;
 
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.JWT_PREFIX;
+
 import com.danubetech.verifiablecredentials.jwt.JwtVerifiableCredentialV2;
 import com.danubetech.verifiablecredentials.jwt.JwtVerifiablePresentationV2;
 
@@ -27,8 +29,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class JwtContentPreprocessor {
-
-  private static final String JWT_PREFIX = "eyJ";
 
   private static final Set<String> JWT_CONTENT_TYPES = Set.of(
       "application/vc+ld+json+jwt",

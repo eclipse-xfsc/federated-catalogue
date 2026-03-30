@@ -13,7 +13,7 @@ import org.springframework.scheduling.TaskScheduler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.xfsc.fc.core.dao.CesTrackerDao;
+import eu.xfsc.fc.core.dao.cestracker.CesTrackerDao;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.service.pubsub.BaseAssetSubscriber;

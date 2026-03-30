@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.verification.claims;
 
 import static com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords.*;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.VC_20_CONTEXT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DanubeTechClaimExtractor implements ClaimExtractor {
 
-  private static final String VC2_CONTEXT = "https://www.w3.org/ns/credentials/v2";
-
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
@@ -41,9 +40,9 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
   private boolean isVc2Context(Map<String, Object> raw) {
     Object ctx = raw.get("@context");
     if (ctx instanceof List) {
-      return ((List<?>) ctx).contains(VC2_CONTEXT);
+      return ((List<?>) ctx).contains(VC_20_CONTEXT);
     }
-    return VC2_CONTEXT.equals(ctx);
+    return VC_20_CONTEXT.equals(ctx);
   }
 
   private List<CredentialClaim> extractClaimsVc2(String str, Map<String, Object> raw) throws Exception {
