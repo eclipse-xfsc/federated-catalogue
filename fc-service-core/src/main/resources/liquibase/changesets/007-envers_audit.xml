@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="2026-03-25-envers-revinfo" author="saackef">
+        <comment>Create revinfo table and sequence for Hibernate Envers</comment>
+        <createSequence sequenceName="revinfo_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="revinfo">
+            <column name="rev" type="INTEGER">
+                <constraints primaryKey="true" primaryKeyName="revinfo_pkey"/>
+            </column>
+            <column name="revtstmp" type="BIGINT"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2026-03-25-envers-assets-aud" author="saackef">
+        <comment>Create assets_aud audit table</comment>
+        <createTable tableName="assets_aud">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rev" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revtype" type="SMALLINT"/>
+            <column name="asset_hash" type="VARCHAR(64)"/>
+            <column name="subjectid" type="TEXT"/>
+            <column name="issuer" type="TEXT"/>
+            <column name="uploadtime" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="statustime" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="expirationtime" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="status" type="SMALLINT"/>
+            <column name="content" type="TEXT"/>
+            <column name="validators" type="java.sql.Types.VARCHAR(2048) []"/>
+            <column name="content_type" type="VARCHAR(255)"/>
+            <column name="file_size" type="BIGINT"/>
+            <column name="original_filename" type="VARCHAR(500)"/>
+        </createTable>
+        <addPrimaryKey tableName="assets_aud" columnNames="id, rev"
+                       constraintName="assets_aud_pkey"/>
+        <addForeignKeyConstraint baseTableName="assets_aud" baseColumnNames="rev"
+                                 referencedTableName="revinfo" referencedColumnNames="rev"
+                                 constraintName="assets_aud_rev_fk"/>
+    </changeSet>
+
+    <changeSet id="2026-03-25-envers-schemafiles-aud" author="saackef">
+        <comment>Create schemafiles_aud audit table</comment>
+        <createTable tableName="schemafiles_aud">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rev" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revtype" type="SMALLINT"/>
+            <column name="schemaid" type="VARCHAR(200)"/>
+            <column name="namehash" type="VARCHAR(64)"/>
+            <column name="uploadtime" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="updatetime" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="type" type="VARCHAR(20)"/>
+            <column name="content" type="TEXT"/>
+        </createTable>
+        <addPrimaryKey tableName="schemafiles_aud" columnNames="id, rev"
+                       constraintName="schemafiles_aud_pkey"/>
+        <addForeignKeyConstraint baseTableName="schemafiles_aud" baseColumnNames="rev"
+                                 referencedTableName="revinfo" referencedColumnNames="rev"
+                                 constraintName="schemafiles_aud_rev_fk"/>
+    </changeSet>
+
+    <changeSet id="2026-03-25-envers-schematerms-aud" author="saackef">
+        <comment>Create schematerms_aud audit table</comment>
+        <createTable tableName="schematerms_aud">
+            <column name="id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rev" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revtype" type="SMALLINT"/>
+            <column name="term" type="VARCHAR(256)"/>
+            <column name="schema_file_id" type="BIGINT"/>
+        </createTable>
+        <addPrimaryKey tableName="schematerms_aud" columnNames="id, rev"
+                       constraintName="schematerms_aud_pkey"/>
+        <addForeignKeyConstraint baseTableName="schematerms_aud" baseColumnNames="rev"
+                                 referencedTableName="revinfo" referencedColumnNames="rev"
+                                 constraintName="schematerms_aud_rev_fk"/>
+    </changeSet>
+
+</databaseChangeLog>
