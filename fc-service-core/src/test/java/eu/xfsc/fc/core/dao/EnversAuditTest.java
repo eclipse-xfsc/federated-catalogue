@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 import eu.xfsc.fc.core.dao.assets.Asset;
+import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaFile;
 import eu.xfsc.fc.core.dao.schemas.SchemaTerm;
 import org.hibernate.envers.AuditReaderFactory;
@@ -45,7 +46,7 @@ import jakarta.persistence.EntityManager;
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {
     EnversAuditTest.TestConfig.class,
-    AssetJpaDao.class, SchemaJpaDao.class,
+    AssetJpaDao.class, SchemaJpaDao.class, SchemaAuditRepository.class,
     DatabaseConfig.class
 })
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)

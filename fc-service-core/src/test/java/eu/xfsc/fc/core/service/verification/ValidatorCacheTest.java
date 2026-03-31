@@ -7,6 +7,7 @@ import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheDao;
+import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.pojo.Validator;
@@ -38,7 +39,7 @@ import java.time.temporal.ChronoUnit;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {ValidatorCacheTest.TestApplication.class, ValidatorCacheJpaDao.class, DatabaseConfig.class, FileStoreConfig.class,
-        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
+        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
         DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
         JwtSignatureVerifier.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 //@DirtiesContext
