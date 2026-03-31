@@ -9,4 +9,7 @@
     <include file="validators.xml" relativeToChangelogFile="true" />
     <include file="ces_tracker.xml" relativeToChangelogFile="true" />
     <include file="asset_store_rename.xml" relativeToChangelogFile="true" />
+    <include file="changesets/006-technical_ids.xml" relativeToChangelogFile="true" />
+    <include file="changesets/007-envers_audit.xml" relativeToChangelogFile="true" />
+    <include file="changesets/008-rename-timestamps.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

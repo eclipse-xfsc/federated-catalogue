@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.dao;
+package eu.xfsc.fc.core.dao.assets;
 
 import java.util.List;
 import java.util.Optional;

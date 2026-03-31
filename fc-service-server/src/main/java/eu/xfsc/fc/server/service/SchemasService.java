@@ -2,6 +2,8 @@ package eu.xfsc.fc.server.service;
 
 import eu.xfsc.fc.api.generated.model.OntologySchema;
 import eu.xfsc.fc.api.generated.model.SchemaResult;
+import eu.xfsc.fc.api.generated.model.SchemaVersion;
+import eu.xfsc.fc.api.generated.model.SchemaVersionList;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -47,14 +49,17 @@ public class SchemasService implements SchemasApiDelegate {
    * JSON schemas, {@code application/xml} for XML schemas, and default content negotiation for
    * RDF types (ontologies, shapes, vocabularies).
    *
-   * @param id Identifier of the Schema. (required)
+   * @param id      Identifier of the Schema. (required)
+   * @param version Optional version number. If provided, returns the schema at that version.
    * @return The schema content with appropriate Content-Type for the given identifier. (status code 200)
-   * @throws NotFoundException if no schema exists with the given id (status code 404)
+   * @throws NotFoundException if no schema exists with the given id or version (status code 404)
    */
   @Override
-  public ResponseEntity<String> getSchema(String id) {
+  public ResponseEntity<String> getSchema(String id, Integer version) {
     String schemaId = URLDecoder.decode(id, Charset.defaultCharset());
-    SchemaRecord record = schemaStore.getSchemaRecord(schemaId);
+    SchemaRecord record = version != null
+        ? schemaStore.getSchemaVersion(schemaId, version)
+        : schemaStore.getSchemaRecord(schemaId);
     var responseBuilder = ResponseEntity.ok();
     switch (record.type()) {
       case JSON -> responseBuilder.contentType(MediaType.parseMediaType(SchemaStore.MEDIA_TYPE_JSON_SCHEMA));
@@ -179,11 +184,40 @@ public class SchemasService implements SchemasApiDelegate {
     return ResponseEntity.ok(toSchemaResult(storeResult));
   }
 
+  /**
+   * Service method for GET /schemas/{schemaId}/versions : Get version history for a schema.
+   *
+   * @param id Identifier of the Schema. (required)
+   * @return The version history of the schema. (status code 200)
+   * @throws NotFoundException if no schema exists with the given id (status code 404)
+   */
+  @Override
+  public ResponseEntity<SchemaVersionList> getSchemaVersions(String id) {
+    String schemaId = URLDecoder.decode(id, Charset.defaultCharset());
+    List<SchemaRecord> versions = schemaStore.getSchemaVersions(schemaId);
+    int latestVersion = versions.size();
+    List<SchemaVersion> versionItems = versions.stream()
+        .map(v -> {
+          SchemaVersion sv = new SchemaVersion();
+          sv.setVersion(v.version());
+          sv.setCreatedAt(v.createdAt());
+          sv.setIsCurrent(v.version() == latestVersion);
+          return sv;
+        })
+        .toList();
+    SchemaVersionList versionList = new SchemaVersionList();
+    versionList.setSchemaId(schemaId);
+    versionList.setVersions(versionItems);
+    return ResponseEntity.ok(versionList);
+  }
+
   private SchemaResult toSchemaResult(SchemaStoreResult storeResult) {
     SchemaResult result = new SchemaResult();
     result.setId(storeResult.id());
     result.setWarnings(storeResult.warning() != null ? List.of(storeResult.warning()) : Collections.emptyList());
-    result.setUploadTime(storeResult.uploadTime());
+    result.setCreatedAt(storeResult.createdAt());
+    result.setVersion(storeResult.version());
+    result.setPreviousVersion(storeResult.previousVersion());
     return result;
   }
 }

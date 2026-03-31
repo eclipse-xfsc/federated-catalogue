@@ -382,10 +382,42 @@ components:
           items:
             type: string
           description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
-        uploadTime:
+        createdAt:
           type: string
           format: date-time
-          description: 'Timestamp when the schema was uploaded.'
+          nullable: true
+          description: 'Timestamp when the schema was first uploaded. Present on creation, null on updates.'
+        version:
+          type: integer
+          nullable: true
+          description: 'Current version number after this operation. Present on updates, null on creation.'
+        previousVersion:
+          type: integer
+          nullable: true
+          description: 'Version number before this operation. Null for first version or on creation.'
+    SchemaVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+          description: '1-based version ordinal.'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Timestamp when this version was created.'
+        isCurrent:
+          type: boolean
+          description: 'Whether this is the current (latest) version.'
+    SchemaVersionList:
+      type: object
+      properties:
+        schemaId:
+          type: string
+          description: 'The schema identifier.'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaVersion'
     QueryInfo:
       type: object
       properties:
@@ -1119,6 +1151,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: version
+          in: query
+          description: 'Optional version number. If provided, returns the schema at that specific version.'
+          required: false
+          schema:
+            type: integer
       responses:
         '200':
           description: 'The schema for the given identifier. Depending on the type of the schema, either an ontology, shape graph or controlled vocabulary is returned.'
@@ -1224,7 +1262,36 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/ServerError'          
+          $ref: '#/components/responses/ServerError'
+  /schemas/{schemaId}/versions:
+    get:
+      tags:
+        - Schemas
+      summary: 'Get version history for a schema.'
+      description: 'Returns an ordered list of all versions of the schema. Required permission: SCHEMA_READ or ADMIN_ALL'
+      operationId: getSchemaVersions
+      security:
+        - jwt: []
+      parameters:
+        - name: schemaId
+          in: path
+          description: 'Identifier of the Schema.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'The version history of the schema.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /schemas/latest:
     get: 
       tags:
