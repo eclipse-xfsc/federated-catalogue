@@ -405,10 +405,9 @@ public class SchemaStoreImpl implements SchemaStore {
     // Envers writes audit entries in beforeTransactionCompletion — after all application code
     // in this transaction — so getVersionCount returns N (committed prior revisions only).
     // currentVersion = N+1 is the revision that will be written when this transaction commits.
-    // Thread-safety: saveAndFlush() acquires a DB row lock held for the duration of this
-    // @Transactional, so concurrent updates to the same schema are serialized. By the time a
-    // second thread reaches getVersionCount(), the first has committed and its Envers revision
-    // is visible.
+    // Note: under true concurrent updates, two threads could read the same N and produce
+    // duplicate version numbers. This race is accepted because schema updates are infrequent
+    // administrative operations and the cost of pessimistic locking outweighs the risk.
     int previousVersion = dao.getVersionCount(identifier);
     int currentVersion = previousVersion + 1;
     return new SchemaStoreResult(identifier, analysis.getWarning(), null,

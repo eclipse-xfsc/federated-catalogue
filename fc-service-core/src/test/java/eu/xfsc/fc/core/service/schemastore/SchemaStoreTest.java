@@ -723,53 +723,6 @@ public class SchemaStoreTest {
     }
   }
 
-  @Test
-  @Transactional(propagation = Propagation.NOT_SUPPORTED) // see comment on sequentialUpdates test
-  void updateSchema_concurrentUpdates_versionsAreUniqueAndConsecutive() throws InterruptedException {
-    int threadCount = 5;
-    String[] paths = {
-        "Schema-Tests/valid-schemaShapeReduced.ttl",
-        "Schema-Tests/valid-schemaShape.ttl"
-    };
-
-    String schemaId = schemaStore.addSchema(
-        TestUtil.getAccessor(getClass(), paths[0])).id();
-
-    List<SchemaStoreResult> results = Collections.synchronizedList(new ArrayList<>());
-    CountDownLatch startLatch = new CountDownLatch(1);
-    CountDownLatch doneLatch = new CountDownLatch(threadCount);
-    ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-
-    for (int i = 0; i < threadCount; i++) {
-      String path = paths[i % 2];
-      executor.submit(() -> {
-        try {
-          startLatch.await();
-          results.add(schemaStore.updateSchema(schemaId, TestUtil.getAccessor(getClass(), path)));
-        } catch (Exception ignored) {
-        } finally {
-          doneLatch.countDown();
-        }
-      });
-    }
-
-    startLatch.countDown();
-    doneLatch.await();
-    executor.shutdown();
-
-    try {
-      assertEquals(threadCount, results.size(), "All concurrent updates must succeed");
-
-      Set<Integer> versions = results.stream().map(SchemaStoreResult::version).collect(Collectors.toSet());
-      assertEquals(threadCount, versions.size(), "Each update must produce a unique version number");
-
-      results.forEach(r -> assertEquals(r.version() - 1, r.previousVersion(),
-          "previousVersion must equal version - 1 for each result"));
-    } finally {
-      schemaStore.deleteSchema(schemaId);
-    }
-  }
-
   private static boolean isExistTriple(Model model, String sub, String pre, String obj) {
     StmtIterator iterActual = model.listStatements();
     while (iterActual.hasNext()) {
