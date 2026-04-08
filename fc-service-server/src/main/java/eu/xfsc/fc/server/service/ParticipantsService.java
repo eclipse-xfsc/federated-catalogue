@@ -6,7 +6,7 @@ import eu.xfsc.fc.api.generated.model.UserProfile;
 import eu.xfsc.fc.api.generated.model.UserProfiles;
 import eu.xfsc.fc.server.generated.controller.ParticipantsApiDelegate;
 import eu.xfsc.fc.core.dao.ParticipantDao;
-import eu.xfsc.fc.core.dao.ValidatorCacheDao;
+import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;

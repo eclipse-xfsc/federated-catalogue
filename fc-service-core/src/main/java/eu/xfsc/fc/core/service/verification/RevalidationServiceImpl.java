@@ -1,7 +1,7 @@
 package eu.xfsc.fc.core.service.verification;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.core.dao.RevalidatorChunksDao;
+import eu.xfsc.fc.core.dao.revalidator.RevalidatorChunksDao;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;

@@ -1,4 +1,4 @@
-package eu.xfsc.fc.core.dao;
+package eu.xfsc.fc.core.dao.cestracker;
 
 import eu.xfsc.fc.core.service.pubsub.ces.CesTracking;
 

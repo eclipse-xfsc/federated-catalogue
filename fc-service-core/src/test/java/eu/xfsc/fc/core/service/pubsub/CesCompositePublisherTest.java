@@ -10,10 +10,10 @@ import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.JacksonConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.PubSubConfig;
-import eu.xfsc.fc.core.dao.impl.AssetDaoImpl;
-import eu.xfsc.fc.core.dao.impl.CesTrackerDaoImpl;
-import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
-import eu.xfsc.fc.core.dao.impl.ValidatorCacheDaoImpl;
+import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
+import eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao;
+import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
+import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -69,9 +69,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest(properties = {"publisher.impl=ces", "publisher.url=http://localhost:9091", "publisher.comp-url=http://localhost:9090"})
 @ActiveProfiles({"test"})
-@ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, AssetStoreConfig.class, AssetDaoImpl.class,
-		DummyGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaDaoImpl.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
-		DocumentLoaderConfig.class, DocumentLoaderProperties.class, ValidatorCacheDaoImpl.class, CesTrackerDaoImpl.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
+@ContextConfiguration(classes = {CesCompositePublisherTest.TestApplication.class, PubSubConfig.class, JacksonConfig.class, DatabaseConfig.class, AssetStoreConfig.class, AssetJpaDao.class,
+		DummyGraphStore.class, VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, FileStoreConfig.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
+		DocumentLoaderConfig.class, DocumentLoaderProperties.class, ValidatorCacheJpaDao.class, CesTrackerJpaDao.class, CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
 		JwtContentPreprocessor.class, Vc11Processor.class, Vc2Processor.class, JwtSignatureVerifier.class,
 		IriGenerator.class, IriValidator.class})
 //@Import(EmbeddedNeo4JConfig.class)

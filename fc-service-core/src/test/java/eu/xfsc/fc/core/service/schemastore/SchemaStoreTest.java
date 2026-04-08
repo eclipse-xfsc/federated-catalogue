@@ -51,7 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
-import eu.xfsc.fc.core.dao.impl.SchemaDaoImpl;
+import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -70,7 +70,7 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {SchemaStoreTest.TestApplication.class, FileStoreConfig.class,
-  SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaDaoImpl.class,
+  SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaJpaDao.class,
   ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @Transactional
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
