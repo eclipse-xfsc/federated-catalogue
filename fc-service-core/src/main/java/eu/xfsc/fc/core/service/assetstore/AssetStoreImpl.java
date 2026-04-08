@@ -110,7 +110,7 @@ public class AssetStoreImpl implements AssetStore {
     try {
       subjectHash = dao.insert(assetRecord);
     } catch (DataIntegrityViolationException ex) {
-      if (ex.getMessage().contains("assets_pkey")) {
+      if (ex.getMessage().contains("uq_assets_asset_hash")) {
         throw new ConflictException(String.format("asset with id %s already exists (hash: %s)", assetMetadata.getId(), assetMetadata.getAssetHash()));
       }
       if (ex.getMessage().contains("idx_asset_active")) {
@@ -150,7 +150,7 @@ public class AssetStoreImpl implements AssetStore {
     try {
       dao.insert(assetRecord);
     } catch (DataIntegrityViolationException ex) {
-      if (ex.getMessage().contains("assets_pkey")) {
+      if (ex.getMessage().contains("uq_assets_asset_hash")) {
         throw new ConflictException(String.format("asset with id %s already exists (hash: %s)", subjectId, assetMetadata.getAssetHash()));
       }
       if (ex.getMessage().contains("idx_asset_active")) {

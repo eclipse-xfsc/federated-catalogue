@@ -9,7 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface AssetRepository
-    extends JpaRepository<Asset, String>, AssetRepositoryCustom {
+    extends JpaRepository<Asset, Long>, AssetRepositoryCustom {
+
+  Optional<Asset> findByAssetHash(String assetHash);
+
+  boolean existsByAssetHash(String assetHash);
 
   Optional<Asset> findBySubjectIdAndStatus(String subjectId, short status);
 

@@ -9,24 +9,34 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "schemafiles")
+@Audited
 @Getter
 @Setter
 @NoArgsConstructor
 public class SchemaFile {
 
   @Id
-  @Column(name = "schemaid", length = 200)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "schemafiles_seq")
+  @SequenceGenerator(name = "schemafiles_seq", sequenceName = "schemafiles_id_seq")
+  @Column(name = "id", nullable = false)
+  private Long id;
+
+  @Column(name = "schemaid", length = 200, nullable = false, unique = true)
   private String schemaId;
 
   @Column(name = "namehash", length = 64, nullable = false)

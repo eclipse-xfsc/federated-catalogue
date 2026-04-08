@@ -30,6 +30,10 @@ public class DatabaseConfig {
     vendorAdapter.setGenerateDdl(false);
     emf.setJpaVendorAdapter(vendorAdapter);
     emf.getJpaPropertyMap().put("hibernate.hbm2ddl.auto", "validate");
+    emf.getJpaPropertyMap().put("org.hibernate.envers.audit_table_suffix", "_aud");
+    emf.getJpaPropertyMap().put("org.hibernate.envers.revision_field_name", "rev");
+    emf.getJpaPropertyMap().put("org.hibernate.envers.revision_type_field_name", "revtype");
+    emf.getJpaPropertyMap().put("org.hibernate.envers.store_data_at_delete", "true");
     return emf;
   }
 

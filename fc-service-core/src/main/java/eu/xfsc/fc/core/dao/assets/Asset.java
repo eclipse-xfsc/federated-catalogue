@@ -1,30 +1,36 @@
 package eu.xfsc.fc.core.dao.assets;
 
-import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.envers.Audited;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "assets")
+@Audited
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Asset {
 
   @Id
-  @Column(name = "asset_hash", length = 64, nullable = false)
+  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "assets_seq")
+  @SequenceGenerator(name = "assets_seq", sequenceName = "assets_id_seq")
+  @Column(name = "id", nullable = false)
+  private Long id;
+
+  @Column(name = "asset_hash", length = 64, nullable = false, unique = true)
   private String assetHash;
 
   @Column(name = "subjectid", nullable = false, columnDefinition = "TEXT")
@@ -52,7 +58,7 @@ public class Asset {
   @Column(name = "validators", columnDefinition = "varchar(2048)[]")
   private String[] validators;
 
-  @Column(name = "content_type", length = 255)
+  @Column(name = "content_type")
   private String contentType;
 
   @Column(name = "file_size")

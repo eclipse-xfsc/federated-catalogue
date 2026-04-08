@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="2026-03-25-technical-ids-assets" author="saackef">
+        <comment>Add technical ID to assets table</comment>
+        <createSequence sequenceName="assets_id_seq" startValue="1" incrementBy="50"/>
+        <addColumn tableName="assets">
+            <column name="id" type="BIGINT"/>
+        </addColumn>
+        <sql>UPDATE assets SET id = nextval('assets_id_seq')</sql>
+        <addNotNullConstraint tableName="assets" columnName="id" columnDataType="BIGINT"/>
+        <dropPrimaryKey tableName="assets" constraintName="assets_pkey"/>
+        <addPrimaryKey tableName="assets" columnNames="id" constraintName="assets_pkey"/>
+        <addUniqueConstraint tableName="assets" columnNames="asset_hash"
+                             constraintName="uq_assets_asset_hash"/>
+    </changeSet>
+
+    <changeSet id="2026-03-25-technical-ids-schemas" author="saackef">
+        <comment>Add technical IDs to schemafiles and schematerms tables</comment>
+
+        <!-- 1. Add id column to schemafiles -->
+        <createSequence sequenceName="schemafiles_id_seq" startValue="1" incrementBy="50"/>
+        <addColumn tableName="schemafiles">
+            <column name="id" type="BIGINT"/>
+        </addColumn>
+        <sql>UPDATE schemafiles SET id = nextval('schemafiles_id_seq')</sql>
+        <addNotNullConstraint tableName="schemafiles" columnName="id" columnDataType="BIGINT"/>
+
+        <!-- 2. Add id + schema_file_id columns to schematerms, backfill via schemaid join -->
+        <createSequence sequenceName="schematerms_id_seq" startValue="1" incrementBy="50"/>
+        <addColumn tableName="schematerms">
+            <column name="id" type="BIGINT"/>
+            <column name="schema_file_id" type="BIGINT"/>
+        </addColumn>
+        <sql>
+            UPDATE schematerms t SET schema_file_id = f.id
+            FROM schemafiles f WHERE t.schemaid = f.schemaid
+        </sql>
+        <sql>UPDATE schematerms SET id = nextval('schematerms_id_seq')</sql>
+        <addNotNullConstraint tableName="schematerms" columnName="id" columnDataType="BIGINT"/>
+        <addNotNullConstraint tableName="schematerms" columnName="schema_file_id"
+                              columnDataType="BIGINT"/>
+
+        <!-- 3. Drop old constraints (FK first, then PKs) -->
+        <dropForeignKeyConstraint baseTableName="schematerms"
+                                  constraintName="schematerms_schemaid_fkey"/>
+        <dropPrimaryKey tableName="schematerms" constraintName="schematerms_pkey"/>
+        <dropPrimaryKey tableName="schemafiles" constraintName="schemafiles_pkey"/>
+
+        <!-- 4. Add new PKs and constraints -->
+        <addPrimaryKey tableName="schemafiles" columnNames="id"
+                       constraintName="schemafiles_pkey"/>
+        <addUniqueConstraint tableName="schemafiles" columnNames="schemaid"
+                             constraintName="uq_schemafiles_schemaid"/>
+        <addPrimaryKey tableName="schematerms" columnNames="id"
+                       constraintName="schematerms_pkey"/>
+        <addForeignKeyConstraint baseTableName="schematerms" baseColumnNames="schema_file_id"
+                                 referencedTableName="schemafiles" referencedColumnNames="id"
+                                 constraintName="schematerms_schema_file_id_fkey"
+                                 onDelete="CASCADE"/>
+
+        <!-- 5. Drop old schemaid column from schematerms -->
+        <dropColumn tableName="schematerms" columnName="schemaid"/>
+    </changeSet>
+
+</databaseChangeLog>
