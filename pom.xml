@@ -96,6 +96,7 @@
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
         <jose4j.version>0.9.6</jose4j.version>
         <nimbus-jose-jwt.version>10.0.2</nimbus-jose-jwt.version>
+        <tink.version>1.20.0</tink.version>
         <okhttp.version>5.3.0</okhttp.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -306,7 +307,7 @@
             <dependency>
                 <groupId>com.google.crypto.tink</groupId>
                 <artifactId>tink</artifactId>
-                <version>1.20.0</version>
+                <version>${tink.version}</version>
             </dependency>
 
             <!-- Test dependencies -->

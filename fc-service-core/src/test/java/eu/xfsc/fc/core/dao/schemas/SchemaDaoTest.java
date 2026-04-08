@@ -33,7 +33,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {SchemaDaoTest.TestConfig.class, SchemaJpaDao.class, DatabaseConfig.class})
+@ContextConfiguration(classes = {SchemaDaoTest.TestConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class SchemaDaoTest {
 
@@ -99,8 +99,8 @@ class SchemaDaoTest {
     assertEquals("hash-1", sr.nameHash());
     assertEquals(SchemaType.ONTOLOGY, sr.type());
     assertEquals("ontology content", sr.content());
-    assertNotNull(sr.uploadTime());
-    assertNotNull(sr.updateTime());
+    assertNotNull(sr.createdAt());
+    assertNotNull(sr.modifiedAt());
     // JPA select() returns terms (JDBC impl returned null)
     assertEquals(Set.of("term1", "term2"), sr.terms());
   }
@@ -264,8 +264,8 @@ class SchemaDaoTest {
 
     Optional<SchemaRecord> result = schemaDao.select("schema-1");
     assertTrue(result.isPresent());
-    assertTrue(result.get().updateTime().isAfter(originalTime),
-        "updateTime should be after original time");
+    assertTrue(result.get().modifiedAt().isAfter(originalTime),
+        "modifiedAt should be after original time");
   }
 
   @Test

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
+import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -43,7 +44,9 @@ import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
+import eu.xfsc.fc.core.service.verification.FormatDetector;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
+import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
@@ -64,11 +67,12 @@ import lombok.extern.slf4j.Slf4j;
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {AssetStoreCompositeTest.TestApplication.class, FileStoreConfig.class, VerificationServiceImpl.class, ValidatorCacheJpaDao.class,
   AssetStoreImpl.class, AssetJpaDao.class, IriGenerator.class, IriValidator.class, AssetStoreCompositeTest.class,
-  SchemaStoreImpl.class, SchemaJpaDao.class, DatabaseConfig.class,
+  SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class,
   Neo4jGraphStore.class, DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
   CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
   RdfContentTypeProperties.class, JwtContentPreprocessor.class, Vc11Processor.class, Vc2Processor.class,
-  JwtSignatureVerifier.class, DidDocumentResolver.class})
+  JwtSignatureVerifier.class, DidDocumentResolver.class,
+  FormatDetector.class, LoireJwtParser.class})
 @Slf4j
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)

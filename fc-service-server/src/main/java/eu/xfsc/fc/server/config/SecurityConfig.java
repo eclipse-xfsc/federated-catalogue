@@ -67,7 +67,7 @@ public class SecurityConfig {
           // Schema APIs
           .requestMatchers(HttpMethod.POST, "/schemas").hasAnyRole(SCHEMA_CREATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.DELETE, "/schemas/**").hasAnyRole(SCHEMA_DELETE, ADMIN_ALL)
-          .requestMatchers(HttpMethod.PUT, "/schemas").hasAnyRole(SCHEMA_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.PUT, "/schemas", "/schemas/**").hasAnyRole(SCHEMA_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/schemas", "/schemas/**").hasAnyRole(SCHEMA_READ, ADMIN_ALL)
 
           // Query APIs
