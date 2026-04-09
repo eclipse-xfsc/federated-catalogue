@@ -58,4 +58,5 @@ public interface AssetRepository
           @Param("chunks") int chunks,
           @Param("chunkid") int chunkId,
           @Param("limit") int limit);
+
 }

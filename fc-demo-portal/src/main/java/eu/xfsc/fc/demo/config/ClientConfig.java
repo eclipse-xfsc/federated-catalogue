@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 
+import eu.xfsc.fc.client.AdminClient;
 import eu.xfsc.fc.client.ParticipantClient;
 import eu.xfsc.fc.client.RoleClient;
 import eu.xfsc.fc.client.SessionClient;
@@ -53,6 +54,11 @@ public class ClientConfig {
   @Bean
   public UserClient userClient(@Value("${federated-catalogue.base-uri}") final String baseUri, WebClient webClient) {
       return new UserClient(baseUri, webClient);
+  }
+
+  @Bean
+  public AdminClient adminClient(@Value("${federated-catalogue.base-uri}") final String baseUri, WebClient webClient) {
+      return new AdminClient(baseUri, webClient);
   }
   
   /**

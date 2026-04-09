@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Participants</title>
+    <style>
+        td.details-control {
+            background: url('/images/details_open.png') no-repeat center center;
+            cursor: pointer;
+        }
+        tr.details td.details-control {
+            background: url('/images/details_close.png') no-repeat center center;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid mt-2">
+    <div id="error-area"></div>
+    <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-sm btn-success" id="addButton" type="button">
+            <i class="bi bi-plus-lg me-1"></i>Add
+        </button>
+    </div>
+    <table class="table table-bordered table-light cell-border" id="participantTable" style="width:100%">
+        <thead>
+        <tr>
+            <th></th>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Public-Key</th>
+            <th>Asset</th>
+            <th>Edit</th>
+            <th>Delete</th>
+        </tr>
+        </thead>
+    </table>
+
+    <!-- Add Modal -->
+    <div class="modal" id="addModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Participant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="addData">Details:</label>
+                        <textarea class="form-control" rows="12" id="addData" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
+                    <button class="btn btn-primary" type="button" id="submitAddButton">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Participant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="editData">Edit:</label>
+                        <textarea class="form-control" rows="12" id="editData" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Close</button>
+                    <button class="btn btn-primary" type="button" id="submitEditButton">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="js/participants.js"></script>
+</body>
+</html>

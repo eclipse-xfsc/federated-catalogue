@@ -109,7 +109,6 @@ public class AssetControllerTest {
     private SchemaStore schemaStore;
     @Autowired
     private VerificationService verificationService;
-
     private static AssetMetadata assetMeta;
     
     @BeforeAll
@@ -706,6 +705,8 @@ public class AssetControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
+
+    // ===== Helpers =====
 
     private static AssetMetadata createAssetMetadata() throws IOException {
         String credentialContent = getMockFileDataAsString(ASSET_FILE_NAME);

@@ -3,11 +3,13 @@ package eu.xfsc.fc.server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * The Application class.
  */
+@EnableCaching
 @EnableScheduling
 @SpringBootApplication(exclude = HibernateJpaAutoConfiguration.class)
 // HibernateJpaAutoConfiguration breaks the Participant API implementation

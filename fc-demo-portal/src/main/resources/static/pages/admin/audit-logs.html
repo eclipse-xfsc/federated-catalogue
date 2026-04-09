@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Audit Logs</title></head>
+<body>
+<div class="container mt-3">
+    <div id="admin-content" style="display:none">
+        <div class="alert alert-info">
+            <h5>Audit Logs</h5>
+            <p>This page will be implemented in Story 033 — Audit Logs.</p>
+        </div>
+    </div>
+</div>
+<script>
+$.ajax({ url: '/admin/me', type: 'GET',
+    success: function() { $('#admin-content').show(); }
+});
+</script>
+</body>
+</html>

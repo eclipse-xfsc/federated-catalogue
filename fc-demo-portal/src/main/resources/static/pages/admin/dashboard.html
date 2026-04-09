@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Admin Dashboard</title>
+
+</head>
+<body>
+<div class="sidebar-wrapper" id="page-content-wrapper">
+    <div class="container">
+
+        <div id="admin-content">
+            <!-- Key Metrics -->
+            <h6 class="text-muted text-uppercase fw-semibold mb-2 admin-section-header">
+                <i class="bi bi-bar-chart me-1"></i>Key Metrics
+            </h6>
+            <div class="row mb-3 g-2">
+                <div class="col-xl-2 col-md-4 d-flex">
+                    <div class="card text-center w-100" style="border-top: 3px solid #0d6efd;">
+                        <div class="card-body py-2 px-2">
+                            <i class="bi bi-box-seam text-primary" style="font-size: 1.2rem;"></i>
+                            <div class="card-title text-muted mt-1" style="font-size: 0.8rem;">Total Assets</div>
+                            <h4 id="metric-total-assets" class="card-text mb-1"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></h4>
+                            <small class="text-muted" style="font-size: 0.75rem;">Active: <span id="metric-active-assets">-</span></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4 d-flex">
+                    <div class="card text-center w-100" style="border-top: 3px solid #198754;">
+                        <div class="card-body py-2 px-2">
+                            <i class="bi bi-patch-check text-success" style="font-size: 1.2rem;"></i>
+                            <div class="card-title text-muted mt-1" style="font-size: 0.8rem;">Trust Frameworks</div>
+                            <h4 id="metric-trust-frameworks" class="card-text mb-1"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></h4>
+                            <small class="text-muted" style="font-size: 0.75rem;">Active</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4 d-flex">
+                    <div class="card text-center w-100" style="border-top: 3px solid #fd7e14;">
+                        <div class="card-body py-2 px-2">
+                            <i class="bi bi-person text-warning" style="font-size: 1.2rem;"></i>
+                            <div class="card-title text-muted mt-1" style="font-size: 0.8rem;">Registered Users</div>
+                            <h4 id="metric-users" class="card-text mb-1"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4 d-flex">
+                    <div class="card text-center w-100" style="border-top: 3px solid #6f42c1;">
+                        <div class="card-body py-2 px-2">
+                            <i class="bi bi-diagram-3" style="font-size: 1.2rem; color: #6f42c1;"></i>
+                            <div class="card-title text-muted mt-1" style="font-size: 0.8rem;">Total Schemas</div>
+                            <h4 id="metric-schemas" class="card-text mb-1"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4 d-flex">
+                    <div class="card text-center w-100" style="border-top: 3px solid #0dcaf0;">
+                        <div class="card-body py-2 px-2">
+                            <i class="bi bi-people text-info" style="font-size: 1.2rem;"></i>
+                            <div class="card-title text-muted mt-1" style="font-size: 0.8rem;">Participants</div>
+                            <h4 id="metric-participants" class="card-text mb-1"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-md-4 d-flex">
+                    <div class="card text-center w-100" style="border-top: 3px solid #6c757d;">
+                        <div class="card-body py-2 px-2">
+                            <i class="bi bi-database" style="font-size: 1.2rem; color: #6c757d;"></i>
+                            <div class="card-title text-muted mt-1" style="font-size: 0.8rem;">Graph Claims</div>
+                            <h4 id="metric-claims" class="card-text mb-1"><div class="spinner-border spinner-border-sm text-secondary" role="status"></div></h4>
+                            <small class="text-muted" style="font-size: 0.75rem;"><span id="metric-graph-backend">-</span></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <h6 class="text-muted text-uppercase fw-semibold mb-2 admin-section-header">
+                <i class="bi bi-heart-pulse me-1"></i>System Health
+            </h6>
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Component Status</span>
+                    <small class="text-muted">Last updated: <span id="last-updated">-</span>
+                        <button id="refresh-btn" class="btn btn-sm btn-outline-secondary ms-2" title="Refresh">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </small>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered mb-0" id="health-table">
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Status</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr id="row-catalogue">
+                                <td><i class="bi bi-server me-2"></i>Catalogue Service</td>
+                                <td><span id="status-catalogue" class="badge bg-secondary"><span class="spinner-border spinner-border-sm" role="status"></span></span></td>
+                                <td id="status-catalogue-details">-</td>
+                            </tr>
+                            <tr id="row-graphdb">
+                                <td><i class="bi bi-share me-2"></i>Graph Database</td>
+                                <td><span id="status-graphdb" class="badge bg-secondary"><span class="spinner-border spinner-border-sm" role="status"></span></span></td>
+                                <td id="status-graphdb-details">-</td>
+                            </tr>
+                            <tr id="row-keycloak">
+                                <td><i class="bi bi-shield-lock me-2"></i>Keycloak</td>
+                                <td><span id="status-keycloak" class="badge bg-secondary"><span class="spinner-border spinner-border-sm" role="status"></span></span></td>
+                                <td id="status-keycloak-details">-</td>
+                            </tr>
+                            <tr id="row-filestore">
+                                <td><i class="bi bi-folder me-2"></i>File Store</td>
+                                <td><span id="status-filestore" class="badge bg-secondary"><span class="spinner-border spinner-border-sm" role="status"></span></span></td>
+                                <td id="status-filestore-details">-</td>
+                            </tr>
+                            <tr id="row-database">
+                                <td><i class="bi bi-hdd-stack me-2"></i>Database</td>
+                                <td><span id="status-database" class="badge bg-secondary"><span class="spinner-border spinner-border-sm" role="status"></span></span></td>
+                                <td id="status-database-details">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script src="js/admin-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>User Management</title></head>
+<body>
+<div class="container-fluid mt-2">
+
+    <!-- Loading spinner -->
+    <div id="loading-spinner" class="text-center py-3">
+        <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+    </div>
+
+    <!-- Keycloak iframe -->
+    <div id="iframe-container" style="display:none">
+        <iframe id="keycloak-iframe"
+                style="width:100%; height:calc(100vh - 120px); border:none; border-radius:4px;"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                title="Keycloak Admin Console">
+        </iframe>
+    </div>
+
+    <!-- Fallback: link to open in new tab -->
+    <div id="fallback-panel" style="display:none">
+        <div class="alert alert-info">
+            <h5><i class="bi bi-person-gear me-2"></i>Keycloak Admin Console</h5>
+            <p class="mb-2">The Keycloak Admin Console cannot be embedded in this page.
+               You can open it in a new tab instead.</p>
+            <a id="fallback-link" href="#" target="_blank" class="btn btn-primary">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Open Keycloak Admin Console
+            </a>
+        </div>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-panel" style="display:none">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Keycloak Admin Console URL is not available.
+        </div>
+    </div>
+
+</div>
+<script src="js/admin-users.js"></script>
+</body>
+</html>

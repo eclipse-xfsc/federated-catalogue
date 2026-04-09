@@ -4,6 +4,7 @@ import static org.springframework.security.oauth2.client.web.reactive.function.c
 
 import java.util.Map;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.json.Jackson2JsonDecoder;
@@ -95,6 +96,18 @@ public abstract class ServiceClient {
             .attributes(oauth2AuthorizedClient(authorizedClient))
             .retrieve()
             .bodyToMono(reType)
+            .block();
+    }
+
+    protected <T> T doGet(String path, Map<String, Object> pathParams, Map<String, Object> queryParams,
+        ParameterizedTypeReference<T> responseType,
+        OAuth2AuthorizedClient authorizedClient) {
+        return client
+            .get()
+            .uri(uriBuilder -> buildUri(uriBuilder, path, pathParams, queryParams))
+            .attributes(oauth2AuthorizedClient(authorizedClient))
+            .retrieve()
+            .bodyToMono(responseType)
             .block();
     }
 

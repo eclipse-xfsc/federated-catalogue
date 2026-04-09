@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="peleskek" id="2026-03-25-admin-config-tables">
+        <comment>Admin configuration tables for trust frameworks and schema validation modules.</comment>
+
+        <createTable tableName="trust_frameworks">
+            <column name="id" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="service_url" type="varchar(1024)"/>
+            <column name="api_version" type="varchar(50)"/>
+            <column name="timeout_seconds" type="int" defaultValueNumeric="30"/>
+            <column name="enabled" type="boolean" defaultValueBoolean="false"/>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <createTable tableName="admin_config">
+            <column name="config_key" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="config_value" type="varchar(1024)"/>
+            <column name="updated_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
+
+        <!-- Seed Gaia-X trust framework -->
+        <insert tableName="trust_frameworks">
+            <column name="id" value="gaia-x"/>
+            <column name="name" value="Gaia-X Trust Framework"/>
+            <column name="service_url" value="https://compliance.gaia-x.eu"/>
+            <column name="api_version" value="22.10"/>
+            <column name="timeout_seconds" valueNumeric="30"/>
+            <column name="enabled" valueBoolean="false"/>
+        </insert>
+
+        <!-- Seed schema validation module defaults (all enabled) -->
+        <insert tableName="admin_config">
+            <column name="config_key" value="schema.module.SHACL.enabled"/>
+            <column name="config_value" value="true"/>
+        </insert>
+        <insert tableName="admin_config">
+            <column name="config_key" value="schema.module.JSON_SCHEMA.enabled"/>
+            <column name="config_value" value="true"/>
+        </insert>
+        <insert tableName="admin_config">
+            <column name="config_key" value="schema.module.XML_SCHEMA.enabled"/>
+            <column name="config_value" value="true"/>
+        </insert>
+        <insert tableName="admin_config">
+            <column name="config_key" value="schema.module.OWL.enabled"/>
+            <column name="config_value" value="true"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -29,7 +29,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.util.ReflectionTestUtils;
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
@@ -37,6 +36,8 @@ import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.ClientException;
@@ -84,6 +85,9 @@ public class VerificationServiceTest {
 
   @Autowired
   private CredentialVerificationStrategy credentialVerificationStrategy;
+
+  @Autowired
+  private JdbcTemplate jdbcTemplate;
 
   @MockitoBean
   private JwtSignatureVerifier jwtVerifierMock;
@@ -187,7 +191,7 @@ public class VerificationServiceTest {
   @Test
   void validVCUnknownType_gaiaxEnabled_throwsNoProperSubjectError() {
     // With gaiax enabled, non-Gaia-X credentials are rejected by the semantics check.
-    ReflectionTestUtils.setField(credentialVerificationStrategy, "gaiaxTrustFrameworkEnabled", true);
+    jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       String path = "VerificationService/jsonld/input.vc.jsonld";
       schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
@@ -195,7 +199,7 @@ public class VerificationServiceTest {
           () -> verificationService.verifyCredential(getAccessor(path), true, false, false, false));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
-      ReflectionTestUtils.setField(credentialVerificationStrategy, "gaiaxTrustFrameworkEnabled", false);
+      jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
     }
   }
 
@@ -353,13 +357,13 @@ public class VerificationServiceTest {
     schemaStore.deleteSchema("https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#");
     assertEquals(2, schemaStore.getSchemaList().get(SchemaType.ONTOLOGY).size());
     // With gaiax enabled, removing the required ontology schema causes hasClasses() to fail.
-    ReflectionTestUtils.setField(credentialVerificationStrategy, "gaiaxTrustFrameworkEnabled", true);
+    jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       Exception ex = assertThrowsExactly(VerificationException.class, ()
           -> verificationService.verifyCredential(content, true, true, false, false));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
-      ReflectionTestUtils.setField(credentialVerificationStrategy, "gaiaxTrustFrameworkEnabled", false);
+      jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
     }
     verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "http://w3id.org/gaia-x/participant#Participant");
   }
@@ -1040,7 +1044,7 @@ public class VerificationServiceTest {
    */
   @Test
   void verifyCredential_vc2NonGaiaxRdfAsset_gaiaxEnabled_throwsNoProperSubjectError() {
-    ReflectionTestUtils.setField(credentialVerificationStrategy, "gaiaxTrustFrameworkEnabled", true);
+    jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
       ContentAccessor content = getAccessor("Claims-Tests/vc2NonGaiax.jsonld");
@@ -1049,7 +1053,7 @@ public class VerificationServiceTest {
           () -> verificationService.verifyCredential(content, true, false, false, false));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
-      ReflectionTestUtils.setField(credentialVerificationStrategy, "gaiaxTrustFrameworkEnabled", false);
+      jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
     }
   }
 

@@ -28,6 +28,7 @@ import eu.xfsc.fc.core.dao.ParticipantDao;
 import eu.xfsc.fc.core.dao.UserDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.server.generated.controller.UsersApiDelegate;
 import eu.xfsc.fc.server.util.SessionUtils;
@@ -161,14 +162,19 @@ public class UsersService implements UsersApiDelegate {
   @Override
   public ResponseEntity<UserProfiles> getUsers(Integer offset, Integer limit) { //String orderBy, Boolean ascending) {
     // sorting is not supported yet by keycloak admin API
-    log.debug("getUsers.enter; got offset: {}, limit: {}", offset, limit);
-    PaginatedResults<UserProfile> profiles ;
+    PaginatedResults<UserProfile> profiles;
     if (SessionUtils.sessionUserHasRole(CATALOGUE_ADMIN_ROLE_WITH_PREFIX)) {
-       profiles = userDao.search(null, offset, limit);
+      profiles = userDao.search(null, offset, limit);
     } else {
-     profiles = partDao.selectUsers(SessionUtils.getSessionParticipantId(), offset, limit).get();
+      String participantId = SessionUtils.getSessionParticipantId();
+      if (participantId == null) {
+        throw new NotFoundException("Access restricted — your account has no participant association. "
+            + "Users with participant roles must be created through the catalogue's user management.");
+      }
+      profiles = partDao.selectUsers(participantId, offset, limit)
+          .orElseThrow(() -> new NotFoundException(
+              "The participant associated with your account was not found in the catalogue."));
     }
-    log.debug("getUsers.exit; returning: {}", profiles);
     return ResponseEntity.ok(new UserProfiles((int) profiles.getTotalCount(), profiles.getResults()));
   }
 
