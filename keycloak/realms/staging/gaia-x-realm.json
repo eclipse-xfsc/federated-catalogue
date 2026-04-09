@@ -658,11 +658,32 @@
         "realm-management": [
           "manage-users",
           "view-users",
+          "query-users",
           "view-clients"
         ]
       },
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "username": "kinga",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Kinga!123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-gaia-x"
+      ],
+      "clientRoles": {
+        "federated-catalogue": [
+          "Ro-MU-CA"
+        ]
+      }
     }
   ],
   "scopeMappings": [
@@ -879,15 +900,21 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "EDH8hiaio5wfrlamv4gv2yZxq1LYFRpD",
       "redirectUris": [
         "http://78.138.66.147:8088/*",
-        "http://localhost:8088/*",
+        "https://staging.catalogue.example.com/*",
         "https://fc-demo-server.gxfs.dev/*",
         "http://fc-demo-server.gxfs.dev/*",
-        "http://127.0.0.1:8088/*"
+        "https://staging.catalogue.example.com/*",
+        "http://127.0.0.1:8088/*",
+        "http://key-server:8088/*"
       ],
-      "webOrigins": [],
+      "webOrigins": [
+        "https://staging.catalogue.example.com",
+        "http://127.0.0.1:8088",
+        "http://key-server:8088"
+      ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
@@ -1975,8 +2002,8 @@
     "xContentTypeOptions": "nosniff",
     "referrerPolicy": "no-referrer",
     "xRobotsTag": "none",
-    "xFrameOptions": "SAMEORIGIN",
-    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xFrameOptions": "",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self' https://staging.catalogue.example.com; object-src 'none';",
     "xXSSProtection": "1; mode=block",
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },

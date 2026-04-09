@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><title>Graph Database</title></head>
+<body>
+<div class="container-fluid mt-2">
+    <div id="admin-content" style="display:none">
+
+        <!-- Status card -->
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">Current Status</h6></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td><strong>Active Backend</strong></td>
+                        <td><span id="activeBackend" class="badge bg-primary">-</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Connection</strong></td>
+                        <td><span id="connectionStatus" class="badge bg-secondary">-</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Claims</strong></td>
+                        <td id="claimCount">-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Version</strong></td>
+                        <td id="versionInfo">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Backend selection -->
+        <div class="card mb-3">
+            <div class="card-header"><h6 class="mb-0">Switch Backend</h6></div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Switching the graph database backend requires a server restart
+                    and re-indexing of all stored assets.
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input backend-radio" type="radio" name="backend" id="backendNeo4j" value="NEO4J">
+                    <label class="form-check-label" for="backendNeo4j">Neo4j</label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input backend-radio" type="radio" name="backend" id="backendFuseki" value="FUSEKI">
+                    <label class="form-check-label" for="backendFuseki">Apache Fuseki</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input backend-radio" type="radio" name="backend" id="backendNone" value="NONE">
+                    <label class="form-check-label" for="backendNone">No Graph Database</label>
+                </div>
+                <button class="btn btn-warning" id="switchBtn" disabled>Switch Backend</button>
+            </div>
+        </div>
+
+        <!-- Confirmation modal -->
+        <div class="modal" id="confirmSwitchModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Backend Switch</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Switch from <strong id="modalCurrentBackend">-</strong>
+                           to <strong id="modalNewBackend">-</strong>?</p>
+                        <ul class="text-muted">
+                            <li>Server restart required</li>
+                            <li>Graph database will be empty until rebuild</li>
+                            <li>Existing queries may need adjustment</li>
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-warning" id="confirmSwitchBtn">Confirm Switch</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script src="js/admin-graphdb.js"></script>
+</body>
+</html>

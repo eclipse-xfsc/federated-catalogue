@@ -382,10 +382,80 @@ components:
           items:
             type: string
           description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
-        uploadTime:
+        createdAt:
           type: string
           format: date-time
-          description: 'Timestamp when the schema was uploaded.'
+          nullable: true
+          description: 'Timestamp when the schema was first uploaded. Present on creation, null on updates.'
+        version:
+          type: integer
+          nullable: true
+          description: 'Current version number after this operation. Present on updates, null on creation.'
+        previousVersion:
+          type: integer
+          nullable: true
+          description: 'Version number before this operation. Null for first version or on creation.'
+    AssetVersion:
+      type: object
+      required: [version, createdAt, createdBy, status, isCurrent]
+      properties:
+        version:
+          type: integer
+          description: '1-based version ordinal.'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Timestamp when this version was created (Envers revision timestamp).'
+        createdBy:
+          type: string
+          description: 'Issuer DID of the asset at this version.'
+        status:
+          $ref: '#/components/schemas/AssetStatus'
+        isCurrent:
+          type: boolean
+          description: 'Whether this is the current (latest) version.'
+        changeComment:
+          type: string
+          nullable: true
+          description: 'Optional change note provided at upload time.'
+    AssetVersionList:
+      type: object
+      required: [id, total, versions]
+      properties:
+        id:
+          type: string
+          description: 'The asset IRI.'
+        total:
+          type: integer
+          description: 'Total number of versions.'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetVersion'
+          description: 'Descending list (newest first) for the requested page.'
+    SchemaVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+          description: '1-based version ordinal.'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Timestamp when this version was created.'
+        isCurrent:
+          type: boolean
+          description: 'Whether this is the current (latest) version.'
+    SchemaVersionList:
+      type: object
+      properties:
+        schemaId:
+          type: string
+          description: 'The schema identifier.'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaVersion'
     QueryInfo:
       type: object
       properties:
@@ -466,6 +536,168 @@ components:
         syncAssessment:
           type: string
           description: Sync assessment (empty, in-sync, out-of-sync, unknown, disabled)
+    AdminStats:
+      type: object
+      properties:
+        totalAssets:
+          type: integer
+          format: int64
+          description: Total number of assets in the catalogue
+        activeAssets:
+          type: integer
+          format: int64
+          description: Number of active assets
+        activeTrustFrameworks:
+          type: integer
+          format: int64
+          description: Number of active trust frameworks
+        totalUsers:
+          type: integer
+          format: int64
+          description: Total number of registered users
+        totalSchemas:
+          type: integer
+          format: int64
+          description: Total number of schemas
+        totalParticipants:
+          type: integer
+          format: int64
+          description: Total number of participants
+        graphClaimCount:
+          type: integer
+          format: int64
+          description: Number of claims in the graph database
+        graphBackend:
+          type: string
+          description: The graph database backend type
+    AdminHealthStatus:
+      type: object
+      properties:
+        catalogueStatus:
+          type: string
+          description: Catalogue service status (UP/DOWN)
+        graphDbStatus:
+          type: object
+          properties:
+            connected:
+              type: boolean
+            backend:
+              type: string
+            claimCount:
+              type: integer
+              format: int64
+        keycloakStatus:
+          type: string
+          description: Keycloak status (UP/DOWN/UNKNOWN)
+        fileStoreStatus:
+          type: string
+          description: File store status (UP/DOWN)
+        databaseStatus:
+          type: string
+          description: Database status (UP/DOWN)
+        keycloakUrl:
+          type: string
+          description: Keycloak issuer URL
+        fileStorePath:
+          type: string
+          description: File store directory path
+    KeycloakAdminUrl:
+      type: object
+      properties:
+        url:
+          type: string
+          description: Keycloak Admin Console URL for the catalogue realm
+    TrustFrameworkEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Trust framework identifier
+        name:
+          type: string
+          description: Display name
+        serviceUrl:
+          type: string
+          description: Trust framework service URL
+        apiVersion:
+          type: string
+          description: API version
+        timeoutSeconds:
+          type: integer
+          description: Connection timeout in seconds
+        connected:
+          type: boolean
+          description: Whether the service is currently reachable
+        enabled:
+          type: boolean
+          description: Whether this framework is active
+    TrustFrameworkConfigUpdate:
+      type: object
+      properties:
+        serviceUrl:
+          type: string
+          description: New service URL
+        apiVersion:
+          type: string
+          description: New API version
+        timeoutSeconds:
+          type: integer
+          description: New timeout in seconds
+    SchemaValidationStatus:
+      type: object
+      properties:
+        totalSchemaCount:
+          type: integer
+          format: int64
+          description: Total number of schemas across all modules
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaValidationModule'
+    SchemaValidationModule:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Module type (SHACL, JSON_SCHEMA, XML_SCHEMA, OWL)
+        name:
+          type: string
+          description: Display name
+        description:
+          type: string
+          description: Module description
+        schemaCount:
+          type: integer
+          format: int64
+          description: Number of schemas for this module
+        enabled:
+          type: boolean
+          description: Whether this module is active
+    GraphDatabaseStatus:
+      type: object
+      properties:
+        activeBackend:
+          type: string
+          description: Currently active graph database backend
+        connected:
+          type: boolean
+          description: Whether the graph database is reachable
+        claimCount:
+          type: integer
+          format: int64
+          description: Number of claims in the graph database
+        version:
+          type: string
+          description: Graph database version or implementation info
+    GraphDatabaseSwitchResult:
+      type: object
+      properties:
+        restartRequired:
+          type: boolean
+          description: Whether a restart is needed for the switch to take effect
+        message:
+          type: string
+          description: Human-readable status message
 
   parameters:
     OffsetParam:
@@ -549,7 +781,284 @@ tags:
     description: Management for auth sessions in the catalogue
   - name: Graph Admin
     description: Graph database administration operations.
+  - name: Admin
+    description: Administration dashboard and system management operations.
+  - name: TrustFrameworkAdmin
+    description: Trust framework configuration and management.
+  - name: SchemaValidationAdmin
+    description: Schema validation module configuration.
+  - name: GraphDatabaseAdmin
+    description: Graph database status and backend switching.
 paths:
+  /admin/me:
+    get:
+      tags:
+        - Admin
+      summary: Check if the current user has admin access
+      operationId: checkAdminAccess
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: User has admin access
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/stats:
+    get:
+      tags:
+        - Admin
+      summary: Get dashboard statistics
+      operationId: getAdminStats
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/health:
+    get:
+      tags:
+        - Admin
+      summary: Get component health overview
+      operationId: getAdminHealth
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Component health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminHealthStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/keycloak-url:
+    get:
+      tags:
+        - Admin
+      summary: Get the Keycloak Admin Console URL for embedding
+      operationId: getKeycloakAdminUrl
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Keycloak Admin Console URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeycloakAdminUrl'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/trust-frameworks:
+    get:
+      tags:
+        - TrustFrameworkAdmin
+      summary: List all registered trust frameworks
+      operationId: getTrustFrameworks
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: List of trust frameworks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrustFrameworkEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/trust-frameworks/{id}/enabled:
+    put:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Toggle a trust framework's enabled state
+      operationId: setTrustFrameworkEnabled
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: enabled
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Framework enabled state updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/trust-frameworks/{id}:
+    put:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Update a trust framework's configuration
+      operationId: updateTrustFrameworkConfig
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustFrameworkConfigUpdate'
+      responses:
+        '200':
+          description: Framework configuration updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/schema-validation:
+    get:
+      tags:
+        - SchemaValidationAdmin
+      summary: Get schema validation module status
+      operationId: getSchemaValidationStatus
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Schema validation modules with status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaValidationStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/schema-validation/modules/{type}:
+    put:
+      tags:
+        - SchemaValidationAdmin
+      summary: Toggle a schema validation module
+      operationId: setSchemaModuleEnabled
+      security:
+        - jwt: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: enabled
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Module enabled state updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/graph-database:
+    get:
+      tags:
+        - GraphDatabaseAdmin
+      summary: Get graph database status
+      operationId: getGraphDatabaseStatus
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Graph database status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphDatabaseStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/graph-database/switch:
+    post:
+      tags:
+        - GraphDatabaseAdmin
+      summary: Switch the graph database backend (requires restart)
+      operationId: switchGraphDatabase
+      security:
+        - jwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                backend:
+                  type: string
+                  description: Target backend (NEO4J, FUSEKI, NONE)
+              required:
+                - backend
+      responses:
+        '200':
+          description: Switch request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphDatabaseSwitchResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /admin/graph/rebuild:
     post:
       tags:
@@ -803,6 +1312,13 @@ paths:
             http:
               summary: HTTP IRI
               value: 'https://example.org/asset/123'
+        - name: version
+          in: query
+          description: Optional 1-based version ordinal. If provided, returns the asset content at that specific version.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
       security:
         - jwt: []
       responses:
@@ -821,6 +1337,156 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Assets
+      summary: Update an asset in-place (versioned).
+      description: >
+        Updates an existing asset identified by its IRI. The update is applied in-place;
+        Envers records the previous state as a new revision in assets_aud automatically.
+        If no asset exists for the given IRI, the asset is created as version 1.
+        Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: updateAsset
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: changeComment
+          in: query
+          description: Optional human-readable note for this version.
+          required: false
+          schema:
+            type: string
+      security:
+        - jwt: []
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema:
+              type: string
+          application/json:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/versions:
+    get:
+      tags:
+        - Assets
+      summary: Get version history for an asset.
+      description: >
+        Returns a paginated list of all versions of the asset, ordered descending (newest first).
+        Required permission: ASSET_READ or ADMIN_ALL
+      operationId: readAssetVersions
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: 0-based page index.
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size (1–100).
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: The version history of the asset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetVersionList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/versions/{version}/revoke:
+    post:
+      tags:
+        - Assets
+      summary: Revoke a specific version of an asset.
+      description: >
+        Revokes the specified version of the asset. Only the current (latest) version can be revoked.
+        Attempting to revoke a historical version returns 409 Conflict, because Envers snapshots are immutable.
+        Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: revokeAssetVersion
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: 1-based version ordinal to revoke.
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetVersion'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/ServerError'
   /assets/{asset_hash}:
@@ -1119,6 +1785,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: version
+          in: query
+          description: 'Optional version number. If provided, returns the schema at that specific version.'
+          required: false
+          schema:
+            type: integer
       responses:
         '200':
           description: 'The schema for the given identifier. Depending on the type of the schema, either an ontology, shape graph or controlled vocabulary is returned.'
@@ -1224,7 +1896,36 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/ServerError'          
+          $ref: '#/components/responses/ServerError'
+  /schemas/{schemaId}/versions:
+    get:
+      tags:
+        - Schemas
+      summary: 'Get version history for a schema.'
+      description: 'Returns an ordered list of all versions of the schema. Required permission: SCHEMA_READ or ADMIN_ALL'
+      operationId: getSchemaVersions
+      security:
+        - jwt: []
+      parameters:
+        - name: schemaId
+          in: path
+          description: 'Identifier of the Schema.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'The version history of the schema.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /schemas/latest:
     get: 
       tags:
@@ -1569,6 +2270,8 @@ paths:
                 $ref: '#/components/schemas/UserProfiles'
         '400':
           $ref: '#/components/responses/ClientError'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
     post:

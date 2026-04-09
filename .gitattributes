@@ -1,6 +1,10 @@
 *.png filter=lfs diff=lfs merge=lfs -text
 *.ttl filter=lfs diff=lfs merge=lfs -text
-*.css filter=lfs diff=lfs merge=lfs -text
-*.js filter=lfs diff=lfs merge=lfs -text
 *.pdf filter=lfs diff=lfs merge=lfs -text
 *.jar filter=lfs diff=lfs merge=lfs -text
+
+# Vendor libraries — LFS
+fc-demo-portal/src/main/resources/static/js/lib/** filter=lfs diff=lfs merge=lfs -text
+fc-demo-portal/src/main/resources/static/css/lib/** filter=lfs diff=lfs merge=lfs -text
+fc-service-server/src/main/resources/static/js/** filter=lfs diff=lfs merge=lfs -text
+fc-service-server/src/main/resources/static/css/** filter=lfs diff=lfs merge=lfs -text

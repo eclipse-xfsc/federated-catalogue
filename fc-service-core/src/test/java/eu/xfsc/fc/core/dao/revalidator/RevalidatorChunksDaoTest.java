@@ -65,8 +65,8 @@ class RevalidatorChunksDaoTest {
     SchemaFile entity = new SchemaFile();
     entity.setSchemaId(schemaId);
     entity.setNameHash("hash-" + schemaId);
-    entity.setUploadTime(updateTime);
-    entity.setUpdateTime(updateTime);
+    entity.setCreatedAt(updateTime);
+    entity.setModifiedAt(updateTime);
     entity.setType(type);
     entity.setContent("content-" + schemaId);
     return schemaFileRepository.saveAndFlush(entity);

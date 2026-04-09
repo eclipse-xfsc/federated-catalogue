@@ -1,16 +1,5 @@
 package eu.xfsc.fc.core.service.assetstore;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.List;
-
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.dao.assets.AssetDao;
 import eu.xfsc.fc.core.exception.ConflictException;
@@ -25,6 +14,16 @@ import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
 
 /**
  * File system based implementation of the asset store interface.
@@ -104,6 +103,7 @@ public class AssetStoreImpl implements AssetStore {
         .content(assetMetadata.getContentAccessor())
         .expirationTime(expirationTime)
         .contentType("application/ld+json")
+        .changeComment(assetMetadata.getChangeComment())
         .build();
 
     SubjectHashRecord subjectHash = null;
@@ -240,6 +240,33 @@ public class AssetStoreImpl implements AssetStore {
   public void clear() {
 	int cnt = dao.deleteAll();
     log.debug("clear; deleted {} assets", cnt);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public PaginatedResults<AssetRecord> getVersionHistoryPage(String id, int page, int size) {
+    PaginatedResults<AssetRecord> result = dao.selectVersionsPageWithTotal(id, page, size);
+    if (result.getTotalCount() == 0) {
+      throw new NotFoundException("no asset found for id %s".formatted(id));
+    }
+    return result;
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public AssetRecord getByIdAndVersion(String id, int version) {
+    return dao.selectVersion(id, version)
+        .orElseThrow(() -> new NotFoundException("no asset found for id %s at version %d".formatted(id, version)));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public int getVersionCount(String id) {
+    int count = dao.getVersionCount(id);
+    if (count == 0) {
+      throw new NotFoundException("no asset found for id %s".formatted(id));
+    }
+    return count;
   }
 
 }

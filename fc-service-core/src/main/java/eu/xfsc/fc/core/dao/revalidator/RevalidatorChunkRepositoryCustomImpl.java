@@ -21,7 +21,7 @@ public class RevalidatorChunkRepositoryCustomImpl implements RevalidatorChunkRep
     String sql = """
         UPDATE revalidatorchunks SET lastcheck = now()
         WHERE chunkid = (SELECT chunkid FROM revalidatorchunks
-          WHERE lastcheck < (SELECT updatetime FROM schemafiles WHERE type = ?1 ORDER BY updatetime DESC LIMIT 1)
+          WHERE lastcheck < (SELECT created_at FROM schemafiles WHERE type = ?1 ORDER BY created_at DESC LIMIT 1)
           ORDER BY chunkid LIMIT 1)
         RETURNING chunkid""";
 

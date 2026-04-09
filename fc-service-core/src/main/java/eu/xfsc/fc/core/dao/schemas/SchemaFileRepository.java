@@ -33,7 +33,7 @@ public interface SchemaFileRepository
     SELECT e.content
     FROM SchemaFile e
     WHERE e.type = :type
-    ORDER BY e.uploadTime DESC LIMIT 1
+    ORDER BY e.createdAt DESC LIMIT 1
   """)
   Optional<String> findLatestContentByType(@Param("type") SchemaType type);
 

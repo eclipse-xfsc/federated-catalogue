@@ -17,6 +17,8 @@ public interface AssetRepository
 
   Optional<Asset> findBySubjectIdAndStatus(String subjectId, short status);
 
+  Optional<Asset> findBySubjectId(String subjectId);
+
   @Query("""
     SELECT a.assetHash
     FROM Asset a
@@ -56,4 +58,5 @@ public interface AssetRepository
           @Param("chunks") int chunks,
           @Param("chunkid") int chunkId,
           @Param("limit") int limit);
+
 }

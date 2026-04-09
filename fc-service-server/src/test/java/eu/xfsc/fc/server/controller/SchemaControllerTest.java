@@ -474,7 +474,7 @@ public class SchemaControllerTest {
             .with(csrf())
             .contentType("application/schema+json"))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.uploadTime").isString())
-        .andExpect(jsonPath("$.uploadTime", org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T.*")));
+        .andExpect(jsonPath("$.createdAt").isString())
+        .andExpect(jsonPath("$.createdAt", org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T.*")));
   }
 }

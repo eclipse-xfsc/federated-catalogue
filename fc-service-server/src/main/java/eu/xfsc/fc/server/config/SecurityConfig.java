@@ -24,6 +24,7 @@ import static eu.xfsc.fc.server.util.CommonConstants.ASSET_ADMIN_ROLE;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,8 +46,11 @@ public class SecurityConfig {
 
   private static final String COMMON_FORBIDDEN_ERROR_MESSAGE = "User does not have permission to execute this request.";
 
-  @Value("${keycloak.resource}")
-  private String resourceId;
+  private final String resourceId;
+
+  public SecurityConfig(@Value("${keycloak.resource}") String resourceId) {
+    this.resourceId = resourceId;
+  }
 
   /**
    * Define security constraints for the application resources.
@@ -67,7 +71,7 @@ public class SecurityConfig {
           // Schema APIs
           .requestMatchers(HttpMethod.POST, "/schemas").hasAnyRole(SCHEMA_CREATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.DELETE, "/schemas/**").hasAnyRole(SCHEMA_DELETE, ADMIN_ALL)
-          .requestMatchers(HttpMethod.PUT, "/schemas").hasAnyRole(SCHEMA_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.PUT, "/schemas", "/schemas/**").hasAnyRole(SCHEMA_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/schemas", "/schemas/**").hasAnyRole(SCHEMA_READ, ADMIN_ALL)
 
           // Query APIs
@@ -77,6 +81,9 @@ public class SecurityConfig {
           .requestMatchers("/verification").permitAll()
           
           // Asset APIs
+          .requestMatchers(HttpMethod.PUT, "/assets/*").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.POST, "/assets/*/versions/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.GET, "/assets/*/versions").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets", "/assets/*").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets").hasAnyRole(ASSET_CREATE, ADMIN_ALL)
@@ -101,6 +108,21 @@ public class SecurityConfig {
 
           // Session APIs
           .requestMatchers("/session").authenticated()
+
+          // Admin Dashboard APIs
+          .requestMatchers(HttpMethod.GET, "/admin/me", "/admin/stats", "/admin/health", "/admin/keycloak-url").hasRole(ADMIN_ALL)
+
+          // Trust Framework Admin APIs
+          .requestMatchers(HttpMethod.GET, "/admin/trust-frameworks").hasRole(ADMIN_ALL)
+          .requestMatchers(HttpMethod.PUT, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
+
+          // Schema Validation Admin APIs
+          .requestMatchers(HttpMethod.GET, "/admin/schema-validation").hasRole(ADMIN_ALL)
+          .requestMatchers(HttpMethod.PUT, "/admin/schema-validation/**").hasRole(ADMIN_ALL)
+
+          // Graph Database Admin APIs
+          .requestMatchers(HttpMethod.GET, "/admin/graph-database").hasRole(ADMIN_ALL)
+          .requestMatchers(HttpMethod.POST, "/admin/graph-database/switch").hasRole(ADMIN_ALL)
 
           // Graph Admin APIs
           .requestMatchers(HttpMethod.POST, "/admin/graph/rebuild").hasRole(ADMIN_ALL)

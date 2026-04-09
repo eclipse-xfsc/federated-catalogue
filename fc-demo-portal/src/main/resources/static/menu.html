@@ -5,95 +5,291 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="description" content="" />
         <meta name="author" content="" />
-        <title>Demo Portal</title>
+        <title>Federated Catalogue</title>
         <!-- Favicon-->
         <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
         <!-- Core theme CSS (includes Bootstrap)-->
-        <link href="css/styles.css" rel="stylesheet" />
+        <link href="css/lib/styles.css" rel="stylesheet" />
+        <!-- Bootstrap Icons (local) -->
+        <link rel="stylesheet" href="css/lib/bootstrap-icons.min.css">
 
-        <!-- Jquery main  : https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js -->
-        <script src="js/library/jquery.min.js"></script>
+        <!-- Jquery main -->
+        <script src="js/lib/jquery.min.js"></script>
 
-        <!-- Datatable CSS  : //cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css-->
-        <link href='css/jquery.dataTables.min.css' rel='stylesheet' type='text/css'/>
+        <!-- Datatable CSS -->
+        <link href='css/lib/dataTables.min.css' rel='stylesheet' type='text/css'/>
 
-        <!-- Datatable JS : //cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js-->
-        <script src="js/library/jquery.dataTables.min.js"></script>
+        <!-- Datatable JS -->
+        <script src="js/lib/dataTables.min.js"></script>
         <style>
+            /* Full-width header */
+            #top-header {
+                background-color: #000094;
+                color: #fff;
+                border-bottom: none;
+                padding: 0.7rem 1.25rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.15);
+                z-index: 10;
+                position: relative;
+            }
+            #top-header .btn-light {
+                background-color: rgba(255,255,255,0.15);
+                border-color: rgba(255,255,255,0.3);
+                color: #fff;
+            }
+            #top-header .btn-light:hover {
+                background-color: rgba(255,255,255,0.25);
+            }
+            #top-header .dropdown-toggle::after {
+                color: #fff;
+            }
+            #top-header .header-title {
+                display: flex;
+                align-items: center;
+            }
+
+            /* Main layout below header */
+            #main-wrapper {
+                display: flex;
+                min-height: calc(100vh - 3rem);
+            }
+
+            /* Sidebar menu styling */
+            #sidebar-wrapper {
+                background: #fff;
+                border-right: 1px solid #dee2e6;
+                width: 15rem;
+                min-width: 15rem;
+                transition: width 0.25s ease, min-width 0.25s ease;
+                overflow: hidden;
+                min-height: 100%;
+            }
+            #sidebar-wrapper .list-group {
+                width: 15rem;
+            }
+            #sidebar-wrapper .nav-icon {
+                font-size: 1.1rem;
+                min-width: 1.2rem;
+                text-align: center;
+            }
+            #sidebar-wrapper .list-group-item-action {
+                border-left: 3px solid transparent;
+                transition: border-color 0.15s ease, background-color 0.15s ease;
+            }
+            #sidebar-wrapper .list-group-item-action:hover {
+                border-left-color: var(--bs-primary);
+                background-color: #e9ecef;
+            }
+            #sidebar-wrapper .list-group-item-action.active-page {
+                border-left-color: var(--bs-primary);
+                background-color: #e2e6ea;
+                font-weight: 600;
+            }
+            .sidebar-section-header {
+                font-size: 0.7rem;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                padding: 0.6rem 1rem 0.3rem;
+                border: none;
+                cursor: default;
+            }
+            #admin-menu-section {
+                border-top: 1px solid #dee2e6;
+                margin-top: 0.25rem;
+                padding-top: 0.25rem;
+            }
+            #admin-menu-section .list-group-item-action {
+                font-size: 0.9rem;
+            }
+
+            /* Sidebar toggle button row */
+            .sidebar-toggle-row {
+                padding: 0.5rem;
+                border-bottom: 1px solid #dee2e6;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+            }
+            .sidebar-toggle-row .nav-label {
+                flex: 1;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #6c757d;
+            }
+
+            /* Collapsed sidebar */
+            body.sb-sidenav-toggled #sidebar-wrapper {
+                width: 3.5rem;
+                min-width: 3.5rem;
+            }
+            body.sb-sidenav-toggled #sidebar-wrapper .nav-label {
+                display: none;
+            }
+            body.sb-sidenav-toggled #sidebar-wrapper .list-group-item {
+                padding-left: 0.9rem;
+                padding-right: 0.9rem;
+                white-space: nowrap;
+            }
+            body.sb-sidenav-toggled #sidebar-wrapper .sidebar-section-header {
+                visibility: hidden;
+                height: 0;
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
+            }
+            body.sb-sidenav-toggled #sidebar-wrapper .nav-icon {
+                margin-right: 0 !important;
+            }
+            body.sb-sidenav-toggled .sidebar-toggle-row {
+                justify-content: center;
+            }
+            #sidebarToggle {
+                text-decoration: none;
+                box-shadow: none;
+                outline: none;
+                border-radius: 4px;
+                transition: box-shadow 0.15s ease;
+            }
+            #sidebarToggle:hover {
+                box-shadow: 0 0 6px rgba(0,0,0,0.15);
+            }
+            #sidebarToggle:active {
+                box-shadow: 0 0 8px rgba(0,0,0,0.25);
+            }
+            #sidebarToggle:focus {
+                box-shadow: none;
+            }
+
+            /* Username uppercase */
+            #user-display-name {
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+
+            /* Page content */
+            #page-content-wrapper {
+                flex: 1;
+                min-width: 0;
+            }
+            #nav-placeholder {
+                padding-top: 1rem;
+            }
+
+            /* Override bundled styles.css sidebar — we control layout here */
+            #sidebar-wrapper {
+                margin-left: 0 !important;
+            }
+            body.sb-sidenav-toggled #wrapper #sidebar-wrapper {
+                margin-left: 0 !important;
+            }
         </style>
     </head>
     <body>
-        <div class="d-flex" id="wrapper">
-            <!-- Sidebar-->
-            <div class="border-end bg-white" id="sidebar-wrapper">
-                <div class="sidebar-heading border-bottom bg-light">Demo Portal</div>
-                <div class="list-group list-group-flush">
-                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!" onclick="loadPage('participants.html','Participants')">Participants</a>
-                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!" onclick="loadPage('users.html', 'Users')">Users</a>
-                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!" onclick="loadPage('roles.html', 'Roles')">Roles</a>
+        <!-- Full-width header -->
+        <div id="top-header">
+            <div class="header-title">
+                <i class="bi bi-collection me-2"></i>Federated Catalogue
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <a class="btn btn-light btn-sm dropdown-toggle d-flex align-items-center" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle me-2" style="font-size: 1.2rem;"></i>
+                        <span id="user-display-name"></span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="#!" onclick="logout()"><i class="bi bi-box-arrow-right me-2"></i>Logout</a>
+                        <form action="logout" method="post" id="LogoutForm" hidden>
+                            <input type="submit" name="Logout" value="Logout" />
+                        </form>
+                    </div>
                 </div>
             </div>
-            <!-- Page content wrapper-->
-            <div id="page-content-wrapper">
+        </div>
 
-                <!-- Top navigation-->
-                <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
-                    <div class="container-fluid">
-                        <button class="btn btn-primary" id="sidebarToggle">Toggle Menu</button>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
-                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                            <ul class="navbar-nav ms-auto mt-2 mt-lg-0">
-<!--                                <li class="nav-item active"><a class="nav-link" href="#!">Home</a></li>-->
-<!--                                <li class="nav-item"><a class="nav-link" href="#!">Link</a></li>-->
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Welcome User</a>
-                                    <div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                        <a class="dropdown-item" href="#!" onclick="logout()">Logout</a>
-                                        <form action="logout" method="post" id="LogoutForm" hidden>
-                                            <input type="submit" name="Logout"  value="Logout" />
-                                        </form>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
+        <!-- Main layout: sidebar + content -->
+        <div id="main-wrapper">
+            <!-- Sidebar -->
+            <div id="sidebar-wrapper">
+                <div class="sidebar-toggle-row">
+                    <span class="nav-label">Menu</span>
+                    <button class="btn btn-sm btn-link text-muted p-1 d-flex align-items-center" id="sidebarToggle" title="Toggle menu">
+                        <i class="bi bi-list" style="font-size: 1.2rem;"></i>
+                    </button>
+                </div>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item bg-light fw-bold text-muted sidebar-section-header"><span class="nav-label">Catalogue</span></div>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/participants.html" data-title="Participants" onclick="loadPageNav(this)" title="Participants"><i class="bi bi-people me-2 nav-icon"></i><span class="nav-label">Participants</span></a>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/users.html" data-title="Users" onclick="loadPageNav(this)" title="Users"><i class="bi bi-person me-2 nav-icon"></i><span class="nav-label">Users</span></a>
+                    <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/roles.html" data-title="Roles" onclick="loadPageNav(this)" title="Roles"><i class="bi bi-shield me-2 nav-icon"></i><span class="nav-label">Roles</span></a>
+                    <div id="admin-menu-section" style="display:none">
+                        <div class="list-group-item bg-light fw-bold text-muted sidebar-section-header"><span class="nav-label">Administration</span></div>
+                        <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/admin/dashboard.html" data-title="Admin Dashboard" onclick="loadPageNav(this)" title="Dashboard"><i class="bi bi-speedometer2 me-2 nav-icon"></i><span class="nav-label">Dashboard</span></a>
+                        <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/admin/users.html" data-title="User Management" onclick="loadPageNav(this)" title="User Management"><i class="bi bi-person-gear me-2 nav-icon"></i><span class="nav-label">User Management</span></a>
+                        <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/admin/trust-frameworks.html" data-title="Trust Frameworks" onclick="loadPageNav(this)" title="Trust Frameworks"><i class="bi bi-patch-check me-2 nav-icon"></i><span class="nav-label">Trust Frameworks</span></a>
+                        <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/admin/schema-validation.html" data-title="Schema Validation" onclick="loadPageNav(this)" title="Schema Validation"><i class="bi bi-file-earmark-check me-2 nav-icon"></i><span class="nav-label">Schema Validation</span></a>
+                        <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/admin/graphdb.html" data-title="Graph Database" onclick="loadPageNav(this)" title="Graph Database"><i class="bi bi-diagram-3 me-2 nav-icon"></i><span class="nav-label">Graph Database</span></a>
+                        <a class="list-group-item list-group-item-action list-group-item-light p-3 nav-link-page" href="#!" data-page="pages/admin/audit-logs.html" data-title="Audit Logs" onclick="loadPageNav(this)" title="Audit Logs"><i class="bi bi-journal-text me-2 nav-icon"></i><span class="nav-label">Audit Logs</span></a>
                     </div>
-                </nav>
+                </div>
+            </div>
 
-
-                <!-- Page content-->
+            <!-- Page content -->
+            <div id="page-content-wrapper">
                 <div class="container-fluid">
-                    <h3 class="mt-3" id="pageTask"></h3><br>
+                    <h4 class="mt-3 mb-3" id="page-title"></h4>
                     <div id="nav-placeholder"></div>
                 </div>
             </div>
-
         </div>
-        <!-- Bootstrap core JS  : https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js  -->
-        <script src="js/library/bootstrap.bundle.min.js"></script>
+
+        <!-- Bootstrap core JS -->
+        <script src="js/lib/bootstrap.bundle.min.js"></script>
 
         <!-- Core theme JS-->
         <script src="js/scripts.js"></script>
          <script>
-           function loadPage(page,name){
-             //console.log(page);
+           function loadPage(page, name){
+             $("#page-title").text(name);
              $("#nav-placeholder").load(page);
-              $("#pageTask").text(name+" Operation");
            };
 
+           function loadPageNav(el){
+             var $el = $(el);
+             $('.nav-link-page').removeClass('active-page');
+             $el.addClass('active-page');
+             loadPage($el.data('page'), $el.data('title'));
+           };
+
+           // Fetch current user display name
+           $.getJSON('/ssn/me', function(data) {
+             if (data && data.displayName) {
+               $('#user-display-name').text(data.displayName);
+             }
+           });
+
+           // Check admin access and show admin menu if authorized
+           $.ajax({
+             url: '/admin/me',
+             type: 'GET',
+             success: function() {
+               $('#admin-menu-section').show();
+             }
+           });
+
            function logout(){
-
                 $.ajax('/ssn', {
-                    type: 'DELETE',  // http method
+                    type: 'DELETE',
                     success: function (data, status, xhr) {
-                        //console.log("post logout success");
-
-                        //After deleting user session from keyclok now logouting spring context.
                         $( "#LogoutForm" ).submit();
-
                     },
                     error: function (jqXhr, textStatus, errorMessage) {
-                        console.log(" logout failure");
-
                     }
                 });
            }
