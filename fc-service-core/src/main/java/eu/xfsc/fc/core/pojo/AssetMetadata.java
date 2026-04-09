@@ -1,41 +1,64 @@
 package eu.xfsc.fc.core.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import eu.xfsc.fc.api.generated.model.Asset;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
-
-import static eu.xfsc.fc.core.util.HashUtils.calculateSha256AsHex;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static eu.xfsc.fc.core.util.HashUtils.calculateSha256AsHex;
+
 
 /**
  * Class for handling the metadata of an Asset, and optionally a
  * reference to a content accessor.
  */
-@lombok.AllArgsConstructor
-@lombok.NoArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 public class AssetMetadata extends Asset {
 
   /**
    * A reference to the asset content.
    */
-  @lombok.Getter
-  @lombok.Setter
+  @Getter
+  @Setter
   @JsonIgnore
   private ContentAccessor contentAccessor;
 
+  /** Optional change note for this version, set by the caller before storing. */
+  @Getter
+  @Setter
+  @JsonIgnore
+  private String changeComment;
+
+  /**
+   * Creates asset metadata from explicit fields; computes the SHA-256 hash from content.
+   *
+   * @param id              asset IRI
+   * @param issuer          credential issuer DID
+   * @param validators      validator list
+   * @param contentAccessor raw credential content
+   */
   public AssetMetadata(String id, String issuer, List<Validator> validators, ContentAccessor contentAccessor) {
     super(calculateSha256AsHex(contentAccessor.getContentAsString()), id, AssetStatus.ACTIVE, issuer,
         validators != null ? validators.stream().map(Validator::getDidURI).collect(Collectors.toList()) : null, Instant.now(), Instant.now(),
-        null, null, null);
+        null, null, null); // null: contentType, fileSize, warnings
     this.contentAccessor = contentAccessor;
   }
 
+  /**
+   * Creates asset metadata from a verification result.
+   *
+   * @param contentAccessor    raw credential content
+   * @param verificationResult verification result supplying id, issuer, validators, and timestamps
+   */
   public AssetMetadata(ContentAccessor contentAccessor, CredentialVerificationResult verificationResult) {
     super(calculateSha256AsHex(contentAccessor.getContentAsString()), verificationResult.getId(), AssetStatus.ACTIVE,
             verificationResult.getIssuer(), verificationResult.getValidatorDids(), verificationResult.getIssuedDateTime(),
@@ -43,9 +66,23 @@ public class AssetMetadata extends Asset {
     this.contentAccessor = contentAccessor;
   }
 
-  public AssetMetadata(String assetHash, String id, AssetStatus status, String issuer, List<String> validatorDids, Instant uploadTime, Instant statusTime, ContentAccessor contentAccessor) {
-	super(assetHash, id, status, issuer, validatorDids, uploadTime, statusTime, null, null, null);
-	this.contentAccessor = contentAccessor;
+  /**
+   * Creates asset metadata from all explicit fields, bypassing hash computation.
+   *
+   * @param assetHash      pre-computed SHA-256 content hash
+   * @param id             asset IRI
+   * @param status         lifecycle status
+   * @param issuer         credential issuer DID
+   * @param validatorDids  validator DID list
+   * @param uploadTime     upload timestamp
+   * @param statusTime     last status-change timestamp
+   * @param contentAccessor raw content, or null for binary assets
+   */
+  public AssetMetadata(String assetHash, String id, AssetStatus status, String issuer,
+      List<String> validatorDids, Instant uploadTime, Instant statusTime,
+      ContentAccessor contentAccessor) {
+    super(assetHash, id, status, issuer, validatorDids, uploadTime, statusTime, null, null, null); // null: contentType, fileSize, warnings
+    this.contentAccessor = contentAccessor;
   }
   
   @Override

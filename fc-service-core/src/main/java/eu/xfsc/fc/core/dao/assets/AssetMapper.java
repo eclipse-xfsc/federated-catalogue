@@ -29,6 +29,7 @@ public final class AssetMapper {
         .contentType(entity.getContentType())
         .fileSize(entity.getFileSize())
         .originalFilename(entity.getOriginalFilename())
+        .changeComment(entity.getChangeComment())
         .build();
   }
 
@@ -50,6 +51,7 @@ public final class AssetMapper {
     entity.setContentType(record.getContentType());
     entity.setFileSize(record.getFileSize());
     entity.setOriginalFilename(record.getOriginalFilename());
+    entity.setChangeComment(record.getChangeComment());
     return entity;
   }
 }

@@ -10,6 +10,7 @@ import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.JacksonConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.PubSubConfig;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
@@ -74,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 @ActiveProfiles({"test"})
 @ContextConfiguration(classes = {
         AssetJpaDao.class,
+        AssetAuditRepository.class,
         AssetStoreConfig.class,
         CesCompositePublisherTest.TestApplication.class,
         CesTrackerJpaDao.class,

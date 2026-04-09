@@ -21,4 +21,8 @@ public interface AssetDao {
 	SubjectStatusRecord delete(String hash);
 	int deleteAll();
 
+	List<AssetRecord> selectVersions(String subjectId);
+	PaginatedResults<AssetRecord> selectVersionsPageWithTotal(String subjectId, int page, int size);
+	Optional<AssetRecord> selectVersion(String subjectId, int version);
+	int getVersionCount(String subjectId);
 }

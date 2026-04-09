@@ -31,6 +31,7 @@ import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -66,7 +67,7 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {AssetStoreCompositeTest.TestApplication.class, FileStoreConfig.class, VerificationServiceImpl.class, ValidatorCacheJpaDao.class,
-  AssetStoreImpl.class, AssetJpaDao.class, IriGenerator.class, IriValidator.class, AssetStoreCompositeTest.class,
+  AssetStoreImpl.class, AssetJpaDao.class, AssetAuditRepository.class, IriGenerator.class, IriValidator.class, AssetStoreCompositeTest.class,
   SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class,
   Neo4jGraphStore.class, DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
   CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,

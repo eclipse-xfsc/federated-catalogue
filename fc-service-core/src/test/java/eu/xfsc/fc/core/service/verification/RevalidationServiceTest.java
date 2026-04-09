@@ -7,6 +7,7 @@ import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.revalidator.RevalidatorChunksJpaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
@@ -65,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {RevalidationServiceTest.TestApplication.class, RevalidationServiceImpl.class, RevalidatorChunksJpaDao.class, FileStoreConfig.class, DummyGraphStore.class,
-  VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class, ValidatorCacheJpaDao.class, AssetStoreImpl.class, AssetJpaDao.class,
+  VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class, ValidatorCacheJpaDao.class, AssetStoreImpl.class, AssetJpaDao.class, AssetAuditRepository.class,
   DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
   JwtSignatureVerifier.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
   IriGenerator.class, IriValidator.class, ObjectMapper.class})

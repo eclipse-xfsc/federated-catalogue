@@ -77,6 +77,9 @@ public class SecurityConfig {
           .requestMatchers("/verification").permitAll()
           
           // Asset APIs
+          .requestMatchers(HttpMethod.PUT, "/assets/*").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.POST, "/assets/*/versions/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.GET, "/assets/*/versions").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets", "/assets/*").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets").hasAnyRole(ASSET_CREATE, ADMIN_ALL)
