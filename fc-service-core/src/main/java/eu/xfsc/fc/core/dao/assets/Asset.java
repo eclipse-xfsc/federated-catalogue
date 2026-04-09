@@ -66,4 +66,7 @@ public class Asset {
 
   @Column(name = "original_filename", length = 500)
   private String originalFilename;
+
+  @Column(name = "change_comment", columnDefinition = "TEXT")
+  private String changeComment;
 }

@@ -7,6 +7,7 @@ import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -60,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {AssetStoreTest.TestApplication.class, AssetStoreImpl.class, AssetJpaDao.class, AssetStoreTest.class,
+@ContextConfiguration(classes = {AssetStoreTest.TestApplication.class, AssetStoreImpl.class, AssetJpaDao.class, AssetAuditRepository.class, AssetStoreTest.class,
   DummyGraphStore.class, DatabaseConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, HttpDocumentResolver.class,
   RdfContentTypeProperties.class, FileStoreConfig.class, DidDocumentResolver.class, JwtSignatureVerifier.class})
 @Slf4j
@@ -193,16 +194,14 @@ public class AssetStoreTest {
     final String hash2 = assetMeta2.getAssetHash();
     assetStorePublisher.storeCredential(assetMeta2, createVerificationResult(assetMeta2));
 
-    final AssetMetadata byHash1 = assetStorePublisher.getByHash(hash1);
-    assertEquals(AssetStatus.DEPRECATED, byHash1.getStatus(),
-        "First asset should have been deprecated.");
-    assertTrue(byHash1.getStatusDatetime().isAfter(assetMeta1.getStatusDatetime()));
+    // In-place update: hash1 row is gone (updated to hash2 in-place); hash2 row is the current ACTIVE asset
+    assertThrows(NotFoundException.class, () -> assetStorePublisher.getByHash(hash1),
+        "Old hash should not exist after in-place update.");
     assertThatAssetHasTheSameData(assetMeta2, assetStorePublisher.getByHash(hash2), true);
+    assertEquals(AssetStatus.ACTIVE, assetStorePublisher.getByHash(hash2).getStatus());
 
-    assetStorePublisher.deleteAsset(hash1);
     assetStorePublisher.deleteAsset(hash2);
 
-    assertThrows(NotFoundException.class, () -> assetStorePublisher.getByHash(hash1));
     assertThrows(NotFoundException.class, () -> assetStorePublisher.getByHash(hash2));
   }
 

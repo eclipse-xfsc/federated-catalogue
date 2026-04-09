@@ -382,10 +382,80 @@ components:
           items:
             type: string
           description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
-        uploadTime:
+        createdAt:
           type: string
           format: date-time
-          description: 'Timestamp when the schema was uploaded.'
+          nullable: true
+          description: 'Timestamp when the schema was first uploaded. Present on creation, null on updates.'
+        version:
+          type: integer
+          nullable: true
+          description: 'Current version number after this operation. Present on updates, null on creation.'
+        previousVersion:
+          type: integer
+          nullable: true
+          description: 'Version number before this operation. Null for first version or on creation.'
+    AssetVersion:
+      type: object
+      required: [version, createdAt, createdBy, status, isCurrent]
+      properties:
+        version:
+          type: integer
+          description: '1-based version ordinal.'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Timestamp when this version was created (Envers revision timestamp).'
+        createdBy:
+          type: string
+          description: 'Issuer DID of the asset at this version.'
+        status:
+          $ref: '#/components/schemas/AssetStatus'
+        isCurrent:
+          type: boolean
+          description: 'Whether this is the current (latest) version.'
+        changeComment:
+          type: string
+          nullable: true
+          description: 'Optional change note provided at upload time.'
+    AssetVersionList:
+      type: object
+      required: [id, total, versions]
+      properties:
+        id:
+          type: string
+          description: 'The asset IRI.'
+        total:
+          type: integer
+          description: 'Total number of versions.'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetVersion'
+          description: 'Descending list (newest first) for the requested page.'
+    SchemaVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+          description: '1-based version ordinal.'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Timestamp when this version was created.'
+        isCurrent:
+          type: boolean
+          description: 'Whether this is the current (latest) version.'
+    SchemaVersionList:
+      type: object
+      properties:
+        schemaId:
+          type: string
+          description: 'The schema identifier.'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaVersion'
     QueryInfo:
       type: object
       properties:
@@ -803,6 +873,13 @@ paths:
             http:
               summary: HTTP IRI
               value: 'https://example.org/asset/123'
+        - name: version
+          in: query
+          description: Optional 1-based version ordinal. If provided, returns the asset content at that specific version.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
       security:
         - jwt: []
       responses:
@@ -821,6 +898,156 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Assets
+      summary: Update an asset in-place (versioned).
+      description: >
+        Updates an existing asset identified by its IRI. The update is applied in-place;
+        Envers records the previous state as a new revision in assets_aud automatically.
+        If no asset exists for the given IRI, the asset is created as version 1.
+        Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: updateAsset
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: changeComment
+          in: query
+          description: Optional human-readable note for this version.
+          required: false
+          schema:
+            type: string
+      security:
+        - jwt: []
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema:
+              type: string
+          application/json:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/versions:
+    get:
+      tags:
+        - Assets
+      summary: Get version history for an asset.
+      description: >
+        Returns a paginated list of all versions of the asset, ordered descending (newest first).
+        Required permission: ASSET_READ or ADMIN_ALL
+      operationId: readAssetVersions
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: 0-based page index.
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size (1–100).
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: The version history of the asset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetVersionList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/versions/{version}/revoke:
+    post:
+      tags:
+        - Assets
+      summary: Revoke a specific version of an asset.
+      description: >
+        Revokes the specified version of the asset. Only the current (latest) version can be revoked.
+        Attempting to revoke a historical version returns 409 Conflict, because Envers snapshots are immutable.
+        Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: revokeAssetVersion
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          description: 1-based version ordinal to revoke.
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetVersion'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/ServerError'
   /assets/{asset_hash}:
@@ -1119,6 +1346,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: version
+          in: query
+          description: 'Optional version number. If provided, returns the schema at that specific version.'
+          required: false
+          schema:
+            type: integer
       responses:
         '200':
           description: 'The schema for the given identifier. Depending on the type of the schema, either an ontology, shape graph or controlled vocabulary is returned.'
@@ -1224,7 +1457,36 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
-          $ref: '#/components/responses/ServerError'          
+          $ref: '#/components/responses/ServerError'
+  /schemas/{schemaId}/versions:
+    get:
+      tags:
+        - Schemas
+      summary: 'Get version history for a schema.'
+      description: 'Returns an ordered list of all versions of the schema. Required permission: SCHEMA_READ or ADMIN_ALL'
+      operationId: getSchemaVersions
+      security:
+        - jwt: []
+      parameters:
+        - name: schemaId
+          in: path
+          description: 'Identifier of the Schema.'
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'The version history of the schema.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVersionList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /schemas/latest:
     get: 
       tags:

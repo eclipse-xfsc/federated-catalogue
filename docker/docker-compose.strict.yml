@@ -10,7 +10,7 @@
 services:
   server:
     environment:
-      # TODO(gaia-x-loire): flip to "true" once Loire ontology-based type resolution works for JWT-wrapped VCs
+      # TODO(gaia-x-loire): Flip to "true" after story 035 (Loire Ontology Migration) lands — requires 2511 shapes + type resolution
       FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "false"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"

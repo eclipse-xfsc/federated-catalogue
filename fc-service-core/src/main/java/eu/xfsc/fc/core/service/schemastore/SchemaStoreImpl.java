@@ -65,7 +65,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Component
-@Transactional
 public class SchemaStoreImpl implements SchemaStore {
 
   @Autowired
@@ -375,10 +374,11 @@ public class SchemaStoreImpl implements SchemaStore {
     }
 
     COMPOSITE_SCHEMAS.remove(newRecord.type());
-    return new SchemaStoreResult(newRecord.getId(), analysis.getWarning(), newRecord.uploadTime());
+    return new SchemaStoreResult(newRecord.getId(), analysis.getWarning(), newRecord.createdAt());
   }
 
   @Override
+  @Transactional
   public SchemaStoreResult updateSchema(String identifier, ContentAccessor schema) {
     SchemaRecord existing = dao.select(identifier)
         .orElseThrow(() -> new NotFoundException("Schema with id " + identifier + " was not found"));
@@ -401,7 +401,17 @@ public class SchemaStoreImpl implements SchemaStore {
     }
 
     COMPOSITE_SCHEMAS.remove(newRecord.type());
-    return new SchemaStoreResult(identifier, analysis.getWarning());
+
+    // Envers writes audit entries in beforeTransactionCompletion — after all application code
+    // in this transaction — so getVersionCount returns N (committed prior revisions only).
+    // currentVersion = N+1 is the revision that will be written when this transaction commits.
+    // Note: under true concurrent updates, two threads could read the same N and produce
+    // duplicate version numbers. This race is accepted because schema updates are infrequent
+    // administrative operations and the cost of pessimistic locking outweighs the risk.
+    int previousVersion = dao.getVersionCount(identifier);
+    int currentVersion = previousVersion + 1;
+    return new SchemaStoreResult(identifier, analysis.getWarning(), null,
+        currentVersion, previousVersion > 0 ? previousVersion : null);
   }
 
   @Override
@@ -453,6 +463,22 @@ public class SchemaStoreImpl implements SchemaStore {
     String content = dao.selectLatestContentByType(type.name())
         .orElseThrow(() -> new NotFoundException("No " + type + " schemas found"));
     return new ContentAccessorDirect(content);
+  }
+
+  @Override
+  public SchemaRecord getSchemaVersion(String identifier, int version) {
+    return dao.selectVersion(identifier, version)
+        .orElseThrow(() -> new NotFoundException(
+            "Schema with id " + identifier + " version " + version + " was not found"));
+  }
+
+  @Override
+  public List<SchemaRecord> getSchemaVersions(String identifier) {
+    List<SchemaRecord> versions = dao.selectVersions(identifier);
+    if (versions.isEmpty()) {
+      throw new NotFoundException("Schema with id " + identifier + " was not found");
+    }
+    return versions;
   }
 
   @Override

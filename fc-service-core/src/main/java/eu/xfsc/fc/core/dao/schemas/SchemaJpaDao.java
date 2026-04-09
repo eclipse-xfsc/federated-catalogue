@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class SchemaJpaDao implements SchemaDao {
 
   private final SchemaFileRepository repository;
+  private final SchemaAuditRepository auditHelper;
 
   @Override
   public int getSchemaCount() {
@@ -72,7 +73,7 @@ public class SchemaJpaDao implements SchemaDao {
   public void update(String id, String content, Collection<String> terms) {
       SchemaFile entity = repository.findBySchemaId(id)
         .orElseThrow(() -> new NotFoundException("Schema with id " + id + " was not found"));
-    entity.setUpdateTime(Instant.now());
+    entity.setModifiedAt(Instant.now());
     entity.setContent(content);
     entity.getTerms().clear();
     if (terms != null) {
@@ -107,6 +108,29 @@ public class SchemaJpaDao implements SchemaDao {
   @Override
   public Optional<String> selectLatestContentByType(String typeName) {
     return repository.findLatestContentByType(SchemaType.valueOf(typeName));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<SchemaRecord> selectVersions(String schemaId) {
+    return repository.findBySchemaId(schemaId)
+        .map(entity -> auditHelper.findAllVersions(entity.getId()))
+        .orElse(List.of());
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Optional<SchemaRecord> selectVersion(String schemaId, int version) {
+    return repository.findBySchemaId(schemaId)
+        .flatMap(entity -> auditHelper.findVersion(entity.getId(), version));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public int getVersionCount(String schemaId) {
+    return repository.findBySchemaId(schemaId)
+        .map(entity -> auditHelper.countVersions(entity.getId()))
+        .orElse(0);
   }
 
   private Map<String, Collection<String>> aggregateToMap(List<Object[]> rows) {
