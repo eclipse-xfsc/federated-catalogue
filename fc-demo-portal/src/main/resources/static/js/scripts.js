@@ -1,3 +1,19 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0d173cfc2ad5b2157e81f4261a003b5c99363608b264355e817d4d73bf80e7b0
-size 709
+
+
+window.addEventListener('DOMContentLoaded', event => {
+
+    // Toggle the side navigation
+    const sidebarToggle = document.body.querySelector('#sidebarToggle');
+    if (sidebarToggle) {
+        // Uncomment Below to persist sidebar toggle between refreshes
+        // if (localStorage.getItem('sb|sidebar-toggle') === 'true') {
+        //     document.body.classList.toggle('sb-sidenav-toggled');
+        // }
+        sidebarToggle.addEventListener('click', event => {
+            event.preventDefault();
+            document.body.classList.toggle('sb-sidenav-toggled');
+            localStorage.setItem('sb|sidebar-toggle', document.body.classList.contains('sb-sidenav-toggled'));
+        });
+    }
+
+});

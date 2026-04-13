@@ -598,4 +598,5 @@ class AssetDaoTest {
 
     assertEquals(0, count);
   }
+
 }

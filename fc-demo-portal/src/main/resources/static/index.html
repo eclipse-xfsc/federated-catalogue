@@ -3,49 +3,53 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <meta name="description" content="" />
-        <meta name="author" content="" />
-        <title>Demo Portal</title>
+        <title>Federated Catalogue</title>
         <!-- Favicon-->
         <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
         <!-- Core theme CSS (includes Bootstrap)-->
-        <link href="css/styles.css" rel="stylesheet" />
-
-        <!-- Jquery main  : https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js -->
-        <script src="js/library/jquery.min.js"></script>
-
-        <!-- Datatable CSS  : //cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css-->
-        <link href='css/jquery.dataTables.min.css' rel='stylesheet' type='text/css'/>
-
-        <!-- Datatable JS : //cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js-->
-        <script src="js/library/jquery.dataTables.min.js"></script>
+        <link href="css/lib/styles.css" rel="stylesheet" />
+        <!-- Bootstrap Icons (local) -->
+        <link rel="stylesheet" href="css/lib/bootstrap-icons.min.css">
+        <style>
+            body {
+                background-color: #f8f9fa;
+            }
+            #top-header {
+                background-color: #000094;
+                color: #fff;
+                padding: 0.7rem 1.25rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.15);
+            }
+            .login-card {
+                max-width: 400px;
+                margin: 0 auto;
+                margin-top: 15vh;
+            }
+        </style>
     </head>
     <body>
-        <div class="d-flex" id="wrapper">
-            <!-- Sidebar-->
-            <div class="border-end bg-white" id="sidebar-wrapper">
-                <div class="sidebar-heading border-bottom bg-light">Demo Portal</div>
-                <div class="list-group list-group-flush">
-                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!" >Participants</a>
-                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!" >Users</a>
-                    <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!" >Roles</a>
-                </div>
-            </div>
-            <!-- Page content wrapper-->
-            <div id="page-content-wrapper" class="col text-center justify-content-center">
-                <!-- Page content-->
-                <div class="container-fluid">
-                    <h3 class="mt-3" id="pageTask">Welcome to Demo Portal ! </h3>
-                    <h5 class="mt-3" id="log">Please login to process. </h5>
-                    <a class="btn btn-success " href="menu.html" >Login</a>
-                    <div id="nav-placeholder"></div>
-                </div>
-            </div>
-
+        <!-- Same header as logged-in page -->
+        <div id="top-header">
+            <i class="bi bi-collection me-2"></i>Federated Catalogue
         </div>
+
+        <!-- Centered login card -->
+        <div class="login-card">
+            <div class="card shadow-sm">
+                <div class="card-body text-center p-5">
+                    <i class="bi bi-shield-lock" style="font-size: 3rem; color: #000094;"></i>
+                    <h4 class="mt-3 mb-2">Welcome</h4>
+                    <p class="text-muted mb-4">Please log in to access the Federated Catalogue.</p>
+                    <a class="btn btn-primary px-4" href="menu.html">Login</a>
+                </div>
+            </div>
+        </div>
+
         <!-- Bootstrap core JS-->
-        <script src="js/library/bootstrap.bundle.min.js"></script>
-        <!-- Core theme JS-->
-        <script src="js/scripts.js"></script>
+        <script src="js/lib/bootstrap.bundle.min.js"></script>
     </body>
 </html>

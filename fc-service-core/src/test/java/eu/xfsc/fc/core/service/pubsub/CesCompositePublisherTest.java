@@ -15,6 +15,7 @@ import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
+import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
@@ -34,6 +35,7 @@ import eu.xfsc.fc.core.service.verification.FormatDetector;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
 import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
+import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
 import eu.xfsc.fc.core.service.verification.Vc11Processor;
@@ -85,20 +87,21 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         DidResolverConfig.class,
         DocumentLoaderProperties.class,
         DocumentLoaderConfig.class,
-		DummyGraphStore.class, SchemaAuditRepository.class, FileStoreConfig.class,
+        DummyGraphStore.class, SchemaAuditRepository.class, FileStoreConfig.class,
         FormatDetector.class,
         HttpDocumentResolver.class,
         IriGenerator.class,
         IriValidator.class,
         JwtContentPreprocessor.class,
         JacksonConfig.class,
-        JwtContentPreprocessor.class,
         JwtSignatureVerifier.class,
         LoireJwtParser.class,
         ProtectedNamespaceFilter.class,
         ProtectedNamespaceProperties.class,
         PubSubConfig.class,
+        AdminConfigRepository.class,
         SchemaJpaDao.class,
+        SchemaModuleConfigService.class,
         SchemaStoreImpl.class,
         SchemaValidationServiceImpl.class,
         ValidatorCacheJpaDao.class,

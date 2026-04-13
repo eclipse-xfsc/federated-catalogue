@@ -78,10 +78,17 @@ keycloak:
   realm: gaia-x
   resource: federated-catalogue
   credentials:
-    secret: vZo1equicRl1UdxJDWCNNJWe6vJcm2Cg
+    secret: ${KEYCLOAK_CREDENTIALS_SECRET:}
 
 datastore:
   file-path: target
+
+admin:
+  dashboard:
+    keycloak-auth-server-url: ${keycloak.auth-server-url}
+    keycloak-realm: ${keycloak.realm}
+    keycloak-admin-console-url: ${keycloak.admin-console-url:}
+    file-store-path: ${datastore.file-path}
 
 graphstore:
   impl: neo4j #fuseki, none

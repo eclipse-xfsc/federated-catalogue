@@ -30,6 +30,7 @@ import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
+import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
@@ -48,6 +49,7 @@ import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
 import eu.xfsc.fc.core.service.verification.FormatDetector;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
 import eu.xfsc.fc.core.service.verification.LoireJwtParser;
+import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
@@ -71,9 +73,9 @@ import lombok.extern.slf4j.Slf4j;
   SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class,
   Neo4jGraphStore.class, DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
   CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
+  AdminConfigRepository.class, SchemaModuleConfigService.class,
   RdfContentTypeProperties.class, JwtContentPreprocessor.class, Vc11Processor.class, Vc2Processor.class,
-  JwtSignatureVerifier.class, DidDocumentResolver.class,
-  FormatDetector.class, LoireJwtParser.class})
+  JwtSignatureVerifier.class, DidDocumentResolver.class,  FormatDetector.class, LoireJwtParser.class})
 @Slf4j
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)
