@@ -1,0 +1,35 @@
+@prefix gx: <https://w3id.org/gaia-x/2511#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Minimal 2511 class hierarchy for unit testing.
+# Mirrors the gx-2511.ttl structure without the full ontology payload.
+
+gx:GaiaXEntity a owl:Class .
+
+gx:Participant a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:LegalPerson a owl:Class ;
+    rdfs:subClassOf gx:Participant .
+
+gx:NaturalPerson a owl:Class ;
+    rdfs:subClassOf gx:Participant .
+
+gx:Resource a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:VirtualResource a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:PhysicalResource a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:ServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:DigitalServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:DataProduct a owl:Class ;
+    rdfs:subClassOf gx:DigitalServiceOffering .

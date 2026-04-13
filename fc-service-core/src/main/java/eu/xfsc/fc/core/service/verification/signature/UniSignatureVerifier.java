@@ -9,6 +9,9 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.danubetech.dataintegrity.DataIntegrityProof;
+import com.danubetech.dataintegrity.verifier.LdVerifier;
+import com.danubetech.dataintegrity.verifier.LdVerifierRegistry;
 import com.danubetech.keyformats.crypto.PublicKeyVerifier;
 import com.danubetech.keyformats.crypto.PublicKeyVerifierFactory;
 import com.danubetech.keyformats.jose.JWK;
@@ -24,9 +27,6 @@ import foundation.identity.did.DIDDocument;
 import foundation.identity.did.VerificationMethod;
 import foundation.identity.jsonld.JsonLDException;
 import foundation.identity.jsonld.JsonLDObject;
-import info.weboftrust.ldsignatures.LdProof;
-import info.weboftrust.ldsignatures.verifier.LdVerifier;
-import info.weboftrust.ldsignatures.verifier.LdVerifierRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -36,13 +36,13 @@ public class UniSignatureVerifier implements SignatureVerifier {
 	private DidDocumentResolver didResolver;
 	
 	@Override
-	public Validator checkSignature(JsonLDObject payload, LdProof proof) {
+	public Validator checkSignature(JsonLDObject payload, DataIntegrityProof proof) {
 		String alg = getAlgFromProof(proof);
 		String did = getDidFromProof(proof);
 	    return verifyLDProof(payload, proof, did, alg);
 	}
 	
-	private Validator verifyLDProof(JsonLDObject payload, LdProof proof, String did, String alg) {
+	private Validator verifyLDProof(JsonLDObject payload, DataIntegrityProof proof, String did, String alg) {
 		log.debug("verifyLDProof.enter; did: {}, alg: {}, payload: {}", did, alg, payload);
 		DIDDocument diDoc = didResolver.resolveDidDocument(did);
 		List<VerificationMethod> vrMethods = diDoc.getVerificationMethods();
@@ -82,9 +82,9 @@ public class UniSignatureVerifier implements SignatureVerifier {
 	}
 
 	@Override
-	public boolean verify(JsonLDObject payload, LdProof proof, JWK jwk, String alg) {
+	public boolean verify(JsonLDObject payload, DataIntegrityProof proof, JWK jwk, String alg) {
 		log.debug("verify.enter; alg: {}, jwk: {}", alg, jwk);
-		LdVerifier<?> verifier = LdVerifierRegistry.getLdVerifierBySignatureSuiteTerm(proof.getType());
+		LdVerifier<?> verifier = LdVerifierRegistry.getLdVerifierByDataIntegritySuiteTerm(proof.getType());
 		PublicKeyVerifier<?> pkVerifier = PublicKeyVerifierFactory.publicKeyVerifierForKey(jwk, alg);
 		verifier.setVerifier(pkVerifier);
 	    try {
@@ -95,7 +95,7 @@ public class UniSignatureVerifier implements SignatureVerifier {
 		return false;
 	}
 	
-	private String getAlgFromProof(LdProof proof) {
+	private String getAlgFromProof(DataIntegrityProof proof) {
 		if (proof.getType().contains(KeyTypeName.Ed25519.getValue())) {
 			return JWSAlgorithm.EdDSA;
 		}
@@ -133,7 +133,7 @@ public class UniSignatureVerifier implements SignatureVerifier {
 		return JWSAlgorithm.ES256K;
 	}
 
-	private String getDidFromProof(LdProof proof) {
+	private String getDidFromProof(DataIntegrityProof proof) {
 		URI vmUri = proof.getVerificationMethod();
 		String vmStr = vmUri.toString();
 		int idx = vmStr.lastIndexOf('#');

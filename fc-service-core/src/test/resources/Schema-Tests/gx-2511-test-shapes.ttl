@@ -1,0 +1,26 @@
+@prefix gx: <https://w3id.org/gaia-x/2511#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# Minimal 2511 shapes for SHACL validation unit testing.
+# Based on gx:LegalPersonShape from the downloaded 2511 SHACL registry file,
+# simplified to avoid deep nested address/registrationNumber shape dependencies
+# while preserving the closed-shape and minCount constraint behavior.
+
+gx:LegalPersonShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:targetClass gx:LegalPerson ;
+    sh:property [
+        sh:path gx:registrationNumber ;
+        sh:minCount 1 ;
+        sh:nodeKind sh:IRI ;
+        sh:description "Country registration number (required)."
+    ] ;
+    sh:property [
+        sh:path gx:legalName ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+        sh:description "Legal name of the entity."
+    ] .

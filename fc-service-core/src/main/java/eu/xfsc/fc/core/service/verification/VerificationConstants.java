@@ -17,6 +17,22 @@ public final class VerificationConstants {
 
   public static final String RDF_CONTEXT_KEY = "@context";
 
+  public static final String DATA_URI_PREFIX = "data:";
+
+  // W3C Verifiable Credentials Data Model type strings
+  public static final String VP_TYPE = "VerifiablePresentation";
+  public static final String VC_TYPE = "VerifiableCredential";
+  public static final String EVC_TYPE = "EnvelopedVerifiableCredential";
+  public static final String EVP_TYPE = "EnvelopedVerifiablePresentation";
+
+  public static final String VERIFIABLE_CREDENTIAL_KEY = "verifiableCredential";
+
+  // W3C VC-JOSE-COSE media types (IANA-registered)
+  public static final String MEDIA_TYPE_VC_JWT = "application/vc+jwt";
+  public static final String MEDIA_TYPE_VP_JWT = "application/vp+jwt";
+  public static final String MEDIA_TYPE_VC_LD_JSON = "application/vc+ld+json";
+  public static final String MEDIA_TYPE_VP_LD_JSON = "application/vp+ld+json";
+
   private VerificationConstants() {
   }
 }

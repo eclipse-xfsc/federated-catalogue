@@ -60,7 +60,7 @@ jobs:
             # Tag with 'latest' on main branch
             type=raw,value=latest,enable={{is_default_branch}}
             # Tag with SHA
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-
 
       - name: Build and push FC Service Server image
         uses: docker/build-push-action@v5
@@ -108,7 +108,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-
 
       - name: Build and push FC Demo Portal image
         uses: docker/build-push-action@v5

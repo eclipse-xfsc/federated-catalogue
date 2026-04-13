@@ -2,6 +2,7 @@ package eu.xfsc.fc.core.service.verification.claims;
 
 import static com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords.*;
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.VC_20_CONTEXT;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.VP_TYPE;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +50,8 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
     List<CredentialClaim> claims = new ArrayList<>();
     Object typeObj = raw.get("type");
     boolean isVP = typeObj instanceof List
-        ? ((List<?>) typeObj).contains("VerifiablePresentation")
-        : "VerifiablePresentation".equals(typeObj);
+        ? ((List<?>) typeObj).contains(VP_TYPE)
+        : VP_TYPE.equals(typeObj);
 
     List<CredentialSubject> subjects;
     if (isVP) {
@@ -78,8 +79,8 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
     List<CredentialClaim> claims = new ArrayList<>();
     Object typeObj = raw.get("type");
     boolean isVP = typeObj instanceof List
-        ? ((List<?>) typeObj).contains("VerifiablePresentation")
-        : "VerifiablePresentation".equals(typeObj);
+        ? ((List<?>) typeObj).contains(VP_TYPE)
+        : VP_TYPE.equals(typeObj);
 
     List<Map<String, Object>> vcms;
     if (isVP) {

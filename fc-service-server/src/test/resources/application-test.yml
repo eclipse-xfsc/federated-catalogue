@@ -6,12 +6,18 @@ federated-catalogue:
       gaiax:
         enabled: false
         trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+    # Loire (2511) type URIs — used for GAIAX_V2_LOIRE credentials
     participant:
-      type: "http://w3id.org/gaia-x/participant#Participant"
+      type: "https://w3id.org/gaia-x/2511#Participant"
+      # Legacy Tagus type URIs — used for GAIAX_V1_TAGUS test credentials
+      legacy-type: "http://w3id.org/gaia-x/participant#Participant"
     resource:
-      type: "https://w3id.org/gaia-x/gax-trust-framework#Resource"
+      type: "https://w3id.org/gaia-x/2511#Resource"
+      legacy-type: "https://w3id.org/gaia-x/gax-trust-framework#Resource"
     service-offering:
-      type: "http://w3id.org/gaia-x/service#ServiceOffering"
+      type: "https://w3id.org/gaia-x/2511#ServiceOffering"
+      additional-types: "https://w3id.org/gaia-x/2511#DigitalServiceOffering"
+      legacy-type: "http://w3id.org/gaia-x/service#ServiceOffering"
   query:
     partners:
       - "http://localhost:9090"

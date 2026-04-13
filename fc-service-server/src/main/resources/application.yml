@@ -136,6 +136,8 @@ federated-catalogue:
       - application/ld+json
       - application/vc+ld+json
       - application/vp+ld+json
+      - application/vc+jwt
+      - application/vp+jwt
       # Uncomment as VerificationService gains support for these formats:
       # - text/turtle
       # - application/n-triples
@@ -166,13 +168,19 @@ federated-catalogue:
         trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
     http-timeout: 3000
     validator-expire: 1D
-    # Base class type URIs for credential subject classification
+    # Base class type URIs for credential subject classification.
+    # Loire (Gaia-X 2511) and legacy Tagus (gax-core) URIs are both configured
+    # so that type resolution can select the appropriate set per credential format.
     participant:
-      type: "https://w3id.org/gaia-x/core#Participant"
+      type: "https://w3id.org/gaia-x/2511#Participant"
+      legacy-type: "https://w3id.org/gaia-x/core#Participant"
     resource:
-      type: "https://w3id.org/gaia-x/core#Resource"
+      type: "https://w3id.org/gaia-x/2511#Resource"
+      legacy-type: "https://w3id.org/gaia-x/core#Resource"
     service-offering:
-      type: "https://w3id.org/gaia-x/core#ServiceOffering"
+      type: "https://w3id.org/gaia-x/2511#ServiceOffering"
+      additional-types: "https://w3id.org/gaia-x/2511#DigitalServiceOffering"
+      legacy-type: "https://w3id.org/gaia-x/core#ServiceOffering"
     semantics: true
     schema: false
     vp-signature: false
@@ -185,8 +193,13 @@ federated-catalogue:
         timeout: 1H
     doc-loader:
       additional-context:
+        # Maps JSON-LD context URLs to fetch URLs. Format: '[<context-url>]: <fetch-url>'
+        # The square brackets around the key are required YAML quoting for URLs containing '#' or special chars.
+        # Each entry redirects a context URL the document loader would normally fetch remotely
+        # to a different (e.g. local, cached, or versioned) URL instead.
         '[https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#
         '[https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#]': https://registry.lab.gaia-x.eu/v1/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#
+        '[https://w3id.org/gaia-x/2511#]': https://registry.lab.gaia-x.eu/development/context/2511
       cache-size: 500
       cache-timeout: 24H
       enable-file: true

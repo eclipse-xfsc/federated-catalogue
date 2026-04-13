@@ -54,7 +54,7 @@ public class AssetUploadService {
     private AssetMetadata handleCredential(byte[] content, String contentType) {
         log.debug("handleCredential; detected RDF content, delegating to verification pipeline");
         String text = new String(content, StandardCharsets.UTF_8);
-        ContentAccessorDirect contentAccessor = new ContentAccessorDirect(text);
+        ContentAccessorDirect contentAccessor = new ContentAccessorDirect(text, contentType);
 
         CredentialVerificationResult verificationResult = verificationService.verifyCredential(contentAccessor);
 

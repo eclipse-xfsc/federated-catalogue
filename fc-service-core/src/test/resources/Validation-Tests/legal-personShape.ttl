@@ -4,7 +4,7 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix dcat: <http://www.w3.org/ns/dcat#> .
-@prefix gax-core: <http://w3id.org/gaia-x/core#> .
+@prefix gax-core: <https://w3id.org/gaia-x/core#> .
 @prefix gax-node: <http://w3id.org/gaia-x/node#> .
 @prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
 @prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
@@ -16,6 +16,7 @@
 gax-validation:LegalPersonShape
 	a sh:NodeShape ;
 	sh:targetClass gax-participant:LegalPerson ;
+	sh:targetClass gax-core:Participant ;
 	sh:property [ sh:path gax-service:legalName ;
 				  sh:name "legal name" ;
 				  sh:order 1 ;
