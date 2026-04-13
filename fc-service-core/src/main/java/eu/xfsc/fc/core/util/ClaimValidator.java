@@ -11,6 +11,7 @@ import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +29,6 @@ import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
-import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -88,7 +88,6 @@ public class ClaimValidator {
      *
      * @param claimList the set of claims to be validated
      * @return the claim as a formatted triple string
-     * @throws IOException 
      */
     public Model validateClaims(List<CredentialClaim> claimList) { 
         Model listClaims = ModelFactory.createDefaultModel();
@@ -120,7 +119,6 @@ public class ClaimValidator {
             resetJenaLiteralValidation();
         }
 
-    	URI uri;
         Triple triple = model.getGraph().find().next();
         // --- subject ----------------------------------------------------
         Node s = triple.getSubject();
@@ -140,7 +138,7 @@ public class ClaimValidator {
             // the ex:Foo example above).
             String subjectStr = claim.getSubjectValue();
             try {
-                uri = new URI(subjectStr);
+                new URI(subjectStr);
             } catch (URISyntaxException e) {
                 throw new QueryException(String.format("Subject in triple %s is not a valid URI", claim.asTriple()));
             } // else it should be a blank node
@@ -151,7 +149,7 @@ public class ClaimValidator {
             // c.f. the comment for handling subject nodes above
             String predicateStr = claim.getPredicateValue();
             try {
-                uri = new URI(predicateStr);
+                new URI(predicateStr);
             } catch (URISyntaxException e) {
                 throw new QueryException(String.format("Predicate in triple %s is not a valid URI", claim.asTriple()));
             }
@@ -162,11 +160,12 @@ public class ClaimValidator {
             // c.f. the comment for handling subject nodes above
             String objectStr = claim.getObjectValue();
             try {
-                uri = new URI(objectStr);
+                new URI(objectStr);
             } catch (URISyntaxException e) {
                 throw new QueryException(String.format("Object in triple %s is not a valid URI", claim.asTriple()));
             }
-        } else if (o.isLiteral()) {
+        } else //noinspection StatementWithEmptyBody // suppressed as the comment explains why we don't need to do anything here
+            if (o.isLiteral()) {
             // Nothing needs to be done here as literal syntax errors and
             // datatype errors are already handled by the parser directly.
             // See the catch blocks after the RDFDataMgr.read( ) call above.
@@ -184,9 +183,9 @@ public class ClaimValidator {
     
     /**
      * Method that validates a dataGraph against shaclShape
-     *
-     * @param payload    ContentAccessor of a credential payload to be validated
-     * @param shaclShape ContentAccessor of a union schemas of type SHACL
+     * @param claims the claims to be validated
+     * @param schema the shacl shape to be used for validation
+     * @param sm StreamManager to be used for parsing the schema
      * @return SchemaValidationResult object
      */
     public static String validateClaimsBySchema(List<CredentialClaim> claims, ContentAccessor schema, StreamManager sm) {
@@ -227,7 +226,8 @@ public class ClaimValidator {
     
     private static final String CREDENTIAL_SUBJECT = "https://www.w3.org/2018/credentials#credentialSubject";
     
-    public static TrustFrameworkBaseClass getSubjectType(ContentAccessor ontology, StreamManager sm, String subject, Map<TrustFrameworkBaseClass, String> сlassUris) {
+    public static TrustFrameworkBaseClass getSubjectType(ContentAccessor ontology, StreamManager sm, String subject,
+        Map<TrustFrameworkBaseClass, List<String>> classUris) {
         try {
           Model data = ModelFactory.createDefaultModel();
           RDFParser.create()
@@ -239,13 +239,15 @@ public class ClaimValidator {
           NodeIterator node = data.listObjectsOfProperty(data.createProperty(CREDENTIAL_SUBJECT));
           while (node.hasNext()) {
             NodeIterator typeNode = data.listObjectsOfProperty(node.nextNode().asResource(), RDF.type);
-            List <RDFNode> rdfNodeList = typeNode.toList();
+            List<RDFNode> rdfNodeList = typeNode.toList();
             for (RDFNode rdfNode: rdfNodeList) {
               String resourceURI = rdfNode.asResource().getURI();
               // Check whether the type is or is at least derived from one of the base types according to the TrustFramework
-              for (Map.Entry<TrustFrameworkBaseClass, String> classEntry: сlassUris.entrySet()) {
-                if (checkTypeSubClass(ontology, resourceURI, classEntry.getValue())) {
-                  return classEntry.getKey();
+              for (Map.Entry<TrustFrameworkBaseClass, List<String>> classEntry: classUris.entrySet()) {
+                for (String rootUri : classEntry.getValue()) {
+                  if (checkTypeSubClass(ontology, resourceURI, rootUri)) {
+                    return classEntry.getKey();
+                  }
                 }
               }
             }
@@ -268,11 +270,14 @@ public class ClaimValidator {
         //ContentAccessor gaxOntology = schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY);
         OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         model.read(new StringReader(ontology.getContentAsString()), null, Lang.TURTLE.getName());
-        QueryExecution qe = QueryExecutionFactory.create(query, model);
-        ResultSet results = qe.execSelect();
-        while (results.hasNext()) {
-          QuerySolution q = results.next();
-          String node =  q.get("uri").toString();
+        List<String> subClassUris = new ArrayList<>();
+        try (QueryExecution qe = QueryExecutionFactory.create(query, model)) {
+            ResultSet results = qe.execSelect();
+            while (results.hasNext()) {
+                subClassUris.add(results.next().get("uri").toString());
+            }
+        }
+        for (String node : subClassUris) {
           if (node.equals(type)) {
             return true;
           }

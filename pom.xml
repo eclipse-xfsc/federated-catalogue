@@ -79,7 +79,7 @@
         <vc.version>1.27.0</vc.version>
         <key-format.version>1.23.0</key-format.version>
         <did.version>1.20.0</did.version>
-        <ld-signatures.version>1.11.0</ld-signatures.version>
+        <dataintegrity.version>1.22.0</dataintegrity.version>
         <uni-resolver.version>0.51.0</uni-resolver.version>
         <titanium.version>1.7.0</titanium.version>
         <caffeine.version>3.2.3</caffeine.version>        
@@ -277,9 +277,9 @@
 	            <version>${uni-resolver.version}</version>
             </dependency>
             <dependency>
-                <groupId>info.weboftrust</groupId>
-                <artifactId>ld-signatures-java</artifactId>
-                <version>${ld-signatures.version}</version>
+                <groupId>com.danubetech</groupId>
+                <artifactId>data-integrity-java</artifactId>
+                <version>${dataintegrity.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.nats</groupId>

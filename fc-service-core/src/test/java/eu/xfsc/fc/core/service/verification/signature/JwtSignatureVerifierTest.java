@@ -290,6 +290,21 @@ class JwtSignatureVerifierTest {
   }
 
   @Test
+  void verifyFromDataUrl_w3cDataUrlPrefix_returnsValidator() throws Exception {
+    mockDidDoc(KID, keyPair.toPublicJWK().toJSONObject());
+
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA).keyID(KID).build();
+    JWTClaimsSet claims = new JWTClaimsSet.Builder().issuer(ISS).build();
+    String compact = signJwt(header, claims, new Ed25519Signer(keyPair));
+    String dataUrl = "data:application/vc+jwt," + compact;
+
+    Validator result = verifier.verifyFromDataUrl(dataUrl);
+
+    assertNotNull(result);
+    assertEquals(KID, result.getDidURI());
+  }
+
+  @Test
   void verifyFromDataUrl_invalidDataUrl_throwsClientException() {
     assertThrows(ClientException.class,
         () -> verifier.verifyFromDataUrl("https://not-a-data-url.example.com/vc.jwt"));

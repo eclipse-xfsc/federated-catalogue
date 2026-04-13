@@ -1,5 +1,4 @@
-# Strict verification overlay — enables signature and schema verification.
-# Gaia-X Trust Framework is disabled pending Loire ontology compatibility (see TODO below).
+# Strict verification overlay — enables signature, schema, and Gaia-X Trust Framework validation.
 #
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.strict.yml --env-file dev.env up
@@ -10,8 +9,9 @@
 services:
   server:
     environment:
-      # TODO(gaia-x-loire): Flip to "true" after story 035 (Loire Ontology Migration) lands — requires 2511 shapes + type resolution
-      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "false"
+      # Gaia-X Trust Framework enabled: Loire 2511 ontology and SHACL shapes are bundled
+      # Tagus (gax-core) credentials continue to work via legacy type URIs.
+      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "true"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "true"

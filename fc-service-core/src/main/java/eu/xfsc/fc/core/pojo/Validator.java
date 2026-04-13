@@ -18,13 +18,19 @@ public class Validator {
     private String publicKey;
     private Instant expirationDate;
 
+    /**
+     * Compares validators by expiration date, treating null as "no expiration" (sorts last).
+     */
     public static class ExpirationComparator implements Comparator<Validator> {
 
 		@Override
 		public int compare(Validator v1, Validator v2) {
-			if (v1.getExpirationDate().isBefore(v2.getExpirationDate())) return -1;
-			if (v1.getExpirationDate().isAfter(v2.getExpirationDate())) return 1;
-			return 0;
+			Instant e1 = v1.getExpirationDate();
+			Instant e2 = v2.getExpirationDate();
+			if (e1 == null && e2 == null) return 0;
+			if (e1 == null) return 1;
+			if (e2 == null) return -1;
+			return e1.compareTo(e2);
 		}
     }
 }

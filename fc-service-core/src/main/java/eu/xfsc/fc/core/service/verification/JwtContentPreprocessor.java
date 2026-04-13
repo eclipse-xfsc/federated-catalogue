@@ -30,9 +30,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtContentPreprocessor {
 
+  private static final String VC_JWT_CONTENT_TYPE = "application/vc+jwt";
+
   private static final Set<String> JWT_CONTENT_TYPES = Set.of(
-      "application/vc+ld+json+jwt",
-      "application/vp+ld+json+jwt"
+      VC_JWT_CONTENT_TYPE,          // W3C VC-JOSE-COSE (IANA-registered, canonical)
+      "application/vp+jwt",         // W3C VC-JOSE-COSE (IANA-registered, canonical)
+      "application/vc+ld+json+jwt", // Gaia-X ICAM 24.07 (accepted for compatibility)
+      "application/vp+ld+json+jwt"  // Gaia-X ICAM 24.07 (accepted for compatibility)
   );
 
   private static final Set<String> JSON_LD_CONTENT_TYPES = Set.of(
@@ -72,7 +76,7 @@ public class JwtContentPreprocessor {
     if (ct != null && JSON_LD_CONTENT_TYPES.contains(ct) && bodyIsJwt) {
       throw new ClientException(
           "Content-Type declares JSON-LD (" + ct + ") but body is JWT-encoded; "
-          + "use application/vc+ld+json+jwt for JWT-wrapped credentials");
+          + "use " + VC_JWT_CONTENT_TYPE + " for JWT-wrapped credentials");
     }
 
     // Fallback: body sniff (application/json, null, or unknown content-type)

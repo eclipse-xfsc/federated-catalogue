@@ -1,0 +1,560 @@
+# Gaia-X 2511 Ontology — class hierarchy only
+# Generated 2026-03-24 from https://registry.lab.gaia-x.eu/development/owl/2511
+# Stripped to owl:Class declarations and rdfs:subClassOf relationships only.
+# Enum individuals and data/annotation properties removed to avoid Jena IRI parse warnings.
+#
+# WHAT IS OMITTED (intentionally):
+#   owl:Restriction blank nodes — property constraints; not used by ClaimValidator
+#   owl:equivalentClass / owl:intersectionOf / owl:unionOf — absent from 2511 core
+#     hierarchy today.  If a future spec version uses these for Participant /
+#     ServiceOffering / Resource, type resolution will silently break.  Regenerate
+#     and update fc-tools/extract-ontology-hierarchy.py if that happens.
+#   Data and annotation properties — not queried
+#
+# To regenerate: python3 fc-tools/extract-ontology-hierarchy.py \
+#   --input <downloaded-full-owl.ttl> \
+#   --output fc-service-core/src/main/resources/defaultschema/ontology/gx-2511.ttl \
+#   --ontology-iri https://w3id.org/gaia-x/2511 \
+#   --source-url https://registry.lab.gaia-x.eu/development/owl/2511
+
+@prefix gx: <https://w3id.org/gaia-x/2511#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<https://w3id.org/gaia-x/2511> a owl:Ontology .
+
+gx:AccessAttribute a owl:Class .
+
+gx:AccessControlManagement a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:AccessTypes a owl:Class .
+
+gx:AccessUsagePolicy a owl:Class .
+
+gx:Address a owl:Class .
+
+gx:Architectures a owl:Class .
+
+gx:AssetsManagement a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:Availability a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:AvailabilityZone a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:BackupPolicy a owl:Class ;
+    rdfs:subClassOf gx:DataProtectionPolicy .
+
+gx:BandWidth a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:BareMetalServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ComputeServiceOffering .
+
+gx:BaseContainerImage a owl:Class .
+
+gx:BlockAccessProtocol a owl:Class .
+
+gx:BlockStorageConfiguration a owl:Class ;
+    rdfs:subClassOf gx:StorageConfiguration .
+
+gx:BlockStorageServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:StorageServiceOffering .
+
+gx:BlockStorageTechnology a owl:Class .
+
+gx:BusinessContinuityMeasures a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CPU a owl:Class ;
+    rdfs:subClassOf gx:Device .
+
+gx:ChangeAndConfigurationManagement a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CheckSum a owl:Class .
+
+gx:ChecksumAlgorithm a owl:Class .
+
+gx:CodeArtifact a owl:Class ;
+    rdfs:subClassOf gx:SoftwareResource .
+
+gx:ComplianceAssurance a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CompliantCredential a owl:Class .
+
+gx:CompressionAlgorithm a owl:Class .
+
+gx:ComputeFunctionConfiguration a owl:Class ;
+    rdfs:subClassOf gx:InstantiationRequirement .
+
+gx:ComputeFunctionDeploymentMethod a owl:Class .
+
+gx:ComputeFunctionLanguage a owl:Class .
+
+gx:ComputeFunctionQuotas a owl:Class .
+
+gx:ComputeFunctionRuntime a owl:Class .
+
+gx:ComputeFunctionServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ComputeServiceOffering .
+
+gx:ComputeFunctionTemplate a owl:Class ;
+    rdfs:subClassOf gx:CodeArtifact .
+
+gx:ComputeFunctionTrigger a owl:Class .
+
+gx:ComputeServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:InfrastructureServiceOffering .
+
+gx:ConfidentialComputing a owl:Class .
+
+gx:ConnectivityConfiguration a owl:Class ;
+    rdfs:subClassOf gx:InstantiationRequirement .
+
+gx:ConnectivityServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:InfrastructureServiceOffering .
+
+gx:ConsistencyType a owl:Class .
+
+gx:ContactInformation a owl:Class .
+
+gx:ContainerFormat a owl:Class .
+
+gx:ContainerImage a owl:Class ;
+    rdfs:subClassOf gx:Image .
+
+gx:ContainerResourceLimits a owl:Class ;
+    rdfs:subClassOf gx:InstantiationRequirement .
+
+gx:ContainerServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ComputeServiceOffering .
+
+gx:CopyrightAndIntellectualPropertyDocument a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CountryCompanyNumber a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:CountryNameAlpha2 a owl:Class .
+
+gx:CountryNameAlpha3 a owl:Class .
+
+gx:CountryNameNumeric a owl:Class .
+
+gx:CpuCapabilities a owl:Class .
+
+gx:CryptographicSecurityStandards a owl:Class .
+
+gx:CustomerAuditingRights a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CustomerDataAccessTerms a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CustomerDataProcessingTerms a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:CustomerInstructions a owl:Class .
+
+gx:DataAccessPrerequisite a owl:Class .
+
+gx:DataAccountExport a owl:Class .
+
+gx:DataLicense a owl:Class .
+
+gx:DataPortability a owl:Class .
+
+gx:DataProduct a owl:Class ;
+    rdfs:subClassOf gx:DigitalServiceOffering .
+
+gx:DataProductCatalogue a owl:Class ;
+    rdfs:subClassOf gx:ServiceOffering .
+
+gx:DataProductConfigurationParameter a owl:Class .
+
+gx:DataProductDescription a owl:Class .
+
+gx:DataProtectionPolicy a owl:Class .
+
+gx:DataProtectionRegulationMeasures a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:DataTransfer a owl:Class .
+
+gx:DataUsageAgreement a owl:Class .
+
+gx:DataUsageConstraint a owl:Class .
+
+gx:Datacenter a owl:Class ;
+    rdfs:subClassOf gx:PhysicalResource .
+
+gx:DatacenterAllocation a owl:Class .
+
+gx:DeduplicationMethod a owl:Class .
+
+gx:DevelopmentCycleSecurity a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:Device a owl:Class .
+
+gx:DigitalServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:Disk a owl:Class ;
+    rdfs:subClassOf gx:Device .
+
+gx:DiskBusType a owl:Class .
+
+gx:DiskType a owl:Class .
+
+gx:DocumentChangeProcedures a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:EORI a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:EUID a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:EcoTSP a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:EcoTrustScope a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:Ecosystem a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:EmployeeResponsibilities a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:Encryption a owl:Class .
+
+gx:EncryptionAlgorithm a owl:Class .
+
+gx:Endpoint a owl:Class .
+
+gx:EnergyMix a owl:Class .
+
+gx:EnergyUsageEfficiency a owl:Class .
+
+gx:EnvironmentalImpactReport a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:EvidenceTemplate a owl:Class .
+
+gx:FileAccessProtocol a owl:Class .
+
+gx:FileStorageConfiguration a owl:Class ;
+    rdfs:subClassOf gx:StorageConfiguration .
+
+gx:FileStorageServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:StorageServiceOffering .
+
+gx:FileSystemType a owl:Class .
+
+gx:FirmType a owl:Class .
+
+gx:GPSLocation a owl:Class .
+
+gx:GPSUnit a owl:Class .
+
+gx:GPU a owl:Class ;
+    rdfs:subClassOf gx:Device .
+
+gx:GPUInterconnetionTypes a owl:Class .
+
+gx:GaiaX a owl:Class .
+
+gx:GaiaXEntity a owl:Class .
+
+gx:GaiaXTermsAndConditions a owl:Class .
+
+gx:GeoReplicationScope a owl:Class .
+
+gx:GovernmentInvestigationManagement a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:Hypervisor a owl:Class ;
+    rdfs:subClassOf gx:SoftwareResource .
+
+gx:HypervisorType a owl:Class .
+
+gx:IOPS a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:IPIType a owl:Class .
+
+gx:Image a owl:Class ;
+    rdfs:subClassOf gx:CodeArtifact .
+
+gx:InformationSecurityOrganization a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:InformationSecurityPolicies a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:InformationSecurityRiskManagement a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:InfrastructureServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ServiceOffering .
+
+gx:InstantiationRequirement a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:InterconnectionPointIdentifier a owl:Class .
+
+gx:InterconnectionServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:NetworkConnectivityServiceOffering .
+
+gx:InternetExchangePoint a owl:Class ;
+    rdfs:subClassOf gx:PhysicalInterconnectionPointIdentifier .
+
+gx:InternetServiceProvider a owl:Class ;
+    rdfs:subClassOf gx:LegalPerson .
+
+gx:IpVersionTypes a owl:Class .
+
+gx:Issuer a owl:Class .
+
+gx:Jitter a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:KeyManagement a owl:Class .
+
+gx:LabelCredential a owl:Class .
+
+gx:LabelLevel a owl:Class .
+
+gx:Latency a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:LegalDocument a owl:Class .
+
+gx:LegalPerson a owl:Class ;
+    rdfs:subClassOf gx:Participant .
+
+gx:LegallyBindingAct a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:LegitimateInterest a owl:Class .
+
+gx:LeiCode a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:LinkConnectivityServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ConnectivityServiceOffering .
+
+gx:LocalRegistrationNumber a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:LostPackets a owl:Class .
+
+gx:MIMETypes a owl:Class .
+
+gx:MaintenanceSubscription a owl:Class .
+
+gx:Measure a owl:Class .
+
+gx:Memory a owl:Class ;
+    rdfs:subClassOf gx:Device .
+
+gx:MemoryCapabilities a owl:Class .
+
+gx:MemoryClasses a owl:Class .
+
+gx:MemoryRanks a owl:Class .
+
+gx:MemorySize a owl:Class .
+
+gx:NUTS2Region a owl:Class .
+
+gx:NetworkConnectivityServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ConnectivityServiceOffering .
+
+gx:OSDistribution a owl:Class .
+
+gx:ObjectStorageServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:StorageServiceOffering .
+
+gx:OperatingSystem a owl:Class ;
+    rdfs:subClassOf gx:SoftwareResource .
+
+gx:OperationalSecurity a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:PXEDiskType a owl:Class .
+
+gx:PXEImage a owl:Class ;
+    rdfs:subClassOf gx:Image .
+
+gx:PacketLoss a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:Participant a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:PersonalDataProtectionRegime a owl:Class .
+
+gx:PhysicalConnectivityServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ConnectivityServiceOffering .
+
+gx:PhysicalInterconnectionPointIdentifier a owl:Class ;
+    rdfs:subClassOf gx:PointOfPresence .
+
+gx:PhysicalResource a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:PhysicalSecurity a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:PointOfPresence a owl:Class ;
+    rdfs:subClassOf gx:PhysicalResource .
+
+gx:PolicyLanguageEnum a owl:Class .
+
+gx:ProcurementManagementSecurity a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:ProductSecurity a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:ProtectionFrequency a owl:Class .
+
+gx:ProtectionMethod a owl:Class .
+
+gx:ProtocolType a owl:Class .
+
+gx:ProvisionTypes a owl:Class .
+
+gx:PublicIpAddressProvisioningTypes a owl:Class .
+
+gx:QoS a owl:Class .
+
+gx:QoSMetric a owl:Class .
+
+gx:RNGTypes a owl:Class .
+
+gx:Region a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:RegionCode a owl:Class .
+
+gx:RegistrationNumber a owl:Class .
+
+gx:ReplicationPolicy a owl:Class ;
+    rdfs:subClassOf gx:DataProtectionPolicy .
+
+gx:RequestTypes a owl:Class .
+
+gx:Resource a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:RetentionDuration a owl:Class .
+
+gx:RoleAndResponsibilities a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:RoundTripTime a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:SLATargetPercentile a owl:Class .
+
+gx:SPDX a owl:Class .
+
+gx:SecurityIncidentManagement a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:ServerFlavor a owl:Class ;
+    rdfs:subClassOf gx:InstantiationRequirement .
+
+gx:ServiceAgreementOffer a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:ServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:ServiceTermsAndConditions a owl:Class .
+
+gx:Signature a owl:Class .
+
+gx:SignatureAlgorithm a owl:Class .
+
+gx:SnapshotPolicy a owl:Class ;
+    rdfs:subClassOf gx:DataProtectionPolicy .
+
+gx:SoftwareResource a owl:Class ;
+    rdfs:subClassOf gx:VirtualResource .
+
+gx:StandardConformity a owl:Class .
+
+gx:StorageAPI a owl:Class .
+
+gx:StorageConfiguration a owl:Class ;
+    rdfs:subClassOf gx:InstantiationRequirement .
+
+gx:StorageRedundancyMechanism a owl:Class .
+
+gx:StorageServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:InfrastructureServiceOffering .
+
+gx:SubContractor a owl:Class .
+
+gx:SubProcessorDataTransfer a owl:Class ;
+    rdfs:subClassOf gx:DataTransfer .
+
+gx:TargetPercentile a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:TaxID a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:TenantSeparation a owl:Class .
+
+gx:TermsAndConditions a owl:Class .
+
+gx:ThirdCountryDataTransfer a owl:Class ;
+    rdfs:subClassOf gx:DataTransfer .
+
+gx:Throughput a owl:Class ;
+    rdfs:subClassOf gx:QoSMetric .
+
+gx:UpdateFrequency a owl:Class .
+
+gx:UpdateStrategyEnum a owl:Class .
+
+gx:UsageTermsAndConditions a owl:Class .
+
+gx:UserDocumentationMaintenance a owl:Class ;
+    rdfs:subClassOf gx:LegalDocument .
+
+gx:VLANConfiguration a owl:Class .
+
+gx:VMDiskType a owl:Class .
+
+gx:VMImage a owl:Class ;
+    rdfs:subClassOf gx:Image .
+
+gx:VatID a owl:Class ;
+    rdfs:subClassOf gx:RegistrationNumber .
+
+gx:VirtualInterconnectionPointIdentifier a owl:Class ;
+    rdfs:subClassOf gx:VirtualResource .
+
+gx:VirtualMachineServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:ComputeServiceOffering .
+
+gx:VirtualResource a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:VlanType a owl:Class .
+
+gx:WatchDogActions a owl:Class .
+
+gx:WaterUsageEffectiveness a owl:Class .

@@ -27,7 +27,8 @@
         "crv": "Ed25519",
         "kid": "did:web:did-server#jwt-key-1",
         "x": "8pdnNUSGyY_2ATHUu7ogCXWsQYU5K2KJgY1qQT3QQeo",
-        "use": "sig"
+        "use": "sig",
+        "x5u": "https://did-server/certs/chain.pem"
       }
     }
   ],

@@ -29,6 +29,20 @@ class JwtContentPreprocessorTest {
   }
 
   @Test
+  void isJwtWrapped_w3cVcJwtContentTypeWithJwtBody_returnsTrue() {
+    var content = new ContentAccessorDirect(JWT_BODY, "application/vc+jwt");
+
+    assertTrue(preprocessor.isJwtWrapped(content));
+  }
+
+  @Test
+  void isJwtWrapped_w3cVpJwtContentTypeWithJwtBody_returnsTrue() {
+    var content = new ContentAccessorDirect(JWT_BODY, "application/vp+jwt");
+
+    assertTrue(preprocessor.isJwtWrapped(content));
+  }
+
+  @Test
   void isJwtWrapped_vcJwtContentTypeWithCharsetWithJwtBody_returnsTrue() {
     var content = new ContentAccessorDirect(JWT_BODY, "application/vc+ld+json+jwt; charset=utf-8");
 
@@ -60,7 +74,10 @@ class JwtContentPreprocessorTest {
   void isJwtWrapped_vcLdJsonContentTypeWithJwtBody_throwsClientException() {
     var content = new ContentAccessorDirect(JWT_BODY, "application/vc+ld+json");
 
-    assertThrows(ClientException.class, () -> preprocessor.isJwtWrapped(content));
+    ClientException ex = assertThrows(ClientException.class,
+        () -> preprocessor.isJwtWrapped(content));
+
+    assertTrue(ex.getMessage().contains("application/vc+jwt"), ex.getMessage());
   }
 
   @Test

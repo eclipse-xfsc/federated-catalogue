@@ -104,7 +104,7 @@ public class SchemaStoreTest {
     Set<String> extractedTermsSet = new HashSet<>();
     try ( InputStream resource = extractedTerms.getContentAsStream()) {
       List<String> extractedList = new BufferedReader(new InputStreamReader(resource,
-          StandardCharsets.UTF_8)).lines().collect(Collectors.toList());
+          StandardCharsets.UTF_8)).lines().toList();
       extractedTermsSet = new HashSet<>(extractedList);
     }
     return extractedTermsSet;
@@ -255,7 +255,7 @@ public class SchemaStoreTest {
   }
   
   @Test
-  public void testValidJSONlD() throws UnsupportedEncodingException {
+  public void testValidJSONlD() {
     Set<String> expectedExtractedUrlsSet = new HashSet<>();
     expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
     String path = "Schema-Tests/validShacl.jsonld";
@@ -271,7 +271,7 @@ public class SchemaStoreTest {
   }
   
   @Test
-  public void testValidRDFXML() throws UnsupportedEncodingException {
+  public void testValidRDFXML() {
     Set<String> expectedExtractedUrlsSet = new HashSet<>();
     expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
     String path = "Schema-Tests/validShacl.rdfxml";
@@ -323,7 +323,7 @@ public class SchemaStoreTest {
    *
    */
   @Test
-  public void testAddSchemaWithLongContent() throws IOException {
+  public void testAddSchemaWithLongContent() {
     log.info("testAddSchemaWithLongContent");
 
     String path = "Schema-Tests/schema.ttl";
@@ -343,7 +343,7 @@ public class SchemaStoreTest {
    * Test of addSchema method, of class SchemaManagementImpl. Adding the schema twice
    */
   @Test
-  public void testAddDuplicateSchema() throws IOException {
+  public void testAddDuplicateSchema() {
     log.info("testAddDuplicateSchema");
     String path = "Schema-Tests/valid-schemaShape.ttl";
     schemaStore.addSchema(TestUtil.getAccessor(getClass(), path));
@@ -384,7 +384,7 @@ public class SchemaStoreTest {
    * Test of updateSchema method, of class SchemaManagementImpl.
    */
   @Test
-  public void test03UpdateSchema() throws IOException {
+  public void test03UpdateSchema() {
     log.info("UpdateSchema");
     String path1 = "Schema-Tests/valid-schemaShapeReduced.ttl";
     String path2 = "Schema-Tests/valid-schemaShape.ttl";
@@ -411,26 +411,27 @@ public class SchemaStoreTest {
   @Test
   void testAddDeleteDefaultSchemas() {
     int initialized = schemaStore.initializeDefaultSchemas();
-    assertEquals(4, initialized, "Expected different number of schemas initialized.");
+    assertEquals(6, initialized, "Expected different number of schemas initialized.");
     //int count = TestUtil.countFilesInStore(fileStore);
     //assertEquals(3, count, "Expected different number of files in the store.");
     Map<SchemaType, List<String>> schemaList = schemaStore.getSchemaList();
-    assertEquals(3, schemaList.get(SchemaType.ONTOLOGY).size());
-    assertEquals(1, schemaList.get(SchemaType.SHAPE).size());
+    assertEquals(4, schemaList.get(SchemaType.ONTOLOGY).size());
+    assertEquals(2, schemaList.get(SchemaType.SHAPE).size());
     assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/gax-trust-framework#"), "Ontology identifier not found in schema list.");
     assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/core#"), "Ontology identifier not found in schema list.");
     assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"), "Ontology identifier not found in schema list.");
+    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/2511"), "Loire 2511 ontology identifier not found in schema list.");
     schemaStore.deleteSchema("https://w3id.org/gaia-x/gax-trust-framework#");
     Map<SchemaType, List<String>> schemaListDelete = schemaStore.getSchemaList();
     assertFalse(schemaListDelete.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/gax-trust-framework#"), "Ontology identifier not found in schema list.");
-    assertEquals(2, schemaListDelete.get(SchemaType.ONTOLOGY).size());
+    assertEquals(3, schemaListDelete.get(SchemaType.ONTOLOGY).size());
   }
 
   /**
    * Test of getCompositeSchema method, of class SchemaManagementImpl.
    */
   @Test
-  public void testGetCompositeSchema() throws IOException {
+  public void testGetCompositeSchema() {
     Model modelActual = ModelFactory.createDefaultModel();
     String sub01 = "http://w3id.org/gaia-x/validation#PhysicalResourceShape";
     String pre01 = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -464,7 +465,7 @@ public class SchemaStoreTest {
 
     schemaStore.addSchema(TestUtil.getAccessor(getClass(), schemaPath2));
 
-    schemaResult = schemaStore.analyzeSchema(schema02Content);
+    schemaStore.analyzeSchema(schema02Content);
 
     compositeSchemaActual = schemaStore.getCompositeSchema(SHAPE);
 
@@ -676,13 +677,14 @@ public class SchemaStoreTest {
 
   @Test
   void addSchema_xmlSchemaWithDoctype_throwsVerificationException() {
-    String xxeSchema = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<!DOCTYPE foo [\n"
-        + "  <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n"
-        + "]>\n"
-        + "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n"
-        + "  <xs:element name=\"test\" type=\"xs:string\"/>\n"
-        + "</xs:schema>";
+    String xxeSchema = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE foo [
+              <!ENTITY xxe SYSTEM "file:///etc/passwd">
+            ]>
+            <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+              <xs:element name="test" type="xs:string"/>
+            </xs:schema>""";
 
     assertThrowsExactly(VerificationException.class,
         () -> schemaStore.addSchema(new ContentAccessorDirect(xxeSchema), XML));

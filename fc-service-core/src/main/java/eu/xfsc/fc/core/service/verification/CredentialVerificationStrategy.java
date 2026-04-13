@@ -1,8 +1,17 @@
 package eu.xfsc.fc.core.service.verification;
 
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.DATA_URI_PREFIX;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.EVC_TYPE;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.EVP_TYPE;
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.JWT_PREFIX;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.MEDIA_TYPE_VC_JWT;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.MEDIA_TYPE_VC_LD_JSON;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.MEDIA_TYPE_VP_JWT;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.MEDIA_TYPE_VP_LD_JSON;
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.RDF_CONTEXT_KEY;
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.VC_20_CONTEXT;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.VERIFIABLE_CREDENTIAL_KEY;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.VP_TYPE;
 
 import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
@@ -39,7 +48,7 @@ import eu.xfsc.fc.core.util.ClaimValidator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import foundation.identity.jsonld.JsonLDObject;
-import info.weboftrust.ldsignatures.LdProof;
+import com.danubetech.dataintegrity.DataIntegrityProof;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +74,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -140,7 +150,29 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     @Value("${federated-catalogue.verification.resource.type}")
     private String resourceType;
 
-    private Map<TrustFrameworkBaseClass, String> trustFrameworkBaseClassUris;
+    // Legacy Tagus (gax-core) type URIs — used for GAIAX_V1_TAGUS credentials.
+    // Default to the 2511 URI so that legacy-type is optional in config (e.g. test profiles).
+    @Value("${federated-catalogue.verification.participant.legacy-type:${federated-catalogue.verification.participant.type}}")
+    private String legacyParticipantType;
+    @Value("${federated-catalogue.verification.service-offering.legacy-type:${federated-catalogue.verification.service-offering.type}}")
+    private String legacyServiceOfferingType;
+    @Value("${federated-catalogue.verification.resource.legacy-type:${federated-catalogue.verification.resource.type}}")
+    private String legacyResourceType;
+
+    // Additional Loire-only sibling roots for SERVICE_OFFERING (e.g. gx:DigitalServiceOffering).
+    // Tagus / gax-core has no sibling classes so no legacy-additional-types is needed.
+    @Value("${federated-catalogue.verification.service-offering.additional-types:#{T(java.util.Collections).emptyList()}}")
+    private List<String> serviceOfferingAdditionalTypes;
+
+    /** Loire (Gaia-X 2511) type URIs — used for GAIAX_V2_LOIRE credentials. */
+    private Map<TrustFrameworkBaseClass, List<String>> loireBaseClassUris;
+    /** Legacy Tagus (gax-core) type URIs — used for GAIAX_V1_TAGUS credentials. */
+    private Map<TrustFrameworkBaseClass, List<String>> legacyBaseClassUris;
+    /**
+     * Alias to {@link #legacyBaseClassUris} kept for backward compatibility with
+     * {@link #setBaseClassUri(TrustFrameworkBaseClass, String)} used in tests.
+     */
+    private Map<TrustFrameworkBaseClass, List<String>> trustFrameworkBaseClassUris;
 
     private final JwtContentPreprocessor jwtPreprocessor;
     private final ProtectedNamespaceFilter protectedNamespaceFilter;
@@ -176,16 +208,26 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     @PostConstruct
-    private void initRestTemplate() {
-        rest = restTemplate();
-    }
-
-    @PostConstruct
     private void initializeTrustFrameworkBaseClasses() {
-        trustFrameworkBaseClassUris = new HashMap<>();
-        trustFrameworkBaseClassUris.put(SERVICE_OFFERING, serviceOfferingType);
-        trustFrameworkBaseClassUris.put(RESOURCE, resourceType);
-        trustFrameworkBaseClassUris.put(PARTICIPANT, participantType);
+        rest = restTemplate();
+
+        List<String> loireSoRoots = new ArrayList<>();
+        loireSoRoots.add(serviceOfferingType);
+        loireSoRoots.addAll(serviceOfferingAdditionalTypes);
+
+        loireBaseClassUris = new EnumMap<>(TrustFrameworkBaseClass.class);
+        loireBaseClassUris.put(SERVICE_OFFERING, loireSoRoots);
+        loireBaseClassUris.put(RESOURCE, List.of(resourceType));
+        loireBaseClassUris.put(PARTICIPANT, List.of(participantType));
+
+        legacyBaseClassUris = new EnumMap<>(TrustFrameworkBaseClass.class);
+        legacyBaseClassUris.put(SERVICE_OFFERING, List.of(legacyServiceOfferingType));
+        legacyBaseClassUris.put(RESOURCE, List.of(legacyResourceType));
+        legacyBaseClassUris.put(PARTICIPANT, List.of(legacyParticipantType));
+
+        // trustFrameworkBaseClassUris is an alias to legacyBaseClassUris so that
+        // setBaseClassUri() (called by tests) continues to work as before.
+        trustFrameworkBaseClassUris = legacyBaseClassUris;
     }
 
     /**
@@ -213,11 +255,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         ld.setDocumentLoader(this.documentLoader);
         log.debug("verifyCredential; content parsed, time taken: {}", System.currentTimeMillis() - stamp);
 
-        TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics);
+        TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics, ctx.format());
 
-        // Gate on isGaiaxTrustFrameworkEnabled(): non-Gaia-X VC 2.0 credentials have no known TrustFrameworkBaseClass
-        // TODO(gaia-x-loire): when Loire ontology support lands, resolveBaseClass should return the correct
-        //   Loire type for Gaia-X credentials. Remove this gate and let hasClasses() enforce the check unconditionally.
         if (verifySemantics && isGaiaxTrustFrameworkEnabled() && !typedCredentials.hasClasses()) {
             throw new VerificationException("Semantic Error: no proper CredentialSubject found");
         }
@@ -264,7 +303,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
-        trustFrameworkBaseClassUris.put(baseClass, uri);
+        trustFrameworkBaseClassUris.put(baseClass, List.of(uri));
     }
 
     /**
@@ -277,7 +316,21 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         String body = payload.getContentAsString().strip();
         payload = new ContentAccessorDirect(body, payload.getContentType());
 
+        validateContentTypeMatchesBody(payload.getContentType(), body);
+
         CredentialFormat format = formatDetector.detect(payload);
+
+        // EVC/EVP: JSON-LD wrapper whose `id` is a data: URI carrying the inner JWT.
+        // VC 2.0 EVC bodies are detected as VC2_DANUBETECH by FormatDetector — unwrap before dispatch.
+        if (!body.startsWith(JWT_PREFIX)) {
+            String envelopedJwt = tryExtractEnvelopedJwt(body);
+            if (envelopedJwt != null) {
+                body = envelopedJwt;
+                payload = new ContentAccessorDirect(body);
+                format = formatDetector.detect(payload);
+            }
+        }
+
         // Reject ambiguous/unrecognizable JWTs — non-JWT payloads fall through to
         // vc11Processor which provides more specific syntactic error messages.
         if (format == CredentialFormat.UNKNOWN && body.startsWith(JWT_PREFIX)) {
@@ -298,7 +351,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
 
         // Version dispatch — unwrap to JSON-LD
-        // NOTE: CAT-FR-GD-02's VcStructureDetector.isVcStructured() call MUST be placed AFTER
+        // NOTE: A future VcStructureDetector.isVcStructured() call MUST be placed AFTER
         // unwrapping, not before — a JWT-wrapped VC 2.0 payload would not be recognised as a VC.
         if (format == CredentialFormat.GAIAX_V2_LOIRE) {
             payload = loireJwtParser.unwrap(payload);
@@ -311,6 +364,35 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
 
         return new VerificationContext(body, format, isJwt, payload, jwtValidator);
+    }
+
+    /**
+     * Validates that an explicit VC/VP content-type header matches the actual body format.
+     * Generic content-types ({@code application/json}, {@code application/ld+json}, or null)
+     * are auto-detected and skip this check.
+     *
+     * @throws ClientException if the content-type declares JWT but body is JSON-LD, or vice versa
+     */
+    private static void validateContentTypeMatchesBody(String contentType, String body) {
+        if (contentType == null) {
+            return;
+        }
+        String ct = contentType.strip().toLowerCase();
+        boolean ctExpectsJwt = ct.equals(MEDIA_TYPE_VC_JWT) || ct.equals(MEDIA_TYPE_VP_JWT);
+        boolean ctExpectsJsonLd = ct.equals(MEDIA_TYPE_VC_LD_JSON)
+            || ct.equals(MEDIA_TYPE_VP_LD_JSON);
+        if (!ctExpectsJwt && !ctExpectsJsonLd) {
+            return;
+        }
+        boolean bodyIsJwt = body.startsWith(JWT_PREFIX);
+        if (ctExpectsJwt && !bodyIsJwt) {
+            throw new ClientException(
+                "Content-Type '" + contentType + "' expects a JWT but body is not a JWT");
+        }
+        if (ctExpectsJsonLd && bodyIsJwt) {
+            throw new ClientException(
+                "Content-Type '" + contentType + "' expects JSON-LD but body is a JWT");
+        }
     }
 
     /**
@@ -358,7 +440,11 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      */
     private FilteredClaims extractAndValidateClaims(ContentAccessor payload, boolean strictSemantics) {
         long stamp = System.currentTimeMillis();
-        List<CredentialClaim> claims = extractClaims(payload);
+        // Resolve inner EVCs before claim extraction — claim extractors cannot handle
+        // EVC wrappers with data: URIs. This is intentionally NOT in detectAndUnwrap()
+        // because signature verification needs the original EVC entries intact.
+        ContentAccessor claimPayload = resolveInnerEnvelopedCredentials(payload);
+        List<CredentialClaim> claims = extractClaims(claimPayload);
         FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "claims extraction");
         claims = filtered.claims();
         log.debug("verifyCredential; claims extracted: {}, time taken: {}",
@@ -472,13 +558,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 id, claims, validators);
     }
 
-    private TypedCredentials parseCredentials(JsonLDObject ld, boolean vpRequired, boolean verifySemantics) {
+    private TypedCredentials parseCredentials(JsonLDObject ld, boolean vpRequired, boolean verifySemantics,
+        CredentialFormat format) {
         if (ld.isType(VerifiableCredentialKeywords.JSONLD_TERM_VERIFIABLE_PRESENTATION)) {
             VerifiablePresentation vp = VerifiablePresentation.fromJsonLDObject(ld);
             if (verifySemantics) {
-                return verifyPresentation(vp);
+                return verifyPresentation(vp, format);
             }
-            return getCredentials(vp);
+            return getCredentials(vp, format);
         }
         if (vpRequired) {
             throw new VerificationException("Semantic error: expected credential of type 'VerifiablePresentation', actual credential type: " + ld.getTypes());
@@ -491,7 +578,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     throw new VerificationException("Semantic error: " + err);
                 }
             }
-            return getCredentials(vc);
+            return getCredentials(vc, format);
         }
         throw new VerificationException("Semantic error: unexpected credential type: " + ld.getTypes());
     }
@@ -507,7 +594,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
     }
 
-    private TypedCredentials verifyPresentation(VerifiablePresentation presentation) {
+    private TypedCredentials verifyPresentation(VerifiablePresentation presentation, CredentialFormat format) {
         log.debug("verifyPresentation.enter; got presentation with id: {}", presentation.getId());
         StringBuilder sb = new StringBuilder();
         String sep = System.lineSeparator();
@@ -517,10 +604,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         if (checkAbsence(presentation, "type", "@type")) {
             sb.append(" - VerifiablePresentation must contain 'type' property").append(sep);
         }
-        if (checkAbsence(presentation, "verifiableCredential")) {
+        if (checkAbsence(presentation, VERIFIABLE_CREDENTIAL_KEY)) {
             sb.append(" - VerifiablePresentation must contain 'verifiableCredential' property").append(sep);
         }
-        TypedCredentials tcreds = getCredentials(presentation);
+        TypedCredentials tcreds = getCredentials(presentation, format);
         Collection<VerifiableCredential> credentials = tcreds.getCredentials();
         int i = 0;
         for (VerifiableCredential credential : credentials) {
@@ -575,9 +662,9 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return true;
     }
 
-    private TypedCredentials getCredentials(VerifiablePresentation vp) {
+    private TypedCredentials getCredentials(VerifiablePresentation vp, CredentialFormat format) {
         log.trace("getCredentials.enter; got VP: {}", vp);
-        Object obj = vp.getJsonObject().get("verifiableCredential");
+        Object obj = vp.getJsonObject().get(VERIFIABLE_CREDENTIAL_KEY);
         Map<VerifiableCredential, TrustFrameworkBaseClass> creds;
         switch (obj) {
             case null -> creds = Collections.emptyMap();
@@ -587,7 +674,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     if (entry instanceof String jwtStr) {
                         VerifiableCredential unwrapped = tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
                         if (unwrapped != null) {
-                            creds.put(unwrapped, resolveBaseClass(unwrapped));
+                            creds.put(unwrapped, resolveBaseClass(unwrapped, format));
                         }
                         continue;
                     }
@@ -596,19 +683,19 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     if (isEnvelopedVerifiableCredential(resolveType(entryMap), entryMap.get(RDF_CONTEXT_KEY))) {
                         VerifiableCredential unwrapped = tryUnwrapEnvelopedVc(entryMap, vp.getDocumentLoader());
                         if (unwrapped != null) {
-                            creds.put(unwrapped, resolveBaseClass(unwrapped));
+                            creds.put(unwrapped, resolveBaseClass(unwrapped, format));
                         }
                         continue;
                     }
                     VerifiableCredential vc = VerifiableCredential.fromMap(entryMap);
                     vc.setDocumentLoader(vp.getDocumentLoader());
-                    creds.put(vc, resolveBaseClass(vc));
+                    creds.put(vc, resolveBaseClass(vc, format));
                 }
             }
             case String jwtStr -> {
                 VerifiableCredential unwrapped = tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
                 if (unwrapped != null) {
-                    creds = Map.of(unwrapped, resolveBaseClass(unwrapped));
+                    creds = Map.of(unwrapped, resolveBaseClass(unwrapped, format));
                 } else {
                     creds = Collections.emptyMap();
                 }
@@ -617,7 +704,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 @SuppressWarnings("unchecked")
                 VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) obj);
                 vc.setDocumentLoader(vp.getDocumentLoader());
-                creds = Map.of(vc, resolveBaseClass(vc));
+                creds = Map.of(vc, resolveBaseClass(vc, format));
             }
         }
         TypedCredentials tcs = new TypedCredentials(vp, creds);
@@ -631,7 +718,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private VerifiableCredential tryUnwrapEnvelopedVc(Map<String, Object> entryMap,
         DocumentLoader docLoader) {
         Object idObj = resolveId(entryMap);
-        if (!(idObj instanceof String idStr) || !idStr.startsWith("data:")) {
+        if (!(idObj instanceof String idStr) || !idStr.startsWith(DATA_URI_PREFIX)) {
             log.debug("tryUnwrapEnvelopedVc; no data: URI in EnvelopedVerifiableCredential");
             return null;
         }
@@ -647,7 +734,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             String jwtStr = idStr.substring(commaIdx + 1);
             return tryUnwrapJwtVc(jwtStr, docLoader);
         } catch (Exception ex) {
-            log.debug("tryUnwrapEnvelopedVc; failed to unwrap: {}", ex.getMessage());
+            log.warn("tryUnwrapEnvelopedVc; failed to unwrap: {}", ex.getMessage(), ex);
             return null;
         }
     }
@@ -672,14 +759,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             vc.setDocumentLoader(docLoader);
             return vc;
         } catch (Exception ex) {
-            log.debug("tryUnwrapJwtVc; failed to unwrap JWT VC: {}", ex.getMessage());
+            log.warn("tryUnwrapJwtVc; failed to unwrap JWT VC: {}", ex.getMessage());
             return null;
         }
     }
 
-    private TypedCredentials getCredentials(VerifiableCredential vc) {
+    private TypedCredentials getCredentials(VerifiableCredential vc, CredentialFormat format) {
         log.trace("getCredentials.enter; got VC: {}", vc);
-        TypedCredentials tcs = new TypedCredentials(null, Map.of(vc, resolveBaseClass(vc)));
+        TypedCredentials tcs = new TypedCredentials(null, Map.of(vc, resolveBaseClass(vc, format)));
         log.trace("getCredentials.exit; returning: {}", tcs);
         return tcs;
     }
@@ -716,14 +803,24 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return streamManager;
     }
 
-    private TrustFrameworkBaseClass resolveBaseClass(VerifiableCredential credential) {
+    /**
+     * Resolves the Gaia-X base class of a credential using the appropriate type URI set for its format.
+     * <ul>
+     *   <li>GAIAX_V2_LOIRE: uses 2511 type URIs (loireBaseClassUris)</li>
+     *   <li>GAIAX_V1_TAGUS: uses legacy gax-core type URIs (legacyBaseClassUris / trustFrameworkBaseClassUris)</li>
+     *   <li>VC2_DANUBETECH: uses legacy gax-core type URIs (same as TAGUS) — 2511 types are JWT-only</li>
+     * </ul>
+     */
+    private TrustFrameworkBaseClass resolveBaseClass(VerifiableCredential credential, CredentialFormat format) {
+        Map<TrustFrameworkBaseClass, List<String>> classUris =
+            format == CredentialFormat.GAIAX_V2_LOIRE ? loireBaseClassUris : trustFrameworkBaseClassUris;
         ContentAccessor ontology = schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY);
         TrustFrameworkBaseClass result = ClaimValidator.getSubjectType(
-                ontology, getStreamManager(), credential.toJson(), trustFrameworkBaseClassUris);
+                ontology, getStreamManager(), credential.toJson(), classUris);
         if (result == null) {
             result = UNKNOWN;
         }
-        log.debug("resolveBaseClass; got type result: {}", result);
+        log.debug("resolveBaseClass; format: {}, got type result: {}", format, result);
         return result;
     }
 
@@ -760,10 +857,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      */
     private boolean isVpJwtClaims(JWTClaimsSet claims) {
         Object typeObj = claims.getClaim("type");
-        if (typeObj instanceof List<?> types && types.contains("VerifiablePresentation")) {
+        if (typeObj instanceof List<?> types && types.contains(VP_TYPE)) {
             return true;
         }
-        if (typeObj instanceof String typeStr && "VerifiablePresentation".equals(typeStr)) {
+        if (typeObj instanceof String typeStr && VP_TYPE.equals(typeStr)) {
             return true;
         }
         return claims.getClaim("vp") != null;
@@ -823,7 +920,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      * and inline JSON-LD VCs with proof fields.
      */
     private List<Validator> verifyInnerVcCredentials(JsonLDObject ld) {
-        Object vcArrayObj = ld.getJsonObject().get("verifiableCredential");
+        Object vcArrayObj = ld.getJsonObject().get(VERIFIABLE_CREDENTIAL_KEY);
         if (vcArrayObj == null) {
             return List.of();
         }
@@ -848,7 +945,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     Object idObj = resolveId(vcMap);
                     if (!(idObj instanceof String idStr)) {
                         throw new ClientException(
-                                "EnvelopedVerifiableCredential missing 'id' field");
+                                EVC_TYPE + " missing 'id' field");
                     }
                     validators.add(jwtSignatureVerifier.verifyFromDataUrl(idStr));
                 } else {
@@ -864,12 +961,61 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return validators;
     }
 
+    /**
+     * If {@code body} is a VC 2.0 EnvelopedVerifiableCredential or EnvelopedVerifiablePresentation
+     * JSON-LD wrapper, extracts and returns the inner JWT from the {@code id} data: URI.
+     * Returns {@code null} if {@code body} is not an enveloped credential wrapper.
+     *
+     * @throws ClientException if the body is a valid wrapper but its data: URI is malformed
+     */
+    @SuppressWarnings("unchecked") // objectMapper.readValue with Map.class returns raw Map type
+    private String tryExtractEnvelopedJwt(String body) {
+        if (!body.startsWith("{")) {
+            return null;
+        }
+        try {
+            Map<String, Object> json = objectMapper.readValue(body, Map.class);
+            Object typeObj = resolveType(json);
+            boolean hasEnvelopedType;
+            if (typeObj instanceof String s) {
+                hasEnvelopedType = EVC_TYPE.equals(s) || EVP_TYPE.equals(s);
+            } else if (typeObj instanceof List<?> types) {
+                hasEnvelopedType = types.contains(EVC_TYPE) || types.contains(EVP_TYPE);
+            } else {
+                return null;
+            }
+            if (!hasEnvelopedType) {
+                return null;
+            }
+            Object ctxObj = json.get(RDF_CONTEXT_KEY);
+            boolean hasVc20Context = (ctxObj instanceof String ctx && VC_20_CONTEXT.equals(ctx))
+                || (ctxObj instanceof List<?> ctxs && ctxs.contains(VC_20_CONTEXT));
+            if (!hasVc20Context) {
+                return null;
+            }
+            String resolvedType = typeObj instanceof String s
+                ? (EVC_TYPE.equals(s) ? EVC_TYPE : EVP_TYPE)
+                : (((List<?>) typeObj).contains(EVC_TYPE) ? EVC_TYPE : EVP_TYPE);
+            Object idObj = resolveId(json);
+            if (!(idObj instanceof String id) || !id.startsWith(DATA_URI_PREFIX)) {
+                throw new ClientException(
+                    resolvedType + ": 'id' must be a data: URI; got: " + idObj);
+            }
+            return extractJwtFromDataUri(id, resolvedType);
+        } catch (ClientException e) {
+            throw e;
+        } catch (Exception e) {
+            log.debug("tryExtractEnvelopedJwt; not a valid EVC/EVP wrapper: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private boolean isEnvelopedVerifiableCredential(Object typeObj, Object contextObj) {
         boolean hasType = false;
         if (typeObj instanceof String typeStr) {
-            hasType = "EnvelopedVerifiableCredential".equals(typeStr);
+            hasType = EVC_TYPE.equals(typeStr);
         } else if (typeObj instanceof List<?> types) {
-            hasType = types.contains("EnvelopedVerifiableCredential");
+            hasType = types.contains(EVC_TYPE);
         }
         if (!hasType) {
             return false;
@@ -884,6 +1030,103 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return false;
     }
 
+    /**
+     * Resolves {@code EnvelopedVerifiableCredential} entries inside a VP's
+     * {@code verifiableCredential} array. Each EVC's {@code data:} URI is parsed,
+     * the inner JWT payload is extracted, and the EVC entry is replaced with the
+     * unwrapped VC JSON-LD. Non-VP payloads and VPs without EVCs pass through unchanged.
+     */
+    @SuppressWarnings("unchecked")
+    private ContentAccessor resolveInnerEnvelopedCredentials(ContentAccessor payload) {
+        String json = payload.getContentAsString();
+        if (!json.startsWith("{")) {
+            return payload;
+        }
+        try {
+            Map<String, Object> root = objectMapper.readValue(json, Map.class);
+            Object typeObj = resolveType(root);
+            boolean isVp = typeObj instanceof List<?> types
+                ? types.contains(VP_TYPE) : VP_TYPE.equals(typeObj);
+            if (!isVp) {
+                return payload;
+            }
+
+            Object vcObj = root.get(VERIFIABLE_CREDENTIAL_KEY);
+            if (!(vcObj instanceof List<?> vcList) || vcList.isEmpty()) {
+                return payload;
+            }
+
+            boolean modified = false;
+            List<Object> resolved = new ArrayList<>(vcList.size());
+            for (Object entry : vcList) {
+                if (entry instanceof Map<?, ?> vcMap) {
+                    Object entryType = resolveType(vcMap);
+                    Object entryCtx = vcMap.get(RDF_CONTEXT_KEY);
+                    if (isEnvelopedVerifiableCredential(entryType, entryCtx)) {
+                        Object idObj = resolveId(vcMap);
+                        Map<String, Object> unwrapped = unwrapEnvelopedVcJwt(idObj);
+                        if (unwrapped != null) {
+                            resolved.add(unwrapped);
+                            modified = true;
+                            continue;
+                        }
+                    }
+                }
+                resolved.add(entry);
+            }
+            if (!modified) {
+                return payload;
+            }
+            root.put(VERIFIABLE_CREDENTIAL_KEY, resolved);
+            return new ContentAccessorDirect(objectMapper.writeValueAsString(root));
+        } catch (Exception e) {
+            log.debug("resolveInnerEnvelopedCredentials; pass-through: {}", e.getMessage());
+            return payload;
+        }
+    }
+
+    /**
+     * Extracts the JWT from an EVC's {@code data:} URI and returns
+     * the JWT payload as a parsed JSON map (the inner VC JSON-LD).
+     *
+     * @return the unwrapped VC as a map, or {@code null} if extraction fails
+     */
+    @SuppressWarnings("unchecked") // objectMapper.readValue with Map.class returns raw Map type
+    private Map<String, Object> unwrapEnvelopedVcJwt(Object idObj) {
+        if (!(idObj instanceof String id) || !id.startsWith(DATA_URI_PREFIX)) {
+            return null;
+        }
+        try {
+            String jwt = extractJwtFromDataUri(id, EVC_TYPE);
+            SignedJWT signedJwt = SignedJWT.parse(jwt);
+            String innerJson = signedJwt.getPayload().toString();
+            return objectMapper.readValue(innerJson, Map.class);
+        } catch (Exception e) {
+            log.debug("unwrapEnvelopedVcJwt; failed to parse inner JWT: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Extracts the compact JWT string from a {@code data:} URI by splitting at the first comma.
+     *
+     * @param dataUri  the full data: URI
+     * @param typeName the credential type name for error messages (e.g. {@code EVC_TYPE})
+     * @throws ClientException if the URI has no comma separator or the payload is empty
+     */
+    private static String extractJwtFromDataUri(String dataUri, String typeName) {
+        int comma = dataUri.indexOf(',');
+        if (comma < 0) {
+            throw new ClientException(
+                typeName + ": malformed data: URI (no comma separator)");
+        }
+        String jwt = dataUri.substring(comma + 1);
+        if (jwt.isBlank()) {
+            throw new ClientException(typeName + ": data: URI payload is empty");
+        }
+        return jwt;
+    }
+
     @SuppressWarnings("unchecked")
     private Validator checkSignature(JsonLDObject payload) {
         Map<String, Object> proofMap = (Map<String, Object>) payload.getJsonObject().get("proof");
@@ -891,7 +1134,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             throw new VerificationException("Signatures error; No proof found");
         }
 
-        LdProof proof = LdProof.fromMap(proofMap);
+        DataIntegrityProof proof = DataIntegrityProof.fromMap(proofMap);
         if (proof.getType() == null) {
             throw new VerificationException("Signatures error; Proof must have 'type' property");
         }
@@ -903,7 +1146,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
     }
 
-    private Validator checkProofSignature(JsonLDObject payload, LdProof proof) throws IOException {
+    private Validator checkProofSignature(JsonLDObject payload, DataIntegrityProof proof) throws IOException {
         String vmKey = proof.getVerificationMethod().toString();
         Validator validator = validatorCache.getFromCache(vmKey);
         if (validator == null) {
@@ -925,6 +1168,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
         validator = signVerifier.checkSignature(payload, proof);
         Instant expiration = null;
+        JsonNode jwkNode = objectMapper.readTree(validator.getPublicKey());
+        if (jwkNode.has("x5c") && !jwkNode.get("x5c").isEmpty()) {
+            rejectX5cChain(jwkNode.get("x5c"), proof.getVerificationMethod().toString());
+        }
         JWK jwk = JWK.fromJson(validator.getPublicKey());
         String url = jwk.getX5u();
         if (url == null) {
@@ -964,7 +1211,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             certs = (List<X509Certificate>) certFactory.generateCertificates(certStream);
         } catch (CertificateException ex) {
             log.warn("hasPEMTrustAnchorAndIsNotExpired; certificate error: {}", ex.getMessage());
-            throw new VerificationException("Signatures error; " + ex.getMessage());
+            throw new VerificationException("Signatures error; " + ex.getMessage(), ex);
         }
 
         //Then extract relevant cert
@@ -977,7 +1224,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 }
             } catch (Exception ex) {
                 log.warn("hasPEMTrustAnchorAndIsNotExpired; check validity error: {}", ex.getMessage());
-                throw new VerificationException("Signatures error; " + ex.getMessage());
+                throw new VerificationException("Signatures error; " + ex.getMessage(), ex);
             }
         }
 
@@ -997,7 +1244,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 throw ex;
             } catch (Exception ex) {
                 log.warn("hasPEMTrustAnchorAndIsNotExpired; trust anchor error: {}", ex.getMessage());
-                throw new VerificationException("Signatures error; " + ex.getMessage());
+                throw new VerificationException("Signatures error; " + ex.getMessage(), ex);
             }
         } else {
             log.debug("hasPEMTrustAnchorAndIsNotExpired; skipping Gaia-X trust anchor registry validation (gaiax.enabled=false)");
@@ -1008,11 +1255,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Enforces mandatory x5c/x5u trust chain validation for Loire credentials
-     * when Gaia-X trust framework is enabled (ICAM 24.07).
+     * Enforces mandatory trust chain validation for Loire credentials when Gaia-X trust
+     * framework is enabled (ICAM 24.07). Only {@code x5u} (Trust Anchor Registry URL) is
+     * supported. {@code x5c} (inline chain) is rejected — full x5c chain building and Trust
+     * Anchor Registry lookup are not implemented.
      *
      * @param jwtValidator the validator from JWT signature verification
-     * @throws VerificationException if x5c or x5u is missing in the publicKeyJwk
+     * @throws VerificationException if x5c/x5u is missing, or if x5c is present (not supported),
+     *     or if the x5u trust anchor is expired or unreachable
      */
     private void enforceLoirePolicies(String body, Validator jwtValidator) {
         enforceDidWebRestriction(body);
@@ -1037,15 +1287,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                         + "(ICAM 24.07 mandatory trust anchor). kid: " + jwtValidator.getDidURI());
             }
             if (hasX5c) {
-                validateX5cChain(jwkNode.get("x5c"), jwtValidator.getDidURI());
+                rejectX5cChain(jwkNode.get("x5c"), jwtValidator.getDidURI());
             }
-            if (hasX5u) {
-                String x5uUrl = jwkNode.get("x5u").asText();
-                hasPEMTrustAnchorAndIsNotExpired(x5uUrl);
-            }
+            String x5uUrl = jwkNode.get("x5u").asText();
+            hasPEMTrustAnchorAndIsNotExpired(x5uUrl);
+
             log.debug("enforceLoireTrustChain; trust chain validated for kid: {}",
                 jwtValidator.getDidURI());
-        } catch (VerificationException ex) {
+        } catch (VerificationException | ClientException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new VerificationException(
@@ -1054,39 +1303,18 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Validates certificates from the JWK {@code x5c} array: decodes base64 DER entries,
-     * checks each certificate is currently valid (not expired), and verifies that the chain
-     * is non-empty (ICAM 24.07).
+     * Rejects inline {@code x5c} certificate chains for all credential formats (Loire and Tagus).
      *
-     * <p><strong>Known gap:</strong> validates certificate expiry only. Unlike the x5u path
-     * ({@link #hasPEMTrustAnchorAndIsNotExpired}), this does not call the Trust Anchor Registry
-     * because the registry API expects a URI, not inline certificates.
+     * <p>Full x5c trust chain verification (chain building, Trust Anchor Registry lookup,
+     * and revocation checking) is not implemented. Accepting x5c with expiry-only checks
+     * would silently mask broken trust chains — credentials with unverified issuers would
+     * appear valid. Callers must use {@code x5u} instead, which goes through the Trust
+     * Anchor Registry validation path ({@link #hasPEMTrustAnchorAndIsNotExpired}).
      */
-    private void validateX5cChain(JsonNode x5cArray, String kid) {
-        if (!x5cArray.isArray() || x5cArray.isEmpty()) {
-            throw new VerificationException(
-                "Loire trust chain: x5c array is empty. kid: " + kid);
-        }
-        try {
-            CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-            for (JsonNode entry : x5cArray) {
-                byte[] certBytes;
-                try {
-                    certBytes = java.util.Base64.getDecoder().decode(entry.asText());
-                } catch (IllegalArgumentException ex) {
-                    throw new VerificationException(
-                        "Loire trust chain: x5c entry is not valid base64. kid: " + kid, ex);
-                }
-                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(
-                    new ByteArrayInputStream(certBytes));
-                cert.checkValidity();
-            }
-            log.debug("validateX5cChain; {} certificate(s) valid for kid: {}",
-                x5cArray.size(), kid);
-        } catch (CertificateException ex) {
-            throw new VerificationException(
-                "Loire trust chain: x5c certificate validation failed: " + ex.getMessage(), ex);
-        }
+    private void rejectX5cChain(JsonNode _x5cArray, String kid) {
+        throw new ClientException(
+            "x5c certificate chain validation is not supported. "
+                + "Use x5u (Trust Anchor Registry URL) instead. kid: " + kid);
     }
 
     /**
@@ -1113,8 +1341,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     "Loire DID method restriction: no issuer found in JWT iss or payload issuer "
                         + "(ICAM 24.07 requires did:web)");
             }
-        } catch (VerificationException ex) {
-            throw ex;
         } catch (ParseException ex) {
             throw new VerificationException(
                 "Loire DID method restriction: JWT claims parse error: " + ex.getMessage(), ex);

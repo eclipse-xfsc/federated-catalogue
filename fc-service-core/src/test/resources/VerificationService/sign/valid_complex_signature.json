@@ -20,7 +20,7 @@
       "credentialSubject": {
         "@id": "http://w3id.org/gaia-x/participant#Provider1",
         "@type": [
-          "http://w3id.org/gaia-x/participant#LegalPerson"
+          "https://w3id.org/gaia-x/core#Participant"
         ],
         "http://w3id.org/gaia-x/participant#headquarterAddress": [
           {
@@ -146,7 +146,7 @@
       "credentialSubject": {
         "@id": "http://w3id.org/gaia-x/participant#Provider1",
         "@type": [
-          "http://w3id.org/gaia-x/participant#LegalPerson"
+          "https://w3id.org/gaia-x/core#Participant"
         ],
         "http://w3id.org/gaia-x/participant#headquarterAddress": [
           {

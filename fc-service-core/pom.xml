@@ -84,8 +84,8 @@
             <artifactId>did-common-java</artifactId>
         </dependency>
         <dependency>
-            <groupId>info.weboftrust</groupId>
-            <artifactId>ld-signatures-java</artifactId>
+            <groupId>com.danubetech</groupId>
+            <artifactId>data-integrity-java</artifactId>
         </dependency>
         <dependency>
             <groupId>decentralized-identity</groupId>

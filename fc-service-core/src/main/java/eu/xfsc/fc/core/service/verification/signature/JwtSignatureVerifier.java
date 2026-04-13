@@ -54,7 +54,8 @@ public class JwtSignatureVerifier {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final DefaultJWSVerifierFactory JWS_VERIFIER_FACTORY = new DefaultJWSVerifierFactory();
-  private static final String DATA_URL_PREFIX = "data:application/vc+ld+json+jwt,";
+  private static final String W3C_DATA_URL_PREFIX = "data:application/vc+jwt,";
+  private static final String ICAM_DATA_URL_PREFIX = "data:application/vc+ld+json+jwt,";
 
   private final DidDocumentResolver didResolver;
 
@@ -117,16 +118,29 @@ public class JwtSignatureVerifier {
   /**
    * Extracts a compact JWT from an EnvelopedVerifiableCredential data: URL and verifies it.
    *
-   * @param dataUrl the data: URL in the form {@code data:application/vc+ld+json+jwt,eyJ...}
+   * <p>Accepted prefixes:
+   * <ul>
+   *   <li>{@code data:application/vc+jwt,} (W3C VC-JOSE-COSE, IANA-registered, canonical)</li>
+   *   <li>{@code data:application/vc+ld+json+jwt,} (Gaia-X ICAM 24.07, accepted for
+   *       compatibility)</li>
+   * </ul>
+   *
+   * @param dataUrl the data: URL containing the compact JWT
    * @return a Validator for the inner JWT
    * @throws ClientException if the URL format is invalid
    */
   public Validator verifyFromDataUrl(String dataUrl) {
-    if (!dataUrl.startsWith(DATA_URL_PREFIX)) {
+    String compact;
+    if (dataUrl.startsWith(W3C_DATA_URL_PREFIX)) {
+      compact = dataUrl.substring(W3C_DATA_URL_PREFIX.length());
+    } else if (dataUrl.startsWith(ICAM_DATA_URL_PREFIX)) {
+      compact = dataUrl.substring(ICAM_DATA_URL_PREFIX.length());
+    } else {
       throw new ClientException(
-          "EnvelopedVerifiableCredential 'id' has invalid data: URL format: " + dataUrl);
+          "EnvelopedVerifiableCredential 'id' has invalid data: URL format; "
+              + "expected prefix: data:application/vc+jwt, or data:application/vc+ld+json+jwt,");
     }
-    return verify(dataUrl.substring(DATA_URL_PREFIX.length()));
+    return verify(compact);
   }
 
   // --- private helpers ---

@@ -14,7 +14,7 @@
         "xsd" : "http://www.w3.org/2001/XMLSchema#"
       },
       "id" : "http://example.org/test-issuer",
-      "@type" : "gax-participant:LegalPerson",
+      "@type" : "https://w3id.org/gaia-x/core#Participant",
       "gax-participant:name" : {
         "@value" : "deltaDAO AG",
         "@type" : "xsd:string"
@@ -44,18 +44,20 @@
       }
     },
     "proof" : {
+      "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
       "type" : "JsonWebSignature2020",
-      "created" : "2024-03-08T13:46:59Z",
-      "proofPurpose" : "assertionMethod",
+      "created" : "2026-03-31T12:35:30Z",
       "verificationMethod" : "did:jwk:eyJlIjoiQVFBQiIsImtpZCI6InNpZ25SU0EyMDQ4Iiwia3R5IjoiUlNBIiwibiI6IjhDUl8ySUJuSGlDcjVIY0kxcWh1dXpiRmdMRjFlSVI3dGM1NTF2WlN2ek1rTEtIVEpxeHVZR1BlVXp2U29ndWctTDJRQ2tpVWdmSjFZUzRFUmhrRFM2cVBJbFdMM1BGbkc4VjZQVWxoODZjTjgxWkhZdkhoUFYwUDdKT25UeGVKcTV1a1dFT0ctMUxrTmk5eGVnelRoMEVwV0w4NU5aUmJOYWJ0R0VqTUhqY04yak9NUldSYkE4OVdENVhOTExwdWUyNVlxbHcxOGZsbXNNRmh5dXk2YlVmanR2aXJ5SThwb0RLOVpXcGtPUjN6ejlNN0hpQXVyZ2NLSks5ODlEX0UzZ3d3S1FhQ21CbEJ4X3hESlJoVFB1bnJZUFBySHlpMExmaG5CeWgzcEJRMWhyelFLblZyX18zYkVwcE5abmRFLVhlWTY0VzNNaGUwa1RrREp2VXJndyJ9#0",
-      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..2Du3qYoYRYBNBwMjQ2cBwKw1jLQ468WD8cjJgrnPD0vkwf63OFOSxSkQYWbxiU1zsd0BuoSJUJdJq_6flVC8WIfrAklE4SZiF-er9lZhHqle4OHojfhdoRyYOGD-GOhDmaMMGZC-xF2AjiaoT7jWYgSxDn-IE2bGX2dMf2rUanKz5x_hHjlsCMizwuhEJP12gUKYeThY1dczazQbctdWLn4We6VI7earJSf9uABLsWBRtJNqgdK4e64snIUYBlmBnD19QNXo2MuysX71FWzqbxGwDv_QHhhr8OtE9kirvdZY8JXIHxD4cap-KhkgMIz8MDwFTY1ncSu_FWu_MB6UVw"
+      "proofPurpose" : "assertionMethod",
+      "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..WXd81NJ7uD7MzNox4yKvQx-I4TvwC7VuP4_M3UmDlkNKikXJMIB852DhdwIHoocEVwJ4yEifuy9U4-UjFntegTrF9zNV1Jw8AJ7gVXI5aOzl07Gwi6NVCAev43A1O1l2zp23vF3OK2RBlVPPICQ_YHLxcnY8PFqx0EtBy1GVkJSYI2rkdsc01ErCpYNS78_1Muf_eT06QNbtMexoGpz54kwjEXBm0cVKKPTKuQMqaHMpVMTQtVIFb2fgWkAqsEyM1jvvngdDJvzahB5T7yAyQFZPKhGMSXDh86zY2Z0JeUTs78ZInEle5ivo9U8ALoTj5g7HzwoisSebEV4ROLKE8w"
     }
   } ],
   "proof" : {
+    "@context" : [ "https://www.w3.org/2018/credentials/v1", "https://w3id.org/security/suites/jws-2020/v1" ],
     "type" : "JsonWebSignature2020",
-    "created" : "2024-03-08T13:47:00Z",
-    "proofPurpose" : "assertionMethod",
+    "created" : "2026-03-31T12:35:30Z",
     "verificationMethod" : "did:jwk:eyJlIjoiQVFBQiIsImtpZCI6InNpZ25SU0EyMDQ4Iiwia3R5IjoiUlNBIiwibiI6IjhDUl8ySUJuSGlDcjVIY0kxcWh1dXpiRmdMRjFlSVI3dGM1NTF2WlN2ek1rTEtIVEpxeHVZR1BlVXp2U29ndWctTDJRQ2tpVWdmSjFZUzRFUmhrRFM2cVBJbFdMM1BGbkc4VjZQVWxoODZjTjgxWkhZdkhoUFYwUDdKT25UeGVKcTV1a1dFT0ctMUxrTmk5eGVnelRoMEVwV0w4NU5aUmJOYWJ0R0VqTUhqY04yak9NUldSYkE4OVdENVhOTExwdWUyNVlxbHcxOGZsbXNNRmh5dXk2YlVmanR2aXJ5SThwb0RLOVpXcGtPUjN6ejlNN0hpQXVyZ2NLSks5ODlEX0UzZ3d3S1FhQ21CbEJ4X3hESlJoVFB1bnJZUFBySHlpMExmaG5CeWgzcEJRMWhyelFLblZyX18zYkVwcE5abmRFLVhlWTY0VzNNaGUwa1RrREp2VXJndyJ9#0",
-    "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..cZ2VnA8Dtwjg6uwXkKsYWnCImihgBla7DQRrcdEzWsvGW5eSQnv31mbOOOct73yGIawXoVvwScXimC3oxIItLNvAKaGmbApu8QSHdGhlWSNPhwajQMErUgUUQBpK25EUDoVdDtqjsXkozMK_KhOAuPC7PjAA0Mncq9zcXWTKBFthALs39jSzlwVEn6ohj--rlXsfEgyYra2EUqTrQ_G2WFfS4GjJA5cQ_MYcciIPT7tT-mqE--rNNDQry0fNhgPlG85fsdKShu0tZi4P88ZcQoZyfrNPATdeIDpe3nxGPniiRWsJwBac_E9ut6l7Fl8KSTBfB3HV_6FUBTk_lCu0Jw"
+    "proofPurpose" : "assertionMethod",
+    "jws" : "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..rcNpxWMGJqomYf76nfmclEcnGUHu0JHGkf6AvJZTfOXOO-fAcb_y659HmDYvQJzRvH5gqnREnqX4MoaeV4J8jeWgoVImDICeU-w99v6Fcv6-Bt4NY3QQSgFtCvaeJG_RYZR4jtKRxErEsY7COI7bW_3D7ZFSHD9Livgh3jwDTV1jGJ50VAUzBkz4n4S9zrm7erzPlWKt1IDArdATFWb1Lq4LraY30CYGJB18GLYP1shKNNb1Q-rwJhAYT_PaUaURf_AMvSQ8vgjBeCCtr4_RnBDcbNldPNxthpApzN-ehwZL82VIpb_Ff0l3ehTgUfLzsV1vIOoW5Q4viSoQ7FEW2w"
   }
 }

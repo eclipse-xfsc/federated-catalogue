@@ -10,38 +10,51 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 
 import java.text.ParseException;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
 
 /**
- * Parses Loire-format JWTs (ICAM 24.07 / VC-JOSE-COSE) where the credential
+ * Parses Loire-format JWTs (W3C VC-JOSE-COSE / ICAM 24.07) where the credential
  * is the top-level JWT payload — no {@code vc}/{@code vp} wrapper claims.
  *
  * <p>This parser bypasses the danubetech library which expects wrapper claims.
  * After unwrapping, the payload is a standard JSON-LD credential that can be
  * processed by the existing claim extractors and SHACL validators.
  *
- * <p>Header validation enforced per ICAM 24.07:
+ * <p>Accepted header values (W3C VC-JOSE-COSE values are canonical and IANA-registered;
+ * ICAM 24.07 values are accepted for backward compatibility):
  * <ul>
- *   <li>VC: {@code typ: vc+ld+json+jwt}, {@code cty: vc+ld+json}</li>
- *   <li>VP: {@code typ: vp+ld+jwt}, {@code cty: vp+ld+json}</li>
+ *   <li>VC: {@code typ: vc+jwt} or {@code vc+ld+json+jwt},
+ *       {@code cty: vc} or {@code vc+ld+json}</li>
+ *   <li>VP: {@code typ: vp+jwt} or {@code vp+ld+jwt},
+ *       {@code cty: vp} or {@code vp+ld+json}</li>
  * </ul>
  */
 @Slf4j
 @Component
 public class LoireJwtParser {
 
-  private static final Set<String> VALID_VC_TYP = Set.of("vc+ld+json+jwt");
-  private static final Set<String> VALID_VP_TYP = Set.of("vp+ld+jwt");
-  private static final Set<String> VALID_VC_CTY = Set.of("vc+ld+json");
-  private static final Set<String> VALID_VP_CTY = Set.of("vp+ld+json");
+  private static final Set<String> VALID_VC_TYP = Set.of("vc+jwt", "vc+ld+json+jwt");
+  private static final Set<String> VALID_VP_TYP = Set.of("vp+jwt", "vp+ld+jwt");
+  private static final Set<String> VALID_VC_CTY = Set.of("vc", "vc+ld+json");
+  private static final Set<String> VALID_VP_CTY = Set.of("vp", "vp+ld+json");
+
+  private static final String VALID_TYP_DISPLAY =
+      Stream.concat(VALID_VC_TYP.stream(), VALID_VP_TYP.stream())
+            .sorted().collect(Collectors.joining(", "));
+  private static final String VALID_VC_CTY_DISPLAY =
+      VALID_VC_CTY.stream().sorted().collect(Collectors.joining(", "));
+  private static final String VALID_VP_CTY_DISPLAY =
+      VALID_VP_CTY.stream().sorted().collect(Collectors.joining(", "));
 
   /**
    * Unwraps a Loire-format JWT to JSON-LD.
    *
-   * <p>Validates ICAM 24.07 headers and rejects payloads that contain
+   * <p>Validates W3C VC-JOSE-COSE / ICAM 24.07 headers and rejects payloads that contain
    * {@code vc} or {@code vp} wrapper claims (these belong to the danubetech path).
    *
    * @param content the JWT-wrapped content
@@ -67,7 +80,7 @@ public class LoireJwtParser {
    * Returns true if the JWT header indicates a Verifiable Presentation.
    *
    * @param content the JWT-wrapped content (must start with {@code eyJ})
-   * @return true if {@code typ} is {@code vp+ld+jwt}
+   * @return true if {@code typ} is {@code vp+jwt} (W3C) or {@code vp+ld+jwt} (ICAM 24.07)
    */
   public boolean isVpJwt(ContentAccessor content) {
     String body = content.getContentAsString().strip();
@@ -94,22 +107,22 @@ public class LoireJwtParser {
     if (!isVc && !isVp) {
       throw new ClientException(
           "Loire JWT has invalid 'typ' header: '" + typ
-              + "'; expected one of: vc+ld+json+jwt, vp+ld+jwt");
+              + "'; expected one of: " + VALID_TYP_DISPLAY);
     }
 
     if (cty == null) {
       throw new ClientException(
-          "Loire JWT missing required 'cty' header (ICAM 24.07); "
-              + "expected: " + (isVc ? "vc+ld+json" : "vp+ld+json"));
+          "Loire JWT missing required 'cty' header; "
+              + "expected: " + (isVc ? VALID_VC_CTY_DISPLAY : VALID_VP_CTY_DISPLAY));
     }
 
     if (isVc && !VALID_VC_CTY.contains(cty)) {
       throw new ClientException(
-          "Loire VC JWT has invalid 'cty' header: '" + cty + "'; expected: vc+ld+json");
+          "Loire VC JWT has invalid 'cty' header: '" + cty + "'; expected: " + VALID_VC_CTY_DISPLAY);
     }
     if (isVp && !VALID_VP_CTY.contains(cty)) {
       throw new ClientException(
-          "Loire VP JWT has invalid 'cty' header: '" + cty + "'; expected: vp+ld+json");
+          "Loire VP JWT has invalid 'cty' header: '" + cty + "'; expected: " + VALID_VP_CTY_DISPLAY);
     }
   }
 

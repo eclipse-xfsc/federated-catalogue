@@ -79,6 +79,9 @@ public class VerificationControllerTest {
   public void verifyParticipantShouldReturnSuccessResponse() throws Exception {
     String json = getMockFileDataAsString("default-participant.json");
     String response = mockMvc.perform(MockMvcRequestBuilders.post("/verification")
+            // fixture signed by external GXDCH key without @context — cannot re-sign; skip sig verification
+            .queryParam("verifyVPSignature", "false")
+            .queryParam("verifyVCSignature", "false")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(json)
