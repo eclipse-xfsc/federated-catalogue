@@ -42,11 +42,11 @@ public class SchemaFile {
   @Column(name = "namehash", length = 64, nullable = false)
   private String nameHash;
 
-  @Column(name = "uploadtime", nullable = false)
-  private Instant uploadTime;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-  @Column(name = "updatetime", nullable = false)
-  private Instant updateTime;
+  @Column(name = "modified_at", nullable = false)
+  private Instant modifiedAt;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "type", length = 20, nullable = false)

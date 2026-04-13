@@ -22,8 +22,8 @@ public final class SchemaFileMapper {
         entity.getSchemaId(),
         entity.getNameHash(),
         entity.getType(),
-        entity.getUploadTime(),
-        entity.getUpdateTime(),
+        entity.getCreatedAt(),
+        entity.getModifiedAt(),
         entity.getContent(),
         terms);
   }
@@ -36,8 +36,8 @@ public final class SchemaFileMapper {
     entity.setSchemaId(record.getId());
     entity.setNameHash(record.nameHash());
     entity.setType(record.type());
-    entity.setUploadTime(record.uploadTime());
-    entity.setUpdateTime(record.updateTime());
+    entity.setCreatedAt(record.createdAt());
+    entity.setModifiedAt(record.modifiedAt());
     entity.setContent(record.content());
     if (record.terms() != null) {
       Set<SchemaTerm> termEntities = record.terms().stream().map(term -> {

@@ -24,13 +24,18 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Statement;
@@ -46,6 +51,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
@@ -70,7 +76,7 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {SchemaStoreTest.TestApplication.class, FileStoreConfig.class,
-  SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaJpaDao.class,
+  SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class,
   ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class})
 @Transactional
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
@@ -513,7 +519,7 @@ public class SchemaStoreTest {
     SchemaStoreResult result = schemaStore.addSchema(content, JSON);
 
     assertEquals("https://example.org/schemas/person", result.id());
-    assertNotNull(result.uploadTime());
+    assertNotNull(result.createdAt());
   }
 
   @Test
@@ -523,7 +529,7 @@ public class SchemaStoreTest {
     SchemaStoreResult result = schemaStore.addSchema(content, JSON);
 
     assertTrue(result.id().startsWith("urn:uuid:"));
-    assertNotNull(result.uploadTime());
+    assertNotNull(result.createdAt());
   }
 
   @Test
@@ -540,7 +546,7 @@ public class SchemaStoreTest {
     SchemaStoreResult result = schemaStore.addSchema(content, XML);
 
     assertEquals("http://example.org/config", result.id());
-    assertNotNull(result.uploadTime());
+    assertNotNull(result.createdAt());
   }
 
   @Test
@@ -550,7 +556,7 @@ public class SchemaStoreTest {
     SchemaStoreResult result = schemaStore.addSchema(content, XML);
 
     assertTrue(result.id().startsWith("urn:uuid:"));
-    assertNotNull(result.uploadTime());
+    assertNotNull(result.createdAt());
   }
 
   @Test
@@ -691,6 +697,30 @@ public class SchemaStoreTest {
     SchemaStoreResult updateResult = schemaStore.updateSchema(addResult.id(), updatedContent);
 
     assertEquals(addResult.id(), updateResult.id());
+  }
+
+  // NOT_SUPPORTED overrides the class-level @Transactional so each service call commits in its
+  // own transaction. Without this, all calls join the test transaction, Envers never writes
+  // audit entries (it writes on commit), and getVersionCount always returns 0.
+  @Test
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void updateSchema_sequentialUpdates_versionsIncrement() {
+    String schemaId = schemaStore.addSchema(
+        TestUtil.getAccessor(getClass(), "Schema-Tests/valid-schemaShapeReduced.ttl")).id();
+
+    try {
+      SchemaStoreResult first = schemaStore.updateSchema(schemaId,
+          TestUtil.getAccessor(getClass(), "Schema-Tests/valid-schemaShape.ttl"));
+      SchemaStoreResult second = schemaStore.updateSchema(schemaId,
+          TestUtil.getAccessor(getClass(), "Schema-Tests/valid-schemaShapeReduced.ttl"));
+
+      assertEquals(2, first.version());
+      assertEquals(1, first.previousVersion());
+      assertEquals(3, second.version());
+      assertEquals(2, second.previousVersion());
+    } finally {
+      schemaStore.deleteSchema(schemaId);
+    }
   }
 
   private static boolean isExistTriple(Model model, String sub, String pre, String obj) {

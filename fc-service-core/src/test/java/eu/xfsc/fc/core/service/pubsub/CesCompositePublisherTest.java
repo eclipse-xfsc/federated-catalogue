@@ -12,6 +12,7 @@ import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.PubSubConfig;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao;
+import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -82,8 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         DidResolverConfig.class,
         DocumentLoaderProperties.class,
         DocumentLoaderConfig.class,
-		DummyGraphStore.class,
-        FileStoreConfig.class,
+		DummyGraphStore.class, SchemaAuditRepository.class, FileStoreConfig.class,
         FormatDetector.class,
         HttpDocumentResolver.class,
         IriGenerator.class,

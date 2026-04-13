@@ -172,6 +172,25 @@ public interface SchemaStore {
   ContentAccessor getLatestSchemaByType(SchemaType schemaType);
 
   /**
+   * Get a specific version of the schema.
+   *
+   * @param identifier The identifier of the schema.
+   * @param version    The 1-based version ordinal.
+   * @return The schema record at that version.
+   * @throws eu.xfsc.fc.core.exception.NotFoundException if schema or version not found
+   */
+  SchemaRecord getSchemaVersion(String identifier, int version);
+
+  /**
+   * Get all versions of the schema, ordered ascending by version number.
+   *
+   * @param identifier The identifier of the schema.
+   * @return List of schema records with version metadata.
+   * @throws eu.xfsc.fc.core.exception.NotFoundException if schema not found
+   */
+  List<SchemaRecord> getSchemaVersions(String identifier);
+
+  /**
    * Remove all Schemas from the SchemaStore.
    */
   void clear();
