@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="2026-04-01-asset-change-comment" author="saackef">
+        <comment>Add change_comment column to assets and assets_aud for Envers-based versioning</comment>
+        <addColumn tableName="assets">
+            <column name="change_comment" type="TEXT"/>
+        </addColumn>
+        <addColumn tableName="assets_aud">
+            <column name="change_comment" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -6,6 +6,7 @@ import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
@@ -65,7 +66,7 @@ import java.util.Map;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {Neo4jGraphStoreAccuracyTest.TestApplication.class, DatabaseConfig.class, GraphDbConfig.class, FileStoreConfig.class, Neo4jGraphStoreAccuracyTest.class,
-	Neo4jGraphStore.class, AssetStoreImpl.class, AssetJpaDao.class, IriGenerator.class, IriValidator.class,
+	Neo4jGraphStore.class, AssetStoreImpl.class, AssetJpaDao.class, AssetAuditRepository.class, IriGenerator.class, IriValidator.class,
 	VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, ValidatorCacheJpaDao.class,
 	DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
 	CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,

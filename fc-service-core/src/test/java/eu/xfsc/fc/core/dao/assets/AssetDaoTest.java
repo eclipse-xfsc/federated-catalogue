@@ -35,7 +35,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {AssetDaoTest.TestConfig.class, AssetJpaDao.class, DatabaseConfig.class})
+@ContextConfiguration(classes = {AssetDaoTest.TestConfig.class, AssetJpaDao.class, AssetAuditRepository.class, DatabaseConfig.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class AssetDaoTest {
 
@@ -441,7 +441,7 @@ class AssetDaoTest {
   }
 
   @Test
-  void insert_existingActiveSubject_deprecatesOldAndReturnsOldHash() {
+  void insert_existingActiveSubject_updatesInPlaceAndReturnsNewHash() {
     AssetRecord first = buildSimpleRecord("hash-old", "sub/1", "iss/1",
         Instant.parse("2024-01-01T00:00:00Z"));
     assetDao.insert(first);
@@ -453,12 +453,14 @@ class AssetDaoTest {
 
     SubjectHashRecord result = assetDao.insert(second);
 
+    // In-place update: subjectId is returned, hash reflects the updated row
     assertEquals("sub/1", result.subjectId());
-    assertEquals("hash-old", result.assetHash());
-
-    // Verify old record is now DEPRECATED
-    AssetRecord oldRecord = assetDao.select("hash-old");
-    assertEquals(AssetStatus.DEPRECATED, oldRecord.getStatus());
+    // Old hash no longer exists as a live row — Envers preserves it in assets_aud
+    assertNull(assetDao.select("hash-old"));
+    // New row has the updated hash and remains ACTIVE
+    AssetRecord updated = assetDao.select("hash-new");
+    assertNotNull(updated);
+    assertEquals(AssetStatus.ACTIVE, updated.getStatus());
   }
 
   @Test

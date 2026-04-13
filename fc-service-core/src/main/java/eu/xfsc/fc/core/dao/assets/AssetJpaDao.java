@@ -6,23 +6,24 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.service.assetstore.AssetRecord;
 import eu.xfsc.fc.core.service.assetstore.SubjectHashRecord;
 import eu.xfsc.fc.core.service.assetstore.SubjectStatusRecord;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-@Component
+@Repository
 @RequiredArgsConstructor
 public class AssetJpaDao implements AssetDao {
 
     private static final short ACTIVE_STATUS = (short) AssetStatus.ACTIVE.ordinal();
 
     private final AssetRepository repository;
+    private final AssetAuditRepository auditRepository;
 
     @Override
     public Optional<AssetRecord> selectBySubjectId(String subjectId) {
@@ -71,21 +72,30 @@ public class AssetJpaDao implements AssetDao {
         Optional<Asset> existing = repository.findBySubjectIdAndStatus(
                 assetRecord.getId(), ACTIVE_STATUS);
 
-        String oldSubjectId = null;
-        String oldHash = null;
         if (existing.isPresent()) {
+            // Update existing row in-place. Envers intercepts the flush and records
+            // the pre-update state as a new revision in assets_aud automatically.
             Asset old = existing.get();
-            oldSubjectId = old.getSubjectId();
-            oldHash = old.getAssetHash();
-            old.setStatus((short) AssetStatus.DEPRECATED.ordinal());
-            old.setStatusTime(Instant.now());
+            old.setAssetHash(assetRecord.getAssetHash());
+            old.setContent(assetRecord.getContent());
+            old.setChangeComment(assetRecord.getChangeComment());
+            old.setUploadTime(assetRecord.getUploadDatetime());
+            old.setStatusTime(assetRecord.getStatusDatetime());
+            old.setIssuer(assetRecord.getIssuer());
+            old.setExpirationTime(assetRecord.getExpirationTime());
+            old.setValidators(assetRecord.getValidators());
+            old.setContentType(assetRecord.getContentType());
+            old.setFileSize(assetRecord.getFileSize());
+            old.setOriginalFilename(assetRecord.getOriginalFilename());
+            old.setStatus(ACTIVE_STATUS);
             repository.saveAndFlush(old);
+            return new SubjectHashRecord(old.getSubjectId(), old.getAssetHash());
         }
 
         Asset newEntity = AssetMapper.toEntity(assetRecord);
         repository.save(newEntity);
 
-        return new SubjectHashRecord(oldSubjectId, oldHash);
+        return new SubjectHashRecord(null, null);
     }
 
     @Override
@@ -117,5 +127,36 @@ public class AssetJpaDao implements AssetDao {
     @Transactional
     public int deleteAll() {
         return repository.deleteAllReturningCount();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AssetRecord> selectVersions(String subjectId) {
+        return repository.findBySubjectId(subjectId)
+            .map(entity -> auditRepository.findAllVersions(entity.getId()))
+            .orElse(List.of());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResults<AssetRecord> selectVersionsPageWithTotal(String subjectId, int page, int size) {
+        return repository.findBySubjectId(subjectId)
+            .map(entity -> auditRepository.findVersionsPageWithTotal(entity.getId(), page, size))
+            .orElse(new PaginatedResults<>(0, List.of()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<AssetRecord> selectVersion(String subjectId, int version) {
+        return repository.findBySubjectId(subjectId)
+            .flatMap(entity -> auditRepository.findVersion(entity.getId(), version));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getVersionCount(String subjectId) {
+        return repository.findBySubjectId(subjectId)
+            .map(entity -> auditRepository.countVersions(entity.getId()))
+            .orElse(0);
     }
 }

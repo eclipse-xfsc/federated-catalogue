@@ -1,7 +1,34 @@
 package eu.xfsc.fc.server.service;
 
-import static eu.xfsc.fc.server.util.AssetHelper.parseTimeRange;
-import static eu.xfsc.fc.server.util.SessionUtils.checkParticipantAccess;
+import eu.xfsc.fc.api.generated.model.Asset;
+import eu.xfsc.fc.api.generated.model.AssetResult;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.api.generated.model.AssetVersion;
+import eu.xfsc.fc.api.generated.model.AssetVersionList;
+import eu.xfsc.fc.api.generated.model.Assets;
+import eu.xfsc.fc.core.exception.ClientException;
+import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.pojo.AssetFilter;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.PaginatedResults;
+import eu.xfsc.fc.core.service.assetstore.AssetRecord;
+import eu.xfsc.fc.core.service.assetstore.AssetStore;
+import eu.xfsc.fc.core.service.verification.VerificationService;
+import eu.xfsc.fc.server.generated.controller.AssetsApiDelegate;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ValidationException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriUtils;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -11,34 +38,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.util.UriUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
-import eu.xfsc.fc.api.generated.model.Asset;
-import eu.xfsc.fc.api.generated.model.AssetResult;
-import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.api.generated.model.Assets;
-import eu.xfsc.fc.core.exception.ClientException;
-import eu.xfsc.fc.core.exception.ConflictException;
-import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.AssetFilter;
-import eu.xfsc.fc.core.pojo.AssetMetadata;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
-import eu.xfsc.fc.core.service.assetstore.AssetStore;
-import eu.xfsc.fc.core.service.verification.VerificationService;
-import eu.xfsc.fc.server.generated.controller.AssetsApiDelegate;
-import jakarta.validation.ValidationException;
-import lombok.extern.slf4j.Slf4j;
+import static eu.xfsc.fc.server.util.AssetHelper.parseTimeRange;
+import static eu.xfsc.fc.server.util.SessionUtils.checkParticipantAccess;
 
 /**
  * Implementation of the {@link eu.xfsc.fc.server.generated.controller.AssetsApiDelegate} interface.
@@ -47,6 +48,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class AssetService implements AssetsApiDelegate {
+
+  private static final int DEFAULT_VERSION_PAGE_SIZE = 20;
 
   private final VerificationService verificationService;
   private final AssetStore assetStorePublisher;
@@ -123,8 +126,10 @@ public class AssetService implements AssetsApiDelegate {
    *         Must not outline any information about the internal structure of the server. (status code 500)
    */
   @Override
-  public ResponseEntity<String> readAssetById(String id) {
-    AssetMetadata assetMetadata = assetStorePublisher.getById(id);
+  public ResponseEntity<String> readAssetById(String id, Integer version) {
+    AssetMetadata assetMetadata = version != null
+        ? assetStorePublisher.getByIdAndVersion(id, version)
+        : assetStorePublisher.getById(id);
 
     // Only RDF assets have content in DB. Non-RDF assets (PDF, binary) are in FileStore
     // and require a dedicated download endpoint
@@ -180,31 +185,10 @@ public class AssetService implements AssetsApiDelegate {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public ResponseEntity<Asset> addAsset(String body) {
     log.debug("addAsset.enter; got asset of length: {}", body.length());
-
-    try {
-     // TODO: 27.07.2022 Need to change the description and the order of actions in the documentation.
-     //  The FH scheme is different from the real process.
-      String contentType = httpServletRequest.getHeader(HttpHeaders.CONTENT_TYPE);
-      ContentAccessorDirect contentAccessor = new ContentAccessorDirect(body, contentType);
-
-      CredentialVerificationResult verificationResult = verificationService.verifyCredential(contentAccessor);
-
-      AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(), verificationResult.getIssuer(),
-              verificationResult.getValidators(), contentAccessor);
-      checkParticipantAccess(assetMetadata.getIssuer());
-      assetStorePublisher.storeCredential(assetMetadata, verificationResult);
-
-      if (verificationResult.getWarnings() != null && !verificationResult.getWarnings().isEmpty()) {
-        assetMetadata.setWarnings(verificationResult.getWarnings());
-      }
-
-      log.debug("addAsset.exit; returning asset with id: {}", assetMetadata.getId());
-      String encodedId = UriUtils.encodePathSegment(assetMetadata.getId(), StandardCharsets.UTF_8);
-      return ResponseEntity.created(URI.create("/assets/" + encodedId)).body(assetMetadata);
-    } catch (ValidationException exception) {
-      log.debug("addAsset.error; Asset credential isn't parsed due to: " + exception.getMessage(), exception);
-      throw new ClientException("Asset credential isn't parsed due to: " + exception.getMessage());
-    }
+    AssetMetadata assetMetadata = verifyAndStore(body, null, null);
+    log.debug("addAsset.exit; returning asset with id: {}", assetMetadata.getId());
+    String encodedId = UriUtils.encodePathSegment(assetMetadata.getId(), StandardCharsets.UTF_8);
+    return ResponseEntity.created(URI.create("/assets/" + encodedId)).body(assetMetadata);
   }
 
   /**
@@ -239,6 +223,138 @@ public class AssetService implements AssetsApiDelegate {
 
     log.debug("revokeAsset.exit; updated asset by hash: {}", assetHash);
     return new ResponseEntity<>(assetMetadata, HttpStatus.OK);
+  }
+
+  /**
+   * Service method for PUT /assets/{id} : Update an existing asset, creating a new Envers revision.
+   *
+   * @param id            IRI of the asset (required)
+   * @param body          The new asset content (required)
+   * @param changeComment Optional change note for this version (optional)
+   * @return The updated asset (status code 200)
+   */
+  @Override
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public ResponseEntity<Asset> updateAsset(String id, String body, String changeComment) {
+    log.debug("updateAsset.enter; id: {}, changeComment: {}", id, changeComment);
+    AssetMetadata assetMetadata = verifyAndStore(body, changeComment, id);
+    log.debug("updateAsset.exit; returning asset with id: {}", id);
+    return ResponseEntity.ok(assetMetadata);
+  }
+
+  /**
+   * Service method for GET /assets/{id}/versions : Get the version history of an asset.
+   *
+   * @param id   IRI of the asset (required)
+   * @param page 0-based page index (optional, default 0)
+   * @param size Page size (optional, default 20)
+   * @return Paginated version list (status code 200)
+   */
+  @Override
+  public ResponseEntity<AssetVersionList> readAssetVersions(String id, Integer page, Integer size) {
+    log.debug("readAssetVersions.enter; id: {}, page: {}, size: {}", id, page, size);
+    int pageNum = page != null ? page : 0;
+    int pageSize = size != null ? size : DEFAULT_VERSION_PAGE_SIZE;
+
+    PaginatedResults<AssetRecord> results = assetStorePublisher.getVersionHistoryPage(id, pageNum, pageSize);
+
+    int latestVersion = (int) results.getTotalCount();
+    List<AssetVersion> versionItems = results.getResults().stream()
+        .map(this::toAssetVersion)
+        .toList();
+
+    AssetVersionList versionList = new AssetVersionList();
+    versionList.setId(id);
+    versionList.setTotal(latestVersion);
+    versionList.setVersions(versionItems);
+
+    log.debug("readAssetVersions.exit; returning {} versions, total: {}", versionItems.size(), latestVersion);
+    return ResponseEntity.ok(versionList);
+  }
+
+  /**
+   * Service method for POST /assets/{id}/versions/{version}/revoke : Revoke a specific version.
+   *
+   * <p>Only the current (latest) version can be revoked. Revoking a historical version returns 409.</p>
+   *
+   * @param id      IRI of the asset (required)
+   * @param version 1-based version ordinal to revoke (required)
+   * @return The revoked version metadata (status code 200)
+   */
+  @Override
+  @Transactional
+  public ResponseEntity<AssetVersion> revokeAssetVersion(String id, Integer version) {
+    log.debug("revokeAssetVersion.enter; id: {}, version: {}", id, version);
+
+    // Load snapshot first (throws 404 if version unknown) so we can auth-check before disclosing state.
+    AssetRecord snapshot = assetStorePublisher.getByIdAndVersion(id, version);
+    checkParticipantAccess(snapshot.getIssuer());
+
+    int totalVersions = assetStorePublisher.getVersionCount(id);
+    if (!version.equals(totalVersions)) {
+      throw new ConflictException(
+          "Only the current version (" + totalVersions + ") can be revoked. Requested: " + version);
+    }
+
+    // changeLifeCycleStatus throws ConflictException (409) if the row is already non-ACTIVE (e.g. REVOKED).
+    assetStorePublisher.changeLifeCycleStatus(snapshot.getAssetHash(), AssetStatus.REVOKED);
+
+    AssetVersion av = new AssetVersion();
+    av.setVersion(version);
+    av.setCreatedAt(snapshot.getUploadDatetime());
+    av.setCreatedBy(snapshot.getIssuer());
+    av.setStatus(AssetStatus.REVOKED);
+    av.setIsCurrent(true);
+    av.setChangeComment(snapshot.getChangeComment());
+
+    log.debug("revokeAssetVersion.exit; revoked version {} of asset {}", version, id);
+    return ResponseEntity.ok(av);
+  }
+
+  /**
+   * Verify a credential body, check participant access, and store it.
+   *
+   * @param body          Raw credential content.
+   * @param changeComment Optional change note (null for first upload).
+   * @param expectedId    If non-null, the credential IRI must match; throws 400 otherwise.
+   * @return Stored asset metadata with warnings populated.
+   */
+  private AssetMetadata verifyAndStore(String body, String changeComment, String expectedId) {
+    try {
+      String contentType = httpServletRequest.getHeader(HttpHeaders.CONTENT_TYPE);
+      ContentAccessorDirect contentAccessor = new ContentAccessorDirect(body, contentType);
+
+      CredentialVerificationResult verificationResult = verificationService.verifyCredential(contentAccessor);
+
+      if (expectedId != null && !expectedId.equals(verificationResult.getId())) {
+        throw new ClientException(
+            "Path id '" + expectedId + "' does not match credential IRI '" + verificationResult.getId() + "'");
+      }
+
+      AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(), verificationResult.getIssuer(),
+          verificationResult.getValidators(), contentAccessor);
+      assetMetadata.setChangeComment(changeComment);
+      checkParticipantAccess(assetMetadata.getIssuer());
+      assetStorePublisher.storeCredential(assetMetadata, verificationResult);
+
+      if (verificationResult.getWarnings() != null && !verificationResult.getWarnings().isEmpty()) {
+        assetMetadata.setWarnings(verificationResult.getWarnings());
+      }
+      return assetMetadata;
+    } catch (ValidationException exception) {
+      throw new ClientException("Asset credential isn't parsed due to: " + exception.getMessage());
+    }
+  }
+
+  private AssetVersion toAssetVersion(AssetRecord record) {
+    AssetVersion av = new AssetVersion();
+    av.setVersion(record.getVersion());
+    av.setCreatedAt(record.getUploadDatetime());
+    av.setCreatedBy(record.getIssuer());
+    av.setStatus(record.getStatus());
+    av.setIsCurrent(record.getIsCurrent());
+    av.setChangeComment(record.getChangeComment());
+    return av;
   }
 
   private boolean isNotNullObjects(Object... objs) {
