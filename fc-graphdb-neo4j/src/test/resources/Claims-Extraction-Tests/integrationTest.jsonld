@@ -12,22 +12,22 @@
 	  "@context": {
 		"sh": "http://www.w3.org/ns/shacl#",
 		"xsd": "http://www.w3.org/2001/XMLSchema#",
-		"gax-service": "http://w3id.org/gaia-x/service#"
+		"gx": "https://w3id.org/gaia-x/2511#"
 	  },
       "id": "https://vc.craftworks.euprogigant.io/sd/gxserviceAlgorithmServiceOfferingCRAFTWORKS_eupg.json",
-      "gax-service:providedBy": {
+      "gx:providedBy": {
         "@value": "https://vc.craftworks.euprogigant.io/sd/participant.json",
         "@type": "xsd:string"
       },
-      "gax-service:name": {
+      "gx:name": {
         "@value": "(cost-coverage) Algorithm - EuProGigant CNC-ProfiTrainer (Minimal Viable Hannover)",
         "@type": "xsd:string"
       },
-      "gax-service:description": {
+      "gx:description": {
         "@value": "full text as decribed in did:op:62d020718d74A6e0789d029328FFbbe581036AB0",
         "@type": "xsd:string"
       },
-      "gax-service:tags": [
+      "gx:tags": [
         {
           "@value": "fair",
           "@type": "xsd:string"
@@ -41,25 +41,25 @@
           "@type": "xsd:string"
         }
       ],
-      "gax-service:serviceModel": {
+      "gx:serviceModel": {
         "@value": "subscription",
         "@type": "xsd:string"
       },
-      "gax-service:webAddress": {
+      "gx:webAddress": {
         "@value": "https://euprogigant.portal.minimal-gaia-x.eu/",
         "@type": "xsd:anyURI"
       },
-      "gax-service:TermsAndConditions": {
-        "gax-service:url": {
+      "gx:TermsAndConditions": {
+        "gx:url": {
           "@value": "https://creativecommons.org/licenses/by/4.0/",
           "@type": "xsd:string"
         },
-        "gax-service:hash": {
+        "gx:hash": {
           "@value": "5F014F5D15BAFE120CBB813E543969989B6C45D1423AFAC3CCBBBCDB74B04C79",
           "@type": "xsd:string"
         }
       },
-      "gax-service:policies": [
+      "gx:policies": [
         {
           "@value": "Policy A ODRL/REGO",
           "@type": "xsd:string"
@@ -69,7 +69,7 @@
           "@type": "xsd:string"
         }
       ],
-      "gax-service:gdpr": [
+      "gx:gdpr": [
         {
           "@value": "gdpr attribute 1",
           "@type": "xsd:string"
@@ -79,8 +79,8 @@
           "@type": "xsd:string"
         }
       ],
-      "gax-service:dependsOn": [],
-      "gax-service:aggregationOf": [
+      "gx:dependsOn": [],
+      "gx:aggregationOf": [
         {
           "@value": "https://vc.craftworks.euprogigant.io/sd/gxresourceAlgorithmCRAFTWORKS_eupg.json",
           "@type": "xsd:string"

@@ -73,7 +73,7 @@ class SchemaVersioningControllerTest {
     String id = schemaStore.addSchema(new ContentAccessorDirect(contentV1)).id();
 
     // Update the schema with different content to create version 2
-    String contentV2 = getMockFileDataAsString("gax-test-ontology.ttl");
+    String contentV2 = getMockFileDataAsString("gx-2511-test-ontology.ttl");
     schemaStore.updateSchema(id, new ContentAccessorDirect(contentV2));
 
     String encodedId = URLEncoder.encode(id, Charset.defaultCharset());
@@ -138,7 +138,7 @@ class SchemaVersioningControllerTest {
   void getSchemaVersions_afterThreeUpdates_returnsThreeVersionsWithCurrentMarked() throws Exception {
     String content = getMockFileDataAsString("test-schema.ttl");
     String id = schemaStore.addSchema(new ContentAccessorDirect(content)).id();
-    schemaStore.updateSchema(id, new ContentAccessorDirect(getMockFileDataAsString("gax-test-ontology.ttl")));
+    schemaStore.updateSchema(id, new ContentAccessorDirect(getMockFileDataAsString("gx-2511-test-ontology.ttl")));
     schemaStore.updateSchema(id, new ContentAccessorDirect(getMockFileDataAsString("legal-personShape.ttl")));
     String encodedId = URLEncoder.encode(id, Charset.defaultCharset());
 

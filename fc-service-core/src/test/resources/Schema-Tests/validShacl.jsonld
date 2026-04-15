@@ -9,7 +9,7 @@
       },
       "http://www.w3.org/ns/shacl#order": 1,
       "http://www.w3.org/ns/shacl#path": {
-        "@id": "http://w3id.org/gaia-x/resource#maintainedBy"
+        "@id": "https://w3id.org/gaia-x/2511#maintainedBy"
       }
     },
     {
@@ -21,7 +21,7 @@
       },
       "http://www.w3.org/ns/shacl#order": 2,
       "http://www.w3.org/ns/shacl#path": {
-        "@id": "http://w3id.org/gaia-x/resource#ownedBy"
+        "@id": "https://w3id.org/gaia-x/2511#ownedBy"
       }
     },
     {
@@ -33,7 +33,7 @@
       },
       "http://www.w3.org/ns/shacl#order": 3,
       "http://www.w3.org/ns/shacl#path": {
-        "@id": "http://w3id.org/gaia-x/resource#manufacturedBy"
+        "@id": "https://w3id.org/gaia-x/2511#manufacturedBy"
       }
     },
     {
@@ -45,7 +45,7 @@
       "http://www.w3.org/ns/shacl#name": "location address",
       "http://www.w3.org/ns/shacl#order": 4,
       "http://www.w3.org/ns/shacl#path": {
-        "@id": "http://w3id.org/gaia-x/resource#locationAddress"
+        "@id": "https://w3id.org/gaia-x/2511#locationAddress"
       }
     },
     {
@@ -57,7 +57,7 @@
       },
       "http://www.w3.org/ns/shacl#order": 1,
       "http://www.w3.org/ns/shacl#path": {
-        "@id": "http://w3id.org/gaia-x/resource#aggregationOf"
+        "@id": "https://w3id.org/gaia-x/2511#aggregationOf"
       }
     },
     {
@@ -70,7 +70,7 @@
       "http://www.w3.org/ns/shacl#name": "name",
       "http://www.w3.org/ns/shacl#order": 2,
       "http://www.w3.org/ns/shacl#path": {
-        "@id": "http://w3id.org/gaia-x/resource#name"
+        "@id": "https://w3id.org/gaia-x/2511#name"
       }
     },
     {
@@ -87,7 +87,7 @@
       }
     },
     {
-      "@id": "http://w3id.org/gaia-x/validation#PhysicalResourceShape",
+      "@id": "https://w3id.org/gaia-x/2511#PhysicalResourceShape",
       "@type": "http://www.w3.org/ns/shacl#NodeShape",
       "http://www.w3.org/ns/shacl#property": [
         {
@@ -113,7 +113,7 @@
         }
       ],
       "http://www.w3.org/ns/shacl#targetClass": {
-        "@id": "http://w3id.org/gaia-x/resource#PhysicalResource"
+        "@id": "https://w3id.org/gaia-x/2511#PhysicalResource"
       }
     }
   ]

@@ -1,14 +1,14 @@
 @prefix cc: <http://creativecommons.org/ns#> .
 @prefix dct: <http://purl.org/dc/terms/> .
-@prefix gax-core: <http://w3id.org/gaia-x/core#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix vann: <http://purl.org/vocab/vann/> .
 @prefix voaf: <http://purl.org/vocommons/voaf#> .
 @prefix void: <http://rdfs.org/ns/void#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix gx: <https://w3id.org/gaia-x/2511#> .
 
-gax-core: a voaf:Vocabulary,
+gx: a voaf:Vocabulary,
         owl:Ontology ;
     rdfs:label "Gaia-X Core Ontology"@en ;
     cc:license <http://www.apache.org/licenses/LICENSE-2.0> ;
@@ -54,39 +54,39 @@ Additional information on the constraints that have to be fulfilled be the self 
     dct:modified "2022-10-26T18:32:04+02:00"^^xsd:dateTimeStamp ;
     dct:title "Gaia-X Core Ontology"@en ;
     vann:preferredNamespacePrefix "gax-core" ;
-    vann:preferredNamespaceUri "http://w3id.org/gaia-x/core#" ;
+    vann:preferredNamespaceUri "https://w3id.org/gaia-x/2511#" ;
     void:vocabulary dct:,
         vann:,
         voaf:,
         void: ;
     owl:versionInfo "22.04" .
 
-gax-core:aggregationOf a owl:ObjectProperty ;
+gx:aggregationOf a owl:ObjectProperty ;
     rdfs:label "aggregation of"@en ;
     rdfs:comment "DID of resource self-escription related to the service and that can exist independently of it.",
         "DID of resources self-description related to the resource and that can exist independently of it." ;
-    rdfs:domain gax-core:Resource,
-        gax-core:ServiceOffering ;
-    rdfs:range gax-core:Resource .
+    rdfs:domain gx:Resource,
+        gx:ServiceOffering ;
+    rdfs:range gx:Resource .
 
-gax-core:operatedBy a owl:ObjectProperty ;
+gx:operatedBy a owl:ObjectProperty ;
     rdfs:label "operated by"@en ;
     rdfs:comment "DID of resources self-description related to the resource and that can exist independently of it." ;
-    rdfs:domain gax-core:Resource ;
-    rdfs:range gax-core:Resource .
+    rdfs:domain gx:Resource ;
+    rdfs:range gx:Resource .
 
-gax-core:providedBy a owl:ObjectProperty ;
+gx:providedBy a owl:ObjectProperty ;
     rdfs:label "provided by"@en ;
     rdfs:comment "DID of participant self-descrription providing this service offering." ;
-    rdfs:domain gax-core:ServiceOffering ;
-    rdfs:range gax-core:Participant .
+    rdfs:domain gx:ServiceOffering ;
+    rdfs:range gx:Participant .
 
-gax-core:Participant a owl:Class ;
+gx:Participant a owl:Class ;
     rdfs:label "Participant"@en .
 
-gax-core:ServiceOffering a owl:Class ;
+gx:ServiceOffering a owl:Class ;
     rdfs:label "Service Offering"@en .
 
-gax-core:Resource a owl:Class ;
+gx:Resource a owl:Class ;
     rdfs:label "Resource"@en .
 

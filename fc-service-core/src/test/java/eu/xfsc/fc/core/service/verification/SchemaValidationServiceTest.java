@@ -97,11 +97,10 @@ public class SchemaValidationServiceTest {
         assertTrue(result.isConforming(), "Valid payload should conform");
     }
 
-    /** Verifies that an invalid payload fails against the composite schema built from multiple stored shapes. */
+    /** Verifies that an invalid payload fails against the composite schema built from stored shapes. */
     @Test
     void validateInvalidPayloadAgainstCompositeSchema() {
         schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-        schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
 
         SchemaValidationResult result = schemaValidationService.validateCredentialAgainstCompositeSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"));
@@ -111,10 +110,9 @@ public class SchemaValidationServiceTest {
         assertTrue(result.getValidationReport().contains("Property needs to have at least 1 value"));
     }
 
-    /** Verifies that a valid payload passes against the composite schema built from multiple stored shapes. */
+    /** Verifies that a valid payload passes against the composite schema built from stored shapes. */
     @Test
     void validateValidPayloadAgainstCompositeSchema() {
-        schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
         schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
 
         SchemaValidationResult result = schemaValidationService.validateCredentialAgainstCompositeSchema(
@@ -128,7 +126,6 @@ public class SchemaValidationServiceTest {
     @Test
     void validateAgainstNullSchemaFallsBackToComposite() {
         schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-        schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
 
         SchemaValidationResult resultExplicit = schemaValidationService.validateCredentialAgainstCompositeSchema(
                 getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"));

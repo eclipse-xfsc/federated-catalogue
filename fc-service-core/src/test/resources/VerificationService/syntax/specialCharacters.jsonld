@@ -12,10 +12,10 @@
         "@context": {
           "dct": "http://purl.org/dc/terms/",
           "xsd": "http://www.w3.org/2001/XMLSchema#",
-          "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#"
+          "gx": "https://w3id.org/gaia-x/2511#"
         },
         "id": "did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2",
-        "type": "gax-trust-framework:Resource",
+        "type": "gx:Resource",
         "dct:description": {
           "@type": "xsd:string",
           "@value": "\n \\ Test with </\"s>pecial\" \\ / characters \b </\f \n \r \t 🔥"

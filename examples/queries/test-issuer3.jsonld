@@ -19,37 +19,37 @@
     "credentialSubject": {
       "@context": {
         "ex": "http://example.org/",
-        "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+        "gx": "https://w3id.org/gaia-x/2511#",
         "xsd": "http://www.w3.org/2001/XMLSchema#",
         "vcard": "http://www.w3.org/2006/vcard/ns#"
       },
       "@id": "ex:test-issuer3",
-      "@type": "gax-trust-framework:LegalPerson",
-      "gax-trust-framework:registrationNumber": "1236",
-      "gax-trust-framework:legalAddress": {
+      "@type": "gx:LegalPerson",
+      "gx:registrationNumber": "1236",
+      "gx:legalAddress": {
         "@type": "vcard:Address",
         "vcard:country": "DE",
         "vcard:locality": "Dresden",
         "vcard:postal-code": "01069",
         "vcard:street-address": "Fried str 46b"
       },
-      "gax-trust-framework:headquarterAddress": {
+      "gx:headquarterAddress": {
         "@type": "vcard:Address",
         "vcard:country": "DE",
         "vcard:locality": "Dresden",
         "vcard:postal-code": "01069",
         "vcard:street-address": "Fried str 46b"
       },
-      "gax-trust-framework:termsAndConditions": {
-        "@type": "gax-trust-framework:TermsAndConditions",
-        "gax-trust-framework:content": {
+      "gx:termsAndConditions": {
+        "@type": "gx:TermsAndConditions",
+        "gx:content": {
           "@type": "xsd:anyURI",
           "@value": "http://example.org/tac"
         },
-        "gax-trust-framework:hash": "1234"
+        "gx:hash": "1234"
       },
-      "gax-trust-framework:legalName": "deltaDAO AGEF",
-      "gax-trust-framework:name": "deltaDAO AGEF"
+      "gx:legalName": "deltaDAO AGEF",
+      "gx:name": "deltaDAO AGEF"
     },
     "proof": {
       "type": "JsonWebSignature2020",

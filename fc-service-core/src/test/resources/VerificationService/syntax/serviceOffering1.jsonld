@@ -19,29 +19,27 @@
     "credentialSubject": {
       "@context": {
         "dcat": "http://www.w3.org/ns/dcat#",
-        "gax-core": "http://w3id.org/gaia-x/core#",
-        "gax-participant": "http://w3id.org/gaia-x/participant#",
-        "gax-service": "http://w3id.org/gaia-x/service#",
+        "gx": "https://w3id.org/gaia-x/2511#",
         "xsd": "http://www.w3.org/2001/XMLSchema#"
       },
       "@id": "https://www.example.org/Service1",
-      "@type": "gax-service:ServiceOffering",
-      "gax-service:dataExport": {
-        "@type": "gax-service:DataExport",
-        "gax-core:accessType": "access type",
-        "gax-core:formatType": "format type",
-        "gax-core:requestType": "request type"
+      "@type": "gx:ServiceOffering",
+      "gx:dataExport": {
+        "@type": "gx:DataExport",
+        "gx:accessType": "access type",
+        "gx:formatType": "format type",
+        "gx:requestType": "request type"
       },
-      "gax-service:providedBy": {
-        "@id": "gax-participant:Provider1"
+      "gx:providedBy": {
+        "@id": "gx:Provider1"
       },
-      "gax-service:termsAndConditions": {
-        "@type": "gax-core:TermsAndConditions",
-        "gax-core:content": {
+      "gx:termsAndConditions": {
+        "@type": "gx:TermsAndConditions",
+        "gx:content": {
           "@type": "xsd:anyURI",
           "@value": "http://example.org/tac"
         },
-        "gax-core:hash": "1234"
+        "gx:hash": "1234"
       },
       "dcat:keyword": [
         "Keyword1_1",
@@ -52,7 +50,7 @@
         "Keyword1_6",
         "Keyword1_7"
       ],
-      "gax-service:serviceTitle": "Service Title"
+      "gx:serviceTitle": "Service Title"
     }
   }
 }

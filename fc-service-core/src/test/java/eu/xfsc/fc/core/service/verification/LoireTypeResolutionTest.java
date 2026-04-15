@@ -41,7 +41,7 @@ class LoireTypeResolutionTest {
           "https://w3id.org/gaia-x/2511#DigitalServiceOffering")
   ));
 
-  /** Legacy gax-core type URIs — used for VC2_DANUBETECH credentials. */
+  /** Legacy gax-core type URIs — intentionally different namespace to test hierarchy disconnection. */
   private static final Map<TrustFrameworkBaseClass, List<String>> LEGACY_CLASS_URIS = new EnumMap<>(Map.of(
       PARTICIPANT, List.of("https://w3id.org/gaia-x/core#Participant"),
       RESOURCE, List.of("https://w3id.org/gaia-x/core#Resource"),

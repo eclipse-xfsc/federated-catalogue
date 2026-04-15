@@ -19,37 +19,36 @@
       "issuanceDate": "2022-10-19T18:48:09Z",
       "credentialSubject": {
         "@context": {
-          "gax-core": "https://w3id.org/gaia-x/core#",
-          "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+          "gx": "https://w3id.org/gaia-x/2511#",
           "xsd": "http://www.w3.org/2001/XMLSchema#",
           "vcard": "http://www.w3.org/2006/vcard/ns#"
         },
-        "@id": "gax-core:Participant1",
-        "@type": "gax-trust-framework:LegalPerson",
-        "gax-trust-framework:registrationNumber": "1234",
-        "gax-trust-framework:legalAddress": {
+        "@id": "gx:Participant1",
+        "@type": "gx:LegalPerson",
+        "gx:registrationNumber": "1234",
+        "gx:legalAddress": {
           "@type": "vcard:Address",
           "vcard:country-name": "Country",
           "vcard:locality": "Town Name",
           "vcard:postal-code": "1234",
           "vcard:street-address": "Street Name"
         },
-        "gax-trust-framework:headquarterAddress": {
+        "gx:headquarterAddress": {
           "@type": "vcard:Address",
           "vcard:country-name": "Country",
           "vcard:locality": "Town Name",
           "vcard:postal-code": "1234",
           "vcard:street-address": "Street Name"
         },
-        "gax-trust-framework:termsAndConditions": {
-          "@type": "gax-trust-framework:TermsAndConditions",
-          "gax-trust-framework:content": {
+        "gx:termsAndConditions": {
+          "@type": "gx:TermsAndConditions",
+          "gx:content": {
             "@type": "xsd:anyURI",
             "@value": "http://example.org/tac"
           },
-          "gax-trust-framework:hash": "1234"
+          "gx:hash": "1234"
         },
-        "gax-trust-framework:subOrganisation": [
+        "gx:subOrganisation": [
           {
             "@id": "http://example.org/Provider1_1"
           },
@@ -72,7 +71,7 @@
             "@id": "http://example.org/Provider1_7"
           }
         ],
-        "gax-trust-framework:legalName": "Provider Name"
+        "gx:legalName": "Provider Name"
       }
     }
   ]

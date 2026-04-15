@@ -2,12 +2,12 @@
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:ns0="http://www.w3.org/ns/shacl#">
 
-  <rdf:Description rdf:about="http://w3id.org/gaia-x/validation#PhysicalResourceShape">
+  <rdf:Description rdf:about="https://w3id.org/gaia-x/2511#PhysicalResourceShape">
     <rdf:type rdf:resource="http://www.w3.org/ns/shacl#NodeShape"/>
-    <ns0:targetClass rdf:resource="http://w3id.org/gaia-x/resource#PhysicalResource"/>
+    <ns0:targetClass rdf:resource="https://w3id.org/gaia-x/2511#PhysicalResource"/>
     <ns0:property>
       <rdf:Description>
-        <ns0:path rdf:resource="http://w3id.org/gaia-x/resource#maintainedBy"/>
+        <ns0:path rdf:resource="https://w3id.org/gaia-x/2511#maintainedBy"/>
         <ns0:name>maintained by</ns0:name>
         <ns0:order rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</ns0:order>
         <ns0:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</ns0:minCount>
@@ -17,7 +17,7 @@
 
     <ns0:property>
       <rdf:Description>
-        <ns0:path rdf:resource="http://w3id.org/gaia-x/resource#ownedBy"/>
+        <ns0:path rdf:resource="https://w3id.org/gaia-x/2511#ownedBy"/>
         <ns0:name>owned by</ns0:name>
         <ns0:order rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">2</ns0:order>
         <ns0:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">0</ns0:minCount>
@@ -27,7 +27,7 @@
 
     <ns0:property>
       <rdf:Description>
-        <ns0:path rdf:resource="http://w3id.org/gaia-x/resource#manufacturedBy"/>
+        <ns0:path rdf:resource="https://w3id.org/gaia-x/2511#manufacturedBy"/>
         <ns0:name>manufactured by</ns0:name>
         <ns0:order rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</ns0:order>
         <ns0:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">0</ns0:minCount>
@@ -37,7 +37,7 @@
 
     <ns0:property>
       <rdf:Description>
-        <ns0:path rdf:resource="http://w3id.org/gaia-x/resource#locationAddress"/>
+        <ns0:path rdf:resource="https://w3id.org/gaia-x/2511#locationAddress"/>
         <ns0:name>location address</ns0:name>
         <ns0:order rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">4</ns0:order>
         <ns0:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</ns0:minCount>
@@ -47,7 +47,7 @@
 
     <ns0:property>
       <rdf:Description>
-        <ns0:path rdf:resource="http://w3id.org/gaia-x/resource#aggregationOf"/>
+        <ns0:path rdf:resource="https://w3id.org/gaia-x/2511#aggregationOf"/>
         <ns0:name>aggregation of</ns0:name>
         <ns0:order rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</ns0:order>
         <ns0:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">0</ns0:minCount>
@@ -57,7 +57,7 @@
 
     <ns0:property>
       <rdf:Description>
-        <ns0:path rdf:resource="http://w3id.org/gaia-x/resource#name"/>
+        <ns0:path rdf:resource="https://w3id.org/gaia-x/2511#name"/>
         <ns0:name>name</ns0:name>
         <ns0:order rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">2</ns0:order>
         <ns0:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">0</ns0:minCount>

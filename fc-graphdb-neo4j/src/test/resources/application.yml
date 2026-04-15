@@ -50,11 +50,11 @@ federated-catalogue:
   verification:
     trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
     participant:
-      type: "http://w3id.org/gaia-x/participant#Participant"
+      type: "https://w3id.org/gaia-x/2511#Participant"
     resource:
-      type: "http://w3id.org/gaia-x/resource#Resource"
+      type: "https://w3id.org/gaia-x/2511#Resource"
     service-offering:
-      type: "http://w3id.org/gaia-x/service#ServiceOffering"
+      type: "https://w3id.org/gaia-x/2511#ServiceOffering"
     signature-verifier: local
     did:
       base-url: "https://dev.uniresolver.io/1.0/identifiers/"

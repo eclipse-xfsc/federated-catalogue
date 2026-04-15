@@ -96,7 +96,7 @@ public class SchemasService implements SchemasApiDelegate {
    *
    * @param type Type of the schema. (optional)
    * @param term The URI of the term of the requested asset schema e.g.
-   *             &#x60;<a href="http://w3id.org/gaia-x/service#ServiceOffering&#x60">...</a>; (optional)
+   *             {@code https://w3id.org/gaia-x/2511#ServiceOffering} (optional)
    * @return The latest schemas for the given type or term. (status code 200)
    *         or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *         or Forbidden. The user does not have the permission to execute this request. (status code 403)

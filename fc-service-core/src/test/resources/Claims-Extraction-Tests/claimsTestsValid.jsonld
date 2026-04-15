@@ -12,30 +12,30 @@
 	  "@context": {
 		"sh": "http://www.w3.org/ns/shacl#",
 		"xsd": "http://www.w3.org/2001/XMLSchema#",
-		"gax-service": "http://w3id.org/gaia-x/service#"
+		"gx": "https://w3id.org/gaia-x/2511#"
 	  },
       "id": "https://delta-dao.com/.well-known/serviceMVGPortal.json",
       "@type": [
-          "gax-service:ServiceOffering"
+          "gx:ServiceOffering"
        ],
-      "gax-service:providedBy": {
+      "gx:providedBy": {
         "@type": "xsd:string",
         "@value": "https://delta-dao.com/.well-known/participant.json"
       },
-      "gax-service:name": {
+      "gx:name": {
         "@type": "xsd:string",
         "@value": "EuProGigant Portal"
       },
-      "gax-service:description": {
+      "gx:description": {
         "@type": "xsd:string",
         "@value": "EuProGigant Minimal Viable Gaia-X Portal"
       },
-      "gax-service:TermsAndConditions": {
-        "gax-service:url": {
+      "gx:TermsAndConditions": {
+        "gx:url": {
           "@value": "https://euprogigant.com/en/terms/",
           "@type": "xsd:string"
         },
-        "gax-service:hash": {
+        "gx:hash": {
           "@value": "contentHash",
           "@type": "xsd:string"
         }

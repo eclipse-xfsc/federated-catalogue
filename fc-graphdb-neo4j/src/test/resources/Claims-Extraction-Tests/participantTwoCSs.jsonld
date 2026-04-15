@@ -19,11 +19,11 @@
       "issuanceDate": "2022-10-19T18:48:09Z",
       "credentialSubject": [
         {
-          "@id": "http://w3id.org/gaia-x/participant#Provider1",
+          "@id": "https://w3id.org/gaia-x/2511#Provider1",
           "@type": [
-            "http://w3id.org/gaia-x/participant#LegalPerson"
+            "https://w3id.org/gaia-x/2511#LegalPerson"
           ],
-          "http://w3id.org/gaia-x/participant#headquarterAddress": [
+          "https://w3id.org/gaia-x/2511#headquarterAddress": [
             {
               "@type": [
                 "http://www.w3.org/2006/vcard/ns#Address"
@@ -52,7 +52,7 @@
           ]
         },
         {
-          "http://w3id.org/gaia-x/participant#legalAddress": [
+          "https://w3id.org/gaia-x/2511#legalAddress": [
             {
               "@type": [
                 "http://www.w3.org/2006/vcard/ns#Address"

@@ -1967,7 +1967,7 @@ paths:
               - xml
         - name: term
           in: query
-          description: 'The URI of the term of the requested schema e.g. `http://w3id.org/gaia-x/service#ServiceOffering`'
+          description: 'The URI of the term of the requested schema e.g. `https://w3id.org/gaia-x/2511#ServiceOffering`'
           required: false
           schema:
             type: string

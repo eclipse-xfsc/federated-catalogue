@@ -144,8 +144,8 @@ public class SchemaStoreTest {
   @Test
   public void testIsValidShape() {
     Set<String> expectedExtractedUrlsSet = new HashSet<>();
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/validation#MeasureShape");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#PhysicalResourceShape");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#MeasureShape");
     String path = "Schema-Tests/valid-schemaShape.ttl";
     ContentAccessor content = TestUtil.getAccessor(getClass(), path);
     SchemaAnalysisResult result = schemaStore.analyzeSchema(content);
@@ -181,20 +181,20 @@ public class SchemaStoreTest {
   @Test
   public void testValidOntology() {
     Set<String> expectedExtractedUrlsSet = new HashSet<>();
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#providesResourcesFrom");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#Interconnection");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#Consumer");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#Provider");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#AssetOwner");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#ServiceOffering");
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/core#Contract");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#providesResourcesFrom");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#Interconnection");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#Consumer");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#Provider");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#AssetOwner");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#ServiceOffering");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#Contract");
     String path = "Schema-Tests/validOntology.ttl";
     ContentAccessor content = TestUtil.getAccessor(getClass(), path);
     SchemaAnalysisResult result = schemaStore.analyzeSchema(content);
     boolean actual = schemaStore.isSchemaType(content, ONTOLOGY);
     Set<String> actualExtractedUrlsSet = result.getExtractedUrls();
     String extractedIdActual = result.getExtractedId();
-    String extractedIdExpected = "http://w3id.org/gaia-x/core#";
+    String extractedIdExpected = "https://w3id.org/gaia-x/2511#";
     assertTrue(result.isValid());
     assertEquals(extractedIdExpected, extractedIdActual);
     assertEquals(expectedExtractedUrlsSet.size(), actualExtractedUrlsSet.size());
@@ -257,7 +257,7 @@ public class SchemaStoreTest {
   @Test
   public void testValidJSONlD() {
     Set<String> expectedExtractedUrlsSet = new HashSet<>();
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#PhysicalResourceShape");
     String path = "Schema-Tests/validShacl.jsonld";
     ContentAccessor content = TestUtil.getAccessor(getClass(), path);
     SchemaAnalysisResult result = schemaStore.analyzeSchema(content);
@@ -273,7 +273,7 @@ public class SchemaStoreTest {
   @Test
   public void testValidRDFXML() {
     Set<String> expectedExtractedUrlsSet = new HashSet<>();
-    expectedExtractedUrlsSet.add("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
+    expectedExtractedUrlsSet.add("https://w3id.org/gaia-x/2511#PhysicalResourceShape");
     String path = "Schema-Tests/validShacl.rdfxml";
     ContentAccessor content = TestUtil.getAccessor(getClass(), path);
     SchemaAnalysisResult result = schemaStore.analyzeSchema(content);
@@ -303,7 +303,7 @@ public class SchemaStoreTest {
     assertTrue(schemaList.get(VOCABULARY).isEmpty());
     assertTrue(schemaList.get(JSON).isEmpty());
     assertTrue(schemaList.get(XML).isEmpty());
-    assertTermsEquals("http://w3id.org/gaia-x/validation#PhysicalResourceShape", "http://w3id.org/gaia-x/validation#MeasureShape");
+    assertTermsEquals("https://w3id.org/gaia-x/2511#PhysicalResourceShape", "https://w3id.org/gaia-x/2511#MeasureShape");
 
     schemaStore.deleteSchema(schemaId1);
   }
@@ -393,17 +393,17 @@ public class SchemaStoreTest {
 
     String schemaId = schemaStore.addSchema(TestUtil.getAccessor(getClass(), path1)).id();
     assertTermCountEquals(1);
-    assertTermsEquals("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
+    assertTermsEquals("https://w3id.org/gaia-x/2511#PhysicalResourceShape");
 
     schemaStore.updateSchema(schemaId, TestUtil.getAccessor(getClass(), path2));
     assertTermCountEquals(2);
-    assertTermsEquals("http://w3id.org/gaia-x/validation#PhysicalResourceShape", "http://w3id.org/gaia-x/validation#MeasureShape");
+    assertTermsEquals("https://w3id.org/gaia-x/2511#PhysicalResourceShape", "https://w3id.org/gaia-x/2511#MeasureShape");
     assertEquals(TestUtil.getAccessor(getClass(), path2).getContentAsString(), schemaStore.getSchema(schemaId).getContentAsString(), 
             "The content of the updated schema should be stored in the schema DB.");
 
     schemaStore.updateSchema(schemaId, TestUtil.getAccessor(getClass(), path1));
     assertTermCountEquals(1);
-    assertTermsEquals("http://w3id.org/gaia-x/validation#PhysicalResourceShape");
+    assertTermsEquals("https://w3id.org/gaia-x/2511#PhysicalResourceShape");
     assertEquals(TestUtil.getAccessor(getClass(), path1).getContentAsString(), schemaStore.getSchema(schemaId).getContentAsString(), 
             "The content of the updated schema should be stored in the schema DB.");
 
@@ -430,11 +430,11 @@ public class SchemaStoreTest {
   @Test
   public void testGetCompositeSchema() {
     Model modelActual = ModelFactory.createDefaultModel();
-    String sub01 = "http://w3id.org/gaia-x/validation#PhysicalResourceShape";
+    String sub01 = "https://w3id.org/gaia-x/2511#PhysicalResourceShape";
     String pre01 = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
     String obj01 = "http://www.w3.org/ns/shacl#NodeShape";
 
-    String sub02 = "http://w3id.org/gaia-x/validation#DataConnectorShape";
+    String sub02 = "https://w3id.org/gaia-x/2511#DataConnectorShape";
     String pre02 = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
     String obj02 = "http://www.w3.org/ns/shacl#NodeShape";
 

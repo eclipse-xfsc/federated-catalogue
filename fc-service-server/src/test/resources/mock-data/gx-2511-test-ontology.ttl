@@ -1,0 +1,37 @@
+@prefix gx: <https://example.org/test/2511#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Minimal class hierarchy for unit testing.
+# Uses a test-specific namespace to avoid conflicts with the default gx-2511 schemas.
+
+<https://example.org/test/2511#> a owl:Ontology .
+
+gx:GaiaXEntity a owl:Class .
+
+gx:Participant a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:LegalPerson a owl:Class ;
+    rdfs:subClassOf gx:Participant .
+
+gx:NaturalPerson a owl:Class ;
+    rdfs:subClassOf gx:Participant .
+
+gx:Resource a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:VirtualResource a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:PhysicalResource a owl:Class ;
+    rdfs:subClassOf gx:Resource .
+
+gx:ServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:DigitalServiceOffering a owl:Class ;
+    rdfs:subClassOf gx:GaiaXEntity .
+
+gx:DataProduct a owl:Class ;
+    rdfs:subClassOf gx:DigitalServiceOffering .

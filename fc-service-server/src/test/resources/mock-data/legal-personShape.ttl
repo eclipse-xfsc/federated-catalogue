@@ -1,11 +1,10 @@
 @prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
 
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix gx: <https://w3id.org/gaia-x/2511#> .
+@prefix gx: <https://example.org/test/2511#> .
 @prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
 
-gax-validation:LegalPersonShape
+gx:LegalPersonShape
 	a sh:NodeShape ;
 	sh:targetClass gx:LegalPerson ;
 	sh:property [ sh:path gx:legalName ;
@@ -24,13 +23,13 @@ gax-validation:LegalPersonShape
 				  sh:order 3 ;
 				  sh:minCount 1 ;
 				  sh:maxCount 1 ;
-				  sh:node gax-validation:AddressShape ] ;
+				  sh:node gx:AddressShape ] ;
 	sh:property [ sh:path gx:headquarterAddress ;
 				  sh:name "headquarter address" ;
 				  sh:order 4 ;
 				  sh:minCount 1 ;
 				  sh:maxCount 1 ;
-				  sh:node gax-validation:AddressShape ] ;
+				  sh:node gx:AddressShape ] ;
 	sh:property [ sh:path gx:leiCode ;
 				  sh:name "lei code" ;
 				  sh:order 5 ;
@@ -49,10 +48,10 @@ gax-validation:LegalPersonShape
 				  sh:order 8 ;
 				  sh:minCount 1 ;
 				  sh:maxCount 1 ;
-				  sh:node gax-validation:TermsAndConditionsShape ] ;
+				  sh:node gx:TermsAndConditionsShape ] ;
 .
 
-gax-validation:AddressShape
+gx:AddressShape
 	a sh:NodeShape ;
 	sh:targetClass vcard:Address ;
 	sh:property [ sh:path vcard:country-name ;
@@ -80,7 +79,7 @@ gax-validation:AddressShape
 				  sh:datatype xsd:string ] ;
 .
 
-gax-validation:TermsAndConditionsShape
+gx:TermsAndConditionsShape
 	a sh:NodeShape ;
 	sh:targetClass gx:TermsAndConditions ;
 	sh:property [ sh:path gx:content ;

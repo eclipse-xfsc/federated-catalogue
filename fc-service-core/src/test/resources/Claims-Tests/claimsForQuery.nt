@@ -1,15 +1,15 @@
-<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/gaia-x/service#ServiceOffering> .
-<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json> <http://w3id.org/gaia-x/service#providedBy> <https://delta-dao.com/.well-known/participant.json> .
-<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json> <http://w3id.org/gaia-x/service#name> "EuProGigant Portal" .
-<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json> <http://w3id.org/gaia-x/service#description> "EuProGigant Minimal Viable Gaia-X Portal" .
-<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json> <http://w3id.org/gaia-x/service#termsAndConditions> <https://euprogigant.com/en/terms/> .
-<http://w3id.org/gaia-x/indiv#serviceElasticSearch.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/gaia-x/service#ServiceOffering> .
-<http://w3id.org/gaia-x/indiv#serviceElasticSearch.json> <http://w3id.org/gaia-x/service#providedBy> <https://delta-dao.com/.well-known/participant.json> .
-<http://w3id.org/gaia-x/indiv#serviceElasticSearch.json> <http://w3id.org/gaia-x/service#name> "Elastic Search DB" .
-<http://w3id.org/gaia-x/indiv#serviceElasticSearch.json> <http://w3id.org/gaia-x/service#description> "A full-text search engine with an HTTP web interface used to store self descriptions of the Catalogue Cache" .
-<http://w3id.org/gaia-x/indiv#serviceElasticSearch.json> <http://w3id.org/gaia-x/service#termsAndConditions> <https://github.com/elastic/elasticsearch/blob/master/LICENSE.txt> .
-<http://w3id.org/gaia-x/indiv#serviceElasticSearch.json> <http://w3id.org/gaia-x/service#dependsOn> <http://w3id.org/gaia-x/indiv#serviceMVGPortal.json> .
-<https://delta-dao.com/.well-known/participant.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://w3id.org/gaia-x/participant#LegalPerson> .
-<https://delta-dao.com/.well-known/participant.json> <http://w3id.org/gaia-x/participant#name> "deltaDAO AG" .
-<https://delta-dao.com/.well-known/participant.json> <http://w3id.org/gaia-x/participant#legalName> "deltaDAO AG" .
-<https://delta-dao.com/.well-known/participant.json> <http://w3id.org/gaia-x/participant#registrationNumber> "DEK1101R.HRB170364" .
+<https://w3id.org/gaia-x/2511#serviceMVGPortal.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/gaia-x/2511#ServiceOffering> .
+<https://w3id.org/gaia-x/2511#serviceMVGPortal.json> <https://w3id.org/gaia-x/2511#providedBy> <https://delta-dao.com/.well-known/participant.json> .
+<https://w3id.org/gaia-x/2511#serviceMVGPortal.json> <https://w3id.org/gaia-x/2511#name> "EuProGigant Portal" .
+<https://w3id.org/gaia-x/2511#serviceMVGPortal.json> <https://w3id.org/gaia-x/2511#description> "EuProGigant Minimal Viable Gaia-X Portal" .
+<https://w3id.org/gaia-x/2511#serviceMVGPortal.json> <https://w3id.org/gaia-x/2511#termsAndConditions> <https://euprogigant.com/en/terms/> .
+<https://w3id.org/gaia-x/2511#serviceElasticSearch.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/gaia-x/2511#ServiceOffering> .
+<https://w3id.org/gaia-x/2511#serviceElasticSearch.json> <https://w3id.org/gaia-x/2511#providedBy> <https://delta-dao.com/.well-known/participant.json> .
+<https://w3id.org/gaia-x/2511#serviceElasticSearch.json> <https://w3id.org/gaia-x/2511#name> "Elastic Search DB" .
+<https://w3id.org/gaia-x/2511#serviceElasticSearch.json> <https://w3id.org/gaia-x/2511#description> "A full-text search engine with an HTTP web interface used to store self descriptions of the Catalogue Cache" .
+<https://w3id.org/gaia-x/2511#serviceElasticSearch.json> <https://w3id.org/gaia-x/2511#termsAndConditions> <https://github.com/elastic/elasticsearch/blob/master/LICENSE.txt> .
+<https://w3id.org/gaia-x/2511#serviceElasticSearch.json> <https://w3id.org/gaia-x/2511#dependsOn> <https://w3id.org/gaia-x/2511#serviceMVGPortal.json> .
+<https://delta-dao.com/.well-known/participant.json> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://w3id.org/gaia-x/2511#LegalPerson> .
+<https://delta-dao.com/.well-known/participant.json> <https://w3id.org/gaia-x/2511#name> "deltaDAO AG" .
+<https://delta-dao.com/.well-known/participant.json> <https://w3id.org/gaia-x/2511#legalName> "deltaDAO AG" .
+<https://delta-dao.com/.well-known/participant.json> <https://w3id.org/gaia-x/2511#registrationNumber> "DEK1101R.HRB170364" .

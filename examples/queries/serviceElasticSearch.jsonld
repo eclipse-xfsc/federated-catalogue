@@ -20,38 +20,37 @@
       "@context": {
         "dcat": "http://www.w3.org/ns/dcat#",
         "ex": "http://example.org/",
-        "gax-core": "https://w3id.org/gaia-x/core#",
-        "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+        "gx": "https://w3id.org/gaia-x/2511#",
         "xsd": "http://www.w3.org/2001/XMLSchema#"
       },
-      "@id": "http://w3id.org/gaia-x/indiv#serviceElasticSearch.json",
-      "@type": "gax-trust-framework:ServiceOffering",
-      "gax-trust-framework:dataAccountExport": {
-        "@type": "gax-trust-framework:DataAccountExport",
-        "gax-trust-framework:accessType": "access type",
-        "gax-trust-framework:formatType": "format type",
-        "gax-trust-framework:requestType": "request type"
+      "@id": "https://w3id.org/gaia-x/2511#serviceElasticSearch.json",
+      "@type": "gx:ServiceOffering",
+      "gx:dataAccountExport": {
+        "@type": "gx:DataAccountExport",
+        "gx:accessType": "access type",
+        "gx:formatType": "format type",
+        "gx:requestType": "request type"
       },
-      "gax-core:offeredBy": {
+      "gx:offeredBy": {
         "@id": "https://www.example.org/participant.json",
-        "@type": "gax-trust-framework:LegalPerson"
+        "@type": "gx:LegalPerson"
       },
-      "gax-trust-framework:termsAndConditions": {
-        "@type": "gax-trust-framework:TermsAndConditions",
-        "gax-trust-framework:content": {
+      "gx:termsAndConditions": {
+        "@type": "gx:TermsAndConditions",
+        "gx:content": {
           "@type": "xsd:anyURI",
           "@value": "ex:tac"
         },
-        "gax-trust-framework:hash": "1234"
+        "gx:hash": "1234"
       },
-      "gax-trust-framework:policy": "ex:ServicePolicy",
+      "gx:policy": "ex:ServicePolicy",
       "ex:some_property": {
         "ex:some_other_property": {
           "@value": "ex:some_service",
-          "@type": "gax-trust-framework:ServiceOffering"
+          "@type": "gx:ServiceOffering"
         }
       },
-      "gax-trust-framework:name": "Elastic Search DB"
+      "gx:name": "Elastic Search DB"
     },
     "proof": {
       "type": "JsonWebSignature2020",

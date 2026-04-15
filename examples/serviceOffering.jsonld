@@ -12,8 +12,8 @@
     "verifiableCredential": {
         "issuanceDate": "2022-10-19T18:48:09Z",
         "credentialSubject": {
-            "gax-trust-framework:policy": "list of policy",
-            "gax-trust-framework:serviceTitle": "Software Title",
+            "gx:policy": "list of policy",
+            "gx:serviceTitle": "Software Title",
             "dcat:keyword": [
                 "Keyword1_1",
                 "Keyword1_2",
@@ -23,28 +23,27 @@
                 "Keyword1_6",
                 "Keyword1_7"
             ],
-            "@type": "gax-trust-framework:ServiceOffering",
-            "gax-core:offeredBy": {"@id": "https://www.example.org/Provider1.json"},
+            "@type": "gx:ServiceOffering",
+            "gx:offeredBy": {"@id": "https://www.example.org/Provider1.json"},
             "@id": "https://www.example.org/mySoftwareOffering",
             "@context": {
-                "gax-trust-framework": "https://w3id.org/gaia-x/gax-trust-framework#",
+                "gx": "https://w3id.org/gaia-x/2511#",
                 "xsd": "http://www.w3.org/2001/XMLSchema#",
-                "dcat": "http://www.w3.org/ns/dcat#",
-                "gax-core": "https://w3id.org/gaia-x/core#"
+                "dcat": "http://www.w3.org/ns/dcat#"
             },
-            "gax-trust-framework:dataAccountExport": {
-                "gax-trust-framework:formatType": "application/gzip",
-                "@type": "gax-trust-framework:DataAccountExport",
-                "gax-trust-framework:accessType": "digital",
-                "gax-trust-framework:requestType": "API"
+            "gx:dataAccountExport": {
+                "gx:formatType": "application/gzip",
+                "@type": "gx:DataAccountExport",
+                "gx:accessType": "digital",
+                "gx:requestType": "API"
             },
-            "gax-trust-framework:termsAndConditions": {
-                "gax-trust-framework:content": {
+            "gx:termsAndConditions": {
+                "gx:content": {
                     "@value": "http://example.org/tac",
                     "@type": "xsd:anyURI"
                 },
-                "@type": "gax-trust-framework:TermsAndConditions",
-                "gax-trust-framework:hash": "1234"
+                "@type": "gx:TermsAndConditions",
+                "gx:hash": "1234"
             }
         },
         "@type": ["VerifiableCredential"],
