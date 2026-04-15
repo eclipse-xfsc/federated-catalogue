@@ -8,10 +8,10 @@ import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_ADMIN_ROLE_WITH
 import static eu.xfsc.fc.server.util.CommonConstants.PARTICIPANT_USER_ADMIN_ROLE;
 import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_ADMIN_ROLE_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
-import static eu.xfsc.fc.server.util.TestUtil.getAccessor;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -163,12 +163,13 @@ public class ParticipantsControllerTest {
   private final String ALTERNATIVE_PARTICIPANT_FILE = "alternative-participant.json";
   private final String ALTERNATIVE2_PARTICIPANT_FILE = "alternative2-participant.json";
   private final String UNIQUE_PARTICIPANT_FILE = "unique-participant.json";
-  private final String PUBLIC_KEY_AS_JWK = "{\"kty\":\"RSA\",\"e\":\"AQAB\",\"alg\":\"PS256\",\"n\":\"0nYZU6EuuzHKBCzkcBZqsMkVZXngYO7VujfLU_4ys7onF4HxTJPP3OGKEjbjbMgmpa7vKaWRomt_XXTjemA3r3f5t8bj0IoqFfvbTIq65GUIIh4y2mVbomdcQLRK2Auf79vDiqiONknTSstoPjAiCg6t6z_KruGFZbDOhYkZwqrjGnmB_LfFSlpeLwkQQ-5dVLhhXkImmWhnACoAo8ECny24Ap7wLbN9i9o1fNSz2uszACj0zxFhl3NGunHFUm3YkGd0URvoToXpK9a4zfihSUxHjeT0_7a9puVF4E3w1AAjSh4nV3pLE0cJyDITVb2M4d3m9tjjz_3XwjYiAAJ1MKVBSKDM27pexRFCJj_Dvb-dr-AImhqBhPDHn_gjdaRZIVoADC4zwBULkpvUaUIKmNFyYOjDYWWTBzTf4Gs9QL5adlVfVyK14MZPBOyq-cqIIymgp6A5_R3hKnCCBP8C_S0-VDidhI6Pr5VJPx9DydI0eB2DiOyOZvbfg7sKVkJXFUEJRiBTMhujyjYqeTtCHjCFHctZVQ8hU279eyk7mpmpDrktfCFJFi-00ZzQWTgtzBoGhke5hj0hjtG1n4jN6BfypdT5oB-DeXl2P1hp_hNC9I5gveWUYHAqN4VKve_52A3ub8vBlISQhEUeZoFUterTiDA3NyK7wsj_V7-KM6U\"}";
 
   @BeforeAll
   public void setup() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-    schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+    // Loads the production ontologies from defaultschema/ontology/ (idempotent — skips if already loaded
+    // by CatalogueServerScheduler). Needed for rdfs:subClassOf type resolution (e.g. LegalPerson → PARTICIPANT).
+    schemaStore.initializeDefaultSchemas();
   }
 
   @AfterAll
@@ -211,7 +212,8 @@ public class ParticipantsControllerTest {
     assertNotNull(part);
     assertEquals("did:example:issuer", partResult.getId());
     assertEquals("did:example:holder", partResult.getName());
-    assertEquals(PUBLIC_KEY_AS_JWK, partResult.getPublicKey());
+    // Public key is null when signature verification is disabled (no validators extracted)
+    assertNull(partResult.getPublicKey());
     assertEquals(part.getAsset(), partResult.getAsset());
 
     assertDoesNotThrow(() -> assetStorePublisher.getByHash(part.getAssetHash()));
@@ -313,8 +315,8 @@ public class ParticipantsControllerTest {
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
     Assets assets = objectMapper.readValue(response, Assets.class);
-    String assetId = assets.getItems().get(0).getMeta().getId();
-    String content = assets.getItems().get(0).getContent();
+    String assetId = assets.getItems().getFirst().getMeta().getId();
+    String content = assets.getItems().getFirst().getContent();
 
     String responseOfCredentialContent = mockMvc
             .perform(MockMvcRequestBuilders.get("/assets/{id}", assetId)
@@ -464,7 +466,8 @@ public class ParticipantsControllerTest {
     assertNotNull(part);
     assertEquals("did:example:issuer", partResult.getId());
     assertEquals("did:example:holder", partResult.getName());
-    assertEquals(PUBLIC_KEY_AS_JWK, partResult.getPublicKey());
+    // Public key is null when signature verification is disabled (no validators extracted)
+    assertNull(partResult.getPublicKey());
 
     assertDoesNotThrow(() -> assetStorePublisher.getByHash(part.getAssetHash()));
 
@@ -739,7 +742,7 @@ public class ParticipantsControllerTest {
   private void deleteParticipantFromAssetStore(ParticipantMetaData part) {
     try {
       assetStorePublisher.deleteAsset(part.getAssetHash());
-    } catch (Exception ex) {
+    } catch (Exception ignored) {
     }
   }
 

@@ -148,7 +148,7 @@ public class VerificationDirectTest {
         opts.setEmbed(JsonLdEmbed.ALWAYS);
         JsonArray arr = JsonLd.expand(doc).options(opts).get();
         log.debug("extractClaims; expanded: {}", arr);
-        JsonObject vp = arr.get(0).asJsonObject();
+        JsonObject vp = arr.getFirst().asJsonObject();
         JsonArray vcs = vp.get("https://www.w3.org/2018/credentials#verifiableCredential").asJsonArray();
         List<CredentialClaim> claims = new ArrayList<>();
         Map<String, String> subMap = new HashMap<>();
@@ -239,7 +239,7 @@ public class VerificationDirectTest {
         JsonStructure str = JsonLd.flatten(doc).get();
         log.debug("extractClaims; flatten: {}", str);
 /*
-        JsonObject vp = arr.get(0).asJsonObject();
+        JsonObject vp = arr.getFirst().asJsonObject();
         JsonArray vcs = vp.get("https://www.w3.org/2018/credentials#verifiableCredential").asJsonArray();
         for (JsonValue vcv: vcs) {
             JsonObject vc = vcv.asJsonObject();

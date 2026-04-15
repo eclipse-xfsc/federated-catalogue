@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -446,7 +447,10 @@ public class SchemaStoreImpl implements SchemaStore {
   }
 
   private Map<SchemaType, List<String>> toSchemaTypeMap(Map<String, Collection<String>> input) {
-    Map<SchemaType, List<String>> result = new HashMap<>();
+    Map<SchemaType, List<String>> result = new EnumMap<>(SchemaType.class);
+    for (SchemaType type : SchemaType.values()) {
+      result.put(type, new ArrayList<>());
+    }
     for (Map.Entry<String, Collection<String>> e : input.entrySet()) {
       result.put(SchemaType.valueOf(e.getKey()), new ArrayList<>(e.getValue()));
     }

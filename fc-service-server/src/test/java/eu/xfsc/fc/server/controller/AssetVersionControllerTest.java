@@ -141,7 +141,7 @@ public class AssetVersionControllerTest {
     assertNotNull(list);
     assertEquals(2, list.getTotal());
     assertEquals(2, list.getVersions().size());
-    assertEquals(2, list.getVersions().get(0).getVersion());
+    assertEquals(2, list.getVersions().getFirst().getVersion());
     assertEquals(1, list.getVersions().get(1).getVersion());
   }
 
@@ -159,7 +159,7 @@ public class AssetVersionControllerTest {
 
     AssetVersionList list = objectMapper.readValue(result.getResponse().getContentAsString(), AssetVersionList.class);
 
-    assertTrue(list.getVersions().get(0).getIsCurrent(), "first item (newest) should be isCurrent=true");
+    assertTrue(list.getVersions().getFirst().getIsCurrent(), "first item (newest) should be isCurrent=true");
     assertFalse(list.getVersions().get(1).getIsCurrent(), "second item should be isCurrent=false");
   }
 
@@ -195,7 +195,7 @@ public class AssetVersionControllerTest {
 
     AssetVersionList list = objectMapper.readValue(result.getResponse().getContentAsString(), AssetVersionList.class);
 
-    assertEquals(comment, list.getVersions().get(0).getChangeComment());
+    assertEquals(comment, list.getVersions().getFirst().getChangeComment());
     assertNull(list.getVersions().get(1).getChangeComment());
   }
 
@@ -217,7 +217,7 @@ public class AssetVersionControllerTest {
 
     assertEquals(3, list.getTotal());
     assertEquals(2, list.getVersions().size());
-    assertEquals(3, list.getVersions().get(0).getVersion());
+    assertEquals(3, list.getVersions().getFirst().getVersion());
     assertEquals(2, list.getVersions().get(1).getVersion());
   }
 
@@ -439,7 +439,7 @@ public class AssetVersionControllerTest {
 
     assertEquals(2, page.getTotalCount());
     assertEquals(2, page.getResults().size());
-    assertEquals(2, page.getResults().get(0).getVersion());
+    assertEquals(2, page.getResults().getFirst().getVersion());
     assertEquals(1, page.getResults().get(1).getVersion());
   }
 

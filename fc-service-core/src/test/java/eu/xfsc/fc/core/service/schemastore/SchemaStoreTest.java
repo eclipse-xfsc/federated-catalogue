@@ -297,10 +297,12 @@ public class SchemaStoreTest {
 
     String schemaId1 = schemaStore.addSchema(content).id();
 
-    Map<SchemaStore.SchemaType, List<String>> expected = new HashMap<>();
-    expected.computeIfAbsent(SHAPE, t -> new ArrayList<>()).add(schemaId1);
     Map<SchemaStore.SchemaType, List<String>> schemaList = schemaStore.getSchemaList();
-    assertEquals(expected, schemaList);
+    assertEquals(List.of(schemaId1), schemaList.get(SHAPE));
+    assertTrue(schemaList.get(ONTOLOGY).isEmpty());
+    assertTrue(schemaList.get(VOCABULARY).isEmpty());
+    assertTrue(schemaList.get(JSON).isEmpty());
+    assertTrue(schemaList.get(XML).isEmpty());
     assertTermsEquals("http://w3id.org/gaia-x/validation#PhysicalResourceShape", "http://w3id.org/gaia-x/validation#MeasureShape");
 
     schemaStore.deleteSchema(schemaId1);
@@ -411,20 +413,15 @@ public class SchemaStoreTest {
   @Test
   void testAddDeleteDefaultSchemas() {
     int initialized = schemaStore.initializeDefaultSchemas();
-    assertEquals(6, initialized, "Expected different number of schemas initialized.");
-    //int count = TestUtil.countFilesInStore(fileStore);
-    //assertEquals(3, count, "Expected different number of files in the store.");
+    assertEquals(2, initialized, "Expected different number of schemas initialized.");
     Map<SchemaType, List<String>> schemaList = schemaStore.getSchemaList();
-    assertEquals(4, schemaList.get(SchemaType.ONTOLOGY).size());
-    assertEquals(2, schemaList.get(SchemaType.SHAPE).size());
-    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/gax-trust-framework#"), "Ontology identifier not found in schema list.");
-    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/core#"), "Ontology identifier not found in schema list.");
-    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"), "Ontology identifier not found in schema list.");
-    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/2511"), "Loire 2511 ontology identifier not found in schema list.");
-    schemaStore.deleteSchema("https://w3id.org/gaia-x/gax-trust-framework#");
+    assertEquals(1, schemaList.get(SchemaType.ONTOLOGY).size());
+    assertEquals(1, schemaList.get(SchemaType.SHAPE).size());
+    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/2511"), "2511 ontology identifier not found in schema list.");
+    schemaStore.deleteSchema("https://w3id.org/gaia-x/2511");
     Map<SchemaType, List<String>> schemaListDelete = schemaStore.getSchemaList();
-    assertFalse(schemaListDelete.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/gax-trust-framework#"), "Ontology identifier not found in schema list.");
-    assertEquals(3, schemaListDelete.get(SchemaType.ONTOLOGY).size());
+    assertTrue(schemaListDelete.get(SchemaType.ONTOLOGY).isEmpty(),
+        "Ontology schema list should be empty after deletion.");
   }
 
   /**
@@ -607,7 +604,7 @@ public class SchemaStoreTest {
     schemaStore.deleteSchema("https://example.org/schemas/person");
 
     Map<SchemaType, List<String>> list = schemaStore.getSchemaList();
-    assertNull(list.get(JSON));
+    assertTrue(list.get(JSON).isEmpty());
   }
 
   @Test

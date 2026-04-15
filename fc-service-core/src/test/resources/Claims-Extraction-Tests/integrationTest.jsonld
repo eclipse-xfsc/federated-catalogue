@@ -1,6 +1,6 @@
 {
     "@context": [
-        "https://www.w3.org/2018/credentials/v1",
+        "https://www.w3.org/ns/credentials/v2",
         "https://www.w3.org/2018/credentials/examples/v1"
         ],
     "@type": [
@@ -87,16 +87,9 @@
         }
       ]
     },
-    "proof": {
-      "type": "JsonWebKey2020",
-      "created": "2022-06-20T13:37:43.574Z",
-      "proofPurpose": "assertionMethod",
-      "verificationMethod": "did:web:example",
-      "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..PdOODEUCP4uIcvGJlrYdn151VYxOKVD6OGInhdVsYv76rsFTBvIWCNgVHTu4kh6BZQbQnViVMFENs60RIrwPnagz4ON-XhiTYguXINt0YKPuTe8LXhEDoBplZxcrRVmTrAQaKUYyUMaBAryrVpdZZpyf6zsENiZOYIJNzhucHHGnidw0Y2xmleMdaOCqAnpeX5nvRTsUTSBK4dB245yEF9OH4BhFY67OghUA8ggFVG7ctZifmRb3PEo5bqQ416D7QBzHX0Z9y-hi2gXdTV2cvQjlg6HWZAVeuj1JDH5n-_rd-f7UIDIM-RNvCsNZOKHuF6wCjGDHK4njGtdfJvAVfg"
-    },
   "complianceCredential": {
     "@context": [
-      "https://www.w3.org/2018/credentials/v1"
+      "https://www.w3.org/ns/credentials/v2"
     ],
     "@type": [
       "VerifiableCredential",
@@ -104,17 +97,10 @@
     ],
     "id": "https://catalogue.gaia-x.eu/credentials/ServiceOfferingCredentialExperimental/1655732271106",
     "issuer": "did:web:compliance.gaia-x.eu",
-    "issuanceDate": "2022-06-20T13:37:51.106Z",
+    "validFrom": "2022-06-20T13:37:51.106Z",
     "credentialSubject": {
       "id": "https://vc.craftworks.euprogigant.io/sd/gxserviceAlgorithmServiceOfferingCRAFTWORKS_eupg.json",
       "hash": "39c259dec8947e274a3502de2b7dc354ac8d5ecd0dfde8a503cbbc2e4f2c3f53"
-    },
-    "proof": {
-      "type": "JsonWebKey2020",
-      "created": "2022-06-20T13:37:51.105Z",
-      "proofPurpose": "assertionMethod",
-      "jws": "eyJhbGciOiJQUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..FpYuVC_IEIZ-EBVn-x5O5R8ucj1x6qQakOR0jTT-nAOIZ9ZZ-zTyVpyHIA1m2xxYcNTwCJ74-08cJYL6zaivz0S36tBYwFkQcCHykcI8ADeXXJKdMT_j8Z1R5MARyvX_eY8ckWfE2Y9xBhW-NTCsbPhW_IhzL_icWiWKS4khPIMvC_c0Gam1pTrY9YWaZsZ2NdeJOX7YNWPyL-s7VvF7LMyv2Sf-Pfnj_uUruitLi1ehSzX46UVovigRSdqAvpA4p9L9tbZKxy9NltDs4lwa9d750RC81WInSX8My0f1CDE3i5Ek9qcFuZ0g_256QhpAhSRgrzpsaJrS0uONcsWhKA",
-      "verificationMethod": "did:web:example"
     }
   }
 }

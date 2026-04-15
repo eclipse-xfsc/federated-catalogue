@@ -31,7 +31,7 @@ public class TitaniumClaimExtractor implements ClaimExtractor {
         Document document = JsonDocument.of(content.getContentAsStream());
         JsonArray arr = JsonLd.expand(document).get();
         log.trace("extractClaims; expanded: {}", arr);
-        JsonObject ld = arr.get(0).asJsonObject();
+        JsonObject ld = arr.getFirst().asJsonObject();
         if (ld.containsKey("https://www.w3.org/2018/credentials#verifiableCredential")) {
             List<JsonValue> vcs = ld.get("https://www.w3.org/2018/credentials#verifiableCredential").asJsonArray();
 	        for (JsonValue vcv: vcs) {

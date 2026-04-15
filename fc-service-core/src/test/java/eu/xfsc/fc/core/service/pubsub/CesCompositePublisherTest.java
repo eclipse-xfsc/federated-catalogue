@@ -37,8 +37,6 @@ import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
-import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
-import eu.xfsc.fc.core.service.verification.Vc11Processor;
 import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
@@ -105,7 +103,6 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         SchemaStoreImpl.class,
         SchemaValidationServiceImpl.class,
         ValidatorCacheJpaDao.class,
-        Vc11Processor.class,
         Vc2Processor.class,
         VerificationServiceImpl.class,
 })
@@ -162,9 +159,7 @@ public class CesCompositePublisherTest {
         cesPublisher.setTransactional(true);
         ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
         schemaStore.initializeDefaultSchemas();
-        verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "https://w3id.org/gaia-x/core#Participant");
         CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
-        verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "http://w3id.org/gaia-x/participant#Participant");
         assertNotNull(vr);
         AssetMetadata assetMetadata = new AssetMetadata(content, vr);
         mockCompService.enqueue(new MockResponse()
@@ -185,9 +180,7 @@ public class CesCompositePublisherTest {
         cesPublisher.setTransactional(false);
         ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
         schemaStore.initializeDefaultSchemas();
-        verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "https://w3id.org/gaia-x/core#Participant");
         CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
-        verificationService.setBaseClassUri(TrustFrameworkBaseClass.PARTICIPANT, "http://w3id.org/gaia-x/participant#Participant");
         assertNotNull(vr);
         AssetMetadata assetMetadata = new AssetMetadata(content, vr);
         mockCompService.enqueue(new MockResponse()

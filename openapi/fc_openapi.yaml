@@ -164,6 +164,7 @@ components:
         - issuer #!! Comment on issuer: if available, but still required?? Remove from required -> Julius: required
         - issuedDateTime
         - validatorDids
+        - warnings
     Participant:
       type: object
       properties:

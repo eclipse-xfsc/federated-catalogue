@@ -71,7 +71,7 @@ public class Neo4jGraphStoreTest {
         for (CredentialClaim claim : claimFile) {
             List<CredentialClaim> claimList = new ArrayList<>();
             claimList.add(claim);
-            String credentialSubject = claimList.get(0).getSubjectString();
+            String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(
                     claimList,
                     credentialSubject.substring(1, credentialSubject.length() - 1));
@@ -97,7 +97,7 @@ public class Neo4jGraphStoreTest {
         for (CredentialClaim claim : claimFile) {
             List<CredentialClaim> claimList = new ArrayList<>();
             claimList.add(claim);
-            String credentialSubject = claimList.get(0).getSubjectString();
+            String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(
                 claimList,
                 credentialSubject.substring(1, credentialSubject.length() - 1));
@@ -129,7 +129,7 @@ public class Neo4jGraphStoreTest {
         for (CredentialClaim claim : claimFile) {
             List<CredentialClaim> claimList = new ArrayList<>();
             claimList.add(claim);
-            String credentialSubject = claimList.get(0).getSubjectString();
+            String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(
                     claimList,
                     credentialSubject.substring(1, credentialSubject.length() - 1));
@@ -158,7 +158,7 @@ public class Neo4jGraphStoreTest {
         for (CredentialClaim claim : claimFile) {
             List<CredentialClaim> claimList = new ArrayList<>();
             claimList.add(claim);
-            String credentialSubject = claimList.get(0).getSubjectString();
+            String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(claimList, credentialSubject.substring(1, credentialSubject.length() - 1));
         }
         //GraphQuery queryDeltaTest = new GraphQuery("Match(n) RETURN n", null);

@@ -180,30 +180,4 @@ public class SchemaValidationServiceTest {
                 "Loire credential with unexpected property on a closed shape should not conform");
     }
 
-    /** Tagus credential still validates correctly against legacy shapes (regression). */
-    @Test
-    void validateTagus_legacyLegalPerson_stillConforms() {
-        SchemaValidationResult result = schemaValidationService.validateCredentialAgainstSchema(
-                getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"),
-                getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-
-        assertNotNull(result, "Result should not be null");
-        assertTrue(result.isConforming(),
-                "Tagus legacy credential should still conform to old shapes (regression)");
-    }
-
-    /** Loading both 2511 and legacy shapes does not cause composite SHACL failure for a valid Tagus credential. */
-    @Test
-    void validateComposite_2511AndLegacyShapesCombined_tagusCredentialConforms() {
-        schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-shapes.ttl"));
-        schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-
-        SchemaValidationResult result = schemaValidationService.validateCredentialAgainstCompositeSchema(
-                getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"));
-
-        assertNotNull(result, "Result should not be null");
-        assertTrue(result.isConforming(),
-                "Tagus credential should conform to composite schema containing both 2511 and legacy shapes");
-    }
-
 }

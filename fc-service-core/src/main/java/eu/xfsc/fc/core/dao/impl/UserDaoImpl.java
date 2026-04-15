@@ -72,7 +72,7 @@ public class UserDaoImpl implements UserDao {
       log.info("create.error; status {}:{}, {}", response.getStatus(), response.getStatusInfo(), message);
       throw new ClientException(message);
     }
-    userRepo = instance.search(userRepo.getUsername()).get(0);
+    userRepo = instance.search(userRepo.getUsername()).getFirst();
     UserResource userResource = instance.get(userRepo.getId());
     List<RoleRepresentation> roleRepresentations = assignRolesToUser(userResource, user.getRoleIds());
     if(roleRepresentations == null){
@@ -202,7 +202,7 @@ public class UserDaoImpl implements UserDao {
   @Override
   public List<String> getAllRoles() {
     ClientsResource clientsResource = keycloak.realm(realm).clients();
-    ClientRepresentation client = clientsResource.findByClientId(resourceId).get(0);
+    ClientRepresentation client = clientsResource.findByClientId(resourceId).getFirst();
     return clientsResource.get(client.getId()).roles().list()
         .stream().map(RoleRepresentation::getName).collect(Collectors.toList());
   }
@@ -239,15 +239,15 @@ public class UserDaoImpl implements UserDao {
     } else {
       // User must be only a member of 1 group or none + Groups with the same name are not duplicated
       if (!userGroups.isEmpty()) {
-        userResource.leaveGroup(userGroups.get(0).getId());
+        userResource.leaveGroup(userGroups.getFirst().getId());
       }
-      userResource.joinGroup(groups.get(0).getId());
+      userResource.joinGroup(groups.getFirst().getId());
     }
   }
 
   private List<RoleRepresentation> assignRolesToUser(UserResource userResource, List<String> roles) {
     ClientsResource clientsResource = keycloak.realm(realm).clients();
-    ClientRepresentation client = clientsResource.findByClientId(resourceId).get(0);
+    ClientRepresentation client = clientsResource.findByClientId(resourceId).getFirst();
     List<RoleRepresentation> existedRoles = clientsResource.get(client.getId()).roles().list();
     List<RoleRepresentation> roleRepresentations = existedRoles.stream().filter(role -> roles.contains(role.getName())).collect(Collectors.toList());
     //if added role is valid role then  delete old roles and update new one
@@ -266,7 +266,7 @@ public class UserDaoImpl implements UserDao {
       roles = Collections.emptyList();
     }
     ClientsResource clientsResource = keycloak.realm(realm).clients();
-    ClientRepresentation client = clientsResource.findByClientId(resourceId).get(0);
+    ClientRepresentation client = clientsResource.findByClientId(resourceId).getFirst();
     List<RoleRepresentation> existedRoles = clientsResource.get(client.getId()).roles().list();
     final List<String> finalRoles = roles;
     List<RoleRepresentation> roleRepresentations = existedRoles.stream().filter(role -> finalRoles.contains(role.getName())).collect(Collectors.toList());
@@ -281,7 +281,7 @@ public class UserDaoImpl implements UserDao {
   }
 
   private List<RoleRepresentation> getUserRoles(UsersResource instance, String userId) {
-    ClientRepresentation client = keycloak.realm(realm).clients().findByClientId(resourceId).get(0);
+    ClientRepresentation client = keycloak.realm(realm).clients().findByClientId(resourceId).getFirst();
     return instance.get(userId).roles().clientLevel(client.getId()).listAll();
   }
 
@@ -302,7 +302,7 @@ public class UserDaoImpl implements UserDao {
   public static UserProfile toUserProfile(UserRepresentation userRepo, List<RoleRepresentation> roles) {
     List<String> partIds = userRepo.getAttributes() == null ? null
         : userRepo.getAttributes().get(ATR_PARTICIPANT_ID);
-    String participantId = partIds == null ? null : partIds.get(0);
+    String participantId = partIds == null ? null : partIds.getFirst();
     return new UserProfile(participantId, userRepo.getFirstName(), userRepo.getLastName(), userRepo.getEmail(),
         toRoleIds(roles), userRepo.getId(), userRepo.getFirstName() + " " + userRepo.getLastName());
   }

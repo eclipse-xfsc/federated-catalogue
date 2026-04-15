@@ -79,12 +79,12 @@ public class AssetClient extends ServiceClient {
 
     public AssetResult getAssetByHash(String hash, boolean withMeta, boolean withContent) {
         List<AssetResult> assetList = getAssets(null, null, null, null, null, null, null, null, List.of(hash), withMeta, withContent, null, null);
-        return assetList.isEmpty() ? null: assetList.get(0);
+        return assetList.isEmpty() ? null: assetList.getFirst();
     }
     
     public AssetResult getAssetById(String id) {
         List<AssetResult> assetList = getAssets(null, null, null, null, null, null, null, List.of(id), null, true, true, null, null);
-        return assetList.isEmpty() ? null: assetList.get(0);
+        return assetList.isEmpty() ? null: assetList.getFirst();
     }
    
     public List<AssetResult> getAssetsByIds(List<String> ids) {

@@ -31,8 +31,7 @@ class FormatDetectorTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final FormatDetector detector = new FormatDetector(OBJECT_MAPPER, List.of(
             new LoireMatcher(),
-            new TagusMatcher(),
-            new DanubeTechFormatMatcher()
+              new DanubeTechFormatMatcher()
     ));
     private static JWSSigner signer;
 
@@ -42,11 +41,11 @@ class FormatDetectorTest {
         signer = new Ed25519Signer(jwk);
     }
 
-    // --- Path 1: Gaia-X v1 (Tagus) ---
+  // --- Path 1: VC 1.1 (Tagus) — now rejected as UNKNOWN ---
 
-    @Test
-    void detect_vc11WithProofBlock_returnsTagus() {
-        String body = """
+  @Test
+  void detect_vc11NonJwt_returnsUnknown() {
+    String body = """
         {
           "@context": ["https://www.w3.org/2018/credentials/v1"],
           "type": ["VerifiableCredential"],
@@ -56,41 +55,8 @@ class FormatDetectorTest {
 
         CredentialFormat result = detector.detect(new ContentAccessorDirect(body));
 
-        assertEquals(CredentialFormat.GAIAX_V1_TAGUS, result);
-    }
-
-    @Test
-    void detect_vc11WithProofBlockAndGaiaxContext_returnsTagus() {
-        String body = """
-        {
-          "@context": [
-            "https://www.w3.org/2018/credentials/v1",
-            "https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#"
-          ],
-          "type": ["VerifiableCredential", "LegalParticipant"],
-          "proof": { "type": "JsonWebSignature2020" }
-        }
-        """;
-
-        CredentialFormat result = detector.detect(new ContentAccessorDirect(body));
-
-        assertEquals(CredentialFormat.GAIAX_V1_TAGUS, result);
-    }
-
-    @Test
-    void detect_vc11WithoutProofBlock_returnsTagus() {
-        String body = """
-        {
-          "@context": ["https://www.w3.org/2018/credentials/v1"],
-          "type": ["VerifiablePresentation"],
-          "verifiableCredential": {}
-        }
-        """;
-
-        CredentialFormat result = detector.detect(new ContentAccessorDirect(body));
-
-        assertEquals(CredentialFormat.GAIAX_V1_TAGUS, result);
-    }
+    assertEquals(CredentialFormat.UNKNOWN, result);
+  }
 
     // --- Path 2: Gaia-X v2 (Loire) ---
 

@@ -17,6 +17,7 @@ gax-validation:LegalPersonShape
 	a sh:NodeShape ;
 	sh:targetClass gax-participant:LegalPerson ;
 	sh:targetClass gax-core:Participant ;
+	sh:targetClass <https://w3id.org/gaia-x/2511#LegalPerson> ;
 	sh:property [ sh:path gax-service:legalName ;
 				  sh:name "legal name" ;
 				  sh:order 1 ;

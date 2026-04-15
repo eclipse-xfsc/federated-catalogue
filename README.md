@@ -55,9 +55,20 @@ federated-catalogue:
         trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
 ```
 
+## Supported Credential Formats
+
+The Federated Catalogue accepts the following Verifiable Credential formats for submission:
+
+| Format | Encoding | Description |
+|--------|----------|-------------|
+| **Gaia-X Loire JWT** | VC 2.0 JWT (`typ: vc+ld+json+jwt`) | ICAM 24.07. Requires Gaia-X trust chain when `gaiax.enabled: true`. |
+| **Standard JWT-VC** | VCDM 1.1 or 2.0 JWT with `vc`/`vp` wrapper claims | Compatible with Catena-X, EBSI (VCDM 1.1), and IDSA/DCP trust frameworks. |
+
+**Not accepted:** VC 1.1 JSON-LD with Linked Data Proof (Gaia-X Tagus / Elbe, ICAM 22.10 and earlier). These credentials use `https://www.w3.org/2018/credentials/v1` as context with an embedded `proof` block instead of a JWT envelope. Submitting a credential in this format returns a `400` error.
+
 ## Gaia-X Loire Compatibility (2511 Ontology)
 
-The Federated Catalogue supports both the legacy Tagus (gax-core) and current Loire (Gaia-X 2511) credential formats.
+The Federated Catalogue supports the current Loire (Gaia-X 2511) credential format.
 
 ### Bundled Ontology and SHACL Shapes
 
@@ -66,37 +77,29 @@ The Federated Catalogue supports both the legacy Tagus (gax-core) and current Lo
 | `fc-service-core/src/main/resources/defaultschema/ontology/gx-2511.ttl` | Stripped from Gaia-X 2511 OWL | Class hierarchy for Loire type resolution (`rdfs:subClassOf` only) |
 | `fc-service-core/src/main/resources/defaultschema/shacl/gx-2511-shapes.ttl` | [Gaia-X Trust Shape Registry](https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#) | SHACL validation shapes for Loire credentials |
 
-Legacy Tagus files (`gax-core_generated.ttl`, `gax-trust-framework_generated.ttl`, `mergedShapesGraph.ttl`) remain loaded alongside the 2511 files for backward compatibility.
+New submissions in Tagus credential format (VC 1.1 JSON-LD with Linked Data Proof) are not accepted and return a `400` error at format detection.
 
-### Namespace Configuration
+### Namespace
 
 | Namespace | URI | Usage |
 |-----------|-----|-------|
-| Loire (2511) | `https://w3id.org/gaia-x/2511#` | Loire credential types (`gx:LegalPerson`, `gx:ServiceOffering`, etc.) |
-| Tagus (gax-core) | `https://w3id.org/gaia-x/core#` | Legacy Tagus credential types (`gax-core:Participant`, etc.) |
+| Loire (2511) | `https://w3id.org/gaia-x/2511#` | Credential types (`gx:LegalPerson`, `gx:ServiceOffering`, etc.) |
 
-Configure type resolution in `application.yml`:
+Configure type resolution and document loader in `application.yml`:
 
 ```yaml
 federated-catalogue:
   verification:
     participant:
-      type: "https://w3id.org/gaia-x/2511#Participant"       # Loire
-      legacy-type: "https://w3id.org/gaia-x/core#Participant" # Tagus
+      type: "https://w3id.org/gaia-x/2511#Participant"
     resource:
       type: "https://w3id.org/gaia-x/2511#Resource"
-      legacy-type: "https://w3id.org/gaia-x/core#Resource"
     service-offering:
       type: "https://w3id.org/gaia-x/2511#ServiceOffering"
-      legacy-type: "https://w3id.org/gaia-x/core#ServiceOffering"
     doc-loader:
       additional-context:
         '[https://w3id.org/gaia-x/2511#]': https://registry.lab.gaia-x.eu/development/context/2511
 ```
-
-### Namespace Coexistence
-
-Both ontology sets are loaded simultaneously via `SchemaStoreImpl.addSchemasFromDirectory()`. No namespace conflicts occur because the old (`gax-core:`) and new (`gx:`) files use different URIs. Credential format detection (`FormatDetector`) selects the appropriate type URI set per credential: Loire credentials use 2511 URIs; Tagus credentials use gax-core URIs.
 
 To update to a future 2511 release: replace `gx-2511.ttl` (run `fc-tools/extract-ontology-hierarchy.py` against the new OWL file) and `gx-2511-shapes.ttl` (download from the registry), then update the `doc-loader.additional-context` mapping.
 

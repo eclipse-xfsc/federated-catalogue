@@ -59,7 +59,7 @@ public class NatsAssetSubscriberImpl extends BaseAssetSubscriber {
 	            		if (!instance.equals(source)) {
 		            		Map<String, Object> params = new HashMap<>();
 		            		headers.entrySet().forEach(e -> {
-		            			params.put(e.getKey(), e.getValue().get(0));
+		            			params.put(e.getKey(), e.getValue().getFirst());
 		            		});
 		            		String payload = new String(natsMsg.getData());
 		            		if (payload.length() > 10) {

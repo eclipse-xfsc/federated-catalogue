@@ -44,6 +44,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+// TODO (CAT-TECH-01): This tool signs using Tagus-era JsonWebSignature2020 LD proofs.
+//  LD proof verification has been removed from the catalogue. Rewrite to produce JWT/EVC/EVP
+//  signatures or delete this module if no longer needed.
 public class CredentialSigner {
     //openssl req -x509 -newkey rsa:4096 -keyout prk.ss.pem -out cert.ss.pem -sha256 -days 365 -nodes
     private static String PATH_TO_PRIVATE_KEY = "src/main/resources/prk.ss.pem";

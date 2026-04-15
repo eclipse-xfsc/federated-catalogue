@@ -1,6 +1,6 @@
 {
   "@context": [
-    "https://www.w3.org/2018/credentials/v1"
+   "https://www.w3.org/ns/credentials/v2"
   ],
   "@id": "http://example.edu/verifiablePresentation/self-description",
   "type": [
@@ -9,14 +9,14 @@
   "verifiableCredential": [
     {
       "@context": [
-        "https://www.w3.org/2018/credentials/v1"
+       "https://www.w3.org/ns/credentials/v2"
       ],
       "@id": "https://www.example.org/SoftwareOffering.json",
       "@type": [
         "VerifiableCredential"
       ],
       "issuer": "http://gaiax.de",
-      "issuanceDate": "2022-10-19T18:48:09Z",
+      "validFrom": "2022-10-19T18:48:09Z",
       "credentialSubject": {
         "@context": {
           "dcat": "http://www.w3.org/ns/dcat#",

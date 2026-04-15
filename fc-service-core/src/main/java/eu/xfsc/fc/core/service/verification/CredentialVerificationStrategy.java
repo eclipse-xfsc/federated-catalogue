@@ -15,16 +15,15 @@ import static eu.xfsc.fc.core.service.verification.VerificationConstants.VP_TYPE
 
 import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
-import com.danubetech.keyformats.jose.JWK;
 import com.danubetech.verifiablecredentials.VerifiableCredential;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
 import com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.dao.trustframework.TrustFramework;
 import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkRepository;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheDao;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -43,12 +42,10 @@ import eu.xfsc.fc.core.service.verification.claims.ClaimExtractor;
 import eu.xfsc.fc.core.service.verification.claims.DanubeTechClaimExtractor;
 import eu.xfsc.fc.core.service.verification.claims.TitaniumClaimExtractor;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
-import eu.xfsc.fc.core.service.verification.signature.SignatureVerifier;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import foundation.identity.jsonld.JsonLDObject;
-import com.danubetech.dataintegrity.DataIntegrityProof;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +58,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateException;
@@ -70,7 +66,6 @@ import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -123,8 +118,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
     @Value("${federated-catalogue.verification.require-vp:true}")
     private boolean requireVP;
-    @Value("${federated-catalogue.verification.drop-validators:false}")
-    private boolean dropValidators;
     @Value("${federated-catalogue.verification.trust-framework.gaiax.enabled:false}")
     private boolean gaiaxTrustFrameworkEnabledEnv;
 
@@ -150,40 +143,20 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     @Value("${federated-catalogue.verification.resource.type}")
     private String resourceType;
 
-    // Legacy Tagus (gax-core) type URIs — used for GAIAX_V1_TAGUS credentials.
-    // Default to the 2511 URI so that legacy-type is optional in config (e.g. test profiles).
-    @Value("${federated-catalogue.verification.participant.legacy-type:${federated-catalogue.verification.participant.type}}")
-    private String legacyParticipantType;
-    @Value("${federated-catalogue.verification.service-offering.legacy-type:${federated-catalogue.verification.service-offering.type}}")
-    private String legacyServiceOfferingType;
-    @Value("${federated-catalogue.verification.resource.legacy-type:${federated-catalogue.verification.resource.type}}")
-    private String legacyResourceType;
-
-    // Additional Loire-only sibling roots for SERVICE_OFFERING (e.g. gx:DigitalServiceOffering).
-    // Tagus / gax-core has no sibling classes so no legacy-additional-types is needed.
+    // Additional sibling roots for SERVICE_OFFERING (e.g. gx:DigitalServiceOffering).
     @Value("${federated-catalogue.verification.service-offering.additional-types:#{T(java.util.Collections).emptyList()}}")
     private List<String> serviceOfferingAdditionalTypes;
 
-    /** Loire (Gaia-X 2511) type URIs — used for GAIAX_V2_LOIRE credentials. */
-    private Map<TrustFrameworkBaseClass, List<String>> loireBaseClassUris;
-    /** Legacy Tagus (gax-core) type URIs — used for GAIAX_V1_TAGUS credentials. */
-    private Map<TrustFrameworkBaseClass, List<String>> legacyBaseClassUris;
-    /**
-     * Alias to {@link #legacyBaseClassUris} kept for backward compatibility with
-     * {@link #setBaseClassUri(TrustFrameworkBaseClass, String)} used in tests.
-     */
-    private Map<TrustFrameworkBaseClass, List<String>> trustFrameworkBaseClassUris;
+    /** Gaia-X 2511 type URIs for credential subject classification. */
+    private Map<TrustFrameworkBaseClass, List<String>> baseClassUris;
 
     private final JwtContentPreprocessor jwtPreprocessor;
     private final ProtectedNamespaceFilter protectedNamespaceFilter;
     private final SchemaStore schemaStore;
     private final SchemaValidationService schemaValidationService;
-    private final SignatureVerifier signVerifier;
     @Qualifier("contextCacheFileStore")
     private final FileStore fileStore;
     private final DocumentLoader documentLoader;
-    private final ValidatorCacheDao validatorCache;
-    private final Vc11Processor vc11Processor;
     private final Vc2Processor vc2Processor;
     private final JwtSignatureVerifier jwtSignatureVerifier;
     private final FormatDetector formatDetector;
@@ -208,26 +181,17 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     @PostConstruct
-    private void initializeTrustFrameworkBaseClasses() {
+    private void initialize() {
         rest = restTemplate();
 
         List<String> loireSoRoots = new ArrayList<>();
         loireSoRoots.add(serviceOfferingType);
         loireSoRoots.addAll(serviceOfferingAdditionalTypes);
 
-        loireBaseClassUris = new EnumMap<>(TrustFrameworkBaseClass.class);
-        loireBaseClassUris.put(SERVICE_OFFERING, loireSoRoots);
-        loireBaseClassUris.put(RESOURCE, List.of(resourceType));
-        loireBaseClassUris.put(PARTICIPANT, List.of(participantType));
-
-        legacyBaseClassUris = new EnumMap<>(TrustFrameworkBaseClass.class);
-        legacyBaseClassUris.put(SERVICE_OFFERING, List.of(legacyServiceOfferingType));
-        legacyBaseClassUris.put(RESOURCE, List.of(legacyResourceType));
-        legacyBaseClassUris.put(PARTICIPANT, List.of(legacyParticipantType));
-
-        // trustFrameworkBaseClassUris is an alias to legacyBaseClassUris so that
-        // setBaseClassUri() (called by tests) continues to work as before.
-        trustFrameworkBaseClassUris = legacyBaseClassUris;
+        baseClassUris = new EnumMap<>(TrustFrameworkBaseClass.class);
+        baseClassUris.put(SERVICE_OFFERING, loireSoRoots);
+        baseClassUris.put(RESOURCE, List.of(resourceType));
+        baseClassUris.put(PARTICIPANT, List.of(participantType));
     }
 
     /**
@@ -303,7 +267,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
-        trustFrameworkBaseClassUris.put(baseClass, List.of(uri));
+        baseClassUris.put(baseClass, List.of(uri));
     }
 
     /**
@@ -331,8 +295,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             }
         }
 
-        // Reject ambiguous/unrecognizable JWTs — non-JWT payloads fall through to
-        // vc11Processor which provides more specific syntactic error messages.
+        // Reject ambiguous/unrecognizable JWTs — UNKNOWN non-JWT payloads fall through
+        // to parseCredentials() for a more specific type error.
         if (format == CredentialFormat.UNKNOWN && body.startsWith(JWT_PREFIX)) {
             throw new ClientException(
                 "Unrecognizable JWT credential format — JWT does not have recognized "
@@ -353,15 +317,21 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         // Version dispatch — unwrap to JSON-LD
         // NOTE: A future VcStructureDetector.isVcStructured() call MUST be placed AFTER
         // unwrapping, not before — a JWT-wrapped VC 2.0 payload would not be recognised as a VC.
-        if (format == CredentialFormat.GAIAX_V2_LOIRE) {
-            payload = loireJwtParser.unwrap(payload);
-        } else if (format == CredentialFormat.GAIAX_V1_TAGUS) {
-            payload = vc11Processor.preProcess(payload);
-        } else if (format == CredentialFormat.VC2_DANUBETECH) {
-            payload = vc2Processor.preProcess(payload);
-        } else {
-            payload = vc11Processor.preProcess(payload);
-        }
+        payload = switch (format) {
+            case GAIAX_V2_LOIRE -> loireJwtParser.unwrap(payload);
+            case VC2_DANUBETECH -> vc2Processor.preProcess(payload);
+            default -> {
+                // UNKNOWN non-JWT: distinguish malformed JSON (syntactic error) from
+                // unrecognized-but-valid JSON-LD (fall through to parseCredentials()
+                // for a specific type error).
+                try {
+                    objectMapper.readTree(body);
+                } catch (JsonProcessingException ex) {
+                    throw new ClientException("Syntactic error: " + ex.getMessage(), ex);
+                }
+                yield payload;
+            }
+        };
 
         return new VerificationContext(body, format, isJwt, payload, jwtValidator);
     }
@@ -540,7 +510,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             if (issuer == null) {
                 issuer = id;
             }
-            String method = typedCredentials.getProofMethod();
+            String method = validators.isEmpty() ? null : validators.getFirst().getDidURI();
             String holder = typedCredentials.getHolder();
             String name = holder == null ? issuer : holder;
             return new CredentialVerificationResultParticipant(now, status, issuer, issuedDate,
@@ -650,7 +620,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         boolean isVc2 = (ctx instanceof java.util.List<?>)
                 ? ((java.util.List<?>) ctx).contains(VC_20_CONTEXT)
                 : VC_20_CONTEXT.equals(ctx);
-        return isVc2 ? vc2Processor : vc11Processor;
+        if (!isVc2) {
+            throw new ClientException("Credential does not contain recognized VC 2.0 context");
+        }
+        return vc2Processor;
     }
 
     private boolean checkAbsence(JsonLDObject container, String... keys) {
@@ -804,19 +777,12 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Resolves the Gaia-X base class of a credential using the appropriate type URI set for its format.
-     * <ul>
-     *   <li>GAIAX_V2_LOIRE: uses 2511 type URIs (loireBaseClassUris)</li>
-     *   <li>GAIAX_V1_TAGUS: uses legacy gax-core type URIs (legacyBaseClassUris / trustFrameworkBaseClassUris)</li>
-     *   <li>VC2_DANUBETECH: uses legacy gax-core type URIs (same as TAGUS) — 2511 types are JWT-only</li>
-     * </ul>
+     * Resolves the Gaia-X base class of a credential using the configured 2511 type URI set.
      */
     private TrustFrameworkBaseClass resolveBaseClass(VerifiableCredential credential, CredentialFormat format) {
-        Map<TrustFrameworkBaseClass, List<String>> classUris =
-            format == CredentialFormat.GAIAX_V2_LOIRE ? loireBaseClassUris : trustFrameworkBaseClassUris;
         ContentAccessor ontology = schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY);
         TrustFrameworkBaseClass result = ClaimValidator.getSubjectType(
-                ontology, getStreamManager(), credential.toJson(), classUris);
+                ontology, getStreamManager(), credential.toJson(), baseClassUris);
         if (result == null) {
             result = UNKNOWN;
         }
@@ -825,30 +791,15 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
 
-    /* Credential signatures verification */
+    /**
+     * Rejects non-JWT credentials that request signature verification.
+     * Linked Data proof verification (JsonWebSignature2020) was removed — Loire uses
+     * GXDCH Compliance Service notarization via JWT/Enveloped Credential format.
+     */
     private List<Validator> checkCryptography(TypedCredentials tcs, boolean verifyVP, boolean verifyVC) {
-        log.debug("checkCryptography.enter;");
-        long timestamp = System.currentTimeMillis();
-
-        Set<Validator> validators = new HashSet<>();
-        try {
-            if (verifyVC) {
-                for (VerifiableCredential credential : tcs.getCredentials()) {
-                    validators.add(checkSignature(credential));
-                }
-            }
-            if (verifyVP) {
-                validators.add(checkSignature(tcs.getPresentation()));
-            }
-        } catch (VerificationException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            log.error("checkCryptography.error", ex);
-            throw new VerificationException("Signatures error; " + ex.getMessage(), ex);
-        }
-        timestamp = System.currentTimeMillis() - timestamp;
-        log.debug("checkCryptography.exit; returning: {}; time taken: {}", validators, timestamp);
-        return new ArrayList<>(validators);
+        throw new VerificationException(
+            "Signatures error; Linked Data proof verification is not supported."
+                + " Use JWT or Enveloped Credential format.");
     }
 
     /**
@@ -916,8 +867,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
     /**
      * Verifies inner VC credentials in a VP JWT.
-     * Handles EnvelopedVerifiableCredential (ICAM v24.07), plain compact JWT strings,
-     * and inline JSON-LD VCs with proof fields.
+     * Handles EnvelopedVerifiableCredential (ICAM v24.07) and plain compact JWT strings.
+     * Inline JSON-LD VCs are rejected — LD proof verification was removed.
      */
     private List<Validator> verifyInnerVcCredentials(JsonLDObject ld) {
         Object vcArrayObj = ld.getJsonObject().get(VERIFIABLE_CREDENTIAL_KEY);
@@ -949,12 +900,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     }
                     validators.add(jwtSignatureVerifier.verifyFromDataUrl(idStr));
                 } else {
-                    // Inline JSON-LD VC with proof — existing LD verification path
-                    @SuppressWarnings("unchecked")
-                    VerifiableCredential innerVc = VerifiableCredential.fromMap(
-                            (Map<String, Object>) vcMap);
-                    innerVc.setDocumentLoader(ld.getDocumentLoader());
-                    validators.add(checkSignature(innerVc));
+                    // Inline JSON-LD VC — LD proof verification was removed (Loire uses JWT)
+                    throw new VerificationException(
+                        "Signatures error; Linked Data proof verification is not supported."
+                            + " Use JWT or Enveloped Credential format.");
                 }
             }
         }
@@ -1127,71 +1076,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return jwt;
     }
 
-    @SuppressWarnings("unchecked")
-    private Validator checkSignature(JsonLDObject payload) {
-        Map<String, Object> proofMap = (Map<String, Object>) payload.getJsonObject().get("proof");
-        if (proofMap == null) {
-            throw new VerificationException("Signatures error; No proof found");
-        }
-
-        DataIntegrityProof proof = DataIntegrityProof.fromMap(proofMap);
-        if (proof.getType() == null) {
-            throw new VerificationException("Signatures error; Proof must have 'type' property");
-        }
-
-        try {
-            return checkProofSignature(payload, proof);
-        } catch (IOException ex) {
-            throw new VerificationException(ex);
-        }
-    }
-
-    private Validator checkProofSignature(JsonLDObject payload, DataIntegrityProof proof) throws IOException {
-        String vmKey = proof.getVerificationMethod().toString();
-        Validator validator = validatorCache.getFromCache(vmKey);
-        if (validator == null) {
-            log.debug("checkSignature; validator not found in cache");
-        } else {
-            log.debug("checkSignature; got validator from cache");
-            JWK jwk = JWK.fromJson(validator.getPublicKey());
-            if (signVerifier.verify(payload, proof, jwk, jwk.getAlg())) {
-                return validator;
-            }
-
-            // validator doesn't verifies any more. let's drop it
-            if (dropValidators) {
-                validatorCache.removeFromCache(vmKey);
-            } else {
-                throw new VerificationException("Signatures error; " + payload.getClass().getSimpleName() + " does not match with proof");
-            }
-        }
-
-        validator = signVerifier.checkSignature(payload, proof);
-        Instant expiration = null;
-        JsonNode jwkNode = objectMapper.readTree(validator.getPublicKey());
-        if (jwkNode.has("x5c") && !jwkNode.get("x5c").isEmpty()) {
-            rejectX5cChain(jwkNode.get("x5c"), proof.getVerificationMethod().toString());
-        }
-        JWK jwk = JWK.fromJson(validator.getPublicKey());
-        String url = jwk.getX5u();
-        if (url == null) {
-            // When Gaia-X trust framework is enabled, x5u URL is required for trust anchor validation
-            if (isGaiaxTrustFrameworkEnabled()) {
-                throw new VerificationException("Signatures error; no trust anchor url found");
-            }
-            log.debug("checkProofSignature; no x5u URL in JWK, skipping trust anchor validation (gaiax.enabled=false)");
-        } else {
-            expiration = hasPEMTrustAnchorAndIsNotExpired(url);
-        }
-        if (expiration == null) {
-            // set default expiration at next midnight
-            expiration = Instant.now().plus(validatorExpiration).truncatedTo(ChronoUnit.DAYS);
-        }
-        validator.setExpirationDate(expiration);
-        validatorCache.addToCache(validator);
-        return validator;
-    }
-
     /**
      * Fetches the certificate chain from the given x5u URL, validates certificate expiry,
      * and checks the URI against the Gaia-X Trust Anchor Registry (when gaiax.enabled=true).
@@ -1303,7 +1187,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Rejects inline {@code x5c} certificate chains for all credential formats (Loire and Tagus).
+     * Rejects inline {@code x5c} certificate chains for all credential formats.
      *
      * <p>Full x5c trust chain verification (chain building, Trust Anchor Registry lookup,
      * and revocation checking) is not implemented. Accepting x5c with expiry-only checks

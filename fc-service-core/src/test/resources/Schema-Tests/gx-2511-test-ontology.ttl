@@ -5,6 +5,8 @@
 # Minimal 2511 class hierarchy for unit testing.
 # Mirrors the gx-2511.ttl structure without the full ontology payload.
 
+<https://w3id.org/gaia-x/2511> a owl:Ontology .
+
 gx:GaiaXEntity a owl:Class .
 
 gx:Participant a owl:Class ;
