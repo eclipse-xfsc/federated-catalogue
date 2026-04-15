@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.dao.assets.AssetDao;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
@@ -48,7 +49,7 @@ import jakarta.persistence.EntityManager;
 @ContextConfiguration(classes = {
     EnversAuditTest.TestConfig.class,
     AssetJpaDao.class, AssetAuditRepository.class, SchemaJpaDao.class, SchemaAuditRepository.class,
-    DatabaseConfig.class
+    DatabaseConfig.class, SecurityAuditorAware.class
 })
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class EnversAuditTest {

@@ -20,6 +20,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -35,7 +36,8 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {SchemaVersioningTest.TestConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class})
+@ContextConfiguration(classes = {SchemaVersioningTest.TestConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class,
+    DatabaseConfig.class, SecurityAuditorAware.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class SchemaVersioningTest {
 

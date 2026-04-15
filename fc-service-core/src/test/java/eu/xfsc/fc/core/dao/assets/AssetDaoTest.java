@@ -8,8 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 
+import eu.xfsc.fc.core.dao.schemas.SchemaFile;
+import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -18,11 +21,16 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
@@ -35,7 +43,8 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {AssetDaoTest.TestConfig.class, AssetJpaDao.class, AssetAuditRepository.class, DatabaseConfig.class})
+@ContextConfiguration(classes = {AssetDaoTest.TestConfig.class, AssetJpaDao.class, AssetAuditRepository.class,
+    DatabaseConfig.class, SecurityAuditorAware.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class AssetDaoTest {
 
@@ -47,8 +56,12 @@ class AssetDaoTest {
   @Autowired
   private AssetDao assetDao;
 
+  @Autowired
+  private AssetRepository assetRepository;
+
   @AfterEach
   void cleanUp() {
+    SecurityContextHolder.clearContext();
     assetDao.deleteAll();
   }
 
@@ -599,4 +612,53 @@ class AssetDaoTest {
     assertEquals(0, count);
   }
 
+  // ===== JPA auditing =====
+
+  @Test
+  void insert_withJwtContext_populatesAuditFields() {
+    Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").subject("audit-user").build();
+    SecurityContextHolder.setContext(new SecurityContextImpl(
+        new JwtAuthenticationToken(jwt, Collections.emptyList())));
+    AssetRecord record = buildSimpleRecord("hash-audit", "sub/audit", "iss/1",
+        Instant.parse("2024-01-01T00:00:00Z"));
+
+    assetDao.insert(record);
+
+    Asset entity = assetRepository.findByAssetHash("hash-audit").orElseThrow();
+    assertEquals("audit-user", entity.getCreatedBy());
+    assertEquals("audit-user", entity.getModifiedBy());
+    assertNotNull(entity.getCreatedAt());
+    assertNotNull(entity.getLastModifiedAt());
+  }
+
+  @Test
+  void insert_withoutJwtContext_timestampsSetCreatedByNull() {
+    AssetRecord record = buildSimpleRecord("hash-noauth", "sub/noauth", "iss/1",
+        Instant.parse("2024-01-01T00:00:00Z"));
+
+    assetDao.insert(record);
+
+    Asset entity = assetRepository.findByAssetHash("hash-noauth").orElseThrow();
+    assertNull(entity.getCreatedBy());
+    assertNull(entity.getModifiedBy());
+    assertNotNull(entity.getCreatedAt());
+    assertNotNull(entity.getLastModifiedAt());
+  }
+
+  @Test
+  void update_withDifferentJwtContext_updatesModifiedByNotCreatedBy() {
+    Jwt jwtA = Jwt.withTokenValue("tokenA").header("alg", "none").subject("user-a").build();
+    SecurityContextHolder.setContext(new SecurityContextImpl(
+            new JwtAuthenticationToken(jwtA, Collections.emptyList())));
+    assetDao.insert(buildSimpleRecord("hash-audit", "sub/audit", "iss/1", Instant.parse("2024-01-01T00:00:00Z")));
+
+    Jwt jwtB = Jwt.withTokenValue("tokenB").header("alg", "none").subject("user-b").build();
+    SecurityContextHolder.setContext(new SecurityContextImpl(
+            new JwtAuthenticationToken(jwtB, Collections.emptyList())));
+    assetDao.update("hash-audit", AssetStatus.REVOKED.ordinal());
+
+    Asset entity = assetRepository.findByAssetHash("hash-audit").orElseThrow();
+    assertEquals("user-a", entity.getCreatedBy());
+    assertEquals("user-b", entity.getModifiedBy());
+  }
 }

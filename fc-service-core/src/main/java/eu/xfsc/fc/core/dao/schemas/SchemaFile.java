@@ -7,6 +7,7 @@ import java.util.Set;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -21,10 +22,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "schemafiles")
 @Audited
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,9 +49,11 @@ public class SchemaFile {
   @Column(name = "namehash", length = 64, nullable = false)
   private String nameHash;
 
-  @Column(name = "created_at", nullable = false)
+  @CreatedDate
+  @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
+  @LastModifiedDate
   @Column(name = "modified_at", nullable = false)
   private Instant modifiedAt;
 
@@ -54,6 +63,14 @@ public class SchemaFile {
 
   @Column(name = "content", columnDefinition = "TEXT", nullable = false)
   private String content;
+
+  @CreatedBy
+  @Column(name = "created_by", updatable = false)
+  private String createdBy;
+
+  @LastModifiedBy
+  @Column(name = "modified_by")
+  private String modifiedBy;
 
   @OneToMany(mappedBy = "schemaFile", cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<SchemaTerm> terms = new HashSet<>();

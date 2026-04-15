@@ -1,6 +1,5 @@
 package eu.xfsc.fc.core.dao.schemas;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -17,7 +16,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import lombok.RequiredArgsConstructor;
 
-@Component
+@Repository
 @RequiredArgsConstructor
 public class SchemaJpaDao implements SchemaDao {
 
@@ -73,7 +72,6 @@ public class SchemaJpaDao implements SchemaDao {
   public void update(String id, String content, Collection<String> terms) {
       SchemaFile entity = repository.findBySchemaId(id)
         .orElseThrow(() -> new NotFoundException("Schema with id " + id + " was not found"));
-    entity.setModifiedAt(Instant.now());
     entity.setContent(content);
     entity.getTerms().clear();
     if (terms != null) {

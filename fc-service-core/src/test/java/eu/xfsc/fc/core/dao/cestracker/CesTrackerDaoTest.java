@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.pubsub.ces.CesTracking;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
@@ -25,7 +26,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {CesTrackerDaoTest.TestConfig.class,
-    eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao.class, DatabaseConfig.class})
+    eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao.class, DatabaseConfig.class, SecurityAuditorAware.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class CesTrackerDaoTest {
 

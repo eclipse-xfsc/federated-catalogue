@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <!-- assets: 4 new audit columns (all nullable; existing rows have no auditor data) -->
+    <changeSet author="saackef" id="2026-04-13-audit-assets-created-by">
+        <addColumn tableName="assets">
+            <column name="created_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-assets-modified-by">
+        <addColumn tableName="assets">
+            <column name="modified_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-assets-created-at">
+        <addColumn tableName="assets">
+            <column name="created_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-assets-last-modified-at">
+        <addColumn tableName="assets">
+            <column name="last_modified_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- assets_aud: same 4 columns for Envers snapshots -->
+    <changeSet author="saackef" id="2026-04-13-audit-assets-aud-created-by">
+        <addColumn tableName="assets_aud">
+            <column name="created_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-assets-aud-modified-by">
+        <addColumn tableName="assets_aud">
+            <column name="modified_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-assets-aud-created-at">
+        <addColumn tableName="assets_aud">
+            <column name="created_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-assets-aud-last-modified-at">
+        <addColumn tableName="assets_aud">
+            <column name="last_modified_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- schemafiles: only created_by + modified_by (created_at/modified_at already exist from changeset 008) -->
+    <changeSet author="saackef" id="2026-04-13-audit-schemafiles-created-by">
+        <addColumn tableName="schemafiles">
+            <column name="created_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-schemafiles-modified-by">
+        <addColumn tableName="schemafiles">
+            <column name="modified_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- schemafiles_aud: same 2 columns -->
+    <changeSet author="saackef" id="2026-04-13-audit-schemafiles-aud-created-by">
+        <addColumn tableName="schemafiles_aud">
+            <column name="created_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-13-audit-schemafiles-aud-modified-by">
+        <addColumn tableName="schemafiles_aud">
+            <column name="modified_by" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

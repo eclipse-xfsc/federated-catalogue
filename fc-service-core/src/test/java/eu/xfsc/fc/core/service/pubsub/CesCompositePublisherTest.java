@@ -3,6 +3,7 @@ package eu.xfsc.fc.core.service.pubsub;
 import eu.xfsc.fc.client.ExternalServiceException;
 import eu.xfsc.fc.core.config.AssetStoreConfig;
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
@@ -105,6 +106,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         ValidatorCacheJpaDao.class,
         Vc2Processor.class,
         VerificationServiceImpl.class,
+        SecurityAuditorAware.class,
 })
 //@Import(EmbeddedNeo4JConfig.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)

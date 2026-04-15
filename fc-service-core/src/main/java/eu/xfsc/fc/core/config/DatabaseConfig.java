@@ -16,7 +16,8 @@ import javax.sql.DataSource;
 
 @Configuration
 @EnableTransactionManagement
-@EnableJpaAuditing
+// Wires SecurityAuditorAware to populate createdBy/modifiedBy from JWT subject on every JPA write
+@EnableJpaAuditing(auditorAwareRef = "securityAuditorAware")
 @EnableJpaRepositories(basePackages = "eu.xfsc.fc.core.dao")
 @RequiredArgsConstructor
 public class DatabaseConfig {

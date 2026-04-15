@@ -14,4 +14,5 @@
     <include file="changesets/008-rename-timestamps.xml" relativeToChangelogFile="true" />
     <include file="changesets/009-asset-versioning.xml" relativeToChangelogFile="true" />
     <include file="changesets/010-admin-config-tables.xml" relativeToChangelogFile="true" />
+    <include file="changesets/011-audit-user-tracking.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
