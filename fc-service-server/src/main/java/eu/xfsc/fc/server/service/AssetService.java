@@ -8,34 +8,48 @@ import eu.xfsc.fc.api.generated.model.AssetVersionList;
 import eu.xfsc.fc.api.generated.model.Assets;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.NotFoundException;
+import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.service.assetstore.AssetRecord;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
+import eu.xfsc.fc.core.service.assetstore.LinkedAssetRef;
+import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
+import eu.xfsc.fc.server.config.AssetProperties;
 import eu.xfsc.fc.server.generated.controller.AssetsApiDelegate;
+import eu.xfsc.fc.server.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static eu.xfsc.fc.server.util.AssetHelper.parseTimeRange;
@@ -54,6 +68,9 @@ public class AssetService implements AssetsApiDelegate {
   private final VerificationService verificationService;
   private final AssetStore assetStorePublisher;
   private final HttpServletRequest httpServletRequest;
+  private final AssetUploadService assetUploadService;
+  @Qualifier("assetFileStore") private final FileStore assetFileStore;
+  private final AssetProperties assetProperties;
 
   /**
    * Service method for GET /assets : Get the list of metadata of assets in the Catalogue.
@@ -102,18 +119,20 @@ public class AssetService implements AssetsApiDelegate {
     if (withMeta) {
         if (withContent) {
             results = assets.getResults().stream().map((AssetMetadata asset) ->
-                new AssetResult(asset, asset.getContentAccessor().getContentAsString())).collect(Collectors.toList());
+                new AssetResult(asset, asset.getContentAccessor() != null
+                    ? asset.getContentAccessor().getContentAsString() : null)).collect(Collectors.toList());
         } else {
             results = assets.getResults().stream().map((AssetMetadata asset) ->
                 new AssetResult(asset, null)).collect(Collectors.toList());
         }
     } else if (withContent) {
         results = assets.getResults().stream().map((AssetMetadata asset) ->
-            new AssetResult(null, asset.getContentAccessor().getContentAsString())).collect(Collectors.toList());
+            new AssetResult(null, asset.getContentAccessor() != null
+                ? asset.getContentAccessor().getContentAsString() : null)).collect(Collectors.toList());
     }
     return ResponseEntity.ok(new Assets((int) assets.getTotalCount(), results));
   }
-  
+
   /**
    * Service method for GET /assets/{id} : Read an asset by its IRI.
    * Returns the content of the single asset.
@@ -126,23 +145,37 @@ public class AssetService implements AssetsApiDelegate {
    *         Must not outline any information about the internal structure of the server. (status code 500)
    */
   @Override
-  public ResponseEntity<String> readAssetById(String id, Integer version) {
+  public ResponseEntity<Asset> readAssetById(String id, Integer version) {
+    final String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
     AssetMetadata assetMetadata = version != null
-        ? assetStorePublisher.getByIdAndVersion(id, version)
-        : assetStorePublisher.getById(id);
+        ? assetStorePublisher.getByIdAndVersion(decodedId, version)
+        : assetStorePublisher.getById(decodedId);
 
-    // Only RDF assets have content in DB. Non-RDF assets (PDF, binary) are in FileStore
-    // and require a dedicated download endpoint
     ContentAccessor content = assetMetadata.getContentAccessor();
-    if (content == null) {
-      throw new ClientException("Asset " + id + " (hash: " + assetMetadata.getAssetHash()
-          + ") is a non-RDF asset (content-type: " + assetMetadata.getContentType()
-          + "). Raw content download is not supported via this endpoint.");
+    if (content != null) {
+      // RDF asset: embed raw JSON-LD in rawContent field so all paths return AssetMetadata.
+      assetMetadata.setRawContent(content.getContentAsString());
     }
 
-    log.debug("readAssetById.exit; returning asset by hash: {}", id);
-    return ResponseEntity.ok()
-        .body(content.getContentAsString());
+    populateLinkFields(decodedId, assetMetadata);
+    log.debug("readAssetById; returning metadata for id: {}", decodedId);
+    return ResponseEntity.ok(assetMetadata);
+  }
+
+  /**
+   * Populate link fields ({@code humanReadableId}, {@code machineReadableId}) on the given metadata.
+   *
+   * @param id            asset IRI
+   * @param assetMetadata metadata object to populate in place
+   */
+  private void populateLinkFields(String id, AssetMetadata assetMetadata) {
+    assetStorePublisher.findLink(id).ifPresent(ref -> {
+      if (ref.ownType() == AssetType.MACHINE_READABLE) {
+        assetMetadata.setHumanReadableId(ref.linkedIri());
+      } else {
+        assetMetadata.setMachineReadableId(ref.linkedIri());
+      }
+    });
   }
 
   /**
@@ -163,9 +196,7 @@ public class AssetService implements AssetsApiDelegate {
   @Transactional
   public ResponseEntity<Void> deleteAsset(String assetHash) {
     AssetMetadata assetMetadata = assetStorePublisher.getByHash(assetHash);
-
     checkParticipantAccess(assetMetadata.getIssuer());
-
     assetStorePublisher.deleteAsset(assetHash);
     return new ResponseEntity<>(HttpStatus.OK);
   }
@@ -310,6 +341,186 @@ public class AssetService implements AssetsApiDelegate {
     log.debug("revokeAssetVersion.exit; revoked version {} of asset {}", version, id);
     return ResponseEntity.ok(av);
   }
+
+  /**
+   * POST /assets/{id}/human-readable — upload and link a human-readable representation.
+   * Returns 409 if a human-readable asset is already linked; use PUT to replace it.
+   *
+   * @param id   URL-encoded IRI of the machine-readable parent asset
+   * @param file the human-readable document
+   * @return 201 Created with the new human-readable asset metadata
+   */
+  @Override
+  @Transactional
+  public ResponseEntity<Asset> uploadHumanReadable(String id, MultipartFile file) {
+    if (file == null) {
+      throw new ClientException("No file was provided in the upload request");
+    }
+    final String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
+    log.debug("uploadHumanReadable.enter; parentId: {}", decodedId);
+
+    final AssetMetadata parentMeta = assetStorePublisher.getById(decodedId);
+    checkParticipantAccess(parentMeta.getIssuer());
+
+    final boolean hrAlreadyLinked = assetStorePublisher.findLink(decodedId)
+        .filter(ref -> ref.ownType() == AssetType.MACHINE_READABLE)
+        .isPresent();
+    if (hrAlreadyLinked) {
+      throw new ConflictException("A human-readable asset is already linked to " + decodedId + ". Use PUT to replace it.");
+    }
+
+    final AssetMetadata hrMetadata = storeAndLinkHumanReadable(decodedId, file, null);
+    log.debug("uploadHumanReadable.exit; linked {} -> {}", decodedId, hrMetadata.getId());
+
+    final String encodedId = UriUtils.encodePathSegment(hrMetadata.getId(), StandardCharsets.UTF_8);
+    return ResponseEntity
+        .created(URI.create("/assets/" + encodedId))
+        .body(hrMetadata);
+  }
+
+  /**
+   * PUT /assets/{id}/human-readable — replace the existing human-readable representation.
+   * Returns 404 if no human-readable asset is currently linked; use POST to create the initial link.
+   *
+   * @param id   URL-encoded IRI of the machine-readable parent asset
+   * @param file the replacement human-readable document
+   * @return 200 OK with the updated human-readable asset metadata
+   */
+  @Override
+  @Transactional
+  public ResponseEntity<Asset> replaceHumanReadable(String id, MultipartFile file) {
+    if (file == null) {
+      throw new ClientException("No file was provided in the upload request");
+    }
+    final String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
+    log.debug("replaceHumanReadable.enter; parentId: {}", decodedId);
+
+    final AssetMetadata parentMeta = assetStorePublisher.getById(decodedId);
+    checkParticipantAccess(parentMeta.getIssuer());
+
+    final String existingHrId = assetStorePublisher.findLink(decodedId)
+        .filter(ref -> ref.ownType() == AssetType.MACHINE_READABLE)
+        .map(LinkedAssetRef::linkedIri)
+        .orElseThrow(() -> new NotFoundException(
+            "No human-readable asset is linked to " + decodedId + ". Use POST to create the initial link."));
+
+    final AssetMetadata hrMetadata = storeAndLinkHumanReadable(decodedId, file, existingHrId);
+    log.debug("replaceHumanReadable.exit; replaced {} -> {}", decodedId, hrMetadata.getId());
+
+    return ResponseEntity.ok(hrMetadata);
+  }
+
+  private AssetMetadata storeAndLinkHumanReadable(String decodedId, MultipartFile file, String existingHrId) {
+    final String contentType = file.getContentType() != null
+        ? file.getContentType()
+        : MediaType.APPLICATION_OCTET_STREAM_VALUE;
+    validateHumanReadableContentType(contentType);
+
+    final byte[] content;
+    try {
+      content = file.getBytes();
+    } catch (IOException ex) {
+      throw new ServerException("Failed to read uploaded file", ex);
+    }
+
+    final AssetMetadata hrMetadata = assetUploadService.processUpload(
+        content, contentType, StringUtils.sanitizeFilename(file.getOriginalFilename()), existingHrId);
+    assetStorePublisher.linkAssets(decodedId, hrMetadata.getId());
+    try {
+      assetStorePublisher.writeAssetLinkTriples(decodedId, hrMetadata.getId());
+    } catch (Exception ex) {
+      log.warn("storeAndLinkHumanReadable; graph triple write failed (non-fatal)", ex);
+    }
+    return hrMetadata;
+  }
+
+  /**
+   * GET /assets/{id}/human-readable — return the linked human-readable document.
+   *
+   * @param id URL-decoded IRI of the machine-readable asset
+   * @return 200 with binary content and correct Content-Type, or 404 if no link exists
+   */
+  @Override
+  public ResponseEntity<Resource> getHumanReadable(String id) {
+    final String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
+    log.debug("getHumanReadable.enter; id: {}", decodedId);
+
+    final LinkedAssetRef link = assetStorePublisher.findLink(decodedId)
+        .filter(ref -> ref.ownType() == AssetType.MACHINE_READABLE)
+        .orElseThrow(() -> new NotFoundException(
+            String.format("No human-readable representation linked to asset '%s'", decodedId)));
+
+    return streamAssetContent(link.linkedIri());
+  }
+
+  /**
+   * GET /assets/{id}/machine-readable — return the linked machine-readable asset.
+   *
+   * @param id URL-decoded IRI of the human-readable asset
+   * @return 200 with binary content and correct Content-Type, or 404 if no link exists
+   */
+  @Override
+  public ResponseEntity<Resource> getMachineReadable(String id) {
+    final String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
+    log.debug("getMachineReadable.enter; id: {}", decodedId);
+
+    final LinkedAssetRef link = assetStorePublisher.findLink(decodedId)
+        .filter(ref -> ref.ownType() == AssetType.HUMAN_READABLE)
+        .orElseThrow(() -> new NotFoundException(
+            String.format("No machine-readable asset linked to human-readable asset '%s'", decodedId)));
+
+    return streamAssetContent(link.linkedIri());
+  }
+
+  /**
+   * Load asset file content by IRI from the FileStore and stream it with the stored MIME type.
+   *
+   * @param assetIri IRI of the asset to stream
+   * @return response entity with binary body and Content-Type header
+   */
+  private ResponseEntity<Resource> streamAssetContent(String assetIri) {
+    final AssetMetadata meta = assetStorePublisher.getById(assetIri);
+
+    final ContentAccessor content;
+    try {
+      content = assetFileStore.readFile(meta.getAssetHash());
+    } catch (IOException ex) {
+      throw new ServerException("Failed to read asset file for IRI: " + assetIri, ex);
+    }
+
+    final MediaType mediaType = resolveMediaType(meta.getContentType(), assetIri);
+    final HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(mediaType);
+    return ResponseEntity.ok().headers(headers).body(new InputStreamResource(content.getContentAsStream()));
+  }
+
+  private MediaType resolveMediaType(String contentType, String assetIri) {
+    if (contentType == null) {
+      return MediaType.APPLICATION_OCTET_STREAM;
+    }
+    try {
+      return MediaType.parseMediaType(contentType);
+    } catch (IllegalArgumentException ex) {
+      log.warn("streamAssetContent; unparseable content-type '{}' for asset {}, using octet-stream",
+          contentType, assetIri);
+      return MediaType.APPLICATION_OCTET_STREAM;
+    }
+  }
+
+  /**
+   * Validate that the given MIME type is an accepted human-readable content type.
+   *
+   * @param contentType the MIME type to validate
+   * @throws ClientException if the type is not in {@code federated-catalogue.assets.hr-content-types}
+   */
+  void validateHumanReadableContentType(String contentType) {
+    if (contentType == null || !assetProperties.getHumanReadableContentTypes().contains(contentType)) {
+      throw new ClientException(String.format(
+          "Unsupported content type '%s'. Accepted types: %s", contentType,
+          String.join(", ", new TreeSet<>(assetProperties.getHumanReadableContentTypes()))));
+    }
+  }
+
 
   /**
    * Verify a credential body, check participant access, and store it.

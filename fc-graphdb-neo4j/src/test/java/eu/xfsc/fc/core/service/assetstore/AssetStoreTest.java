@@ -29,6 +29,7 @@ import org.springframework.test.context.ContextConfiguration;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.DidResolverConfig;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
@@ -61,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @ContextConfiguration(classes = {AssetStoreTest.TestApplication.class, AssetStoreImpl.class, AssetJpaDao.class, AssetAuditRepository.class, IriGenerator.class, IriValidator.class,
   AssetStoreTest.class, Neo4jGraphStore.class, DatabaseConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
   DidResolverConfig.class, HttpDocumentResolver.class, FileStoreConfig.class, RdfContentTypeProperties.class,
-  SecurityAuditorAware.class})
+  SecurityAuditorAware.class, ProtectedNamespaceProperties.class})
 @Slf4j
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)

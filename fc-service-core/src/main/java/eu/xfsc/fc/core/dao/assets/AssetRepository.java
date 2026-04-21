@@ -1,5 +1,6 @@
 package eu.xfsc.fc.core.dao.assets;
 
+import eu.xfsc.fc.core.pojo.AssetType;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +40,15 @@ public interface AssetRepository
           @Param("chunks") int chunks,
           @Param("chunkid") int chunkId,
           @Param("limit") int limit);
+
+  @Query("SELECT a FROM Asset a LEFT JOIN FETCH a.linkedAsset WHERE a.subjectId = :subjectId")
+  Optional<Asset> findBySubjectIdWithLinkedAsset(@Param("subjectId") String subjectId);
+
+  @Query("SELECT a FROM Asset a LEFT JOIN FETCH a.linkedAsset WHERE a.assetHash = :hash")
+  Optional<Asset> findByAssetHashWithLinkedAsset(@Param("hash") String hash);
+
+  @Query("SELECT a FROM Asset a JOIN FETCH a.linkedAsset WHERE a.assetType = :type")
+  List<Asset> findByAssetTypeWithLink(@Param("type") AssetType type);
 
   @Modifying
   @Query("DELETE FROM Asset")

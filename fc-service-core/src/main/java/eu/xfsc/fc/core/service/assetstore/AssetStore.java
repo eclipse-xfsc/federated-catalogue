@@ -8,6 +8,7 @@ import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A store for storing and retrieving asset meta data objects.
@@ -159,5 +160,34 @@ public interface AssetStore {
    * @throws eu.xfsc.fc.core.exception.NotFoundException if asset does not exist.
    */
   int getVersionCount(String id);
+
+  /**
+   * Link a machine-readable asset to a human-readable asset in the database.
+   * Sets the {@code asset_type} and {@code linked_asset_id} columns on both sides.
+   * Does not write graph triples — call {@link #writeAssetLinkTriples} separately if needed.
+   *
+   * @param mrIri IRI of the machine-readable asset
+   * @param hrIri IRI of the human-readable asset
+   * @throws eu.xfsc.fc.core.exception.NotFoundException if either asset does not exist
+   */
+  void linkAssets(String mrIri, String hrIri);
+
+  /**
+   * Return the linked asset IRI and the type of the queried asset, if a link exists.
+   *
+   * @param assetIri IRI of the asset to look up
+   * @return linked asset reference, or {@link Optional#empty()} if no link
+   */
+  Optional<LinkedAssetRef> findLink(String assetIri);
+
+  /**
+   * Write {@code fcmeta:hasHumanReadable} and {@code fcmeta:hasMachineReadable} triples
+   * to the graph store for the given MR–HR pair.
+   * Used during graph rebuilds to restore link triples from PostgreSQL state.
+   *
+   * @param mrIri IRI of the machine-readable asset
+   * @param hrIri IRI of the human-readable asset
+   */
+  void writeAssetLinkTriples(String mrIri, String hrIri);
 
 }

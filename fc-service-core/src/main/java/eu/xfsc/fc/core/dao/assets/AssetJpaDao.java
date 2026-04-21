@@ -76,6 +76,7 @@ public class AssetJpaDao implements AssetDao {
             // Update existing row in-place. Envers intercepts the flush and records
             // the pre-update state as a new revision in assets_aud automatically.
             Asset old = existing.get();
+            String previousHash = old.getAssetHash();
             old.setAssetHash(assetRecord.getAssetHash());
             old.setContent(assetRecord.getContent());
             old.setChangeComment(assetRecord.getChangeComment());
@@ -89,7 +90,7 @@ public class AssetJpaDao implements AssetDao {
             old.setOriginalFilename(assetRecord.getOriginalFilename());
             old.setStatus(ACTIVE_STATUS);
             repository.saveAndFlush(old);
-            return new SubjectHashRecord(old.getSubjectId(), old.getAssetHash());
+            return new SubjectHashRecord(old.getSubjectId(), previousHash);
         }
 
         Asset newEntity = AssetMapper.toEntity(assetRecord);

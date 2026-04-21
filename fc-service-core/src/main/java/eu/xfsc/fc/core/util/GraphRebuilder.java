@@ -1,6 +1,8 @@
 package eu.xfsc.fc.core.util;
 
+import eu.xfsc.fc.core.dao.assets.AssetRepository;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
@@ -17,7 +19,6 @@ import java.util.function.BiConsumer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -33,11 +34,11 @@ public class GraphRebuilder {
    */
   private static final int QUEUE_CLEAR_WAIT_INTERVAL = 100;
 
-  @Autowired
-  private AssetStore assetStore;
+  private final AssetStore assetStore;
   private final GraphStore graphStore;
   private final VerificationService verificationService;
   private final ProtectedNamespaceFilter protectedNamespaceFilter;
+  private final AssetRepository assetRepository;
 
   /**
    * Starts rebuilding the graphDb, blocking until finished or interrupted.
@@ -110,6 +111,31 @@ public class GraphRebuilder {
     }
 
     ProcessorUtils.shutdownProcessors(executorService, taskQueue, 10, TimeUnit.MINUTES);
+
+    // Separate pass: restore link triples from PostgreSQL.
+    // This must NOT be merged into addAssetToGraph() because non-RDF (human-readable) assets
+    // have contentAccessor = null; calling extractClaims(null) would throw a NullPointerException.
+    rebuildLinkTriples();
+  }
+
+  /**
+   * Restores {@code fcmeta:hasHumanReadable} and {@code fcmeta:hasMachineReadable} triples
+   * from the {@code assets} PostgreSQL table.
+   *
+   * <p>Only machine-readable assets with a linked asset are fetched. One row is sufficient to
+   * reconstruct both directions because {@link #writeLinkTriples} writes both triples.</p>
+   */
+  private void rebuildLinkTriples() {
+    final var mrAssets = assetRepository.findByAssetTypeWithLink(AssetType.MACHINE_READABLE);
+    log.info("rebuildLinkTriples; restoring triples for {} MR→HR asset pairs", mrAssets.size());
+    for (var mr : mrAssets) {
+      try {
+        assetStore.writeAssetLinkTriples(mr.getSubjectId(), mr.getLinkedAsset().getSubjectId());
+      } catch (Exception ex) {
+        log.error("rebuildLinkTriples; failed to write triple for link {}->{}: {}",
+            mr.getSubjectId(), mr.getLinkedAsset().getSubjectId(), ex.getMessage(), ex);
+      }
+    }
   }
 
   private void sleepForQueue() {
@@ -122,6 +148,9 @@ public class GraphRebuilder {
 
   private void addAssetToGraph(String hash) {
     AssetMetadata assetMetaData = assetStore.getByHash(hash);
+    if (assetMetaData.getContentAccessor() == null) {
+      return;
+    }
     List<CredentialClaim> claims = verificationService.extractClaims(assetMetaData.getContentAccessor());
     claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
     graphStore.addClaims(claims, assetMetaData.getId());

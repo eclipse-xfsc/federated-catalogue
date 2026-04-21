@@ -41,6 +41,16 @@ public class AssetUploadService {
     private final RdfDetector rdfDetector;
 
     public AssetMetadata processUpload(byte[] content, String contentType, String originalFilename) {
+        return processUpload(content, contentType, originalFilename, null);
+    }
+
+    /**
+     * Process an upload, optionally updating an existing non-RDF asset in place.
+     *
+     * @param existingId when non-null, the IRI of an existing active asset to update (new Envers revision);
+     *                   when null, a fresh asset is created with a generated IRI
+     */
+    public AssetMetadata processUpload(byte[] content, String contentType, String originalFilename, String existingId) {
         if (content == null || content.length == 0) {
             throw new ClientException("Upload content must not be empty");
         }
@@ -48,7 +58,7 @@ public class AssetUploadService {
         if (rdfDetector.isRdf(contentType, content)) {
             return handleCredential(content, contentType);
         }
-        return handleNonRdfAsset(content, contentType, originalFilename);
+        return handleNonRdfAsset(content, contentType, originalFilename, existingId);
     }
 
     private AssetMetadata handleCredential(byte[] content, String contentType) {
@@ -70,14 +80,14 @@ public class AssetUploadService {
         return assetMetadata;
     }
 
-    private AssetMetadata handleNonRdfAsset(byte[] content, String contentType, String originalFilename) {
+    private AssetMetadata handleNonRdfAsset(byte[] content, String contentType, String originalFilename, String existingId) {
         log.debug("handleNonRdfAsset; non-RDF asset, skipping verification");
         String assetHash = calculateSha256AsHex(content);
         String participantId = getSessionParticipantId();
         Instant now = Instant.now();
 
         ContentAccessorBinary contentAccessor = new ContentAccessorBinary(content);
-        AssetMetadata assetMetadata = new AssetMetadata(assetHash, null, AssetStatus.ACTIVE,
+        AssetMetadata assetMetadata = new AssetMetadata(assetHash, existingId, AssetStatus.ACTIVE,
                 participantId, null, now, now, contentAccessor);
         assetMetadata.setContentType(contentType);
         assetMetadata.setFileSize((long) content.length);

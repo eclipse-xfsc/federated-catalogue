@@ -323,8 +323,10 @@ public class ParticipantsControllerTest {
                     .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
-    assertEquals(part.getAsset(), responseOfCredentialContent);
-    assertEquals(responseOfCredentialContent, content);
+    Map<String, Object> assetEnvelope = objectMapper.readValue(responseOfCredentialContent, Map.class);
+    String rawContent = (String) assetEnvelope.get("rawContent");
+    assertEquals(part.getAsset(), rawContent);
+    assertEquals(rawContent, content);
     assertEquals(1, assets.getItems().size());
   }
 

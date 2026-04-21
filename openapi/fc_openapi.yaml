@@ -284,6 +284,16 @@ components:
             - "2 triple(s) were removed from your upload because they use the reserved internal namespace
                <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
                This namespace is reserved for internal catalogue use only and cannot be set by external clients."
+        humanReadableId:
+          type: string
+          description: >-
+            IRI of the linked human-readable representation (e.g. a PDF document),
+            if one has been attached to this machine-readable asset. Absent when no link exists.
+        machineReadableId:
+          type: string
+          description: >-
+            IRI of the linked machine-readable asset, if this asset is a human-readable
+            representation linked to a machine-readable parent. Absent when no link exists.
     AssetStatus:
       type: string
       enum:
@@ -1300,10 +1310,15 @@ paths:
         - Assets
       summary: Read an asset by its IRI.
       description: >
-        Returns the content of a single RDF asset identified by its IRI.
-        Non-RDF assets (PDF, images, binary files) are stored in the FileStore
-        and cannot be retrieved via this endpoint — a 400 error is returned
-        with the asset's hash and content-type for reference.
+        Returns a JSON-serialized Asset metadata object for any asset identified by its IRI.
+
+        For RDF (JSON-LD) assets, the rawContent field is populated with the raw JSON-LD string.
+
+        For any asset (RDF or non-RDF) that has bidirectional links to another representation,
+        the humanReadableId or machineReadableId fields are populated.
+
+        For non-RDF assets (PDF, images, binary files), the file content can be retrieved via
+        GET /assets/{id}/human-readable or GET /assets/{id}/machine-readable.
       operationId: readAssetById
       parameters:
         - name: id
@@ -1333,16 +1348,14 @@ paths:
         - jwt: []
       responses:
         '200':
-          description: The requested asset (RDF content)
+          description: >
+            The asset metadata as a JSON-serialized Asset object.
+            For RDF (JSON-LD) assets, the rawContent field is populated with the raw JSON-LD string.
+            For any asset with bidirectional links, humanReadableId or machineReadableId fields are populated.
           content:
             application/json:
               schema:
-                type: string
-        '400':
-          description: >
-            The asset exists but is a non-RDF asset (e.g., PDF, image, binary).
-            Raw content download is not supported via this endpoint.
-            The response includes the asset's hash and content-type.
+                $ref: '#/components/schemas/Asset'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1497,6 +1510,182 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/human-readable:
+    post:
+      tags:
+        - Assets
+      summary: Upload and link a human-readable representation to a machine-readable asset
+      description: >
+        Uploads a human-readable document (e.g. PDF) and links it bidirectionally
+        to the existing machine-readable asset identified by {id}. The human-readable document
+        is stored as an independent asset with its own IRI.
+        Multipart uploads are handled by the server outside the generated delegate pattern.
+        Required permission: ASSET_CREATE or ADMIN_ALL
+      operationId: uploadHumanReadable
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI of the machine-readable asset to link to
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Human-readable document (e.g. PDF)
+      responses:
+        '201':
+          description: Created — the human-readable asset was stored and linked
+          headers:
+            location:
+              description: URL of the new human-readable asset.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    put:
+      tags:
+        - Assets
+      summary: Replace the human-readable representation linked to a machine-readable asset
+      description: >
+        Replaces the content of an existing human-readable document linked to the machine-readable asset
+        identified by {id}. The human-readable asset must already be linked — use POST to create the
+        initial link. The IRI of the human-readable asset is preserved.
+        Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: replaceHumanReadable
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI of the machine-readable asset
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Human-readable document
+      responses:
+        '200':
+          description: OK — the human-readable asset content was replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      tags:
+        - Assets
+      summary: Download the human-readable representation linked to a machine-readable asset
+      description: >
+        Returns the binary content of the human-readable document linked to the asset.
+        Required permission: ASSET_READ or ADMIN_ALL
+      operationId: getHumanReadable
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI of the machine-readable asset
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The human-readable document with its original Content-Type header
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/machine-readable:
+    get:
+      tags:
+        - Assets
+      summary: Download the machine-readable asset linked to a human-readable representation
+      description: >
+        Returns the binary content of the machine-readable asset linked to this human-readable
+        representation. Required permission: ASSET_READ or ADMIN_ALL
+      operationId: getMachineReadable
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI of the human-readable asset
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The machine-readable asset content with its original Content-Type header
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
   /assets/{asset_hash}:

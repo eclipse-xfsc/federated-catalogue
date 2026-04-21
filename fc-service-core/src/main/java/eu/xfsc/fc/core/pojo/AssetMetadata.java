@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import eu.xfsc.fc.api.generated.model.Asset;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import lombok.AllArgsConstructor;
@@ -38,6 +39,12 @@ public class AssetMetadata extends Asset {
   @JsonIgnore
   private String changeComment;
 
+  /** Raw JSON-LD content string, populated only for RDF assets returned by GET /assets/{id}. */
+  @Getter
+  @Setter
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String rawContent;
+
   /**
    * Creates asset metadata from explicit fields; computes the SHA-256 hash from content.
    *
@@ -49,7 +56,7 @@ public class AssetMetadata extends Asset {
   public AssetMetadata(String id, String issuer, List<Validator> validators, ContentAccessor contentAccessor) {
     super(calculateSha256AsHex(contentAccessor.getContentAsString()), id, AssetStatus.ACTIVE, issuer,
         validators != null ? validators.stream().map(Validator::getDidURI).collect(Collectors.toList()) : null, Instant.now(), Instant.now(),
-        null, null, null); // null: contentType, fileSize, warnings
+        null, null, null, null, null); // null: contentType, fileSize, warnings, humanReadableId, machineReadableId
     this.contentAccessor = contentAccessor;
   }
 
@@ -62,7 +69,7 @@ public class AssetMetadata extends Asset {
   public AssetMetadata(ContentAccessor contentAccessor, CredentialVerificationResult verificationResult) {
     super(calculateSha256AsHex(contentAccessor.getContentAsString()), verificationResult.getId(), AssetStatus.ACTIVE,
             verificationResult.getIssuer(), verificationResult.getValidatorDids(), verificationResult.getIssuedDateTime(),
-            verificationResult.getVerificationTimestamp(), null, null, null); // null: contentType, fileSize, warnings
+            verificationResult.getVerificationTimestamp(), null, null, null, null, null); // null: contentType, fileSize, warnings, humanReadableId, machineReadableId
     this.contentAccessor = contentAccessor;
   }
 
@@ -81,7 +88,7 @@ public class AssetMetadata extends Asset {
   public AssetMetadata(String assetHash, String id, AssetStatus status, String issuer,
       List<String> validatorDids, Instant uploadTime, Instant statusTime,
       ContentAccessor contentAccessor) {
-    super(assetHash, id, status, issuer, validatorDids, uploadTime, statusTime, null, null, null); // null: contentType, fileSize, warnings
+    super(assetHash, id, status, issuer, validatorDids, uploadTime, statusTime, null, null, null, null, null); // null: contentType, fileSize, warnings, humanReadableId, machineReadableId
     this.contentAccessor = contentAccessor;
   }
   
