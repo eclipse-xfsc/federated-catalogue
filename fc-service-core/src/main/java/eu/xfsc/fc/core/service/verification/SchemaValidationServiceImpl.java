@@ -19,7 +19,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractor;
 import eu.xfsc.fc.core.service.verification.claims.DanubeTechClaimExtractor;
-import eu.xfsc.fc.core.service.verification.claims.TitaniumClaimExtractor;
+import eu.xfsc.fc.core.service.verification.claims.CredentialSubjectClaimExtractor;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +37,11 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
 
     /**
      * Ordered array of claim extractors tried in sequence until one succeeds.
-     * {@link TitaniumClaimExtractor} is tried first (Titanium JSON-LD processor),
+     * {@link CredentialSubjectClaimExtractor} is tried first (Titanium JSON-LD processor),
      * falling back to {@link DanubeTechClaimExtractor} (Danube Tech LD library).
      */
     private static final ClaimExtractor[] EXTRACTORS = new ClaimExtractor[]{
-        new TitaniumClaimExtractor(), new DanubeTechClaimExtractor()
+        new CredentialSubjectClaimExtractor(), new DanubeTechClaimExtractor()
     };
 
     @Autowired
@@ -136,7 +136,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
         for (ClaimExtractor extractor : EXTRACTORS) {
             try {
                 claims = extractor.extractClaims(payload);
-                if (claims != null) {
+                if (claims != null && !claims.isEmpty()) {
                     break;
                 }
             } catch (Exception ex) {

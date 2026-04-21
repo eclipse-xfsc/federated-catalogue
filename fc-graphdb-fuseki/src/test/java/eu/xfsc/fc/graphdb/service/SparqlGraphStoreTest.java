@@ -89,7 +89,7 @@ public class SparqlGraphStoreTest {
         graphStore.addClaims(claims, credentialSubject);
 
         List<Map<String, Object>> rows = querySparql(
-            "SELECT ?s ?p ?o ?mp ?mo WHERE { <<?s ?p ?o>> ?mp ?mo }").getResults();
+            "SELECT ?s ?p ?o ?mp ?mo WHERE { <<(?s ?p ?o)>> ?mp ?mo }").getResults();
 
         assertEquals(2, rows.size(), "Should have 2 RDF-star wrapped statements");
         for (Map<String, Object> row : rows) {
@@ -141,7 +141,7 @@ public class SparqlGraphStoreTest {
         ), "http://example.org/credentialOrder");
 
         List<Map<String, Object>> rows = querySparql(
-            "SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> <" + CRED_SUBJECT_URI + "> ?cs } ORDER BY ?o"
+            "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <" + CRED_SUBJECT_URI + "> ?cs } ORDER BY ?o"
         ).getResults();
 
         assertEquals(3, rows.size(), "Should return 3 results");
@@ -295,7 +295,7 @@ public class SparqlGraphStoreTest {
         graphStore.addClaims(claims, credentialSubject);
 
         List<Map<String, Object>> rows = querySparql(
-            "SELECT ?s ?p ?o ?mo WHERE { <<?s ?p ?o>> <" + CRED_SUBJECT_URI + "> ?mo } ORDER BY ?p"
+            "SELECT ?s ?p ?o ?mo WHERE { <<(?s ?p ?o)>> <" + CRED_SUBJECT_URI + "> ?mo } ORDER BY ?p"
         ).getResults();
 
         assertEquals(3, rows.size(), "Should return 3 rows for 3 individually wrapped claims");
@@ -314,9 +314,9 @@ public class SparqlGraphStoreTest {
         graphStore.addClaims(List.of(sharedClaim), credA);
         graphStore.addClaims(List.of(sharedClaim), credB);
 
-        String sharedTripleQuery = "SELECT ?mo WHERE { <<" +
+        String sharedTripleQuery = "SELECT ?mo WHERE { <<(" +
             "<http://example.org/shared> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/SharedType>" +
-            ">> <" + CRED_SUBJECT_URI + "> ?mo } ORDER BY ?mo";
+            ")>> <" + CRED_SUBJECT_URI + "> ?mo } ORDER BY ?mo";
 
         List<Map<String, Object>> rows = querySparql(sharedTripleQuery).getResults();
 
@@ -418,12 +418,12 @@ public class SparqlGraphStoreTest {
 
     private PaginatedResults<Map<String, Object>> queryAllClaimsByCredentialSubject() {
         return querySparql(
-            "SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> <" + CRED_SUBJECT_URI + "> ?cs }");
+            "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <" + CRED_SUBJECT_URI + "> ?cs }");
     }
 
     private PaginatedResults<Map<String, Object>> queryBySpecificCredentialSubject(String credentialSubject) {
         return querySparql(
-            "SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> <" + CRED_SUBJECT_URI + "> <" + credentialSubject + "> }");
+            "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <" + CRED_SUBJECT_URI + "> <" + credentialSubject + "> }");
     }
 
     private static CredentialClaim typeClaim(String subject, String type) {

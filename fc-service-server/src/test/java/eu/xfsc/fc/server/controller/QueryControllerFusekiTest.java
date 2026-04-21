@@ -85,7 +85,7 @@ public class QueryControllerFusekiTest {
 
   @Test
   void postQuery_withSparqlSelect_returnsUploadedClaimData() throws Exception {
-    String sparqlQuery = "SELECT ?s ?p ?o WHERE { <<?s ?p ?o>> "
+    String sparqlQuery = "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> "
         + "<https://www.w3.org/2018/credentials#credentialSubject> ?cs }";
 
     String response = postSparqlQuery(sparqlQuery)

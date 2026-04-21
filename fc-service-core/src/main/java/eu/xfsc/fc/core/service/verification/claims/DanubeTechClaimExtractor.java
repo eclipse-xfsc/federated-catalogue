@@ -7,12 +7,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.apicatalog.rdf.RdfNQuad;
 import com.danubetech.verifiablecredentials.CredentialSubject;
 import com.danubetech.verifiablecredentials.VerifiableCredentialV2;
 import com.danubetech.verifiablecredentials.VerifiablePresentationV2;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.jena.datatypes.TypeMapper;
+import org.apache.jena.rdf.model.AnonId;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Statement;
 
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.CredentialClaim;
@@ -64,9 +71,37 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
     }
 
     for (CredentialSubject cs : subjects) {
-      for (RdfNQuad nquad : cs.toDataset().toList()) {
+      // var avoids explicit RdfNQuad import; method calls on inferred types require no import
+      Model model = ModelFactory.createDefaultModel();
+      for (var nquad : cs.toDataset().toList()) {
         log.debug("extractClaims (VC2); got NQuad: {}", nquad);
-        claims.add(new CredentialClaim(nquad, objectMapper));
+        var subjectVal = nquad.getSubject();
+        Resource subjectRes = subjectVal.isBlankNode()
+            ? model.createResource(new AnonId(subjectVal.getValue()))
+            : model.createResource(subjectVal.getValue());
+        Property property = model.createProperty(nquad.getPredicate().getValue());
+        var objectVal = nquad.getObject();
+        RDFNode objectNode;
+        if (objectVal.isBlankNode()) {
+          objectNode = model.createResource(new AnonId(objectVal.getValue()));
+        } else if (objectVal.isLiteral()) {
+          var literal = objectVal.asLiteral();
+          String dtype = literal.getDatatype();
+          if (dtype != null) {
+            objectNode = model.createTypedLiteral(literal.getValue(),
+                TypeMapper.getInstance().getSafeTypeByName(dtype));
+          } else {
+            String lang = literal.getLanguage().orElse(null);
+            objectNode = lang != null
+                ? model.createLiteral(literal.getValue(), lang)
+                : model.createLiteral(literal.getValue());
+          }
+        } else {
+          objectNode = model.createResource(objectVal.getValue());
+        }
+        Statement stmt = model.createStatement(subjectRes, property, objectNode);
+        model.add(stmt);
+        claims.add(new CredentialClaim(stmt, objectMapper));
       }
     }
     log.debug("extractClaims.exit; returning claims: {}", claims);

@@ -100,7 +100,7 @@ public class SparqlGraphStore implements GraphStore {
         try {
             return Txn.calculateRead(rdfConnection, () -> {
                 String query = "SELECT (COUNT(*) AS ?cnt) WHERE { "
-                    + "<<?s ?p ?o>> <" + PROP_CREDENTIAL_SUBJECT + "> ?cs }";
+                    + "<<(?s ?p ?o)>> <" + PROP_CREDENTIAL_SUBJECT + "> ?cs }";
                 try (QueryExecution qe = rdfConnection.newQuery().query(query).build()) {
                     ResultSet rs = qe.execSelect();
                     if (rs.hasNext()) {
@@ -121,7 +121,7 @@ public class SparqlGraphStore implements GraphStore {
         try {
             return Txn.calculateRead(rdfConnection, () -> {
                 String query = "SELECT (COUNT(DISTINCT ?cs) AS ?cnt) WHERE { "
-                    + "<<?s ?p ?o>> <" + PROP_CREDENTIAL_SUBJECT + "> ?cs }";
+                    + "<<(?s ?p ?o)>> <" + PROP_CREDENTIAL_SUBJECT + "> ?cs }";
                 try (QueryExecution qe = rdfConnection.newQuery().query(query).build()) {
                     ResultSet rs = qe.execSelect();
                     if (rs.hasNext()) {

@@ -40,7 +40,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractor;
 import eu.xfsc.fc.core.service.verification.claims.DanubeTechClaimExtractor;
-import eu.xfsc.fc.core.service.verification.claims.TitaniumClaimExtractor;
+import eu.xfsc.fc.core.service.verification.claims.CredentialSubjectClaimExtractor;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -94,7 +94,7 @@ import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.UNKNO
 @RequiredArgsConstructor
 public class CredentialVerificationStrategy implements VerificationStrategy {
 
-    private static final ClaimExtractor[] extractors = new ClaimExtractor[]{new TitaniumClaimExtractor(), new DanubeTechClaimExtractor()};
+    private static final ClaimExtractor[] extractors = new ClaimExtractor[]{new CredentialSubjectClaimExtractor(), new DanubeTechClaimExtractor()};
 
     private final ObjectMapper objectMapper;
 
@@ -256,7 +256,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         for (ClaimExtractor extra : extractors) {
             try {
                 claims = extra.extractClaims(payload);
-                if (claims != null) {
+                if (claims != null && !claims.isEmpty()) {
                     break;
                 }
             } catch (Exception ex) {
