@@ -84,10 +84,6 @@
             <artifactId>did-common-java</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.danubetech</groupId>
-            <artifactId>data-integrity-java</artifactId>
-        </dependency>
-        <dependency>
             <groupId>decentralized-identity</groupId>
             <artifactId>uni-resolver-client</artifactId>
         </dependency>

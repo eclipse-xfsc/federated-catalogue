@@ -6,7 +6,7 @@
   "validFrom": "2026-01-30T00:00:00Z",
   "credentialSubject": {
     "id": "did:web:participant.example.com",
-    "@type": ["https://w3id.org/gaia-x/core#Participant"],
-    "https://w3id.org/gaia-x/core#legalName": [{"@value": "Example Corp"}]
+    "@type": ["https://w3id.org/gaia-x/2511#LegalPerson"],
+    "https://w3id.org/gaia-x/2511#legalName": [{"@value": "Example Corp"}]
   }
 }

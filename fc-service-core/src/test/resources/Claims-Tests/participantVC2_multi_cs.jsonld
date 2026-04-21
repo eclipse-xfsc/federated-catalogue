@@ -7,13 +7,13 @@
   "credentialSubject": [
     {
       "id": "did:web:participant-a.example.com",
-      "@type": ["https://w3id.org/gaia-x/core#Participant"],
-      "https://w3id.org/gaia-x/core#legalName": [{"@value": "Company A"}]
+      "@type": ["https://w3id.org/gaia-x/2511#Participant"],
+      "https://w3id.org/gaia-x/2511#legalName": [{"@value": "Company A"}]
     },
     {
       "id": "did:web:participant-b.example.com",
-      "@type": ["https://w3id.org/gaia-x/core#Participant"],
-      "https://w3id.org/gaia-x/core#legalName": [{"@value": "Company B"}]
+      "@type": ["https://w3id.org/gaia-x/2511#Participant"],
+      "https://w3id.org/gaia-x/2511#legalName": [{"@value": "Company B"}]
     }
   ]
 }

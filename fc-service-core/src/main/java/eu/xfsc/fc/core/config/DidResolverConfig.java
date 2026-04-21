@@ -15,9 +15,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import eu.xfsc.fc.core.exception.DidException;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.LocalWebDidResolver;
-import eu.xfsc.fc.core.service.verification.signature.LocalSignatureVerifier;
-import eu.xfsc.fc.core.service.verification.signature.SignatureVerifier;
-import eu.xfsc.fc.core.service.verification.signature.UniSignatureVerifier;
 import foundation.identity.did.DIDDocument;
 import lombok.extern.slf4j.Slf4j;
 import uniresolver.UniResolver;
@@ -64,21 +61,6 @@ public class DidResolverConfig {
     log.info("uniResolver.exit; returning resolver: {}", resolver);
     return resolver;
   }
-	
-    @Bean
-    public SignatureVerifier getSignatureVerifier() {
-    	SignatureVerifier sv = null;
-    	switch (signatureVerifier) {
-    		case "local": 
-    			sv = new LocalSignatureVerifier();
-    			break;
-    		case "uni-res": 
-    	    	sv = new UniSignatureVerifier();
-    			break;
-    	}
-    	log.debug("getSignatureVerifier; returning {} for impl {}", sv, signatureVerifier);
-    	return sv;
-    }
 	
 	@Bean
 	public Cache<String, DIDDocument> didDocumentCache(@Value("${federated-catalogue.verification.did.cache.size}") int cacheSize,

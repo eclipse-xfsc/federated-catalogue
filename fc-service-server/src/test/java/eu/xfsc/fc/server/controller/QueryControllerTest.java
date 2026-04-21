@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static eu.xfsc.fc.server.util.TestUtil.getAccessor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -101,7 +100,9 @@ public class QueryControllerTest {
   @BeforeAll
   public void setup() throws Exception {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
-    schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+    // Loads the production ontologies from defaultschema/ontology/ (idempotent — skips if already loaded
+    // by CatalogueServerScheduler). Needed for rdfs:subClassOf type resolution (e.g. LegalPerson → PARTICIPANT).
+    schemaStore.initializeDefaultSchemas();
     initialiseAllDataBaseWithManuallyAddingCredentialsFromRepository();
     mockBackEnd90 = new MockWebServer();
     mockBackEnd90.noClientAuth();
@@ -120,25 +121,25 @@ public class QueryControllerTest {
     embeddedDatabaseServer.close();
   }
 
-  private String QUERY_REQUEST_GET = "MATCH (n:ServiceOffering) RETURN n LIMIT 1";
+  private final String QUERY_REQUEST_GET = "MATCH (n:ServiceOffering) RETURN n LIMIT 1";
 
-  private String QUERY_REQUEST_TIMEOUT = "CALL apoc.util.sleep(3000)";
+  private final String QUERY_REQUEST_TIMEOUT = "CALL apoc.util.sleep(3000)";
 
-  private String QUERY_REQUEST_GET_WITH_PARAMETERS = "MATCH (n)-[:hasLegallyBindingAddress]->(m) "
+  private final String QUERY_REQUEST_GET_WITH_PARAMETERS = "MATCH (n)-[:hasLegallyBindingAddress]->(m) "
       + "where m.locality = 'City Name 2' RETURN n";
 
-  private String QUERY_REQUEST_GET_WITH_PARAMETERS_UNKNOWN = "MATCH (n:ServiceOffering) where "
+  private final String QUERY_REQUEST_GET_WITH_PARAMETERS_UNKNOWN = "MATCH (n:ServiceOffering) where "
           + "n.name = 'notFound' RETURN n";
 
-  private String QUERY_REQUEST_POST = "CREATE (n:Person {name: 'TestUser', title: 'Developer'})";
+  private final String QUERY_REQUEST_POST = "CREATE (n:Person {name: 'TestUser', title: 'Developer'})";
 
-  private String QUERY_REQUEST_UPDATE = "Match (m:Person) where m.name = 'TestUser' SET m.name = "
+  private final String QUERY_REQUEST_UPDATE = "Match (m:Person) where m.name = 'TestUser' SET m.name = "
           + "'TestUserUpdated' RETURN m";
 
-  private String QUERY_REQUEST_DELETE = "MATCH (n:LegalPerson) where n.name = 'Fredrik "
+  private final String QUERY_REQUEST_DELETE = "MATCH (n:LegalPerson) where n.name = 'Fredrik "
           + "DETACH DELETE n";
 
-  private String QUERY_REQUEST_GET_SUBJECT_ID = "MATCH (n:ServiceOffering) where n.uri IS NOT NULL RETURN n.uri";
+  private final String QUERY_REQUEST_GET_SUBJECT_ID = "MATCH (n:ServiceOffering) where n.uri IS NOT NULL RETURN n.uri";
 
   // JSON body for /query/search (AnnotatedStatement), which still uses application/json
   private static final String SEARCH_REQUEST_GET = "{\"statement\": \"MATCH (n:ServiceOffering) RETURN n LIMIT 1\", \"parameters\": null}";

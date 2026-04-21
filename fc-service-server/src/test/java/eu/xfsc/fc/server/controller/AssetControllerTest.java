@@ -3,7 +3,6 @@ package eu.xfsc.fc.server.controller;
 import static eu.xfsc.fc.server.helper.FileReaderHelper.getMockFileDataAsString;
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.CommonConstants.ASSET_READ;
-import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_ADMIN_ROLE_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_CREATE_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_DELETE_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
@@ -20,7 +19,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -74,7 +72,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.util.UriUtils;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -237,8 +234,8 @@ public class AssetControllerTest {
         assertNotNull(assets);
         assertEquals(1, assets.getItems().size());
         assertEquals(1, assets.getTotalCount());
-        assertNotNull(assets.getItems().get(0).getContent());
-        assertNull(assets.getItems().get(0).getMeta());
+        assertNotNull(assets.getItems().getFirst().getContent());
+        assertNull(assets.getItems().getFirst().getMeta());
 
         result =  mockMvc.perform(MockMvcRequestBuilders.get("/assets")
                 .accept(MediaType.APPLICATION_JSON)
@@ -250,8 +247,8 @@ public class AssetControllerTest {
         assertNotNull(assets);
         assertEquals(1, assets.getItems().size());
         assertEquals(1, assets.getTotalCount());
-        assertNull(assets.getItems().get(0).getContent());
-        assertNotNull(assets.getItems().get(0).getMeta());
+        assertNull(assets.getItems().getFirst().getContent());
+        assertNotNull(assets.getItems().getFirst().getMeta());
     }
 
     @Test
@@ -419,8 +416,8 @@ public class AssetControllerTest {
         Asset asset = objectMapper.readValue(result.getResponse().getContentAsString(), Asset.class);
         assertNotNull(asset.getWarnings(), "Warnings should be present when fcmeta triples were filtered");
         assertFalse(asset.getWarnings().isEmpty(), "Warnings list should not be empty when fcmeta triples were filtered");
-        assertTrue(asset.getWarnings().get(0).contains("triple(s)"), "Warning should mention filtered triple count");
-        assertTrue(asset.getWarnings().get(0).contains("federated-catalogue/meta#"), "Warning should contain the reserved namespace URI");
+        assertTrue(asset.getWarnings().getFirst().contains("triple(s)"), "Warning should mention filtered triple count");
+        assertTrue(asset.getWarnings().getFirst().contains("federated-catalogue/meta#"), "Warning should contain the reserved namespace URI");
         assetStorePublisher.deleteAsset(asset.getAssetHash());
     }
 
@@ -444,7 +441,7 @@ public class AssetControllerTest {
     @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
         @StringClaim(name = "participant_id", value = PARTICIPANT_ISSUER)})))
     public void addParicipantReturnCreatedResponse() throws Exception {
-        schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+        schemaStore.initializeDefaultSchemas();
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/assets")
                 .content(getMockFileDataAsString("default-participant.json"))
                 .with(csrf())
@@ -455,7 +452,6 @@ public class AssetControllerTest {
 
         Asset asset = objectMapper.readValue(result.getResponse().getContentAsString(), Asset.class);
         assetStorePublisher.deleteAsset(asset.getAssetHash());
-        schemaStore.clear();
     }
     
     /**
@@ -467,7 +463,7 @@ public class AssetControllerTest {
     @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
         @StringClaim(name = "participant_id", value = PARTICIPANT_ISSUER)})))
     public void addShaclInvalidAssetReturnCreatedResponse() throws Exception {
-        schemaStore.addSchema(getAccessor("mock-data/gax-test-ontology.ttl"));
+        schemaStore.initializeDefaultSchemas();
         schemaStore.addSchema(getAccessor("mock-data/legal-personShape.ttl"));
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders.post("/assets")
                 .content(getMockFileDataAsString("default-participant.json"))
@@ -479,7 +475,6 @@ public class AssetControllerTest {
 
         Asset asset = objectMapper.readValue(result.getResponse().getContentAsString(), Asset.class);
         assetStorePublisher.deleteAsset(asset.getAssetHash());
-        schemaStore.clear();
     }
 
     @Test

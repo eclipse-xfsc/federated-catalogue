@@ -145,7 +145,7 @@ public class SparqlGraphStoreTest {
         ).getResults();
 
         assertEquals(3, rows.size(), "Should return 3 results");
-        assertEquals("Alice", rows.get(0).get("o"));
+        assertEquals("Alice", rows.getFirst().get("o"));
         assertEquals("Bob", rows.get(1).get("o"));
         assertEquals("Charlie", rows.get(2).get("o"));
     }
@@ -321,7 +321,7 @@ public class SparqlGraphStoreTest {
         List<Map<String, Object>> rows = querySparql(sharedTripleQuery).getResults();
 
         assertEquals(2, rows.size(), "Same triple from two credentials should create 2 wrapped statements");
-        assertEquals(credA, rows.get(0).get("mo"));
+        assertEquals(credA, rows.getFirst().get("mo"));
         assertEquals(credB, rows.get(1).get("mo"));
 
         // Delete one credential, the other should survive

@@ -1,5 +1,10 @@
 # Federated Catalog Credential Signer
 
+> **Note:** This tool signs credentials using Tagus-era JsonWebSignature2020 Linked Data proofs.
+> LD proof verification has been removed from the Federated Catalogue (Loire release).
+> The catalogue now only accepts JWT and Enveloped Credential (EVC/EVP) signatures.
+> This tool needs to be rewritten to produce JWT signatures or removed entirely.
+
 ## Usage
 
 To sign and validate credentials a private-public key pair is required.
@@ -26,29 +31,11 @@ The following parameters should be specified:
 ```
 ## Known Issues
 
-The underlying signer library `ld-signatures-java` has a bug: at `sign` processing it adds the `https://w3id.org/security/suites/jws-2020/v1` address as URI to VP/VC context, which causes `IllegalArgumentException`
-on subsequent Json normalization steps
+The former signer library `ld-signatures-java` had a bug where `sign` processing added `https://w3id.org/security/suites/jws-2020/v1` as a URI to VP/VC context, causing `IllegalArgumentException` on JSON normalization. The library was replaced with `data-integrity-java` — it is unknown whether this bug persists in the new library.
 
-```
-java.lang.IllegalArgumentException: Type class java.net.URI is not supported.
-	at org.glassfish.json.MapUtil.handle(MapUtil.java:75)
-	at org.glassfish.json.JsonArrayBuilderImpl.populate(JsonArrayBuilderImpl.java:328)
-	at org.glassfish.json.JsonArrayBuilderImpl.<init>(JsonArrayBuilderImpl.java:56)
-	at org.glassfish.json.MapUtil.handle(MapUtil.java:67)
-	at org.glassfish.json.JsonObjectBuilderImpl.populate(JsonObjectBuilderImpl.java:178)
-	at org.glassfish.json.JsonObjectBuilderImpl.<init>(JsonObjectBuilderImpl.java:52)
-	at org.glassfish.json.JsonProviderImpl.createObjectBuilder(JsonProviderImpl.java:174)
-	at jakarta.json.Json.createObjectBuilder(Json.java:303)
-	at foundation.identity.jsonld.JsonLDObject.toJsonObject(JsonLDObject.java:341)
-	at foundation.identity.jsonld.JsonLDObject.toDataset(JsonLDObject.java:292)
-	at foundation.identity.jsonld.JsonLDObject.normalize(JsonLDObject.java:328)
-	at info.weboftrust.ldsignatures.canonicalizer.URDNA2015Canonicalizer.canonicalize(URDNA2015Canonicalizer.java:41)
-	at info.weboftrust.ldsignatures.verifier.LdVerifier.verify(LdVerifier.java:57)
-	at eu.xfsc.fc.tools.signer.CredentialSigner.check(CredentialSigner.java:110)
-	at eu.xfsc.fc.tools.signer.CredentialSigner.main(CredentialSigner.java:66)
-    ....
-```
-to prevent the issue please add the `https://w3id.org/security/suites/jws-2020/v1` URI as string preliminary to your credential in VP/VC context
+As a workaround, the fixture files in this module pre-include the URI as a string in the VP/VC context.
+
+> **Note:** These issues become moot once the tool is rewritten to produce JWT signatures (see deprecation note above).
 
 ## Known Issues : Signatures 442 Error
 **Trigger of the error:** Pushing a signed credential to a deployed version of Federated Catalogue using the `POST /assets` API

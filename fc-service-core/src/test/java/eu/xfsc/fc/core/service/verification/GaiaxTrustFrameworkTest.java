@@ -1,15 +1,10 @@
 package eu.xfsc.fc.core.service.verification;
 
 import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
+import eu.xfsc.fc.core.util.TestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,8 +16,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.DidResolverConfig;
@@ -34,10 +34,14 @@ import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.VerificationException;
+import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
+import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +61,6 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest(properties = {
     "federated-catalogue.verification.signature-verifier=uni-res",
     "federated-catalogue.verification.did.base-url=https://dev.uniresolver.io/1.0",
-    "federated-catalogue.verification.drop-validators=true",
     // Start with Gaia-X disabled - tests will toggle as needed
     "federated-catalogue.verification.trust-framework.gaiax.enabled=false",
     "federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url=https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
@@ -82,6 +85,11 @@ public class GaiaxTrustFrameworkTest {
     private static final boolean SKIP_VP_SIGNATURES = false;
     private static final boolean SKIP_VC_SIGNATURES = false;
 
+    private static final String DID_WEB_ISSUER = "did:web:example.com";
+    private static final String VALIDATOR_KID = DID_WEB_ISSUER + "#key-1";
+    /** JWK without x5c/x5u — enforceLoireTrustChain rejects when Gaia-X enabled. */
+    private static final String JWK_NO_TRUST_CHAIN = "{\"kty\":\"EC\",\"crv\":\"P-256\"}";
+
     @SpringBootApplication
     public static class TestApplication {
         public static void main(final String[] args) {
@@ -101,10 +109,13 @@ public class GaiaxTrustFrameworkTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @MockitoBean
+    private JwtSignatureVerifier jwtVerifierMock;
+
     @BeforeEach
     public void setUp() {
         clearValidatorCache();
-        schemaStore.addSchema(getAccessor("Schema-Tests/gax-test-ontology.ttl"));
+        schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     }
 
     @AfterEach
@@ -135,21 +146,20 @@ public class GaiaxTrustFrameworkTest {
     // ==================== Disabled Behavior Tests ====================
 
     @Test
-    @DisplayName("Credential without x5u URL should be ACCEPTED when Gaia-X is disabled")
-    void testCredentialWithoutX5u_AcceptedWhenDisabled() {
+    @DisplayName("Loire JWT without x5u URL should be ACCEPTED when Gaia-X is disabled")
+    void testLoireJwtWithoutX5u_AcceptedWhenDisabled() {
         setGaiaxEnabled(false);
-
-        String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
+        ContentAccessor content = loireJwtWithoutTrustChain();
 
         try {
             CredentialVerificationResult result = verificationService.verifyCredential(
-                getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+                content, SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
             // Success - trust anchor check was skipped
             assertNotNull(result, "Should return result when Gaia-X is disabled");
         } catch (VerificationException e) {
             // Should NOT get trust anchor error when Gaia-X is disabled
-            assertFalse(e.getMessage().contains("no trust anchor url found"),
-                "Should NOT require trust anchor URL when Gaia-X is disabled. Got: " + e.getMessage());
+            assertFalse(e.getMessage().contains("must contain x5c or x5u"),
+                "Should NOT require trust chain when Gaia-X is disabled. Got: " + e.getMessage());
             // Other errors (like DID resolution) are acceptable
             log.info("Got acceptable non-trust-anchor error: {}", e.getMessage());
         }
@@ -174,18 +184,17 @@ public class GaiaxTrustFrameworkTest {
     // ==================== Enabled Behavior Tests ====================
 
     @Test
-    @DisplayName("Credential without x5u URL should be REJECTED when Gaia-X is enabled")
+    @DisplayName("Loire credential without x5u URL should be REJECTED when Gaia-X is enabled")
     void testCredentialWithoutX5u_RejectedWhenEnabled() {
         setGaiaxEnabled(true);
-
-        String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
+        ContentAccessor content = loireJwtWithoutTrustChain();
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifyCredential(getAccessor(path),
-                VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
+            verificationService.verifyCredential(content,
+                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
-        assertEquals("Signatures error; no trust anchor url found", ex.getMessage(),
-            "Should require trust anchor URL when Gaia-X is enabled");
+        assertTrue(ex.getMessage().contains("must contain x5c or x5u"),
+            "Should require trust chain when Gaia-X is enabled. Got: " + ex.getMessage());
     }
 
     @Test
@@ -200,108 +209,111 @@ public class GaiaxTrustFrameworkTest {
             getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result, "Should process Gaia-X credential");
-        assertTrue(result instanceof CredentialVerificationResultParticipant);
+        assertInstanceOf(CredentialVerificationResultParticipant.class, result);
     }
 
     // ==================== Behavioral Toggle Tests ====================
 
     @Test
-    @DisplayName("Same credential should have DIFFERENT outcomes based on Gaia-X setting")
+    @DisplayName("Same Loire credential should have DIFFERENT outcomes based on Gaia-X setting")
     void testSameCredentialDifferentOutcomes() {
-        String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
+        ContentAccessor content = loireJwtWithoutTrustChain();
 
-        // --- Test with Gaia-X ENABLED: should REJECT ---
-        clearValidatorCache(); // Ensure no cached validators interfere
+        // --- Test with Gaia-X ENABLED: should REJECT (missing trust chain) ---
+        clearValidatorCache();
         setGaiaxEnabled(true);
-        // Precondition: Gaia-X should be enabled (set via setGaiaxEnabled above)
 
         Exception enabledEx = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifyCredential(getAccessor(path),
-                VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
+            verificationService.verifyCredential(content,
+                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
             "Should throw when Gaia-X is enabled");
-        assertTrue(enabledEx.getMessage().contains("no trust anchor url found"),
-            "Error should mention trust anchor when enabled");
+        assertTrue(enabledEx.getMessage().contains("must contain x5c or x5u"),
+            "Error should mention trust chain when enabled. Got: " + enabledEx.getMessage());
 
-        // --- Test with Gaia-X DISABLED: should NOT get trust anchor error ---
-        clearValidatorCache(); // Clear cache before testing with different setting
+        // --- Test with Gaia-X DISABLED: should NOT get trust chain error ---
+        clearValidatorCache();
         setGaiaxEnabled(false);
-        // Precondition: Gaia-X should be disabled (set via setGaiaxEnabled above)
 
         try {
-            verificationService.verifyCredential(getAccessor(path),
-                VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
-            // Success - no exception means trust anchor check was skipped
+            verificationService.verifyCredential(content,
+                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
         } catch (VerificationException e) {
-            // Must NOT be the trust anchor error
-            assertFalse(e.getMessage().contains("no trust anchor url found"),
-                "Should NOT require trust anchor when disabled. Got: " + e.getMessage());
+            assertFalse(e.getMessage().contains("must contain x5c or x5u"),
+                "Should NOT require trust chain when disabled. Got: " + e.getMessage());
         }
     }
 
     @Test
     @DisplayName("Behavior should change when toggling Gaia-X at runtime")
     void testBehaviorChangesWhenToggling() {
-        String path = "VerificationService/sign-unires/participant_jwk_signed.jsonld";
+        ContentAccessor content = loireJwtWithoutTrustChain();
 
-        // --- First: DISABLE Gaia-X, verify no trust anchor error ---
-        clearValidatorCache(); // Ensure no cached validators interfere
+        // --- First: DISABLE Gaia-X, verify no trust chain error ---
+        clearValidatorCache();
         setGaiaxEnabled(false);
 
         try {
-            verificationService.verifyCredential(getAccessor(path),
-                VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+            verificationService.verifyCredential(content,
+                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
         } catch (VerificationException e) {
-            if (e.getMessage().contains("no trust anchor url found")) {
-                fail("Should NOT require trust anchor when Gaia-X is disabled. Got: " + e.getMessage());
+            if (e.getMessage().contains("must contain x5c or x5u")) {
+                fail("Should NOT require trust chain when Gaia-X is disabled. Got: " + e.getMessage());
             }
             // Other errors are OK
         }
 
-        // --- Then: ENABLE Gaia-X, verify trust anchor error occurs ---
-        clearValidatorCache(); // Clear cache before testing with different setting
+        // --- Then: ENABLE Gaia-X, verify trust chain error occurs ---
+        clearValidatorCache();
         setGaiaxEnabled(true);
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifyCredential(getAccessor(path),
-                VERIFY_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
+            verificationService.verifyCredential(content,
+                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
             "Should throw when Gaia-X is enabled");
-        assertEquals("Signatures error; no trust anchor url found", ex.getMessage(),
-            "Should require trust anchor when Gaia-X is enabled");
+        assertTrue(ex.getMessage().contains("must contain x5c or x5u"),
+            "Should require trust chain when Gaia-X is enabled. Got: " + ex.getMessage());
     }
 
     // ==================== Security Tests ====================
 
     @Test
-    @DisplayName("Invalid signature should still be rejected when Gaia-X is disabled")
-    void testInvalidSignatureRejected_WhenDisabled() {
+    @DisplayName("Loire JWT without trust chain should still be accepted when Gaia-X is disabled")
+    void testLoireJwtWithoutTrustChain_AcceptedWhenDisabled() {
         setGaiaxEnabled(false);
+        ContentAccessor content = loireJwtWithoutTrustChain();
 
-        String path = "VerificationService/sign/hasInvalidSignature.json";
+        try {
+            verificationService.verifyCredential(content,
+                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+        } catch (VerificationException e) {
+            assertFalse(e.getMessage().contains("must contain x5c or x5u"),
+                "Should NOT require trust chain when Gaia-X is disabled. Got: " + e.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Non-JWT credential with signature verification should be rejected")
+    void testLdCredentialWithSigVerification_Rejected() {
+        setGaiaxEnabled(false);
+        String path = "VerificationService/sign/hasNoSignature1.json";
 
         Exception ex = assertThrowsExactly(VerificationException.class, () ->
             verificationService.verifyCredential(getAccessor(path),
                 SKIP_SEMANTICS, SKIP_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
-        // The credential must NOT be accepted. We expect either:
-        // - "does not match with proof" (when DID can be resolved)
-        // - A DID resolution error (when external resolver is unavailable)
-        // Either way, it's NOT a trust anchor error (which would indicate Gaia-X check wasn't disabled)
-        assertFalse(ex.getMessage().contains("no trust anchor url found"),
-            "Should NOT get trust anchor error when Gaia-X is disabled. Got: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("Linked Data proof verification is not supported"),
+            "Should reject LD credential. Got: " + ex.getMessage());
     }
 
-    @Test
-    @DisplayName("Missing proof should still be rejected when Gaia-X is disabled")
-    void testMissingProofRejected_WhenDisabled() {
-        setGaiaxEnabled(false);
+    // ==================== Loire JWT Helpers ====================
 
-        String path = "VerificationService/sign/hasNoSignature1.json";
-
-        Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifyCredential(getAccessor(path),
-                SKIP_SEMANTICS, VERIFY_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
-
-        assertEquals("Signatures error; No proof found", ex.getMessage(),
-            "Missing proofs should still be rejected");
+    /**
+     * Creates a Loire JWT fixture with a JWK that lacks x5c/x5u trust chain.
+     * Configures the mock JWT verifier to return a validator with the bare JWK.
+     */
+    private ContentAccessor loireJwtWithoutTrustChain() {
+        when(jwtVerifierMock.verify(any()))
+            .thenReturn(new Validator(VALIDATOR_KID, JWK_NO_TRUST_CHAIN, null));
+        return new ContentAccessorDirect(TestUtil.fakeLoireJwt(DID_WEB_ISSUER));
     }
 }

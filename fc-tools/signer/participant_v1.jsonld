@@ -19,34 +19,34 @@
       ],
       "credentialSubject": {
         "@context": {
-          "gax-participant": "http://w3id.org/gaia-x/participant#",
+          "gx": "https://w3id.org/gaia-x/2511#",
           "xsd": "http://www.w3.org/2001/XMLSchema#"
         },
         "id": "http://example.org/test-issuer",
-        "@type": "gax-participant:LegalPerson",
-        "gax-participant:name": {
+        "@type": "gx:LegalPerson",
+        "gx:name": {
           "@value": "deltaDAO AG",
           "@type": "xsd:string"
         },
-        "gax-participant:legalName": {
+        "gx:legalName": {
           "@value": "deltaDAO AG",
           "@type": "xsd:string"
         },
-        "gax-participant:legalAddress": {
-          "@type": "gax-participant:Address",
-          "gax-participant:country": {
+        "gx:legalAddress": {
+          "@type": "gx:Address",
+          "gx:country": {
             "@value": "DE",
             "@type": "xsd:string"
           },
-          "gax-participant:street-address": {
+          "gx:street-address": {
             "@value": "Geibelstraße 46b",
             "@type": "xsd:string"
           },
-          "gax-participant:postal-code": {
+          "gx:postal-code": {
             "@value": "22303",
             "@type": "xsd:string"
           },
-          "gax-participant:locality": {
+          "gx:locality": {
             "@value": "Hamburg",
             "@type": "xsd:string"
           }

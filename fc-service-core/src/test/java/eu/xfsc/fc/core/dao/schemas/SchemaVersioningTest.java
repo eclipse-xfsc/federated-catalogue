@@ -92,8 +92,8 @@ class SchemaVersioningTest {
     List<SchemaRecord> versions = schemaDao.selectVersions(SCHEMA_ID);
 
     assertEquals(2, versions.size());
-    assertEquals(1, versions.get(0).version());
-    assertEquals(INITIAL_CONTENT, versions.get(0).content());
+    assertEquals(1, versions.getFirst().version());
+    assertEquals(INITIAL_CONTENT, versions.getFirst().content());
     assertEquals(2, versions.get(1).version());
     assertEquals(UPDATED_CONTENT, versions.get(1).content());
   }
@@ -108,7 +108,7 @@ class SchemaVersioningTest {
         schemaDao.update(SCHEMA_ID, "content-v2", Set.of(TERM_C)));
 
     List<SchemaRecord> versions = schemaDao.selectVersions(SCHEMA_ID);
-    assertEquals(Set.of(TERM_A, TERM_B), versions.get(0).terms());
+    assertEquals(Set.of(TERM_A, TERM_B), versions.getFirst().terms());
     assertEquals(Set.of(TERM_C), versions.get(1).terms());
   }
 
@@ -134,8 +134,8 @@ class SchemaVersioningTest {
     List<SchemaRecord> versions = schemaDao.selectVersions(SCHEMA_ID);
 
     assertEquals(3, versions.size());
-    assertEquals(1, versions.get(0).version());
-    assertEquals("v1", versions.get(0).content());
+    assertEquals(1, versions.getFirst().version());
+    assertEquals("v1", versions.getFirst().content());
     assertEquals(2, versions.get(1).version());
     assertEquals("v2", versions.get(1).content());
     assertEquals(3, versions.get(2).version());
@@ -153,9 +153,9 @@ class SchemaVersioningTest {
 
     List<SchemaRecord> versions = schemaDao.selectVersions(SCHEMA_ID);
 
-    assertEquals(1, versions.get(0).version());
+    assertEquals(1, versions.getFirst().version());
     assertEquals(2, versions.get(1).version());
-    assertTrue(versions.get(0).version() < versions.get(1).version(),
+    assertTrue(versions.getFirst().version() < versions.get(1).version(),
         "Versions should be in ascending order");
   }
 

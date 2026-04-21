@@ -30,7 +30,7 @@ public class ExtendClaims {
      */
     public static String addPropertyGraphUri(Model claims, String credentialSubject) {
         Literal credentialSubjectLiteral = ResourceFactory.createStringLiteral(credentialSubject);
-        Property claimsGraphUri = ResourceFactory.createProperty("http://w3id.org/gaia-x/service#claimsGraphUri");
+        Property claimsGraphUri = ResourceFactory.createProperty("https://w3id.org/gaia-x/2511#claimsGraphUri");
 
         List<Statement> additionalTriples = new ArrayList<>();
 
@@ -55,7 +55,7 @@ public class ExtendClaims {
     }
 
     public static Set<String> getMultivalProp(Model claims) {
-        Set<String> multiprop = new HashSet<String>();
+        Set<String> multiprop = new HashSet<>();
         StmtIterator triples = claims.listStatements();
         while (triples.hasNext()) {
             Statement triple = triples.next();
@@ -69,7 +69,6 @@ public class ExtendClaims {
         StmtIterator iter = subject.listProperties(predicate); 
         if (!iter.hasNext()) return false;
         iter.next();
-        if (!iter.hasNext()) return false;
-        return true;
+        return iter.hasNext();
     }
 }

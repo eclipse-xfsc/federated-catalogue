@@ -41,6 +41,9 @@ import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
+// TODO (CAT-TECH-01): This signer uses Tagus-era weboftrust LD proof libraries.
+//  LD proof verification has been removed from the catalogue. Rewrite to produce JWT/EVC/EVP
+//  signatures or delete if performance tests are updated to use Loire-era fixtures.
 public class CredentialSigner {
   private static final String PATH_TO_PRIVATE_KEY = getResourcePath() + "prk.ss.pem";
   private static final String PATH_TO_PUBLIC_KEY = getResourcePath() + "cert.ss.pem";

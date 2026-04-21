@@ -18,9 +18,9 @@
       "issuer": "http://gaiax.de",
       "issuanceDate": "2022-10-19T18:48:09Z",
       "credentialSubject": {
-        "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider1",
+        "@id": "https://w3id.org/gaia-x/2511#Provider1",
         "@type": [
-          "https://w3id.org/gaia-x/gax-trust-framework#LegalPerson"
+          "https://w3id.org/gaia-x/2511#LegalPerson"
         ]
       }
     }

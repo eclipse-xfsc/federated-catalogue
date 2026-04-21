@@ -30,7 +30,6 @@ import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
-import eu.xfsc.fc.core.service.verification.Vc11Processor;
 import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
@@ -73,7 +72,7 @@ import java.util.Map;
 	DidResolverConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class, HttpDocumentResolver.class,
 	CredentialVerificationStrategy.class, SchemaValidationServiceImpl.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
 	AdminConfigRepository.class, SchemaModuleConfigService.class,
-	JwtContentPreprocessor.class, Vc11Processor.class, Vc2Processor.class, JwtSignatureVerifier.class, DidDocumentResolver.class,
+	JwtContentPreprocessor.class, Vc2Processor.class, JwtSignatureVerifier.class, DidDocumentResolver.class,
         FormatDetector.class, LoireJwtParser.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 @Import(EmbeddedNeo4JConfig.class)
@@ -117,7 +116,7 @@ public class Neo4jGraphStoreAccuracyTest {
   public void testCypherServiceOfferingAccuracy() {
 
 
-    List<Map<String, Object>> resultListExpected = List.of(Map.of("n", Map.of("name", "Portal", "claimsGraphUri", List.of("http://w3id.org/gaia-x/indiv#serviceMVGPortal.json"))));
+    List<Map<String, Object>> resultListExpected = List.of(Map.of("n", Map.of("name", "Portal", "claimsGraphUri", List.of("https://w3id.org/gaia-x/2511#serviceMVGPortal.json"))));
 
     GraphQuery queryDelta = new GraphQuery(
             "MATCH (n:ServiceOffering) WHERE n.name = $name RETURN n LIMIT $limit",
@@ -134,7 +133,7 @@ public class Neo4jGraphStoreAccuracyTest {
 
     GraphQuery queryDelta = new GraphQuery(
             "MATCH (n:ServiceOffering) WHERE n.uri = $uri RETURN n.name LIMIT $limit",
-            Map.of("uri", "http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json", "limit", 25));
+            Map.of("uri", "https://w3id.org/gaia-x/2511#serviceMVGPortal3.json", "limit", 25));
     List<Map<String, Object>> responseList = neo4jGraphStore.queryData(queryDelta).getResults();
     Assertions.assertEquals(resultListExpected, responseList);
   }
@@ -142,7 +141,7 @@ public class Neo4jGraphStoreAccuracyTest {
   @Test
   public void testCypherAllServiceOfferingAccuracy() {
 
-    List<Map<String, Object>> resultListExpected = List.of(Map.of("n", Map.of("name", "Portal", "claimsGraphUri", List.of("http://w3id.org/gaia-x/indiv#serviceMVGPortal.json"))),Map.of("n", Map.of("name", "Portal2", "claimsGraphUri", List.of("http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json"))),Map.of("n", Map.of("name", "Portal3", "claimsGraphUri", List.of("http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json"))),Map.of("n",Map.of("name","Portal2","claimsGraphUri", List.of("http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json"))));
+    List<Map<String, Object>> resultListExpected = List.of(Map.of("n", Map.of("name", "Portal", "claimsGraphUri", List.of("https://w3id.org/gaia-x/2511#serviceMVGPortal.json"))),Map.of("n", Map.of("name", "Portal2", "claimsGraphUri", List.of("https://w3id.org/gaia-x/2511#serviceMVGPortal2.json"))),Map.of("n", Map.of("name", "Portal3", "claimsGraphUri", List.of("https://w3id.org/gaia-x/2511#serviceMVGPortal3.json"))),Map.of("n",Map.of("name","Portal2","claimsGraphUri", List.of("https://w3id.org/gaia-x/2511#serviceMVGPortal4.json"))));
 
     GraphQuery queryDelta = new GraphQuery(
             "MATCH (n:ServiceOffering)  RETURN n LIMIT $limit", Map.of("limit", 25));
@@ -155,8 +154,8 @@ public class Neo4jGraphStoreAccuracyTest {
   void testCypherAllServiceOfferingWithNameAndURI_IN_ClauseAccuracy() {
 
     List<Map<String, String>> resultListExpected = List.of(
-            Map.of("name", "Portal2", "uri", "http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json"),
-            Map.of("name", "Portal2", "uri", "http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json"));
+            Map.of("name", "Portal2", "uri", "https://w3id.org/gaia-x/2511#serviceMVGPortal2.json"),
+            Map.of("name", "Portal2", "uri", "https://w3id.org/gaia-x/2511#serviceMVGPortal4.json"));
 
     GraphQuery queryDelta = new GraphQuery(
             "CALL {MATCH (n:ServiceOffering) WHERE n.name = $name RETURN n.uri as urlList} MATCH " +
@@ -182,41 +181,41 @@ public class Neo4jGraphStoreAccuracyTest {
             new CredentialClaim(
                     "<http://example.org/test-issuer>",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-                    "<http://w3id.org/gaia-x/participant#Provider>"
+                    "<https://w3id.org/gaia-x/2511#Provider>"
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer>",
-                    "<http://w3id.org/gaia-x/participant#legalAddress>",
+                    "<https://w3id.org/gaia-x/2511#legalAddress>",
                     "_:23"
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer>",
-                    "<http://w3id.org/gaia-x/participant#legalName>",
+                    "<https://w3id.org/gaia-x/2511#legalName>",
                     "\"deltaDAO AG\""
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer>",
-                    "<http://w3id.org/gaia-x/participant#name>",
+                    "<https://w3id.org/gaia-x/2511#name>",
                     "\"deltaDAO AG\""
             ),
             new CredentialClaim("_:23",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-                    "<http://w3id.org/gaia-x/participant#Address>"
+                    "<https://w3id.org/gaia-x/2511#Address>"
             ),
             new CredentialClaim("_:23",
-                    "<http://w3id.org/gaia-x/participant#country>",
+                    "<https://w3id.org/gaia-x/2511#country>",
                     "\"DE\""
             ),
             new CredentialClaim("_:23",
-                    "<http://w3id.org/gaia-x/participant#locality>",
+                    "<https://w3id.org/gaia-x/2511#locality>",
                     "\"Hamburg\""
             ),
             new CredentialClaim("_:23",
-                    "<http://w3id.org/gaia-x/participant#postal-code>",
+                    "<https://w3id.org/gaia-x/2511#postal-code>",
                     "\"22303\""
             ),
             new CredentialClaim("_:23",
-                    "<http://w3id.org/gaia-x/participant#street-address>",
+                    "<https://w3id.org/gaia-x/2511#street-address>",
                     "\"GeibelstraГџe 46b\""
             )
     );
@@ -226,41 +225,41 @@ public class Neo4jGraphStoreAccuracyTest {
             new CredentialClaim(
                     "<http://example.org/test-issuer2>",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-                    "<http://w3id.org/gaia-x/participant#Provider>"
+                    "<https://w3id.org/gaia-x/2511#Provider>"
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer2>",
-                    "<http://w3id.org/gaia-x/participant#legalAddress>",
+                    "<https://w3id.org/gaia-x/2511#legalAddress>",
                     "_:b1"
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer2>",
-                    "<http://w3id.org/gaia-x/participant#legalName>",
+                    "<https://w3id.org/gaia-x/2511#legalName>",
                     "\"deltaDAO AGE\""
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer2>",
-                    "<http://w3id.org/gaia-x/participant#name>",
+                    "<https://w3id.org/gaia-x/2511#name>",
                     "\"deltaDAO AGE\""
             ),
             new CredentialClaim("_:b1",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-                    "<http://w3id.org/gaia-x/participant#Address>"
+                    "<https://w3id.org/gaia-x/2511#Address>"
             ),
             new CredentialClaim("_:b1",
-                    "<http://w3id.org/gaia-x/participant#country>",
+                    "<https://w3id.org/gaia-x/2511#country>",
                     "\"DE\""
             ),
             new CredentialClaim("_:b1",
-                    "<http://w3id.org/gaia-x/participant#locality>",
+                    "<https://w3id.org/gaia-x/2511#locality>",
                     "\"Dresden\""
             ),
             new CredentialClaim("_:b1",
-                    "<http://w3id.org/gaia-x/participant#postal-code>",
+                    "<https://w3id.org/gaia-x/2511#postal-code>",
                     "\"01067\""
             ),
             new CredentialClaim("_:b1",
-                    "<http://w3id.org/gaia-x/participant#street-address>",
+                    "<https://w3id.org/gaia-x/2511#street-address>",
                     "\"Tried str 46b\""
             )
     );
@@ -270,41 +269,41 @@ public class Neo4jGraphStoreAccuracyTest {
             new CredentialClaim(
                     "<http://example.org/test-issuer3>",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-                    "<http://w3id.org/gaia-x/participant#Provider>"
+                    "<https://w3id.org/gaia-x/2511#Provider>"
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer3>",
-                    "<http://w3id.org/gaia-x/participant#legalAddress>",
+                    "<https://w3id.org/gaia-x/2511#legalAddress>",
                     "_:b2"
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer3>",
-                    "<http://w3id.org/gaia-x/participant#legalName>",
+                    "<https://w3id.org/gaia-x/2511#legalName>",
                     "\"deltaDAO AGEF\""
             ),
             new CredentialClaim(
                     "<http://example.org/test-issuer3>",
-                    "<http://w3id.org/gaia-x/participant#name>",
+                    "<https://w3id.org/gaia-x/2511#name>",
                     "\"deltaDAO AGEF\""
             ),
             new CredentialClaim("_:b2",
                     "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-                    "<http://w3id.org/gaia-x/participant#Address>"
+                    "<https://w3id.org/gaia-x/2511#Address>"
             ),
             new CredentialClaim("_:b2",
-                    "<http://w3id.org/gaia-x/participant#country>",
+                    "<https://w3id.org/gaia-x/2511#country>",
                     "\"DE\""
             ),
             new CredentialClaim("_:b2",
-                    "<http://w3id.org/gaia-x/participant#locality>",
+                    "<https://w3id.org/gaia-x/2511#locality>",
                     "\"Dresden\""
             ),
             new CredentialClaim("_:b2",
-                    "<http://w3id.org/gaia-x/participant#postal-code>",
+                    "<https://w3id.org/gaia-x/2511#postal-code>",
                     "\"01069\""
             ),
             new CredentialClaim("_:b2",
-                    "<http://w3id.org/gaia-x/participant#street-address>",
+                    "<https://w3id.org/gaia-x/2511#street-address>",
                     "\"Fried str 46b\""
             )
     );
@@ -343,12 +342,12 @@ public class Neo4jGraphStoreAccuracyTest {
 
     //TODO:: adding manually claims, after final implementation we will remove it and change the query according to credential file content
 
-    CredentialClaim claim = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json>",
+    CredentialClaim claim = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-            "<http://w3id.org/gaia-x/service#ServiceOffering>");
+            "<https://w3id.org/gaia-x/2511#ServiceOffering>");
 
-    CredentialClaim claimName = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal.json>",
-            "<http://w3id.org/gaia-x/service#name>",
+    CredentialClaim claimName = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal.json>",
+            "<https://w3id.org/gaia-x/2511#name>",
             "\"Portal\"");
 
     List<CredentialClaim> claimFile = List.of(claim, claimName);
@@ -366,12 +365,12 @@ public class Neo4jGraphStoreAccuracyTest {
     CredentialVerificationResultOffering verificationResult2 =
             (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessor, true, false, false, false);
 
-    CredentialClaim claim1 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json>",
+    CredentialClaim claim1 = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal2.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-            "<http://w3id.org/gaia-x/service#ServiceOffering>");
+            "<https://w3id.org/gaia-x/2511#ServiceOffering>");
 
-    CredentialClaim claimName1 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal2.json>",
-            "<http://w3id.org/gaia-x/service#name>",
+    CredentialClaim claimName1 = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal2.json>",
+            "<https://w3id.org/gaia-x/2511#name>",
             "\"Portal2\"");
 
     List<CredentialClaim> claimFile1 = List.of(claim1, claimName1);
@@ -390,12 +389,12 @@ public class Neo4jGraphStoreAccuracyTest {
     CredentialVerificationResultOffering verificationResult3 =
             (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessorDirect3, true, false, false, false);
 
-    CredentialClaim claim3 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json>",
+    CredentialClaim claim3 = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal3.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-            "<http://w3id.org/gaia-x/service#ServiceOffering>");
+            "<https://w3id.org/gaia-x/2511#ServiceOffering>");
 
-    CredentialClaim claimName3 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal3.json>",
-            "<http://w3id.org/gaia-x/service#name>",
+    CredentialClaim claimName3 = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal3.json>",
+            "<https://w3id.org/gaia-x/2511#name>",
             " \"Portal3\"");
 
     List<CredentialClaim> claimFile3 = List.of(claim3, claimName3);
@@ -416,12 +415,12 @@ public class Neo4jGraphStoreAccuracyTest {
             (CredentialVerificationResultOffering) verificationService.verifyCredential(contentAccessor, true, false, false, false);
 
 
-    CredentialClaim claim4 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json>",
+    CredentialClaim claim4 = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal4.json>",
             "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
-            "<http://w3id.org/gaia-x/service#ServiceOffering>");
+            "<https://w3id.org/gaia-x/2511#ServiceOffering>");
 
-    CredentialClaim claimName4 = new CredentialClaim("<http://w3id.org/gaia-x/indiv#serviceMVGPortal4.json>",
-            "<http://w3id.org/gaia-x/service#name>",
+    CredentialClaim claimName4 = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceMVGPortal4.json>",
+            "<https://w3id.org/gaia-x/2511#name>",
             "\"Portal2\"");
 
 

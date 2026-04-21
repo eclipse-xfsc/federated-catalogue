@@ -18,11 +18,11 @@
       "issuer": "http://gaiax.de",
       "issuanceDate": "2022-10-19T18:48:09Z",
       "credentialSubject": {
-        "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider1",
+        "@id": "https://w3id.org/gaia-x/2511#Provider1",
         "@type": [
-          "https://w3id.org/gaia-x/gax-trust-framework#LegalPerson"
+          "https://w3id.org/gaia-x/2511#LegalPerson"
         ],
-        "https://w3id.org/gaia-x/gax-trust-framework#headquarterAddress": [
+        "https://w3id.org/gaia-x/2511#headquarterAddress": [
           {
             "@type": [
               "http://www.w3.org/2006/vcard/ns#Address"
@@ -49,7 +49,7 @@
             ]
           }
         ],
-        "https://w3id.org/gaia-x/gax-trust-framework#legalAddress": [
+        "https://w3id.org/gaia-x/2511#legalAddress": [
           {
             "@type": [
               "http://www.w3.org/2006/vcard/ns#Address"
@@ -76,69 +76,55 @@
             ]
           }
         ],
-        "https://w3id.org/gaia-x/gax-trust-framework#legalName": [
+        "https://w3id.org/gaia-x/2511#legalName": [
           {
             "@value": "Provider Name"
           }
         ],
-        "https://w3id.org/gaia-x/gax-trust-framework#registrationNumber": [
+        "https://w3id.org/gaia-x/2511#registrationNumber": [
           {
             "@value": "1234"
           }
         ],
-        "https://w3id.org/gaia-x/gax-trust-framework#subOrganisation": [
+        "https://w3id.org/gaia-x/2511#subOrganisation": [
           {
-            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider2"
+            "@id": "https://w3id.org/gaia-x/2511#Provider2"
           },
           {
-            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider3"
+            "@id": "https://w3id.org/gaia-x/2511#Provider3"
           },
           {
-            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider4"
+            "@id": "https://w3id.org/gaia-x/2511#Provider4"
           },
           {
-            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider5"
+            "@id": "https://w3id.org/gaia-x/2511#Provider5"
           },
           {
-            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider6"
+            "@id": "https://w3id.org/gaia-x/2511#Provider6"
           },
           {
-            "@id": "https://w3id.org/gaia-x/gax-trust-framework#Provider7"
+            "@id": "https://w3id.org/gaia-x/2511#Provider7"
           }
         ],
-        "https://w3id.org/gaia-x/gax-trust-framework#termsAndConditions": [
+        "https://w3id.org/gaia-x/2511#termsAndConditions": [
           {
             "@type": [
-              "https://w3id.org/gaia-x/gax-trust-framework#TermsAndConditions"
+              "https://w3id.org/gaia-x/2511#TermsAndConditions"
             ],
-            "https://w3id.org/gaia-x/gax-trust-framework#content": [
+            "https://w3id.org/gaia-x/2511#content": [
               {
                 "@type": "http://www.w3.org/2001/XMLSchema#anyURI",
                 "@value": "http://example.org/tac"
               }
             ],
-            "https://w3id.org/gaia-x/gax-trust-framework#hash": [
+            "https://w3id.org/gaia-x/2511#hash": [
               {
                 "@value": "1234"
               }
             ]
           }
         ]
-      },
-      "proof": {
-        "type": "JsonWebSignature2020",
-        "created": "2022-12-06T17:47:12Z",
-        "proofPurpose": "assertionMethod",
-        "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
-        "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..nur4FkKXPPIC3m3kHlCJc_pVGWC4lh4QRcngpavRP4dmrn29bkNJHYB3YCtiy9cWqkVx1eRtgfae-kYYM9r1b7WQXpqVFo3dJ75MPztdhCicDMWkAWFp4tgAEkM0s7TdYPiFCUBCi-t5tRuqzeGr26s4fl_gcaZqkI2tnW8P8UTzE-mJ-Zyx-kQ3BZcgPnRFb2xwF6VQlY2DCsg38G1A78Hu_jrVdia9FPUArDmQvxf3yOmkzMKNUmZMeFhdFVOBcqmKc3_Zvf7sUpVlLrBvjDnT4g9EvQ5H9eYNbDGUXbgizrQ1aqxmb2khfAZ9VR2Hum8JCz7aWdIHJZKredIIRHxGn7QHOu0rretwxNn5rWWJXfbtDfv--Np_MvrZeb-YEY8SVM6wHB5G0QZWV2r_IxNisJTAIYVXvWsS6DjavAoxYgqgFZcWh-pkCQyM-A87oV0uLzMeB6PdESkcxfxLFI9WRLnCoHE3wBaukcOu714nYfan-o7iWvytv5HNkHp1JAytKwEp2SM6UONNnqllkhtY9GaX6-LvdgBRvHdmQvBe7Lpofz9f9_SQie-DVqC9UqdQ-HyqVhXdnwLDAUf5TBxfmNhdtJTaQ4vbWomq9lHikUkCmVOMcN6sRra1WaJRQsRF5n7aCBH4Z2bjg-pEG8UnzcLXLejy_uJ-T-DaCV0"
       }
     }
-  ],
-  "proof": {
-    "type": "JsonWebSignature2020",
-    "created": "2022-12-06T17:47:12Z",
-    "proofPurpose": "assertionMethod",
-    "verificationMethod": "did:web:compliance.lab.gaia-x.eu",
-    "jws": "eyJiNjQiOmZhbHNlLCJjcml0IjpbImI2NCJdLCJhbGciOiJQUzI1NiJ9..PyJTTM5p657aX4lWXlj1YKHWaHmW0DrRBdxGh_Ilkah0HLl0Y0TfNlSJzFbcp0FXCpHkZ5bKSQeri0VvPlBFtvtgYUOZwYwWl4pExTBdmWyVjNMphwPzyBD-o03_8ftI8geS18D7ia-6_zkRoC6-p2Secgxo91MYbSwpAbdNCeGhnAbL4fOTkVXSso7kr_UkoVtQAktPThJO28PHEJBB-suE6g3e1wu82jmiB1_VzkbQrDP2Ok7CSVVPIYYhz57Y5qfA4y8y-oTasb7-XCATOpYkoDuRJprF7VEIpZTS6cihlYbOB1bd3CN81G54GKL-t1VGflEP0rAN6RxYB0hVUoyMxc43HQ71lkMSWNTtDq7kH-IdNP85ntR3dG4wYqDRx9CTg8enChy63dlsAFVWjvW6c6On8lnM3lDB9E2RRmPjrpP3wPkB6FWnE6OrmHFDfhksIsM4ek_wMG8VBMpaeOdQSn4-1jgkuQGJkq6VFnI_X92CyTsnaRMSvqHHOHqE6oH8Oby9UEQHR5exxWB59dxC3beJkClwPmkGUx0aZuTHwTR6YjhXZlZPtrchXCk_hcmdKXSNDW8flmMceIG8nG1ph0E50CCGmWnlwmiNWqOk8WooUHZ9RPp0r2n5SoXIJyCtQa3vdEpWVlngMVnnjCjsCyFSxQZ-CDl7RChxVsY"
-  }
+  ]
 }

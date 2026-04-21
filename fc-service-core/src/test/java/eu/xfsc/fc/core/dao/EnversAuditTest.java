@@ -254,7 +254,7 @@ class EnversAuditTest {
 
     assertNotNull(revNumbers);
     assertEquals(2, revNumbers.size());
-    assertTrue(revNumbers.get(0).intValue() < revNumbers.get(1).intValue(),
+    assertTrue(revNumbers.getFirst().intValue() < revNumbers.get(1).intValue(),
         "Revisions should be in chronological order");
   }
 

@@ -1,6 +1,5 @@
 package eu.xfsc.fc.core.service.verification;
 
-import com.danubetech.dataintegrity.DataIntegrityProof;
 import com.danubetech.verifiablecredentials.CredentialSubject;
 import com.danubetech.verifiablecredentials.VerifiableCredential;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
@@ -96,19 +95,6 @@ class TypedCredentials {
 
   VerifiablePresentation getPresentation() {
     return presentation;
-  }
-
-  String getProofMethod() {
-    DataIntegrityProof proof = null;
-    if (presentation == null) {
-      if (!credentials.isEmpty()) {
-        proof = credentials.keySet().iterator().next().getDataIntegrityProof();
-      }
-    } else {
-      proof = presentation.getDataIntegrityProof();
-    }
-    URI method = proof == null ? null : proof.getVerificationMethod();
-    return method == null ? null : method.toString();
   }
 
   boolean hasClasses() {

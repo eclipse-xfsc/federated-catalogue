@@ -9,8 +9,7 @@
 services:
   server:
     environment:
-      # Gaia-X Trust Framework enabled: Loire 2511 ontology and SHACL shapes are bundled
-      # Tagus (gax-core) credentials continue to work via legacy type URIs.
+      # Gaia-X Trust Framework enabled: Loire 2511 ontology and SHACL shapes are bundled.
       FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "true"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"

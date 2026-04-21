@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.verification;
 
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.JWT_PREFIX;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.VC_20_CONTEXT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

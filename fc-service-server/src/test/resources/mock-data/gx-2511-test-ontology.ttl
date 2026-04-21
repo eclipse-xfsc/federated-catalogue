@@ -1,11 +1,11 @@
-@prefix gx: <https://w3id.org/gaia-x/2511#> .
+@prefix gx: <https://example.org/test/2511#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-# Minimal 2511 class hierarchy for unit testing.
-# Mirrors the gx-2511.ttl structure without the full ontology payload.
+# Minimal class hierarchy for unit testing.
+# Uses a test-specific namespace to avoid conflicts with the default gx-2511 schemas.
 
-<https://w3id.org/gaia-x/2511> a owl:Ontology .
+<https://example.org/test/2511#> a owl:Ontology .
 
 gx:GaiaXEntity a owl:Class .
 

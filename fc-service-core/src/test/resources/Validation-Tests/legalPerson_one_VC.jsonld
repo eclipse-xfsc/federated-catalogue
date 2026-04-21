@@ -14,11 +14,11 @@
             ],
             "https://www.w3.org/2018/credentials#credentialSubject": [
               {
-                "@id": "http://w3id.org/gaia-x/participant#Provider1",
+                "@id": "https://w3id.org/gaia-x/2511#Provider1",
                 "@type": [
-                  "http://w3id.org/gaia-x/participant#LegalPerson"
+                  "https://w3id.org/gaia-x/2511#LegalPerson"
                 ],
-                "http://w3id.org/gaia-x/participant#headquarterAddress": [
+                "https://w3id.org/gaia-x/2511#headquarterAddress": [
                   {
                     "@type": [
                       "http://www.w3.org/2006/vcard/ns#Address"
@@ -45,7 +45,7 @@
                     ]
                   }
                 ],
-                "http://w3id.org/gaia-x/participant#legalAddress": [
+                "https://w3id.org/gaia-x/2511#legalAddress": [
                   {
                     "@type": [
                       "http://www.w3.org/2006/vcard/ns#Address"
@@ -72,48 +72,48 @@
                     ]
                   }
                 ],
-                "http://w3id.org/gaia-x/participant#legalName": [
+                "https://w3id.org/gaia-x/2511#legalName": [
                   {
                     "@value": "Provider Name"
                   }
                 ],
-                "http://w3id.org/gaia-x/participant#registrationNumber": [
+                "https://w3id.org/gaia-x/2511#registrationNumber": [
                   {
                     "@value": "1234"
                   }
                 ],
-                "http://w3id.org/gaia-x/participant#subOrganisation": [
+                "https://w3id.org/gaia-x/2511#subOrganisation": [
                   {
-                    "@id": "http://w3id.org/gaia-x/participant#Provider2"
+                    "@id": "https://w3id.org/gaia-x/2511#Provider2"
                   },
                   {
-                    "@id": "http://w3id.org/gaia-x/participant#Provider3"
+                    "@id": "https://w3id.org/gaia-x/2511#Provider3"
                   },
                   {
-                    "@id": "http://w3id.org/gaia-x/participant#Provider4"
+                    "@id": "https://w3id.org/gaia-x/2511#Provider4"
                   },
                   {
-                    "@id": "http://w3id.org/gaia-x/participant#Provider5"
+                    "@id": "https://w3id.org/gaia-x/2511#Provider5"
                   },
                   {
-                    "@id": "http://w3id.org/gaia-x/participant#Provider6"
+                    "@id": "https://w3id.org/gaia-x/2511#Provider6"
                   },
                   {
-                    "@id": "http://w3id.org/gaia-x/participant#Provider7"
+                    "@id": "https://w3id.org/gaia-x/2511#Provider7"
                   }
                 ],
-                "http://w3id.org/gaia-x/participant#termsAndConditions": [
+                "https://w3id.org/gaia-x/2511#termsAndConditions": [
                   {
                     "@type": [
-                      "http://w3id.org/gaia-x/core#TermsAndConditions"
+                      "https://w3id.org/gaia-x/2511#TermsAndConditions"
                     ],
-                    "http://w3id.org/gaia-x/core#content": [
+                    "https://w3id.org/gaia-x/2511#content": [
                       {
                         "@type": "http://www.w3.org/2001/XMLSchema#anyURI",
                         "@value": "http://example.org/tac"
                       }
                     ],
-                    "http://w3id.org/gaia-x/core#hash": [
+                    "https://w3id.org/gaia-x/2511#hash": [
                       {
                         "@value": "1234"
                       }

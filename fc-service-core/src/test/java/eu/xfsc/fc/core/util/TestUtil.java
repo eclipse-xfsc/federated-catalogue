@@ -41,5 +41,22 @@ public class TestUtil {
       assertEquals(expected.getStatusDatetime().truncatedTo(ChronoUnit.MILLIS), actual.getStatusDatetime().truncatedTo(ChronoUnit.MILLIS));
     }
   }
+
+    /**
+     * Builds a fake Loire JWT (typ=vc+jwt, top-level @context, no vc wrapper).
+     * The JwtSignatureVerifier is mocked so the signature is not verified.
+     */
+    public static String fakeLoireJwt(String iss) {
+        var encoder = java.util.Base64.getUrlEncoder().withoutPadding();
+        String header = encoder.encodeToString(
+                "{\"alg\":\"RS256\",\"typ\":\"vc+jwt\",\"cty\":\"vc\"}".getBytes(StandardCharsets.UTF_8));
+        String payloadJson = """
+        {"iss":"%s","@context":["https://www.w3.org/ns/credentials/v2"],\
+        "type":["VerifiableCredential"],\
+        "issuer":"%s",\
+        "credentialSubject":{"id":"%s"}}""".formatted(iss, iss, iss);
+        String payload = encoder.encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
+        return header + "." + payload + ".AAAA";
+    }
   
 }

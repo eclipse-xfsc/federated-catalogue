@@ -1,8 +1,9 @@
 package eu.xfsc.fc.graphdb.config;
 
-import java.util.List;
-
 import apoc.util.Utils;
+import lombok.extern.slf4j.Slf4j;
+import n10s.graphconfig.GraphConfigProcedures;
+import n10s.rdf.load.RDFLoadProcedures;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -11,21 +12,14 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.gds.catalog.GraphExistsProc;
-import org.neo4j.gds.catalog.GraphListProc;
-import org.neo4j.gds.catalog.GraphProjectProc;
 import org.neo4j.harness.Neo4j;
 import org.neo4j.harness.Neo4jBuilders;
-//import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
-
-import lombok.extern.slf4j.Slf4j;
-import n10s.graphconfig.GraphConfigProcedures;
-import n10s.rdf.load.RDFLoadProcedures;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Slf4j
 @Configuration
@@ -77,7 +71,7 @@ public class EmbeddedNeo4JConfig {
      //           return driver;
      //       }
      //   }
-        session.run("CALL n10s.graphconfig.init({handleVocabUris:'MAP',handleMultival:\"ARRAY\",multivalPropList:[\"http://w3id.org/gaia-x/service#claimsGraphUri\"] });"); /// run only when creating a new graph
+        session.run("CALL n10s.graphconfig.init({handleVocabUris:'MAP',handleMultival:\"ARRAY\",multivalPropList:[\"https://w3id.org/gaia-x/2511#claimsGraphUri\"] });"); /// run only when creating a new graph
         session.run("CREATE CONSTRAINT n10s_unique_uri IF NOT EXISTS FOR (r:Resource) REQUIRE r.uri IS UNIQUE");
         log.info("n10 procedure and Constraints are loaded successfully");
         return driver;

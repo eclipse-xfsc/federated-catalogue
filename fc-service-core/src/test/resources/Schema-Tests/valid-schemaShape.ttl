@@ -1,47 +1,42 @@
 @prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix gax-validation:  <http://w3id.org/gaia-x/validation#> .
 
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix dcat: <http://www.w3.org/ns/dcat#> .
 
-@prefix gax-core: <http://w3id.org/gaia-x/core#> .
-@prefix gax-node: <http://w3id.org/gaia-x/node#> .
-@prefix gax-resource: <http://w3id.org/gaia-x/resource#> .
-@prefix gax-participant: <http://w3id.org/gaia-x/participant#> .
-@prefix gax-service: <http://w3id.org/gaia-x/service#> .
 @prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
 @prefix did: <https://www.w3.org/TR/did-core/#> .
+@prefix gx: <https://w3id.org/gaia-x/2511#> .
 
-gax-validation:PhysicalResourceShape
+gx:PhysicalResourceShape
 	a sh:NodeShape ;
-	sh:targetClass gax-resource:PhysicalResource ;
-	sh:property [ sh:path gax-resource:maintainedBy ;
+	sh:targetClass gx:PhysicalResource ;
+	sh:property [ sh:path gx:maintainedBy ;
 				  sh:name "maintained by" ;
 				  sh:order 1 ;
 				  sh:minCount 1 ;
 				  sh:nodeKind sh:IRI ] ;
-	sh:property [ sh:path gax-resource:ownedBy ;
+	sh:property [ sh:path gx:ownedBy ;
 				  sh:name "owned by" ;
 				  sh:order 2 ;
 				  sh:minCount 0 ;
 				  sh:nodeKind sh:IRI ] ;
-	sh:property [ sh:path gax-resource:manufacturedBy ;
+	sh:property [ sh:path gx:manufacturedBy ;
 				  sh:name "manufactured by" ;
 				  sh:order 3 ;
 				  sh:minCount 0 ;
 				  sh:nodeKind sh:IRI ] ;
-	sh:property [ sh:path gax-resource:locationAddress ;
+	sh:property [ sh:path gx:locationAddress ;
 				  sh:name "location address" ;
 				  sh:order 4 ;
 				  sh:minCount 1 ;
 				  sh:datatype xsd:string ] ;
-	sh:property [ sh:path gax-resource:aggregationOf ;
+	sh:property [ sh:path gx:aggregationOf ;
 				  sh:name "aggregation of" ;
 				  sh:order 1 ;
 				  sh:minCount 0 ;
 				  sh:nodeKind sh:IRI ] ;
-	sh:property [ sh:path gax-resource:name ;
+	sh:property [ sh:path gx:name ;
 				  sh:name "name" ;
 				  sh:order 2 ;
 				  sh:minCount 0 ;
@@ -55,16 +50,16 @@ gax-validation:PhysicalResourceShape
 				  sh:datatype xsd:string ] ;
 .
 
-gax-validation:MeasureShape
+gx:MeasureShape
 	a sh:NodeShape ;
-	sh:targetClass gax-core:Measure ;
-	sh:property [ sh:path gax-core:value ;
+	sh:targetClass gx:Measure ;
+	sh:property [ sh:path gx:value ;
 				  sh:name "value" ;
 				  sh:order 1 ;
 				  sh:minCount 1 ;
 				  sh:maxCount 1 ;
 				  sh:datatype xsd:float ] ;
-	sh:property [ sh:path gax-core:unit ;
+	sh:property [ sh:path gx:unit ;
 				  sh:name "unit" ;
 				  sh:order 2 ;
 				  sh:minCount 1 ;

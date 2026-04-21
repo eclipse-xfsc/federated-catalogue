@@ -81,7 +81,7 @@ public class ParticipantDaoImpl implements ParticipantDao {
     if (groups.size() == 0) {
       return Optional.empty();
     }
-    return Optional.of(toParticipantExt(groups.get(0)));
+    return Optional.of(toParticipantExt(groups.getFirst()));
   }
 
   /**
@@ -98,13 +98,13 @@ public class ParticipantDaoImpl implements ParticipantDao {
     if (groups.size() == 0) {
       return Optional.empty();
     }
-    GroupRepresentation groupRepo = groups.get(0);
+    GroupRepresentation groupRepo = groups.getFirst();
 
     List<UserRepresentation> users;
     List<UserProfile> profiles = new ArrayList<>();
 
     GroupResource group = instance.group(groupRepo.getId());
-    ClientRepresentation client = keycloak.realm(realm).clients().findByClientId(resourceId).get(0);
+    ClientRepresentation client = keycloak.realm(realm).clients().findByClientId(resourceId).getFirst();
     UsersResource usersResource = keycloak.realm(realm).users();
       users = group.members(offset, limit, false);
     users.stream().map(user ->
@@ -127,7 +127,7 @@ public class ParticipantDaoImpl implements ParticipantDao {
     if (groups.size() == 0) {
       return Optional.empty();
     }
-    GroupRepresentation groupRepo = groups.get(0);
+    GroupRepresentation groupRepo = groups.getFirst();
 
     UsersResource resource = keycloak.realm(realm).users();
     List<UserRepresentation> users;
@@ -154,7 +154,7 @@ public class ParticipantDaoImpl implements ParticipantDao {
     if (groups.size() == 0) {
       return Optional.empty();
     }
-    GroupRepresentation groupRepo = groups.get(0);
+    GroupRepresentation groupRepo = groups.getFirst();
     GroupRepresentation updated = toGroupRepo(participant);
     instance.group(groupRepo.getId()).update(updated);
     return Optional.of(toParticipantExt(updated));
@@ -211,8 +211,8 @@ public class ParticipantDaoImpl implements ParticipantDao {
         emptyAttributes(attributes.get(ATR_ASSET_HASH))) {
       return null; 
     }
-    return new ParticipantMetaData(groupRepo.getName(), attributes.get(ATR_NAME).get(0),
-        attributes.get(ATR_PUBLIC_KEY).get(0), null, attributes.get(ATR_ASSET_HASH).get(0));
+    return new ParticipantMetaData(groupRepo.getName(), attributes.get(ATR_NAME).getFirst(),
+        attributes.get(ATR_PUBLIC_KEY).getFirst(), null, attributes.get(ATR_ASSET_HASH).getFirst());
   }
 
   private boolean emptyAttributes(List<String> attrs) {
