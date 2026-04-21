@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -20,10 +21,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
@@ -33,7 +39,8 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {SchemaDaoTest.TestConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class})
+@ContextConfiguration(classes = {SchemaDaoTest.TestConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class,
+    DatabaseConfig.class, SecurityAuditorAware.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class SchemaDaoTest {
 
@@ -45,8 +52,12 @@ class SchemaDaoTest {
   @Autowired
   private SchemaDao schemaDao;
 
+  @Autowired
+  private SchemaFileRepository schemaFileRepository;
+
   @AfterEach
   void cleanUp() {
+    SecurityContextHolder.clearContext();
     schemaDao.deleteAll();
   }
 
@@ -349,5 +360,50 @@ class SchemaDaoTest {
     Optional<String> result = schemaDao.selectLatestContentByType("SHAPE");
 
     assertTrue(result.isEmpty());
+  }
+
+  // ===== JPA auditing =====
+
+  @Test
+  void insert_withJwtContext_populatesCreatedByAndModifiedBy() {
+    Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").subject("schema-user").build();
+    SecurityContextHolder.setContext(new SecurityContextImpl(
+        new JwtAuthenticationToken(jwt, Collections.emptyList())));
+
+    schemaDao.insert(buildSimpleRecord("schema-audit", SchemaType.ONTOLOGY, "content", null));
+
+    SchemaFile entity = schemaFileRepository.findBySchemaId("schema-audit").orElseThrow();
+    assertEquals("schema-user", entity.getCreatedBy());
+    assertEquals("schema-user", entity.getModifiedBy());
+    assertNotNull(entity.getCreatedAt());
+    assertNotNull(entity.getModifiedAt());
+  }
+
+  @Test
+  void insert_withoutJwtContext_timestampsSetCreatedByNull() {
+    schemaDao.insert(buildSimpleRecord("schema-noauth", SchemaType.ONTOLOGY, "content", null));
+
+    SchemaFile entity = schemaFileRepository.findBySchemaId("schema-noauth").orElseThrow();
+    assertNull(entity.getCreatedBy());
+    assertNull(entity.getModifiedBy());
+    assertNotNull(entity.getCreatedAt());
+    assertNotNull(entity.getModifiedAt());
+  }
+
+  @Test
+  void update_withDifferentJwtContext_updatesModifiedByNotCreatedBy() {
+    Jwt jwtA = Jwt.withTokenValue("tokenA").header("alg", "none").subject("user-a").build();
+    SecurityContextHolder.setContext(new SecurityContextImpl(
+        new JwtAuthenticationToken(jwtA, Collections.emptyList())));
+    schemaDao.insert(buildSimpleRecord("schema-upd", SchemaType.ONTOLOGY, "original", null));
+
+    Jwt jwtB = Jwt.withTokenValue("tokenB").header("alg", "none").subject("user-b").build();
+    SecurityContextHolder.setContext(new SecurityContextImpl(
+        new JwtAuthenticationToken(jwtB, Collections.emptyList())));
+    schemaDao.update("schema-upd", "updated", null);
+
+    SchemaFile entity = schemaFileRepository.findBySchemaId("schema-upd").orElseThrow();
+    assertEquals("user-a", entity.getCreatedBy());
+    assertEquals("user-b", entity.getModifiedBy());
   }
 }

@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.dao.schemas.SchemaFile;
 import eu.xfsc.fc.core.dao.schemas.SchemaFileRepository;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
@@ -30,7 +31,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @ContextConfiguration(classes = {
     RevalidatorChunksDaoTest.TestConfig.class,
     RevalidatorChunksJpaDao.class,
-    DatabaseConfig.class
+    DatabaseConfig.class, SecurityAuditorAware.class
 })
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class RevalidatorChunksDaoTest {

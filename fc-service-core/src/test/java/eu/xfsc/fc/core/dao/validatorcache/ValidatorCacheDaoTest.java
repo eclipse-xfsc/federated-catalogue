@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.pojo.Validator;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
@@ -26,7 +27,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {ValidatorCacheDaoTest.TestConfig.class,
-    eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao.class, DatabaseConfig.class})
+    eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao.class, DatabaseConfig.class, SecurityAuditorAware.class})
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 class ValidatorCacheDaoTest {
 

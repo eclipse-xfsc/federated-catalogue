@@ -36,8 +36,6 @@ public final class SchemaFileMapper {
     entity.setSchemaId(record.getId());
     entity.setNameHash(record.nameHash());
     entity.setType(record.type());
-    entity.setCreatedAt(record.createdAt());
-    entity.setModifiedAt(record.modifiedAt());
     entity.setContent(record.content());
     if (record.terms() != null) {
       Set<SchemaTerm> termEntities = record.terms().stream().map(term -> {
