@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -32,7 +33,7 @@ import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphQuery;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -60,7 +61,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testCypherQueriesSyntax() throws Exception {
 
-        List<CredentialClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
+        List<RdfClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
         List<Map<String, String>> resultListFull = new ArrayList<Map<String, String>>();
         Map<String, String> mapFull = new HashMap<String, String>();
         mapFull.put("n.uri", "https://w3id.org/gaia-x/2511#serviceMVGPortal.json");
@@ -68,8 +69,8 @@ public class Neo4jGraphStoreTest {
         Map<String, String> mapFullES = new HashMap<String, String>();
         mapFullES.put("n.uri", "https://w3id.org/gaia-x/2511#serviceElasticSearch.json");
         resultListFull.add(mapFullES);
-        for (CredentialClaim claim : claimFile) {
-            List<CredentialClaim> claimList = new ArrayList<>();
+        for (RdfClaim claim : claimFile) {
+            List<RdfClaim> claimList = new ArrayList<>();
             claimList.add(claim);
             String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(
@@ -86,7 +87,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testCypherQueriesSyntaxTotalCountFlagTrue() throws Exception {
 
-        List<CredentialClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
+        List<RdfClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
         List<Map<String, String>> resultListFull = new ArrayList<Map<String, String>>();
         Map<String, String> mapFull = new HashMap<String, String>();
         mapFull.put("n.uri", "https://w3id.org/gaia-x/2511#serviceMVGPortal.json");
@@ -94,8 +95,8 @@ public class Neo4jGraphStoreTest {
         Map<String, String> mapFullES = new HashMap<String, String>();
         mapFullES.put("n.uri", "https://w3id.org/gaia-x/2511#serviceElasticSearch.json");
         resultListFull.add(mapFullES);
-        for (CredentialClaim claim : claimFile) {
-            List<CredentialClaim> claimList = new ArrayList<>();
+        for (RdfClaim claim : claimFile) {
+            List<RdfClaim> claimList = new ArrayList<>();
             claimList.add(claim);
             String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(
@@ -118,7 +119,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testCypherQueriesFull() throws Exception {
 
-        List<CredentialClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
+        List<RdfClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
         List<Map<String, String>> resultListFull = new ArrayList<Map<String, String>>();
         Map<String, String> mapFull = new HashMap<String, String>();
         mapFull.put("n.uri", "https://w3id.org/gaia-x/2511#serviceMVGPortal.json");
@@ -126,8 +127,8 @@ public class Neo4jGraphStoreTest {
         Map<String, String> mapFullES = new HashMap<String, String>();
         mapFullES.put("n.uri", "https://w3id.org/gaia-x/2511#serviceElasticSearch.json");
         resultListFull.add(mapFullES);
-        for (CredentialClaim claim : claimFile) {
-            List<CredentialClaim> claimList = new ArrayList<>();
+        for (RdfClaim claim : claimFile) {
+            List<RdfClaim> claimList = new ArrayList<>();
             claimList.add(claim);
             String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(
@@ -150,13 +151,13 @@ public class Neo4jGraphStoreTest {
     @Test
     void testCypherDelta() throws Exception {
 
-        List<CredentialClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
+        List<RdfClaim> claimFile = loadTestClaims("Claims-Tests/claimsForQuery.nt");
         List<Map<String, String>> resultListDelta = new ArrayList<Map<String, String>>();
         Map<String, String> mapDelta = new HashMap<String, String>();
         mapDelta.put("n.uri", "https://delta-dao.com/.well-known/participant.json");
         resultListDelta.add(mapDelta);
-        for (CredentialClaim claim : claimFile) {
-            List<CredentialClaim> claimList = new ArrayList<>();
+        for (RdfClaim claim : claimFile) {
+            List<RdfClaim> claimList = new ArrayList<>();
             claimList.add(claim);
             String credentialSubject = claimList.getFirst().getSubjectString();
             graphGaia.addClaims(claimList, credentialSubject.substring(1, credentialSubject.length() - 1));
@@ -180,7 +181,7 @@ public class Neo4jGraphStoreTest {
     void testCypherSignatureQuery() throws Exception {
 
         String credentialSubject = "https://w3id.org/gaia-x/2511#serviceElasticSearch.json";
-        List<CredentialClaim> claimList = Arrays.asList(
+        List<RdfClaim> claimList = Arrays.asList(
                 new CredentialClaim(
                         "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -227,10 +228,10 @@ public class Neo4jGraphStoreTest {
      */
     @Test
     void testAddClaims() throws Exception {
-        List<CredentialClaim> claimList = new ArrayList<>();
-        CredentialClaim claim = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#ServiceOffering>");
+        List<RdfClaim> claimList = new ArrayList<>();
+        RdfClaim claim = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#ServiceOffering>");
         claimList.add(claim);
-        CredentialClaim claimSecond = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>", "<https://w3id.org/gaia-x/2511#providedBy>", "<https://delta-dao.com/.well-known/participant.json>");
+        RdfClaim claimSecond = new CredentialClaim("<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>", "<https://w3id.org/gaia-x/2511#providedBy>", "<https://delta-dao.com/.well-known/participant.json>");
         claimList.add(claimSecond);
         graphGaia.addClaims(claimList, "https://w3id.org/gaia-x/2511#serviceElasticSearch.json");
         graphGaia.deleteClaims("https://w3id.org/gaia-x/2511#serviceElasticSearch.json");
@@ -247,61 +248,61 @@ public class Neo4jGraphStoreTest {
         String credentialSubject = "https://w3id.org/gaia-x/2511#serviceElasticSearch.json";
         //String wrongCredentialSubject = "https://w3id.org/gaia-x/2511#serviceElasticSearch";
 
-        CredentialClaim syntacticallyCorrectClaim = new CredentialClaim(
+        RdfClaim syntacticallyCorrectClaim = new CredentialClaim(
                 "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                 "<http://w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<https://w3id.org/gaia-x/2511#ServiceOffering>"
         );
 
-        CredentialClaim claimWBrokenSubject = new CredentialClaim(
+        RdfClaim claimWBrokenSubject = new CredentialClaim(
                 "<__https://w3id.org/gaia-x/2511#serviceElasticSearch.json__>",
                 "<http://w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<https://w3id.org/gaia-x/2511#ServiceOffering>"
         );
 
-        CredentialClaim claimWBrokenPredicate = new CredentialClaim(
+        RdfClaim claimWBrokenPredicate = new CredentialClaim(
                 "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                 "<__http://w3.org/1999/02/22-rdf-syntax-ns#type__>",
                 "<https://w3id.org/gaia-x/2511#ServiceOffering>"
         );
 
-        CredentialClaim claimWBrokenObjectIRI = new CredentialClaim(
+        RdfClaim claimWBrokenObjectIRI = new CredentialClaim(
                 "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<__https://w3id.org/gaia-x/2511#ServiceOffering__>"
         );
 
-        CredentialClaim claimWBrokenLiteral01 = new CredentialClaim(
+        RdfClaim claimWBrokenLiteral01 = new CredentialClaim(
                 "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                 "<http://www.w3.org/2000/01/rdf-schema#label>",
                 "\"Fourty two\"^^<http://www.w3.org/2001/XMLSchema#int>"
         );
 
-        CredentialClaim claimWBrokenLiteral02 = new CredentialClaim(
+        RdfClaim claimWBrokenLiteral02 = new CredentialClaim(
                 "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                 "<http://www.w3.org/2000/01/rdf-schema#label>",
                 "\"Missing quotes^^<http://www.w3.org/2001/XMLSchema#string>"
         );
 
-        CredentialClaim claimWBlankNodeSubject = new CredentialClaim(
+        RdfClaim claimWBlankNodeSubject = new CredentialClaim(
                 "_:23",
                 "<http://ex.com/some_property>",
                 "<http://ex.com/resource23>"
         );
 
-        CredentialClaim claimWBlankNodeObject = new CredentialClaim(
+        RdfClaim claimWBlankNodeObject = new CredentialClaim(
                 "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                 "<http://ex.com/some_property>",
                 "_:23"
         );
 
-        CredentialClaim claimWDIDSubject = new CredentialClaim(
+        RdfClaim claimWDIDSubject = new CredentialClaim(
                 "<did:example:123456789#v1>",
                 "<http://ex.com/some_property>",
                 "<http://ex.com/resource23>"
         );
 
-        CredentialClaim claimWDIDObject = new CredentialClaim(
+        RdfClaim claimWDIDObject = new CredentialClaim(
                 "<http://ex.com/resource42>",
                 "<http://ex.com/some_property>",
                 "<did:example:987654321#v2>"
@@ -434,11 +435,11 @@ public class Neo4jGraphStoreTest {
         graphGaia.deleteClaims(credentialSubject);
     }
 
-    private List<CredentialClaim> loadTestClaims(String path) throws Exception {
+    private List<RdfClaim> loadTestClaims(String path) throws Exception {
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             String strLine;
-            List<CredentialClaim> claimList = new ArrayList<>();
+            List<RdfClaim> claimList = new ArrayList<>();
             while ((strLine = br.readLine()) != null) {
                 Pattern regex = Pattern.compile("[^\\s\"']+|\"[^\"]*\"|'[^']*'");
                 Matcher regexMatcher = regex.matcher(strLine);
@@ -456,7 +457,7 @@ public class Neo4jGraphStoreTest {
                     }
                     i++;
                 }
-                CredentialClaim claim = new CredentialClaim(subject, predicate, object);
+                RdfClaim claim = new CredentialClaim(subject, predicate, object);
                 claimList.add(claim);
             }
             return claimList;
@@ -498,7 +499,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testDeleteClaims() {
         String credentialSubject1 = "https://w3id.org/gaia-x/2511#serviceElasticSearch.json";
-        List<CredentialClaim> claimList = Arrays.asList(
+        List<RdfClaim> claimList = Arrays.asList(
                 new CredentialClaim(
                         "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -522,7 +523,7 @@ public class Neo4jGraphStoreTest {
         );
 
         String credentialSubject2 = "http://ex.com/credentialSubject2";
-        List<CredentialClaim> claimsWOtherCredSubject = Arrays.asList(
+        List<RdfClaim> claimsWOtherCredSubject = Arrays.asList(
                 new CredentialClaim(
                         "<http://ex.com/credentialSubject2>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -584,7 +585,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testAssertionQuery() {
         String credentialSubject1 = "https://w3id.org/gaia-x/2511#serviceElasticSearch.json";
-        List<CredentialClaim> claimList = Arrays.asList(
+        List<RdfClaim> claimList = Arrays.asList(
                 new CredentialClaim(
                         "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -608,7 +609,7 @@ public class Neo4jGraphStoreTest {
         );
 
         String credentialSubject2 = "http://ex.com/credentialSubject2";
-        List<CredentialClaim> claimsWOtherCredSubject = Arrays.asList(
+        List<RdfClaim> claimsWOtherCredSubject = Arrays.asList(
                 new CredentialClaim(
                         "<http://ex.com/credentialSubject2>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -641,7 +642,7 @@ public class Neo4jGraphStoreTest {
     void testQueryOffering() {
 
         String credentialSubject = "http://example.org/test-issuer2";
-        List<CredentialClaim> claimList = Arrays.asList(
+        List<RdfClaim> claimList = Arrays.asList(
                 new CredentialClaim(
                         "<http://example.org/test-issuer2>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -700,7 +701,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testAssertionComplexQuery() {
         String credentialSubject1 = "https://w3id.org/gaia-x/2511#serviceElasticSearch.json";
-        List<CredentialClaim> claimList = Arrays.asList(
+        List<RdfClaim> claimList = Arrays.asList(
                 new CredentialClaim(
                         "<https://w3id.org/gaia-x/2511#serviceElasticSearch.json>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -724,7 +725,7 @@ public class Neo4jGraphStoreTest {
         );
 
         String credentialSubject2 = "http://ex.com/credentialSubject2";
-        List<CredentialClaim> claimsWOtherCredSubject = Arrays.asList(
+        List<RdfClaim> claimsWOtherCredSubject = Arrays.asList(
                 new CredentialClaim(
                         "<http://ex.com/credentialSubject2>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -766,7 +767,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void AssertionRelationshipNode() {
         String credentialSubject1 = "http://example.org/test-issuer";
-        List<CredentialClaim> claimList = Arrays.asList(
+        List<RdfClaim> claimList = Arrays.asList(
                 new CredentialClaim(
                         "<http://example.org/test-issuer>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -810,7 +811,7 @@ public class Neo4jGraphStoreTest {
         );
 
         String credentialSubject2 = "http://example.org/test-issuer2";
-        List<CredentialClaim> claimList2 = Arrays.asList(
+        List<RdfClaim> claimList2 = Arrays.asList(
                 new CredentialClaim(
                         "<http://example.org/test-issuer2>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -854,7 +855,7 @@ public class Neo4jGraphStoreTest {
         );
 
         String credentialSubject3 = "http://example.org/test-issuer3";
-        List<CredentialClaim> claimList3 = Arrays.asList(
+        List<RdfClaim> claimList3 = Arrays.asList(
                 new CredentialClaim(
                         "<http://example.org/test-issuer3>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -916,7 +917,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void testClaimsMissing() {
         String credentialSubject = "https://www.example.org/mySoftwareOffering";
-        List<CredentialClaim> claimList = Arrays.asList(new CredentialClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#SoftwareOffering>"),
+        List<RdfClaim> claimList = Arrays.asList(new CredentialClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#SoftwareOffering>"),
                 new CredentialClaim("_:b0", "<https://w3id.org/gaia-x/2511#accessType>", "\"access type\""),
                 new CredentialClaim("_:b0", "<https://w3id.org/gaia-x/2511#formatType>", "\"format type\""),
                 new CredentialClaim("_:b0", "<https://w3id.org/gaia-x/2511#requestType>", "\"request type\""),
@@ -940,7 +941,7 @@ public class Neo4jGraphStoreTest {
         List<Map<String, Object>> responseCypher = graphGaia.queryData(queryCypher).getResults();
         Assertions.assertEquals(2, responseCypher.size());
         String credentialSubject2 = "https://www.example.org/mySoftwareOffering2";
-        List<CredentialClaim> claimList2 = Arrays.asList(new CredentialClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#SoftwareOffering2>"),
+        List<RdfClaim> claimList2 = Arrays.asList(new CredentialClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#SoftwareOffering2>"),
                 new CredentialClaim("_:b0", "<https://w3id.org/gaia-x/2511#accessType>", "\"access type\""),
                 new CredentialClaim("_:b0", "<https://w3id.org/gaia-x/2511#formatType>", "\"format type\""),
                 new CredentialClaim("_:b0", "<https://w3id.org/gaia-x/2511#requestType>", "\"request type\""),
@@ -1025,7 +1026,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void getClaimCount_afterAddClaims_returnsPositiveValue() {
         String credentialSubject = "http://example.org/healthCheckSubject";
-        List<CredentialClaim> claimList = List.of(
+        List<RdfClaim> claimList = List.of(
                 new CredentialClaim(
                         "<http://example.org/healthCheckSubject>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -1068,7 +1069,7 @@ public class Neo4jGraphStoreTest {
     @Test
     void addClaims_withKnownCredentialSubject_setsClaimsGraphUriToCredentialSubject() {
         String credentialSubject = "http://example.org/credSubject1";
-        List<CredentialClaim> claimList = List.of(
+        List<RdfClaim> claimList = List.of(
                 new CredentialClaim(
                         "<http://example.org/node1>",
                         "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -1111,7 +1112,7 @@ public class Neo4jGraphStoreTest {
         String credD = "http://example.org/credD";
 
         // Both credentials share the same subject node
-        CredentialClaim sharedClaim = new CredentialClaim(
+        RdfClaim sharedClaim = new CredentialClaim(
                 "<http://example.org/sharedNode>",
                 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
                 "<https://w3id.org/gaia-x/2511#ServiceOffering>"

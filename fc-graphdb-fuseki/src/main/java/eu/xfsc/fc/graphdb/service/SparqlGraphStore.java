@@ -6,7 +6,7 @@ import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -137,7 +137,7 @@ public class SparqlGraphStore implements GraphStore {
     }
 
     @Override
-    public void addClaims(List<CredentialClaim> claimList, String credentialSubject) {
+    public void addClaims(List<RdfClaim> claimList, String credentialSubject) {
         log.debug("addClaims.enter; got claims: {}, subject: {}", claimList, credentialSubject);
         if (!claimList.isEmpty()) {
             final Model starmodel = ModelFactory.createDefaultModel();

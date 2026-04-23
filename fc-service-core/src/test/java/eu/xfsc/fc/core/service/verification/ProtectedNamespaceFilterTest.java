@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.ResourceFactory;
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
 import eu.xfsc.fc.core.pojo.FilteredModel;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 
 /**
  * Unit tests for {@link ProtectedNamespaceFilter}.
@@ -45,7 +46,7 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsProtectedSubject() {
-    CredentialClaim claim = new CredentialClaim("<" + NS + "someSubject>", NORMAL_PRED, NORMAL_OBJ);
+    RdfClaim claim = new CredentialClaim("<" + NS + "someSubject>", NORMAL_PRED, NORMAL_OBJ);
     FilteredClaims result = filter.filterClaims(List.of(claim), "test");
     assertTrue(result.claims().isEmpty());
     assertTrue(result.hasWarning());
@@ -53,7 +54,7 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsProtectedPredicate() {
-    CredentialClaim claim = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "complianceResult>", NORMAL_OBJ);
+    RdfClaim claim = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "complianceResult>", NORMAL_OBJ);
     FilteredClaims result = filter.filterClaims(List.of(claim), "test");
     assertTrue(result.claims().isEmpty());
     assertTrue(result.hasWarning());
@@ -61,7 +62,7 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsProtectedObjectIri() {
-    CredentialClaim claim = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, "<" + NS + "someValue>");
+    RdfClaim claim = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, "<" + NS + "someValue>");
     FilteredClaims result = filter.filterClaims(List.of(claim), "test");
     assertTrue(result.claims().isEmpty());
     assertTrue(result.hasWarning());
@@ -70,7 +71,7 @@ class ProtectedNamespaceFilterTest {
   @Test
   void filterClaimsLiteralObjectNotFiltered() {
     // Literal object containing namespace string — should NOT be filtered
-    CredentialClaim claim = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, "\"" + NS + "someValue\"");
+    RdfClaim claim = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, "\"" + NS + "someValue\"");
     FilteredClaims result = filter.filterClaims(List.of(claim), "test");
     assertEquals(1, result.claims().size());
     assertFalse(result.hasWarning());
@@ -78,7 +79,7 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsBlankNodeNotFiltered() {
-    CredentialClaim claim = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, "_:b0");
+    RdfClaim claim = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, "_:b0");
     FilteredClaims result = filter.filterClaims(List.of(claim), "test");
     assertEquals(1, result.claims().size());
     assertFalse(result.hasWarning());
@@ -86,8 +87,8 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsNormalClaims() {
-    CredentialClaim claim1 = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, NORMAL_OBJ);
-    CredentialClaim claim2 = new CredentialClaim("<https://example.org/s2>", "<https://example.org/p2>", "\"literal\"");
+    RdfClaim claim1 = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, NORMAL_OBJ);
+    RdfClaim claim2 = new CredentialClaim("<https://example.org/s2>", "<https://example.org/p2>", "\"literal\"");
     FilteredClaims result = filter.filterClaims(List.of(claim1, claim2), "test");
     assertEquals(2, result.claims().size());
     assertFalse(result.hasWarning());
@@ -95,7 +96,7 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsEmptyList() {
-    List<CredentialClaim> input = List.of();
+    List<RdfClaim> input = List.of();
     FilteredClaims result = filter.filterClaims(input, "test");
     assertSame(input, result.claims());
     assertFalse(result.hasWarning());
@@ -110,9 +111,9 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsMixedClaims() {
-    CredentialClaim normal = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, NORMAL_OBJ);
-    CredentialClaim protectedClaim = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "complianceResult>", NORMAL_OBJ);
-    CredentialClaim anotherNormal = new CredentialClaim("<https://example.org/s2>", NORMAL_PRED, "\"text\"");
+    RdfClaim normal = new CredentialClaim(NORMAL_SUBJ, NORMAL_PRED, NORMAL_OBJ);
+    RdfClaim protectedClaim = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "complianceResult>", NORMAL_OBJ);
+    RdfClaim anotherNormal = new CredentialClaim("<https://example.org/s2>", NORMAL_PRED, "\"text\"");
 
     FilteredClaims result = filter.filterClaims(List.of(normal, protectedClaim, anotherNormal), "test");
     assertEquals(2, result.claims().size());
@@ -123,8 +124,8 @@ class ProtectedNamespaceFilterTest {
 
   @Test
   void filterClaimsWarningContainsCountNamespaceAndTripleDetails() {
-    CredentialClaim p1 = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "complianceResult>", NORMAL_OBJ);
-    CredentialClaim p2 = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "validationTimestamp>", NORMAL_OBJ);
+    RdfClaim p1 = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "complianceResult>", NORMAL_OBJ);
+    RdfClaim p2 = new CredentialClaim(NORMAL_SUBJ, "<" + NS + "validationTimestamp>", NORMAL_OBJ);
     FilteredClaims result = filter.filterClaims(List.of(p1, p2), "test");
     assertNotNull(result.warning());
     assertTrue(result.warning().contains("2 triple(s)"));

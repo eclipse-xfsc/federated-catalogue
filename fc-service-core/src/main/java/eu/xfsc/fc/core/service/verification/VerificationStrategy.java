@@ -1,21 +1,17 @@
 package eu.xfsc.fc.core.service.verification;
 
 import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 
-import java.util.List;
-
 /**
- * Strategy interface for RDF data verification and claim extraction.
+ * Strategy interface for credential verification.
  * Implementations encapsulate format-specific parsing, semantic validation,
- * schema validation, signature verification (if applicable), and claim extraction logic.
- * 
+ * schema validation, signature verification, and claim extraction logic.
+ *
  * <p>Current implementations:
  * <ul>
  *   <li>{@link CredentialVerificationStrategy} - JSON-LD W3C VC/VP with signatures</li>
- *   <li>Future: TurtleRdfStrategy, NTriplesRdfStrategy, etc.</li>
  * </ul>
  */
 public interface VerificationStrategy {
@@ -41,21 +37,5 @@ public interface VerificationStrategy {
   CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
       boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
       boolean verifyVCSignatures) throws VerificationException;
-
-  /**
-   * Extracts claims from the given RDF credential payload without performing verification.
-   *
-   * @param payload the RDF credential content to extract claims from
-   * @return the list of extracted claims
-   */
-  List<CredentialClaim> extractClaims(ContentAccessor payload);
-
-  /**
-   * Override URI for one of the Trust Framework base classes.
-   *
-   * @param baseClass the base class to override
-   * @param uri       the new URI
-   */
-  void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri);
 
 }

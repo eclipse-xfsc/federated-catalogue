@@ -11,7 +11,7 @@ import org.apache.jena.rdf.model.StmtIterator;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
 import eu.xfsc.fc.core.pojo.FilteredModel;
 import lombok.extern.slf4j.Slf4j;
@@ -43,17 +43,17 @@ public class ProtectedNamespaceFilter {
    * @param source description of the source for logging (e.g. "asset upload")
    * @return {@link FilteredClaims} containing the allowed claims and an optional user-visible warning
    */
-  public FilteredClaims filterClaims(List<CredentialClaim> claims, String source) {
+  public FilteredClaims filterClaims(List<RdfClaim> claims, String source) {
     if (claims == null || claims.isEmpty()) {
       return new FilteredClaims(claims, null);
     }
 
     String ns = properties.getNamespace();
     String namespaceIdentifier = "<" + ns;
-    List<CredentialClaim> allowed = new ArrayList<>(claims.size());
-    List<CredentialClaim> rejected = new ArrayList<>();
+    List<RdfClaim> allowed = new ArrayList<>(claims.size());
+    List<RdfClaim> rejected = new ArrayList<>();
 
-    for (CredentialClaim claim : claims) {
+    for (RdfClaim claim : claims) {
       if (claimUsesProtectedNamespace(claim, namespaceIdentifier)) {
         rejected.add(claim);
         log.debug("filterClaims; rejected triple from {}: {}", source, claim);
@@ -70,12 +70,12 @@ public class ProtectedNamespaceFilter {
     return new FilteredClaims(allowed, null);
   }
 
-  private String buildUserWarning(List<CredentialClaim> rejected) {
+  private String buildUserWarning(List<RdfClaim> rejected) {
     StringBuilder sb = new StringBuilder();
     sb.append(rejected.size()).append(" triple(s) were removed from your upload because they use the reserved")
         .append(" internal namespace <").append(properties.getNamespace()).append(">.")
         .append(" Removed triples:");
-    for (CredentialClaim claim : rejected) {
+    for (RdfClaim claim : rejected) {
       sb.append("\n  · ").append(claim.getSubjectString())
         .append(" ").append(claim.getPredicateString())
         .append(" ").append(claim.getObjectString());
@@ -134,7 +134,7 @@ public class ProtectedNamespaceFilter {
     return sb.toString();
   }
 
-  private boolean claimUsesProtectedNamespace(CredentialClaim claim, String angleBracketNs) {
+  private boolean claimUsesProtectedNamespace(RdfClaim claim, String angleBracketNs) {
     String subj = claim.getSubjectString();
     if (subj != null && subj.startsWith(angleBracketNs)) {
       return true;

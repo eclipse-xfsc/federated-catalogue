@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "ex": "http://example.org/"
+  },
+  "@id": "http://example.org/item1",
+  "@type": "ex:Product",
+  "ex:name": "Test",
+  "ex:version": "1.0"
+}

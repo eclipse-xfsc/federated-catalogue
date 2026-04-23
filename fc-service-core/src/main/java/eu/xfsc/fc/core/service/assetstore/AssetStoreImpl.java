@@ -106,7 +106,7 @@ public class AssetStoreImpl implements AssetStore {
         .statusTime(assetMetadata.getStatusDatetime())
         .content(assetMetadata.getContentAccessor())
         .expirationTime(expirationTime)
-        .contentType("application/ld+json")
+            .contentType(assetMetadata.getContentType() != null ? assetMetadata.getContentType() : "application/ld+json")
         .changeComment(assetMetadata.getChangeComment())
         .build();
 

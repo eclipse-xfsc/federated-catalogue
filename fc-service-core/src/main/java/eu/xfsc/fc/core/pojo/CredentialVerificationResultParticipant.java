@@ -34,7 +34,7 @@ public class CredentialVerificationResultParticipant extends CredentialVerificat
    * @param claims List of claims in the credential
    */
   public CredentialVerificationResultParticipant(Instant verificationTimestamp, String lifecycleStatus, String id, Instant issuedDateTime,
-          List<CredentialClaim> claims, List<Validator> validators, String participantName, String participantPublicKey) {
+                                                 List<RdfClaim> claims, List<Validator> validators, String participantName, String participantPublicKey) {
     super(verificationTimestamp, lifecycleStatus, id, issuedDateTime, id, claims, validators);
     this.participantName = participantName;
     this.participantPublicKey = participantPublicKey;
@@ -42,7 +42,7 @@ public class CredentialVerificationResultParticipant extends CredentialVerificat
   
   @Override
   public String toString() {
-    List<CredentialClaim> claims = getClaims();
+    List<RdfClaim> claims = getClaims();
     String cls = claims == null ? "null" : "" + claims.size();
     List<Validator> validators = getValidators();
     String vls = validators == null ? "null" : "" + validators.size();

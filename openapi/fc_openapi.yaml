@@ -1254,6 +1254,9 @@ paths:
           the live GXDCH Compliance Service. The ICAM 24.07 variants
           application/vc+ld+json+jwt and application/vp+ld+json+jwt are also
           accepted for backward compatibility but are not IANA-registered.
+          For non-credential RDF serializations, use text/turtle,
+          application/n-triples, or application/rdf+xml — triples are extracted
+          and stored in the graph, but schema validation is not performed.
           For non-RDF assets, use multipart/form-data or application/octet-stream
           (handled by the server outside the generated delegate pattern).
         content:
@@ -1279,6 +1282,15 @@ paths:
             schema:
               type: string
           application/vp+ld+json+jwt:
+            schema:
+              type: string
+          text/turtle:
+            schema:
+              type: string
+          application/n-triples:
+            schema:
+              type: string
+          application/rdf+xml:
             schema:
               type: string
         required: true
@@ -1394,6 +1406,15 @@ paths:
             schema:
               type: string
           application/json:
+            schema:
+              type: string
+          text/turtle:
+            schema:
+              type: string
+          application/n-triples:
+            schema:
+              type: string
+          application/rdf+xml:
             schema:
               type: string
       responses:
