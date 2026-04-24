@@ -106,7 +106,7 @@ public class AssetStoreImpl implements AssetStore {
         .statusTime(assetMetadata.getStatusDatetime())
         .content(assetMetadata.getContentAccessor())
         .expirationTime(expirationTime)
-            .contentType(assetMetadata.getContentType() != null ? assetMetadata.getContentType() : "application/ld+json")
+        .contentType(assetMetadata.getContentType() != null ? assetMetadata.getContentType() : "application/ld+json")
         .changeComment(assetMetadata.getChangeComment())
         .build();
 
@@ -253,6 +253,11 @@ public class AssetStoreImpl implements AssetStore {
     return dao.selectBySubjectId(id)
         .orElseThrow(() -> new NotFoundException(
             String.format("no active asset found for id %s", id)));
+  }
+
+  @Override
+  public boolean existsById(final String id) {
+    return dao.selectBySubjectId(id).isPresent();
   }
 
   @Override

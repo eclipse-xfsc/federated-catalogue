@@ -710,6 +710,51 @@ components:
           type: string
           description: Human-readable status message
 
+    StoredValidationResult:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique ID of the stored validation result
+        assetIds:
+          type: array
+          items:
+            type: string
+          description: Asset subject IRI(s) that were validated
+        validatorIds:
+          type: array
+          items:
+            type: string
+          description: Validator IDs (schema or trust framework) used for validation
+        validatorType:
+          type: string
+          enum: [SCHEMA, TRUST_FRAMEWORK]
+          description: Distinguishes on-demand schema validation from external trust framework validation results
+        conforms:
+          type: boolean
+          description: True if the asset passed validation
+        validatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the validation run
+        report:
+          type: string
+          nullable: true
+          description: Serialised validation report (SHACL Turtle / JSON violations / XSD error)
+        contentHash:
+          type: string
+          description: SHA-256 hex digest of core fields for offline tamper detection
+        graphSyncStatus:
+          type: string
+          enum: [SYNCED, FAILED]
+          nullable: true
+          description: Graph database synchronization status. FAILED indicates the result could not be written to the triple store and requires manual intervention.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp of record creation in the database
+
   parameters:
     OffsetParam:
       name: offset
@@ -800,6 +845,8 @@ tags:
     description: Schema validation module configuration.
   - name: GraphDatabaseAdmin
     description: Graph database status and backend switching.
+  - name: Validations
+    description: Stored validation results.
 paths:
   /admin/me:
     get:
@@ -1709,6 +1756,71 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /assets/{id}/validations:
+    get:
+      tags:
+        - Assets
+      summary: Get stored validation results for an asset
+      operationId: getAssetValidations
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: List of validation results for the asset
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StoredValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /validations/{id}:
+    get:
+      tags:
+        - Validations
+      summary: Get a single stored validation result by ID
+      operationId: getValidationResult
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: The stored validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /assets/{asset_hash}:
     delete:
       tags:

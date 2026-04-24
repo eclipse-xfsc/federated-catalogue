@@ -39,12 +39,11 @@ public class GraphDbConfig {
                 log.info("Graph already loaded");
                 return driver;
             }
-        }
-        if (!session.run("CALL n10s.graphconfig.show();").hasNext()) {
-            session.run("CALL n10s.graphconfig.init({handleVocabUris:'MAP',handleMultival:'ARRAY',multivalPropList:['https://w3id.org/gaia-x/2511#claimsGraphUri']});"); /// run only when creating a new graph
-            session.run("CREATE CONSTRAINT n10s_unique_uri IF NOT EXISTS FOR (r:Resource) REQUIRE r.uri IS UNIQUE");
-//            session.run("DENY MATCH {*} ON GRAPH neo4j NODES _GraphConfig TO `PUBLIC`");
-            log.info("n10s.graphconfig.init() not called second time.");
+            if (!session.run("CALL n10s.graphconfig.show();").hasNext()) {
+                session.run("CALL n10s.graphconfig.init({handleVocabUris:'MAP',handleMultival:'ARRAY',multivalPropList:['https://w3id.org/gaia-x/2511#claimsGraphUri']});");
+                session.run("CREATE CONSTRAINT n10s_unique_uri IF NOT EXISTS FOR (r:Resource) REQUIRE r.uri IS UNIQUE");
+                log.info("n10s.graphconfig.init() not called second time.");
+            }
         }
         log.info("n10 procedure and Constraints are loaded successfully");
         return driver;

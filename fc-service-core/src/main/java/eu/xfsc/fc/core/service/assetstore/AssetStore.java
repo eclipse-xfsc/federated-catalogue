@@ -117,6 +117,14 @@ public interface AssetStore {
   AssetMetadata getById(String id);
 
   /**
+    * Check whether an active asset exists for the given IRI (subjectId).
+   *
+   * @param id The IRI that identifies the asset.
+    * @return true if an active asset exists, false otherwise.
+   */
+    boolean existsById(String id);
+
+  /**
    * Fetch an active asset's file content by its IRI (subjectId).
    *
    * @param id The IRI that identifies the asset.

@@ -16,4 +16,5 @@
     <include file="changesets/010-admin-config-tables.xml" relativeToChangelogFile="true" />
     <include file="changesets/011-audit-user-tracking.xml" relativeToChangelogFile="true" />
     <include file="changesets/012-asset-links.xml" relativeToChangelogFile="true" />
+    <include file="changesets/013-validation-result.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

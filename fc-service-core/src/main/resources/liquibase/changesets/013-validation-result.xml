@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+  <changeSet id="013-validation-result-table" author="peleskek">
+    <createTable tableName="validation_result">
+      <column name="id" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="asset_ids" type="TEXT[]">
+        <constraints nullable="false"/>
+      </column>
+      <column name="validator_ids" type="TEXT[]">
+        <constraints nullable="false"/>
+      </column>
+      <column name="validator_type" type="VARCHAR(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="conforms" type="BOOLEAN">
+        <constraints nullable="false"/>
+      </column>
+      <column name="validated_at" type="TIMESTAMP WITH TIME ZONE">
+        <constraints nullable="false"/>
+      </column>
+      <column name="report" type="JSONB"/>
+      <column name="content_hash" type="VARCHAR(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="graph_sync_status" type="VARCHAR(16)"/>
+      <column name="created_at" type="TIMESTAMP WITH TIME ZONE">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <createSequence sequenceName="validation_result_seq"
+        startValue="1" incrementBy="50"/>
+
+    <!-- GIN (Generalized Inverted Index) index — indexes each array element separately,
+         enabling efficient = ANY(asset_ids) queries on TEXT[] array columns -->
+    <sql>CREATE INDEX idx_validation_result_asset_ids
+         ON validation_result USING GIN (asset_ids);</sql>
+
+  </changeSet>
+
+</databaseChangeLog>

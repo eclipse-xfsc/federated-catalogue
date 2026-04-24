@@ -62,6 +62,9 @@ import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
+import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
+import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
+import eu.xfsc.fc.core.service.validation.ValidationResultStoreImpl;
 import eu.xfsc.fc.core.util.GraphRebuilder;
 import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
@@ -90,6 +93,7 @@ import lombok.extern.slf4j.Slf4j;
         DocumentLoaderProperties.class,
         FileStoreConfig.class,
         FormatDetector.class,
+        GraphRebuilder.class,
         HttpDocumentResolver.class,
         IriGenerator.class,
         IriValidator.class,
@@ -108,6 +112,9 @@ import lombok.extern.slf4j.Slf4j;
         SchemaValidationServiceImpl.class,
         SecurityAuditorAware.class,
         ValidatorCacheJpaDao.class,
+        ValidationResultGraphWriter.class,
+        ValidationResultHasher.class,
+        ValidationResultStoreImpl.class,
         Vc2Processor.class,
         VerificationServiceImpl.class
 })
@@ -143,10 +150,7 @@ public class AssetStoreCompositeTest {
     private GraphStore graphStore;
 
     @Autowired
-    private ProtectedNamespaceFilter protectedNamespaceFilter;
-
-  @Autowired
-  private AssetRepository assetRepository;
+    private GraphRebuilder graphRebuilder;
 
     @AfterEach
     public void storageSelfCleaning() {
@@ -220,8 +224,7 @@ public class AssetStoreCompositeTest {
                 new GraphQuery("MATCH (n) RETURN n", null)).getResults();
         Assertions.assertEquals(1, claims.size());
 
-        GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore, claimExtractionService, protectedNamespaceFilter, assetRepository);
-        reBuilder.rebuildGraphDb(1, 0, 1, 1);
+        graphRebuilder.rebuildGraphDb(1, 0, 1, 1);
 
         claims = graphStore.queryData(
                 new GraphQuery("MATCH (n) RETURN n", null)).getResults();
@@ -261,8 +264,7 @@ public class AssetStoreCompositeTest {
         // Delete graph claims, then rebuild — simulates a graph rebuild from stored raw credentials
         graphStore.deleteClaims(assetId);
 
-        GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore, claimExtractionService, protectedNamespaceFilter, assetRepository);
-        reBuilder.rebuildGraphDb(1, 0, 1, 1);
+        graphRebuilder.rebuildGraphDb(1, 0, 1, 1);
 
         // Verify fcmeta claims are still filtered after rebuild
         rels = graphStore.queryData(
@@ -308,9 +310,7 @@ public class AssetStoreCompositeTest {
         Assertions.assertTrue(nodes.isEmpty(), "Graph must be empty after deleting claims");
 
         // Rebuild
-        GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore,
-                claimExtractionService, protectedNamespaceFilter, assetRepository);
-        reBuilder.rebuildGraphDb(1, 0, 1, 10);
+        graphRebuilder.rebuildGraphDb(1, 0, 1, 10);
 
         // Assert — FAILS with current code: addAssetToGraph() calls extractCredentialClaims()
         // which returns empty for N-Triples content, leaving the graph empty after rebuild

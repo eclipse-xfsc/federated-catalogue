@@ -35,12 +35,15 @@ import eu.xfsc.fc.api.generated.model.Asset;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.api.generated.model.Assets;
 import eu.xfsc.fc.api.generated.model.Error;
+import eu.xfsc.fc.core.dao.validation.ValidationResult;
+import eu.xfsc.fc.core.dao.validation.ValidationResultRepository;
+import eu.xfsc.fc.core.dao.validation.ValidatorType;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
 import eu.xfsc.fc.core.pojo.ContentAccessorBinary;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.filestore.FileStore;
@@ -106,6 +109,10 @@ public class AssetControllerTest {
     private SchemaStore schemaStore;
     @Autowired
     private VerificationService verificationService;
+    @Autowired
+    private ValidationResultRepository validationResultRepository;
+    @Autowired
+    private ValidationResultHasher validationResultHasher;
     private static AssetMetadata assetMeta;
     
     @BeforeAll
@@ -138,8 +145,9 @@ public class AssetControllerTest {
         } catch (NotFoundException | IOException e) {
             // expected if not created
         }
+        validationResultRepository.deleteAll();
     }
-    
+
     @Test
     public void readAssetsShouldReturnUnauthorizedResponse() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/assets")
@@ -701,6 +709,138 @@ public class AssetControllerTest {
                 .andExpect(status().isOk());
     }
 
+    // ===== Validation Result Retrieval Endpoints - Security Tests =====
+
+    @Test
+    public void getAssetValidations_withoutAuth_shouldReturnUnauthorized() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/assets/did:web:example.org:asset1/validations")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser  // No specific role
+    public void getAssetValidations_withoutRequiredRole_shouldReturnForbidden() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/assets/did:web:example.org:asset1/validations")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = {ASSET_READ})
+    public void getAssetValidations_nonExistentAsset_returns404() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/assets/did:web:example.org:nonexistent/validations")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = {ASSET_READ})
+    public void getAssetValidations_existingAssetNoResults_returnsEmptyList() throws Exception {
+        assetStorePublisher.storeCredential(assetMeta, getStaticVerificationResult());
+
+        String body = mockMvc.perform(MockMvcRequestBuilders.get(
+                        "/assets/" + assetMeta.getId() + "/validations")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<?> list = objectMapper.readValue(body, List.class);
+        assertTrue(list.isEmpty(), "Expected empty list for asset with no stored validations");
+    }
+
+    @Test
+    @WithMockUser(roles = {ASSET_READ})
+    public void getAssetValidations_withResults_returnsContentAndRespectsLimit() throws Exception {
+        assetStorePublisher.storeCredential(assetMeta, getStaticVerificationResult());
+
+        for (int i = 1; i <= 3; i++) {
+            ValidationResult vr = new ValidationResult();
+            vr.setAssetIds(new String[]{assetMeta.getId()});
+            vr.setValidatorIds(new String[]{"https://example.org/schema/" + i});
+            vr.setValidatorType(ValidatorType.SCHEMA);
+            vr.setConforms(true);
+            vr.setValidatedAt(java.time.Instant.now());
+            vr.setContentHash(validationResultHasher.hash(vr));
+            validationResultRepository.saveAndFlush(vr);
+        }
+
+        String allBody = mockMvc.perform(MockMvcRequestBuilders.get(
+                        "/assets/" + assetMeta.getId() + "/validations")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<?> allResults = objectMapper.readValue(allBody, List.class);
+        assertEquals(3, allResults.size(), "Expected 3 stored validation results");
+
+        String limitedBody = mockMvc.perform(MockMvcRequestBuilders.get(
+                        "/assets/" + assetMeta.getId() + "/validations")
+                        .param("offset", "0").param("limit", "1")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<?> limited = objectMapper.readValue(limitedBody, List.class);
+        assertEquals(1, limited.size(), "limit=1 should return exactly 1 result");
+    }
+
+    @Test
+    public void getValidationResult_withoutAuth_shouldReturnUnauthorized() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/validations/1")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser  // No specific role
+    public void getValidationResult_withoutRequiredRole_shouldReturnForbidden() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/validations/1")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = {ASSET_READ})
+    public void getValidationResult_withReadRole_shouldReturnSuccessOrNotFound() throws Exception {
+        // Returns 404 if validation result doesn't exist, 200 if it does
+        mockMvc.perform(MockMvcRequestBuilders.get("/validations/999999")
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());  // Non-existent validation result
+    }
+
+    @Test
+    @WithMockUser(roles = {ASSET_READ})
+    public void getValidationResult_existingId_returnsResultWithCorrectFields() throws Exception {
+        ValidationResult vr = new ValidationResult();
+        vr.setAssetIds(new String[]{"did:web:example.org:test-asset"});
+        vr.setValidatorIds(new String[]{"https://example.org/schema/1"});
+        vr.setValidatorType(ValidatorType.SCHEMA);
+        vr.setConforms(true);
+        vr.setValidatedAt(java.time.Instant.parse("2024-06-01T12:00:00Z"));
+        vr.setContentHash(validationResultHasher.hash(vr));
+        ValidationResult saved = validationResultRepository.saveAndFlush(vr);
+
+        String body = mockMvc.perform(MockMvcRequestBuilders.get("/validations/" + saved.getId())
+                        .with(csrf())
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        var dto = objectMapper.readValue(body, java.util.Map.class);
+        assertEquals(saved.getId().intValue(), dto.get("id"));
+        assertEquals(List.of("did:web:example.org:test-asset"), dto.get("assetIds"));
+        assertEquals("SCHEMA", dto.get("validatorType"));
+        assertEquals(true, dto.get("conforms"));
+        assertNotNull(dto.get("contentHash"));
+    }
+
     // ===== Helpers =====
 
     private static AssetMetadata createAssetMetadata() throws IOException {
@@ -721,7 +861,7 @@ public class AssetControllerTest {
         return assetMeta;
     }
 
-    private CredentialVerificationResultOffering getStaticVerificationResult() {
+    private CredentialVerificationResult getStaticVerificationResult() {
         return verificationService.verifyOfferingCredential(assetMeta.getContentAccessor());
     }
 }
