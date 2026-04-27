@@ -1,11 +1,13 @@
 package eu.xfsc.fc.core.util;
 
 import eu.xfsc.fc.core.dao.assets.AssetRepository;
+import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
@@ -20,6 +22,8 @@ import java.util.function.BiConsumer;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,6 +44,7 @@ public class GraphRebuilder {
     private final ClaimExtractionService claimExtractionService;
   private final ProtectedNamespaceFilter protectedNamespaceFilter;
   private final AssetRepository assetRepository;
+  private final ValidationResultStore validationResultStore;
 
   /**
    * Starts rebuilding the graphDb, blocking until finished or interrupted.
@@ -117,6 +122,11 @@ public class GraphRebuilder {
     // This must NOT be merged into addAssetToGraph() because non-RDF (human-readable) assets
     // have contentAccessor = null; calling extractClaims(null) would throw a NullPointerException.
     rebuildLinkTriples();
+
+    // After asset claims are restored, rebuild validation result triples
+    log.info("Rebuilding validation result triples...");
+    rebuildValidationResults(progressCallback);
+    log.info("Graph rebuild complete (assets + validation results)");
   }
 
   /**
@@ -171,5 +181,53 @@ public class GraphRebuilder {
         }
         return claims;
     }
+
+  /**
+   * Rebuilds validation result triples in the graph DB from PostgreSQL records.
+   *
+   * <p>Iterates through all {@link ValidationResult} entities and re-projects their
+   * {@code fcmeta:} triples to the graph store. Updates {@code graph_sync_status} to
+   * {@code SYNCED} on success; leaves as {@code FAILED} if graph write fails.</p>
+   *
+   * <p>This pass runs after asset claim restoration to ensure validation result IRIs
+   * can reference existing asset subjects.</p>
+   *
+   * @param progressCallback Optional callback for progress reporting (count, exception). May be null.
+   */
+  public void rebuildValidationResults(BiConsumer<Integer, Exception> progressCallback) {
+    final int batchSize = 100;
+    int pageNumber = 0;
+    long totalProcessed = 0;
+    long totalSucceeded = 0;
+    long totalFailed = 0;
+
+    Page<ValidationResult> page;
+    do {
+      page = validationResultStore.findAll(PageRequest.of(pageNumber++, batchSize));
+      log.debug("rebuildValidationResults; processing page {} with {} results",
+          pageNumber - 1, page.getNumberOfElements());
+
+      for (ValidationResult result : page.getContent()) {
+        Exception caught = null;
+        try {
+          validationResultStore.syncToGraph(result, graphStore);
+          totalSucceeded++;
+          log.debug("rebuildValidationResults; restored triples for validation result id={}", result.getId());
+        } catch (Exception e) {
+          log.error("rebuildValidationResults; failed to restore validation result id={}", result.getId(), e);
+          totalFailed++;
+          caught = e;
+        } finally {
+          totalProcessed++;
+          if (progressCallback != null) {
+            progressCallback.accept(1, caught);
+          }
+        }
+      }
+    } while (page.hasNext());
+
+    log.info("rebuildValidationResults; complete. Processed: {}, Succeeded: {}, Failed: {}",
+        totalProcessed, totalSucceeded, totalFailed);
+  }
 
 }

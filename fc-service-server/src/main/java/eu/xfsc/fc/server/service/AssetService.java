@@ -6,10 +6,12 @@ import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.api.generated.model.AssetVersion;
 import eu.xfsc.fc.api.generated.model.AssetVersionList;
 import eu.xfsc.fc.api.generated.model.Assets;
+import eu.xfsc.fc.api.generated.model.StoredValidationResult;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.AssetType;
@@ -40,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import eu.xfsc.fc.server.util.OffsetBasedPageRequest;
 import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
@@ -71,6 +74,7 @@ public class AssetService implements AssetsApiDelegate {
   private final AssetUploadService assetUploadService;
   @Qualifier("assetFileStore") private final FileStore assetFileStore;
   private final AssetProperties assetProperties;
+  private final ValidationResultStore validationResultStore;
 
   /**
    * Service method for GET /assets : Get the list of metadata of assets in the Catalogue.
@@ -591,5 +595,29 @@ public class AssetService implements AssetsApiDelegate {
     filterParams.setLimit(limit);
     filterParams.setOffset(offset);
     return filterParams;
+  }
+
+  /**
+   * GET /assets/{id}/validations — returns stored validation results for the asset.
+   *
+   * @param id     asset subject IRI
+   * @param offset number of results to skip (default 0)
+   * @param limit  maximum number of results to return (default 100)
+   */
+  @Override
+  public ResponseEntity<List<StoredValidationResult>> getAssetValidations(
+      String id, Integer offset, Integer limit) {
+    log.debug("getAssetValidations; id={}, offset={}, limit={}", id, offset, limit);
+    if (!assetStorePublisher.existsById(id)) {
+      throw new NotFoundException("no active asset found for id %s".formatted(id));
+    }
+    int effectiveOffset = offset != null ? offset : 0;
+    int effectiveLimit = limit != null ? limit : 100;
+    List<StoredValidationResult> results =
+        validationResultStore.getByAssetId(id, new OffsetBasedPageRequest(effectiveOffset, effectiveLimit))
+            .stream()
+            .map(ValidationResultMapper::toDto)
+            .toList();
+    return ResponseEntity.ok(results);
   }
 }
