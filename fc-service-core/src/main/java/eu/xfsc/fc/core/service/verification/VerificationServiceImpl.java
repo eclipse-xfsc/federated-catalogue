@@ -5,15 +5,11 @@ import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.RESOU
 import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.SERVICE_OFFERING;
 import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.UNKNOWN;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
@@ -45,7 +41,6 @@ public class VerificationServiceImpl implements VerificationService {
   private boolean verifyVCSignature;
 
   @Autowired
-  @Qualifier("credentialVerificationStrategy")
   private VerificationStrategy credentialStrategy;
 
   @Autowired
@@ -122,28 +117,6 @@ public class VerificationServiceImpl implements VerificationService {
     return resolveStrategy(payload).verifyCredential(payload, false, UNKNOWN,
             verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
   }
-
-  /**
-   * A method that returns a list of claims from the given RDF credential payload without performing verification.
-   *
-   * @param payload the RDF credential content to extract claims from
-   * @return a list of claims.
-   */
-  @Override
-  public List<CredentialClaim> extractClaims(ContentAccessor payload) {
-    return resolveStrategy(payload).extractClaims(payload);
-  }
-
-  /**
-   * Override URI set for one of the Trust Framework base classes.
-   *
-   * @param baseClass The base class for which the URI is to be overwritten
-   * @param uri New URI
-   */
-  public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
-    credentialStrategy.setBaseClassUri(baseClass, uri);
-  }
-
 
   /* Credential validation against SHACL Schemas — delegated to SchemaValidationService */
 

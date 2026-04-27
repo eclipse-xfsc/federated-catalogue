@@ -9,6 +9,7 @@ import com.apicatalog.jsonld.document.Document;
 import com.apicatalog.jsonld.document.JsonDocument;
 import com.apicatalog.rdf.api.RdfQuadConsumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.rdf.model.AnonId;
 import org.apache.jena.rdf.model.Model;
@@ -19,7 +20,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -40,9 +41,9 @@ public class CredentialSubjectClaimExtractor implements ClaimExtractor {
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  public List<CredentialClaim> extractClaims(ContentAccessor content) throws Exception {
+  public List<RdfClaim> extractClaims(ContentAccessor content) throws Exception {
     log.debug("extractClaims.enter; got content: {}", content);
-    List<CredentialClaim> claims = new ArrayList<>();
+    List<RdfClaim> claims = new ArrayList<>();
     Document document = JsonDocument.of(content.getContentAsStream());
     JsonArray jsonLdArray = JsonLd.expand(document).get();
     log.trace("extractClaims; expanded: {}", jsonLdArray);
@@ -64,7 +65,7 @@ public class CredentialSubjectClaimExtractor implements ClaimExtractor {
     return claims;
   }
 
-  private void addClaims(List<CredentialClaim> claims, JsonObject verifiableCredential) throws JsonLdError {
+  private void addClaims(List<RdfClaim> claims, JsonObject verifiableCredential) throws JsonLdError {
     JsonArray credentialSubjects = verifiableCredential.getJsonArray(CREDENTIAL_SUBJECT_URI);
     for (JsonValue credentialSubject : credentialSubjects) {
       Document credentialSubjectDocument = JsonDocument.of(credentialSubject.asJsonObject());

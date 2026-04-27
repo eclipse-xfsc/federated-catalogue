@@ -1,7 +1,6 @@
 package eu.xfsc.fc.core.service.verification;
 
 import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
@@ -9,7 +8,6 @@ import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 
-import java.util.List;
 import org.springframework.stereotype.Service;
 
 /**
@@ -68,14 +66,6 @@ public interface VerificationService {
    */
   CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException;
-
-  /**
-   * Extract claims from the given RDF payload. This does not do any validation of the payload.
-   *
-   * @param payload The RDF payload to extract claims from.
-   * @return The list of extracted claims.
-   */
-  List<CredentialClaim> extractClaims(ContentAccessor payload);
 
   /**
    * The function validates the credential against the given schema.

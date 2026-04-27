@@ -138,12 +138,10 @@ federated-catalogue:
       - application/vp+ld+json
       - application/vc+jwt
       - application/vp+jwt
-      # Uncomment as VerificationService gains support for these formats:
-      # - text/turtle
-      # - application/n-triples
-      # - application/rdf+xml
-      # - application/n-quads
-      # - application/trig
+      # non-credential RDF formats (claim extraction only; schema validation is not supported)
+      - text/turtle
+      - application/n-triples
+      - application/rdf+xml
   assets:
     human-readable-content-types:
       - application/pdf

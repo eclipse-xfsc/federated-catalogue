@@ -18,29 +18,28 @@ import com.apicatalog.jsonld.loader.SchemeRouter;
 import com.danubetech.verifiablecredentials.VerifiableCredential;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
 import com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.dao.trustframework.TrustFramework;
 import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkRepository;
 import eu.xfsc.fc.core.exception.ClientException;
+import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
+import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
-import eu.xfsc.fc.core.service.verification.claims.ClaimExtractor;
-import eu.xfsc.fc.core.service.verification.claims.DanubeTechClaimExtractor;
-import eu.xfsc.fc.core.service.verification.claims.CredentialSubjectClaimExtractor;
+import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -49,6 +48,7 @@ import foundation.identity.jsonld.JsonLDObject;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.jena.riot.RiotException;
 import org.apache.jena.riot.system.stream.StreamManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,8 +93,6 @@ import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.UNKNO
 @Component
 @RequiredArgsConstructor
 public class CredentialVerificationStrategy implements VerificationStrategy {
-
-    private static final ClaimExtractor[] extractors = new ClaimExtractor[]{new CredentialSubjectClaimExtractor(), new DanubeTechClaimExtractor()};
 
     private final ObjectMapper objectMapper;
 
@@ -161,6 +159,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private final JwtSignatureVerifier jwtSignatureVerifier;
     private final FormatDetector formatDetector;
     private final LoireJwtParser loireJwtParser;
+    private final ClaimExtractionService claimExtractionService;
 
     @Value("${federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url:}")
     private String trustAnchorAddr;
@@ -214,6 +213,31 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
         VerificationContext ctx = detectAndUnwrap(payload, verifyVCSignatures || verifyVPSignatures);
 
+        // non-credential RDF — UNKNOWN non-JWT bypasses the VC/VP pipeline
+        if (ctx.format() == CredentialFormat.UNKNOWN) {
+            try {
+                List<RdfClaim> claims = claimExtractionService.extractAllTriples(ctx.payload());
+                if (claims.isEmpty()) {
+                    throw new ClientException("Non-credential RDF content contains no triples");
+                }
+                FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "non-credential extraction");
+                CredentialVerificationResult result = new NonCredentialVerificationResult(
+                        Instant.now(), AssetStatus.ACTIVE.getValue(), filtered.claims());
+                if (filtered.hasWarning()) {
+                    result.setWarnings(List.of(filtered.warning()));
+                }
+                log.debug("verifyCredential.exit; non-credential RDF, claims: {}",
+                        filtered.claims() == null ? "null" : filtered.claims().size());
+                return result;
+            } catch (ClientException ex) {
+                throw ex;
+            } catch (RiotException ex) {
+                throw new ClientException("Non-credential RDF parse failed: " + ex.getMessage(), ex);
+            } catch (Exception ex) {
+                throw new ServerException("Failed to read non-credential RDF content", ex);
+            }
+        }
+
         // syntactic + semantic validation
         JsonLDObject ld = parseContent(ctx.payload());
         ld.setDocumentLoader(this.documentLoader);
@@ -249,33 +273,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return result;
     }
 
-    public List<CredentialClaim> extractClaims(ContentAccessor payload) {
-        // Make sure our interceptors are in place.
-        initLoaders();
-        List<CredentialClaim> claims = null;
-        for (ClaimExtractor extra : extractors) {
-            try {
-                claims = extra.extractClaims(payload);
-                if (claims != null && !claims.isEmpty()) {
-                    break;
-                }
-            } catch (Exception ex) {
-                log.error("extractClaims.error using {}", extra.getClass().getName(), ex);
-            }
-        }
-        return claims;
-    }
-
-    public void setBaseClassUri(TrustFrameworkBaseClass baseClass, String uri) {
-        baseClassUris.put(baseClass, List.of(uri));
-    }
-
     /**
      * Phase 1: Detect credential format, verify JWT signature, and unwrap to JSON-LD.
      * After this method, the payload is always JSON-LD.
-     *
-     * <p>TODO: signature verification could move to a dedicated component when this class is split.
-     */
+     **/
     private VerificationContext detectAndUnwrap(ContentAccessor payload, boolean verifySigs) {
         String body = payload.getContentAsString().strip();
         payload = new ContentAccessorDirect(body, payload.getContentType());
@@ -295,8 +296,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             }
         }
 
-        // Reject ambiguous/unrecognizable JWTs — UNKNOWN non-JWT payloads fall through
-        // to parseCredentials() for a more specific type error.
+        // Reject ambiguous/unrecognizable JWTs — UNKNOWN non-JWT payloads are routed
+        // to JenaAllTriplesExtractor in verifyCredential() before parseContent().
         if (format == CredentialFormat.UNKNOWN && body.startsWith(JWT_PREFIX)) {
             throw new ClientException(
                 "Unrecognizable JWT credential format — JWT does not have recognized "
@@ -315,22 +316,13 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
 
         // Version dispatch — unwrap to JSON-LD
-        // NOTE: A future VcStructureDetector.isVcStructured() call MUST be placed AFTER
-        // unwrapping, not before — a JWT-wrapped VC 2.0 payload would not be recognised as a VC.
         payload = switch (format) {
             case GAIAX_V2_LOIRE -> loireJwtParser.unwrap(payload);
             case VC2_DANUBETECH -> vc2Processor.preProcess(payload);
-            default -> {
-                // UNKNOWN non-JWT: distinguish malformed JSON (syntactic error) from
-                // unrecognized-but-valid JSON-LD (fall through to parseCredentials()
-                // for a specific type error).
-                try {
-                    objectMapper.readTree(body);
-                } catch (JsonProcessingException ex) {
-                    throw new ClientException("Syntactic error: " + ex.getMessage(), ex);
-                }
-                yield payload;
-            }
+            // UNKNOWN non-JWT: non-credential RDF — payload already normalized at method start;
+            // no unwrapping needed. verifyCredential() routes UNKNOWN to JenaAllTriplesExtractor
+            // before parseContent().
+            default -> payload;
         };
 
         return new VerificationContext(body, format, isJwt, payload, jwtValidator);
@@ -414,7 +406,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         // EVC wrappers with data: URIs. This is intentionally NOT in detectAndUnwrap()
         // because signature verification needs the original EVC entries intact.
         ContentAccessor claimPayload = resolveInnerEnvelopedCredentials(payload);
-        List<CredentialClaim> claims = extractClaims(claimPayload);
+        List<RdfClaim> claims = claimExtractionService.extractCredentialClaims(claimPayload);
         FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "claims extraction");
         claims = filtered.claims();
         log.debug("verifyCredential; claims extracted: {}, time taken: {}",
@@ -426,11 +418,11 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return filtered;
     }
 
-    private void validateSubjectUniqueness(List<CredentialClaim> claims) {
+    private void validateSubjectUniqueness(List<RdfClaim> claims) {
         Set<String> subjects = new HashSet<>();
         Set<String> objects = new HashSet<>();
         if (claims != null && !claims.isEmpty()) {
-            for (CredentialClaim claim : claims) {
+            for (RdfClaim claim : claims) {
                 subjects.add(claim.getSubjectString());
                 objects.add(claim.getObjectString());
             }
@@ -450,7 +442,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         }
     }
 
-    private void validateSchema(List<CredentialClaim> claims) {
+    private void validateSchema(List<RdfClaim> claims) {
         eu.xfsc.fc.core.pojo.SchemaValidationResult result =
             schemaValidationService.validateClaimsAgainstCompositeSchema(claims);
         if (result == null || !result.isConforming()) {
@@ -499,7 +491,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      * Phase 5: Build the typed result object based on the resolved base class.
      */
     private CredentialVerificationResult assembleResult(TrustFrameworkBaseClass baseClass,
-        TypedCredentials typedCredentials, List<CredentialClaim> claims, List<Validator> validators) {
+                                                        TypedCredentials typedCredentials, List<RdfClaim> claims, List<Validator> validators) {
         String id = typedCredentials.getID();
         String issuer = typedCredentials.getIssuer();
         Instant issuedDate = typedCredentials.getIssuanceDate();

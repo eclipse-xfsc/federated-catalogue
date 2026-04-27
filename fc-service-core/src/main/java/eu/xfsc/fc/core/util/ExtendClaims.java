@@ -1,5 +1,6 @@
 package eu.xfsc.fc.core.util;
 
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.StatementImpl;
 import org.apache.jena.vocabulary.RDF;
@@ -16,7 +17,7 @@ import java.util.Set;
  * Adds a {@code claimsGraphUri} property linking claims to their source credential subject IRI.
  * For W3C credentials, this is the {@code credentialSubject.id}; for other RDF, it's the main subject IRI.
  * 
- * @see eu.xfsc.fc.core.pojo.CredentialClaim
+ * @see RdfClaim
  */
 public class ExtendClaims {
 

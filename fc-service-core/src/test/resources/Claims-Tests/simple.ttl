@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+
+<http://example.org/item1> a <http://example.org/Product> ;
+    ex:name "Test" ;
+    ex:version "1.0" .

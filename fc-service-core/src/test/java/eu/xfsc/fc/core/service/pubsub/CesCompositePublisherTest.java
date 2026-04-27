@@ -32,7 +32,11 @@ import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
+import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
+import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
+import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
 import eu.xfsc.fc.core.service.verification.FormatDetector;
+import eu.xfsc.fc.core.service.verification.LoireMatcher;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
 import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
@@ -80,7 +84,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         AssetStoreConfig.class,
         CesCompositePublisherTest.TestApplication.class,
         CesTrackerJpaDao.class,
+        ClaimExtractionService.class,
         CredentialVerificationStrategy.class,
+        DanubeTechFormatMatcher.class,
         DatabaseConfig.class,
         DidDocumentResolver.class,
         DidResolverConfig.class,
@@ -93,7 +99,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         IriValidator.class,
         JwtContentPreprocessor.class,
         JacksonConfig.class,
+        JenaAllTriplesExtractor.class,
         JwtSignatureVerifier.class,
+        LoireMatcher.class,
         LoireJwtParser.class,
         ProtectedNamespaceFilter.class,
         ProtectedNamespaceProperties.class,

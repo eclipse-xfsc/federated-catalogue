@@ -2,8 +2,8 @@ package eu.xfsc.fc.core.service.verification;
 
 import java.util.List;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.jena.riot.system.stream.StreamManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +11,13 @@ import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
 import jakarta.annotation.PostConstruct;
 
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
-import eu.xfsc.fc.core.service.verification.claims.ClaimExtractor;
-import eu.xfsc.fc.core.service.verification.claims.DanubeTechClaimExtractor;
-import eu.xfsc.fc.core.service.verification.claims.CredentialSubjectClaimExtractor;
+import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.util.ClaimValidator;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,26 +31,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SchemaValidationServiceImpl implements SchemaValidationService {
 
-    /**
-     * Ordered array of claim extractors tried in sequence until one succeeds.
-     * {@link CredentialSubjectClaimExtractor} is tried first (Titanium JSON-LD processor),
-     * falling back to {@link DanubeTechClaimExtractor} (Danube Tech LD library).
-     */
-    private static final ClaimExtractor[] EXTRACTORS = new ClaimExtractor[]{
-        new CredentialSubjectClaimExtractor(), new DanubeTechClaimExtractor()
-    };
-
-    @Autowired
-    private SchemaStore schemaStore;
-
-    @Autowired
+  private final ClaimExtractionService claimExtractionService;
+  private final SchemaStore schemaStore;
     @Qualifier("contextCacheFileStore")
-    private FileStore fileStore;
-
-    @Autowired
-    private DocumentLoader documentLoader;
+    private final FileStore fileStore;
+  private final DocumentLoader documentLoader;
 
     private StreamManager streamManager;
 
@@ -71,7 +57,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
             if (schema == null) {
                 schema = schemaStore.getCompositeSchema(SchemaStore.SchemaType.SHAPE);
             }
-            List<CredentialClaim> claims = extractClaims(payload);
+            List<RdfClaim> claims = extractClaims(payload);
             result = validateClaimsAgainstSchema(claims, schema);
         } catch (Exception exc) {
             log.info("validateCredentialAgainstSchema.error: {}", exc.getMessage());
@@ -83,7 +69,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
 
     /** {@inheritDoc} */
     @Override
-    public SchemaValidationResult validateClaimsAgainstCompositeSchema(List<CredentialClaim> claims) {
+    public SchemaValidationResult validateClaimsAgainstCompositeSchema(List<RdfClaim> claims) {
         log.debug("validateClaimsAgainstCompositeSchema.enter;");
         SchemaValidationResult result = null;
         try {
@@ -99,7 +85,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
 
     /** {@inheritDoc} */
     @Override
-    public SchemaValidationResult validateClaimsAgainstSchema(List<CredentialClaim> claims, ContentAccessor schema) {
+    public SchemaValidationResult validateClaimsAgainstSchema(List<RdfClaim> claims, ContentAccessor schema) {
         String report = ClaimValidator.validateClaimsBySchema(claims, schema, streamManager);
         return new SchemaValidationResult(report == null, report);
     }
@@ -123,26 +109,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
         streamManager = clone;
     }
 
-    /**
-     * Extracts RDF claims from a credential payload by trying each
-     * {@link ClaimExtractor} in order. Returns the first successful extraction
-     * result, or {@code null} if all extractors fail.
-     *
-     * @param payload the credential to extract claims from
-     * @return extracted claims, or {@code null} if extraction fails
-     */
-    private List<CredentialClaim> extractClaims(ContentAccessor payload) {
-        List<CredentialClaim> claims = null;
-        for (ClaimExtractor extractor : EXTRACTORS) {
-            try {
-                claims = extractor.extractClaims(payload);
-                if (claims != null && !claims.isEmpty()) {
-                    break;
-                }
-            } catch (Exception ex) {
-                log.error("extractClaims.error using {}: {}", extractor.getClass().getName(), ex.getMessage());
-            }
-        }
-        return claims;
+    private List<RdfClaim> extractClaims(ContentAccessor payload) {
+        return claimExtractionService.extractCredentialClaims(payload);
     }
 }

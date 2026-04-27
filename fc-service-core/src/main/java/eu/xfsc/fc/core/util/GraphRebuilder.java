@@ -1,13 +1,14 @@
 package eu.xfsc.fc.core.util;
 
 import eu.xfsc.fc.core.dao.assets.AssetRepository;
-import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.AssetType;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.service.verification.VerificationService;
+import eu.xfsc.fc.core.service.verification.VerificationConstants;
+import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -36,7 +37,7 @@ public class GraphRebuilder {
 
   private final AssetStore assetStore;
   private final GraphStore graphStore;
-  private final VerificationService verificationService;
+    private final ClaimExtractionService claimExtractionService;
   private final ProtectedNamespaceFilter protectedNamespaceFilter;
   private final AssetRepository assetRepository;
 
@@ -146,14 +147,29 @@ public class GraphRebuilder {
     }
   }
 
-  private void addAssetToGraph(String hash) {
+    private void addAssetToGraph(String hash) throws Exception {
     AssetMetadata assetMetaData = assetStore.getByHash(hash);
     if (assetMetaData.getContentAccessor() == null) {
       return;
     }
-    List<CredentialClaim> claims = verificationService.extractClaims(assetMetaData.getContentAccessor());
+        List<RdfClaim> claims = extractClaims(assetMetaData);
     claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
     graphStore.addClaims(claims, assetMetaData.getId());
   }
+
+    private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) throws Exception {
+        String contentType = assetMetaData.getContentType();
+        if (VerificationConstants.MEDIA_TYPE_NTRIPLES.equals(contentType)
+                || VerificationConstants.MEDIA_TYPE_TURTLE.equals(contentType)
+                || VerificationConstants.MEDIA_TYPE_RDF_XML.equals(contentType)) {
+            return claimExtractionService.extractAllTriples(assetMetaData.getContentAccessor());
+        }
+        List<RdfClaim> claims = claimExtractionService.extractCredentialClaims(assetMetaData.getContentAccessor());
+        if (claims == null || claims.isEmpty()) {
+            log.debug("extractClaims; credential extraction returned empty for {}, falling back to all-triples", contentType);
+            return claimExtractionService.extractAllTriples(assetMetaData.getContentAccessor());
+        }
+        return claims;
+    }
 
 }

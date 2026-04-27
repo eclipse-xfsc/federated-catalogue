@@ -8,7 +8,7 @@ import java.util.List;
  *
  * @see eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter
  */
-public record FilteredClaims(List<CredentialClaim> claims, String warning) {
+public record FilteredClaims(List<RdfClaim> claims, String warning) {
 
   public boolean hasWarning() {
     return warning != null;

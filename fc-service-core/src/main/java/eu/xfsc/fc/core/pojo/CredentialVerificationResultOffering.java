@@ -17,16 +17,16 @@ public class CredentialVerificationResultOffering extends CredentialVerification
    * @param verificationTimestamp time stamp of verification
    * @param lifecycleStatus status according to GAIA-X lifecycle
    * @param issuer Issuer of the offering
-   * @param issuedDate issuing date of the credential
+   * @param issuedDateTime issuing date of the credential
    */
   public CredentialVerificationResultOffering(Instant verificationTimestamp, String lifecycleStatus, String issuer, Instant issuedDateTime,
-          String id, List<CredentialClaim> claims, List<Validator> validators) {
+                                              String id, List<RdfClaim> claims, List<Validator> validators) {
     super(verificationTimestamp, lifecycleStatus, issuer, issuedDateTime, id, claims, validators);
   }
 
   @Override
   public String toString() {
-    List<CredentialClaim> claims = getClaims();
+    List<RdfClaim> claims = getClaims();
     String cls = claims == null ? "null" : "" + claims.size();
     List<Validator> validators = getValidators();
     String vls = validators == null ? "null" : "" + validators.size();

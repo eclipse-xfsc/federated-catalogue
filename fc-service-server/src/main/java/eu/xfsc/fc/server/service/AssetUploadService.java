@@ -14,6 +14,7 @@ import eu.xfsc.fc.core.pojo.ContentAccessorBinary;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.service.assetstore.IriGenerator;
 import eu.xfsc.fc.core.service.assetstore.RdfDetector;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
@@ -39,6 +40,7 @@ public class AssetUploadService {
     private final VerificationService verificationService;
     private final AssetStore assetStorePublisher;
     private final RdfDetector rdfDetector;
+    private final IriGenerator iriGenerator;
 
     public AssetMetadata processUpload(byte[] content, String contentType, String originalFilename) {
         return processUpload(content, contentType, originalFilename, null);
@@ -68,8 +70,15 @@ public class AssetUploadService {
 
         CredentialVerificationResult verificationResult = verificationService.verifyCredential(contentAccessor);
 
-        AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(),
-                verificationResult.getIssuer(), verificationResult.getValidators(), contentAccessor);
+        // Non-credential RDF: ID and issuer are null — resolve both from local context.
+        String assetId = verificationResult.getId() != null
+                ? verificationResult.getId()
+                : iriGenerator.resolveIri(contentAccessor, true);
+        String issuer = verificationResult.getIssuer() != null
+                ? verificationResult.getIssuer()
+                : getSessionParticipantId();
+
+        AssetMetadata assetMetadata = new AssetMetadata(assetId, issuer, verificationResult.getValidators(), contentAccessor);
         assetMetadata.setContentType(contentType);
         assetMetadata.setFileSize((long) content.length);
 

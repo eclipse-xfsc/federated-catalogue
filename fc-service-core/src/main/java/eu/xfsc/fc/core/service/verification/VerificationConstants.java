@@ -32,6 +32,11 @@ public final class VerificationConstants {
   public static final String MEDIA_TYPE_VC_LD_JSON = "application/vc+ld+json";
   public static final String MEDIA_TYPE_VP_LD_JSON = "application/vp+ld+json";
 
+    // RDF format media types
+    public static final String MEDIA_TYPE_TURTLE = "text/turtle";
+    public static final String MEDIA_TYPE_NTRIPLES = "application/n-triples";
+    public static final String MEDIA_TYPE_RDF_XML = "application/rdf+xml";
+
   private VerificationConstants() {
   }
 }

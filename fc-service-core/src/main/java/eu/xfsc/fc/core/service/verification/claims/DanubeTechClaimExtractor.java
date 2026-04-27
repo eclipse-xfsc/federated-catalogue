@@ -12,6 +12,7 @@ import com.danubetech.verifiablecredentials.VerifiableCredentialV2;
 import com.danubetech.verifiablecredentials.VerifiablePresentationV2;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.rdf.model.AnonId;
 import org.apache.jena.rdf.model.Model;
@@ -22,7 +23,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 
 import eu.xfsc.fc.core.exception.ClientException;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,7 +33,7 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
-  public List<CredentialClaim> extractClaims(ContentAccessor content) throws Exception {
+  public List<RdfClaim> extractClaims(ContentAccessor content) throws Exception {
     log.debug("extractClaims.enter; got content: {}", content);
     String str = content.getContentAsString();
     Map<String, Object> raw = objectMapper.readValue(str, new TypeReference<>() {
@@ -52,8 +53,8 @@ public class DanubeTechClaimExtractor implements ClaimExtractor {
     return VC_20_CONTEXT.equals(ctx);
   }
 
-  private List<CredentialClaim> extractClaimsVc2(String str, Map<String, Object> raw) throws Exception {
-    List<CredentialClaim> claims = new ArrayList<>();
+  private List<RdfClaim> extractClaimsVc2(String str, Map<String, Object> raw) throws Exception {
+    List<RdfClaim> claims = new ArrayList<>();
     Object typeObj = raw.get("type");
     boolean isVP = typeObj instanceof List
         ? ((List<?>) typeObj).contains(VP_TYPE)

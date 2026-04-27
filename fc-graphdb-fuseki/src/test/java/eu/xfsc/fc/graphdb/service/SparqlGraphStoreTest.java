@@ -2,9 +2,10 @@ package eu.xfsc.fc.graphdb.service;
 
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.exception.QueryException;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.graphdb.config.EmbeddedFusekiConfig;
 import org.apache.jena.rdfconnection.RDFConnection;
@@ -58,7 +59,7 @@ public class SparqlGraphStoreTest {
 
     @Test
     void addClaims_queriedWithSparqlStar_returnsUploadedTripleData() {
-        List<CredentialClaim> claims = List.of(
+        List<RdfClaim> claims = List.of(
             typeClaim("http://example.org/subject1", "http://example.org/ServiceOffering"),
             literalClaim("http://example.org/subject1", "http://example.org/name", "Test Service")
         );
@@ -81,7 +82,7 @@ public class SparqlGraphStoreTest {
 
     @Test
     void addClaims_wrapsEachClaimWithCredentialSubjectMetaProperty() {
-        List<CredentialClaim> claims = List.of(
+        List<RdfClaim> claims = List.of(
             typeClaim("http://example.org/subject2", "http://example.org/Resource"),
             literalClaim("http://example.org/subject2", "http://example.org/label", "My Resource")
         );
@@ -163,7 +164,7 @@ public class SparqlGraphStoreTest {
     @ParameterizedTest
     @MethodSource("malformedUriClaims")
     void addClaims_withMalformedUri_throwsQueryExceptionIdentifyingBrokenPart(
-            CredentialClaim brokenClaim, String expectedMessageFragment) {
+            RdfClaim brokenClaim, String expectedMessageFragment) {
         Exception exception = assertThrows(QueryException.class,
             () -> graphStore.addClaims(List.of(brokenClaim), "http://example.org/credential"));
 
@@ -217,7 +218,7 @@ public class SparqlGraphStoreTest {
 
     @Test
     void getClaimCount_afterAddClaims_returnsCorrectCount() {
-        List<CredentialClaim> claims = List.of(
+        List<RdfClaim> claims = List.of(
             new CredentialClaim(
                 "<http://example.org/healthSubject>",
                 "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
@@ -287,7 +288,7 @@ public class SparqlGraphStoreTest {
     @Test
     void addClaims_withMultipleTriples_wrapsEachIndividually() {
         String credentialSubject = "http://example.org/credentialMulti";
-        List<CredentialClaim> claims = List.of(
+        List<RdfClaim> claims = List.of(
             typeClaim("http://example.org/multiSubject", "http://example.org/TypeA"),
             typeClaim("http://example.org/multiSubject", "http://example.org/TypeB"),
             literalClaim("http://example.org/multiSubject", "http://example.org/label", "Multi")
@@ -309,7 +310,7 @@ public class SparqlGraphStoreTest {
     void addClaims_sameTripleFromTwoCredentials_createsSeparateWrappedStatements() {
         String credA = "http://example.org/credentialSharedA";
         String credB = "http://example.org/credentialSharedB";
-        CredentialClaim sharedClaim = typeClaim("http://example.org/shared", "http://example.org/SharedType");
+        RdfClaim sharedClaim = typeClaim("http://example.org/shared", "http://example.org/SharedType");
 
         graphStore.addClaims(List.of(sharedClaim), credA);
         graphStore.addClaims(List.of(sharedClaim), credB);
@@ -336,7 +337,7 @@ public class SparqlGraphStoreTest {
     @Test
     void deleteClaims_removesAllWrappedStatements_zeroResultsForCredential() {
         String credentialSubject = "http://example.org/credentialToDelete";
-        List<CredentialClaim> claims = List.of(
+        List<RdfClaim> claims = List.of(
             typeClaim("http://example.org/delSubject", "http://example.org/DelType"),
             literalClaim("http://example.org/delSubject", "http://example.org/name", "ToDelete"),
             literalClaim("http://example.org/delSubject", "http://example.org/desc", "Will be removed")
@@ -426,11 +427,11 @@ public class SparqlGraphStoreTest {
             "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <" + CRED_SUBJECT_URI + "> <" + credentialSubject + "> }");
     }
 
-    private static CredentialClaim typeClaim(String subject, String type) {
+    private static RdfClaim typeClaim(String subject, String type) {
         return new CredentialClaim("<" + subject + ">", RDF_TYPE, "<" + type + ">");
     }
 
-    private static CredentialClaim literalClaim(String subject, String predicate, String value) {
+    private static RdfClaim literalClaim(String subject, String predicate, String value) {
         return new CredentialClaim("<" + subject + ">", "<" + predicate + ">", "\"" + value + "\"");
     }
 }

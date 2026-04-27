@@ -27,7 +27,7 @@ public class CredentialVerificationResult extends eu.xfsc.fc.api.generated.model
    */
   @Setter
   @JsonIgnore
-  private List<CredentialClaim> claims;
+  private List<RdfClaim> claims;
   /**
    * validators, that signed parts of the credential.
    */
@@ -35,7 +35,7 @@ public class CredentialVerificationResult extends eu.xfsc.fc.api.generated.model
   private List<Validator> validators;
 
   public CredentialVerificationResult(Instant verificationTimestamp, String lifecycleStatus, String issuer, Instant issuedDateTime,
-          String id, List<CredentialClaim> claims, List<Validator> validators) {
+                                      String id, List<RdfClaim> claims, List<Validator> validators) {
     super(verificationTimestamp, lifecycleStatus, issuer, issuedDateTime, new java.util.ArrayList<>(), new java.util.ArrayList<>());
     this.id = id;
     this.claims = claims;
@@ -54,7 +54,7 @@ public class CredentialVerificationResult extends eu.xfsc.fc.api.generated.model
 
   @Override
   public String toString() {
-    List<CredentialClaim> claims = getClaims();
+    List<RdfClaim> claims = getClaims();
     String cls = claims == null ? "null" : "" + claims.size();
     List<Validator> validators = getValidators();
     String vls = validators == null ? "null" : "" + validators.size();

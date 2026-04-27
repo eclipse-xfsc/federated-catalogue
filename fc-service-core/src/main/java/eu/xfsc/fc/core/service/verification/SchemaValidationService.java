@@ -1,6 +1,6 @@
 package eu.xfsc.fc.core.service.verification;
 
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 
@@ -43,22 +43,22 @@ public interface SchemaValidationService {
     /**
      * Validates pre-extracted RDF claims against a specific SHACL shape graph.
      *
-     * @param claims the pre-extracted {@link CredentialClaim} list from the RDF asset
+     * @param claims the pre-extracted {@link RdfClaim} list from the RDF asset
      * @param schema the SHACL shape graph to validate the claims against, or {@code null}
      *                to use the composite schema from the schema store
      * @return a {@link SchemaValidationResult} indicating conformance and
      *         containing the SHACL validation report
      */
-    SchemaValidationResult validateClaimsAgainstSchema(List<CredentialClaim> claims, ContentAccessor schema);
+    SchemaValidationResult validateClaimsAgainstSchema(List<RdfClaim> claims, ContentAccessor schema);
 
     /**
      * Validates pre-extracted RDF claims against the composite SHACL schema
      * assembled from all stored shapes.
      *
-     * @param claims the pre-extracted {@link CredentialClaim} list from the RDF asset
+     * @param claims the pre-extracted {@link RdfClaim} list from the RDF asset
      * @return a {@link SchemaValidationResult} indicating conformance and
      *         containing the SHACL validation report
      */
-    SchemaValidationResult validateClaimsAgainstCompositeSchema(List<CredentialClaim> claims);
+    SchemaValidationResult validateClaimsAgainstCompositeSchema(List<RdfClaim> claims);
 
 }

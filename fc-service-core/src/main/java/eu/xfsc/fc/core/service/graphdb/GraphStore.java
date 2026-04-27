@@ -8,7 +8,7 @@ import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
-import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.RdfClaim;
 
 /**
  * Defines the required functions to add, query, update and delete active claims extracted from credentials
@@ -24,7 +24,7 @@ public interface GraphStore {
      * @param claimList List of claims to be added to the Graph DB.
      * @param credentialSubject contains an asset unique identifier
      */
-    void addClaims(List<CredentialClaim> claimList, String credentialSubject);
+    void addClaims(List<RdfClaim> claimList, String credentialSubject);
 
     /**
      * Deletes all claims in the Graph DB of a given asset
