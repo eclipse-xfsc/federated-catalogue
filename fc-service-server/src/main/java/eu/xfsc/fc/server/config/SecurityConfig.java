@@ -85,6 +85,11 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.POST, "/assets/*/versions/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets/*/versions").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          // Asset-linking sub-resource endpoints — must appear before the broader /assets/* GET matcher
+          .requestMatchers(HttpMethod.POST, "/assets/*/human-readable").hasAnyRole(ASSET_CREATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.PUT, "/assets/*/human-readable").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.GET, "/assets/*/human-readable").hasAnyRole(ASSET_READ, ADMIN_ALL)
+          .requestMatchers(HttpMethod.GET, "/assets/*/machine-readable").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets", "/assets/*").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets").hasAnyRole(ASSET_CREATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.DELETE, "/assets/*").hasAnyRole(ASSET_DELETE, ADMIN_ALL)

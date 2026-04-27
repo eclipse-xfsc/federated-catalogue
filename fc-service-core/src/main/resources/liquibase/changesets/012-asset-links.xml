@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="saackef" id="2026-04-16-asset-type-column">
+        <addColumn tableName="assets">
+            <column name="asset_type" type="VARCHAR(50)"/>
+        </addColumn>
+        <addColumn tableName="assets_aud">
+            <column name="asset_type" type="VARCHAR(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-16-linked-asset-id-column">
+        <addColumn tableName="assets">
+            <column name="linked_asset_id" type="BIGINT"/>
+        </addColumn>
+        <addColumn tableName="assets_aud">
+            <column name="linked_asset_id" type="BIGINT"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="assets" baseColumnNames="linked_asset_id"
+            constraintName="fk_assets_linked_asset"
+            referencedTableName="assets" referencedColumnNames="id"
+            onDelete="SET NULL"/>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-16-linked-asset-unique-index">
+        <createIndex tableName="assets" indexName="idx_assets_linked_asset_id" unique="true">
+            <column name="linked_asset_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet author="saackef" id="2026-04-16-asset-type-index">
+        <createIndex tableName="assets" indexName="idx_assets_asset_type">
+            <column name="asset_type"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -57,6 +57,7 @@ import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
+import eu.xfsc.fc.core.dao.assets.AssetRepository;
 import eu.xfsc.fc.core.util.GraphRebuilder;
 import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
@@ -106,6 +107,9 @@ public class AssetStoreCompositeTest {
 
   @Autowired
   private ProtectedNamespaceFilter protectedNamespaceFilter;
+
+  @Autowired
+  private AssetRepository assetRepository;
 
   @AfterEach
   public void storageSelfCleaning() {
@@ -179,7 +183,7 @@ public class AssetStoreCompositeTest {
         new GraphQuery("MATCH (n) RETURN n", null)).getResults();
     Assertions.assertEquals(1, claims.size());
 
-    GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore, verificationService, protectedNamespaceFilter);
+    GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore, verificationService, protectedNamespaceFilter, assetRepository);
     reBuilder.rebuildGraphDb(1, 0, 1, 1);
 
     claims = graphStore.queryData(
@@ -220,7 +224,7 @@ public class AssetStoreCompositeTest {
     // Delete graph claims, then rebuild — simulates a graph rebuild from stored raw credentials
     graphStore.deleteClaims(assetId);
 
-    GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore, verificationService, protectedNamespaceFilter);
+    GraphRebuilder reBuilder = new GraphRebuilder(assetStorePublisher, graphStore, verificationService, protectedNamespaceFilter, assetRepository);
     reBuilder.rebuildGraphDb(1, 0, 1, 1);
 
     // Verify fcmeta claims are still filtered after rebuild

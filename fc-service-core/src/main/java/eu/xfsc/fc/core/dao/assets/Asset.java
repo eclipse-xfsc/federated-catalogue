@@ -1,11 +1,17 @@
 package eu.xfsc.fc.core.dao.assets;
 
+import eu.xfsc.fc.core.pojo.AssetType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -76,6 +82,14 @@ public class Asset {
 
   @Column(name = "change_comment", columnDefinition = "TEXT")
   private String changeComment;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "asset_type", length = 50)
+  private AssetType assetType;
+
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "linked_asset_id")
+  private Asset linkedAsset;
 
   @CreatedBy
   @Column(name = "created_by", updatable = false)

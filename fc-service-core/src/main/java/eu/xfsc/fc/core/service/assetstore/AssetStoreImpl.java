@@ -1,29 +1,35 @@
 package eu.xfsc.fc.core.service.assetstore;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.dao.assets.AssetDao;
+import eu.xfsc.fc.core.dao.assets.AssetRepository;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import eu.xfsc.fc.core.dao.assets.Asset;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * File system based implementation of the asset store interface.
@@ -34,20 +40,18 @@ import java.util.List;
 @Slf4j
 @Component("assetStore")
 @Transactional
+@RequiredArgsConstructor
 public class AssetStoreImpl implements AssetStore {
 
-  @Autowired
-  private AssetDao dao;
+  private static final String PREDICATE_HAS_HUMAN_READABLE = "hasHumanReadable";
+  private static final String PREDICATE_HAS_MACHINE_READABLE = "hasMachineReadable";
 
-  @Autowired
-  private GraphStore graphDb;
-
-  @Autowired
-  @Qualifier("assetFileStore")
-  private FileStore fileStore;
-
-  @Autowired
-  private IriGenerator iriGenerator;
+  private final AssetDao dao;
+  private final GraphStore graphDb;
+  @Qualifier("assetFileStore") private final FileStore fileStore;
+  private final IriGenerator iriGenerator;
+  private final AssetRepository assetRepository;
+  private final ProtectedNamespaceProperties namespaceProperties;
 
   @Override
   public ContentAccessor getFileByHash(final String hash) {
@@ -159,7 +163,7 @@ public class AssetStoreImpl implements AssetStore {
       throw new ServerException(ex);
     }
     try {
-      fileStore.storeFile(assetMetadata.getAssetHash(), assetMetadata.getContentAccessor());
+      fileStore.replaceFile(assetMetadata.getAssetHash(), assetMetadata.getContentAccessor());
     } catch (IOException ex) {
       throw new ServerException("Failed to store asset content in file store", ex);
     }
@@ -184,7 +188,20 @@ public class AssetStoreImpl implements AssetStore {
 
   @Override
   public void deleteAsset(final String hash) {
-	SubjectStatusRecord ssr = dao.delete(hash);
+    final Optional<Asset> assetOpt = assetRepository.findByAssetHashWithLinkedAsset(hash);
+    final String hrHashToCascade = assetOpt
+        .filter(a -> a.getAssetType() == AssetType.MACHINE_READABLE && a.getLinkedAsset() != null)
+        .map(a -> a.getLinkedAsset().getAssetHash())
+        .orElse(null);
+
+    assetOpt.filter(a -> a.getLinkedAsset() != null).ifPresent(a -> {
+      final Asset peer = a.getLinkedAsset();
+      peer.setLinkedAsset(null);
+      peer.setAssetType(null);
+      assetRepository.save(peer);
+    });
+
+    SubjectStatusRecord ssr = dao.delete(hash);
     log.debug("deleteAsset; delete result: {}", ssr);
     if (ssr == null) {
       throw new NotFoundException("no asset found for hash " + hash);
@@ -197,6 +214,14 @@ public class AssetStoreImpl implements AssetStore {
       fileStore.deleteFile(hash);
     } catch (IOException ex) {
       log.debug("deleteAsset; file store cleanup skipped for hash {}: {}", hash, ex.getMessage());
+    }
+
+    if (hrHashToCascade != null) {
+      try {
+        deleteAsset(hrHashToCascade);
+      } catch (NotFoundException ex) {
+        log.debug("deleteAsset; HR asset already gone, skipping cascade");
+      }
     }
   }
 
@@ -267,6 +292,46 @@ public class AssetStoreImpl implements AssetStore {
       throw new NotFoundException("no asset found for id %s".formatted(id));
     }
     return count;
+  }
+
+  @Override
+  public void linkAssets(String mrIri, String hrIri) {
+    Asset mrAsset = assetRepository.findBySubjectId(mrIri)
+        .orElseThrow(() -> new NotFoundException(String.format("no active asset found for id %s", mrIri)));
+    Asset hrAsset = assetRepository.findBySubjectId(hrIri)
+        .orElseThrow(() -> new NotFoundException(String.format("no active asset found for id %s", hrIri)));
+    mrAsset.setAssetType(AssetType.MACHINE_READABLE);
+    mrAsset.setLinkedAsset(hrAsset);
+    hrAsset.setAssetType(AssetType.HUMAN_READABLE);
+    hrAsset.setLinkedAsset(mrAsset);
+    assetRepository.saveAll(List.of(mrAsset, hrAsset));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Optional<LinkedAssetRef> findLink(String assetIri) {
+    return assetRepository.findBySubjectIdWithLinkedAsset(assetIri)
+        .filter(a -> a.getLinkedAsset() != null)
+        .map(a -> new LinkedAssetRef(a.getLinkedAsset().getSubjectId(), a.getAssetType()));
+  }
+
+  @Override
+  public void writeAssetLinkTriples(String mrIri, String hrIri) {
+    writeLinkTriples(mrIri, hrIri);
+  }
+
+  private void writeLinkTriples(String mrIri, String hrIri) {
+    final var ns = namespaceProperties.getNamespace();
+    final var hasHumanReadable = new CredentialClaim(
+        "<" + mrIri + ">",
+        "<" + ns + PREDICATE_HAS_HUMAN_READABLE + ">",
+        "<" + hrIri + ">");
+    final var hasMachineReadable = new CredentialClaim(
+        "<" + hrIri + ">",
+        "<" + ns + PREDICATE_HAS_MACHINE_READABLE + ">",
+        "<" + mrIri + ">");
+    graphDb.addClaims(List.of(hasHumanReadable), mrIri);
+    graphDb.addClaims(List.of(hasMachineReadable), hrIri);
   }
 
 }

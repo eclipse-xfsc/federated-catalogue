@@ -144,6 +144,12 @@ federated-catalogue:
       # - application/rdf+xml
       # - application/n-quads
       # - application/trig
+  assets:
+    human-readable-content-types:
+      - application/pdf
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - text/html
+      - text/plain
   file-store:
     cached: true
     cache-size: 128
