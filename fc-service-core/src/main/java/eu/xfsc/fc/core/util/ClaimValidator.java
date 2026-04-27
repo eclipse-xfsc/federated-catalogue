@@ -20,7 +20,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.datatypes.DatatypeFormatException;
 import org.apache.jena.datatypes.RDFDatatype;
-import org.apache.jena.datatypes.TypeMapper;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.ontology.OntModel;
@@ -46,7 +45,6 @@ import org.topbraid.shacl.util.ModelPrinter;
 import org.topbraid.shacl.validation.ValidationUtil;
 import org.topbraid.shacl.vocabulary.SH;
 
-import com.apicatalog.rdf.RdfValue;
 
 import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.pojo.CredentialClaim;
@@ -197,19 +195,23 @@ public class ClaimValidator {
               .lang(Lang.TURTLE)
               .parse(shape);
 
-      RDFNode node;
-      TypeMapper typeMapper = TypeMapper.getInstance();
       for (CredentialClaim claim: claims) {
         log.trace("validateClaimsBySchema; {}", claim);
-        RdfValue object = claim.getObject();
-        if (object.isLiteral()) {
-          RDFDatatype objectType = typeMapper.getSafeTypeByName(object.asLiteral().getDatatype());
-          log.trace("validateClaimsBySchema; objectType is: {}", objectType);
-          node = createTypedLiteral(object.getValue(), objectType);
-        } else {
-          node = createResource(object.getValue());
+        Statement triple = claim.getTriple();
+        if (triple != null) {
+          // Statement-based claim: add directly to preserve blank node identity and datatypes
+          data.add(triple);
+          continue;
         }
-        Statement s = createStatement(createResource(claim.getSubject().getValue()), createProperty(claim.getPredicate().getValue()), node);
+        // String-based claim fallback: derive type from formatted object string
+        RDFNode node;
+        String objectStr = claim.getObjectString();
+        if (objectStr != null && objectStr.startsWith("\"")) {
+          node = createTypedLiteral(claim.getObjectValue(), (RDFDatatype) null);
+        } else {
+          node = createResource(claim.getObjectValue());
+        }
+        Statement s = createStatement(createResource(claim.getSubjectValue()), createProperty(claim.getPredicateValue()), node);
         data.add(s);
       }
       
