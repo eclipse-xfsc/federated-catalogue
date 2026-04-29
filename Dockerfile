@@ -21,8 +21,12 @@ RUN mvn clean install -DskipTests -Dcheckstyle.skip
 
 FROM bellsoft/liberica-openjdk-alpine:21 as fc-service-server
 COPY --from=build /app/fc-service-server/target/fc-service-server-*.jar fc-service-server.jar
+RUN adduser -D -u 1000 appuser
+USER appuser
 ENTRYPOINT ["java", "-jar","/fc-service-server.jar"]
 
 FROM bellsoft/liberica-openjdk-alpine:21 as fc-demo-portal
 COPY --from=build /app/fc-demo-portal/target/fc-demo-portal-*.jar fc-demo-portal.jar
+RUN adduser -D -u 1000 appuser
+USER appuser
 ENTRYPOINT ["java", "-jar","/fc-demo-portal.jar"]

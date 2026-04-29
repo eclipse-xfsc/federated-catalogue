@@ -42,3 +42,6 @@ fc-service-server/logs/
 *.swp
 
 docker/certs/
+
+### Kubernetes ###
+/deployment/helm/fc-service/charts/*.tgz

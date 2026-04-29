@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fc-service.portal.fullname" . }}
+  labels:
+    {{- include "fc-service.portal.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.portal.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "fc-service.portal.selectorLabels" . | nindent 6 }}
+  strategy:
+    {{- toYaml .Values.portal.strategy | nindent 4 }}
+  template:
+    metadata:
+      labels:
+        {{- include "fc-service.portal.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ include "fc-service.portal.fullname" . }}
+          image: "{{ .Values.portal.image.repository }}:{{ .Values.portal.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.portal.image.pullPolicy }}
+          env:
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_FC_CLIENT_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: fc-keycloak-client-secret
+                  key: keycloak_client_secret
+            - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI
+              value: "https://{{ .Values.hosts.keycloak }}/auth/realms/gaia-x"
+            - name: FEDERATED_CATALOGUE_BASE_URI
+              value: {{ .Values.portal.fcBaseUri }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.portal.service.port }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.portal.probes.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.portal.probes.initialDelaySeconds }}
+            periodSeconds: {{ .Values.portal.probes.periodSeconds }}
+          resources:
+            {{- toYaml .Values.portal.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.portal.securityContext | nindent 12 }}
+          {{- with .Values.portal.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.portal.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.portal.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.portal.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.portal.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
