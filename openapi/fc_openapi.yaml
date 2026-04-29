@@ -755,6 +755,99 @@ components:
           format: date-time
           description: Timestamp of record creation in the database
 
+    ProvenanceCredential:
+      type: object
+      required: [id, assetId, assetVersion, issuer, issuedAt, provenanceType, credentialFormat]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Internal surrogate key of the persisted provenance credential.
+        assetId:
+          type: string
+          description: IRI of the asset this credential is attached to.
+        assetVersion:
+          type: integer
+          description: 1-based Envers version ordinal the credential is linked to.
+        credentialId:
+          type: string
+          description: VC id field (unique per asset).
+        issuer:
+          type: string
+          description: DID of the VC issuer.
+        issuedAt:
+          type: string
+          format: date-time
+          description: issuedDateTime extracted from the VC.
+        provenanceType:
+          type: string
+          enum: [CREATION, DERIVATION, ATTRIBUTION, MODIFICATION]
+          description: >
+            Provenance relation type, derived by detecting the PROV-O predicate present in
+            credentialSubject. CREATION=wasGeneratedBy, DERIVATION=wasDerivedFrom,
+            ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf.
+        credentialFormat:
+          type: string
+          enum: [JSONLD, JSONLD_JWT, JWT]
+          description: Detected credential format.
+        credentialContent:
+          type: string
+          description: Raw VC payload (JSON-LD or JWT string).
+        verified:
+          type: boolean
+          description: Whether this credential has been verified.
+        verificationTimestamp:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the last verification was performed.
+        verificationResult:
+          $ref: '#/components/schemas/ProvenanceVerificationResult'
+    ProvenanceCredentials:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProvenanceCredential'
+    ProvenanceVerificationResult:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+          description: Overall validity of the credential.
+        verificationTimestamp:
+          type: string
+          format: date-time
+        verificationMethod:
+          type: string
+          description: DID verification method used.
+        issuerResolutionStatus:
+          type: string
+          enum: [RESOLVED, UNRESOLVABLE, TEMPORARILY_UNAVAILABLE]
+          description: Result of DID resolution for the issuer.
+        issuedDateTime:
+          type: string
+          format: date-time
+        signatureValid:
+          type: boolean
+        credentialExpiryValid:
+          type: boolean
+        validatorDids:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+
   parameters:
     OffsetParam:
       name: offset
@@ -1888,6 +1981,251 @@ paths:
                 $ref: '#/components/schemas/Asset'
         '400':
           $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /assets/{id}/provenance:
+    post:
+      tags:
+        - Assets
+      summary: Attach a provenance credential to an asset version.
+      description: >
+        Stores a VC 2.0 JSON-LD or VC-JWT provenance credential against the given asset version.
+        If version is omitted the current version is used. credentialSubject.id MUST equal
+        {assetId}:v{N}. The credentialSubject MUST contain exactly one of the supported W3C PROV-O
+        predicates: prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, or
+        prov:wasRevisionOf (compact or expanded IRI form). The predicate value becomes the PROV-O
+        triple object stored in the graph. VC 1.1 payloads or credentials using the CAT-internal
+        namespace are rejected with 400. Duplicate credentialId returns 409.
+        Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: addProvenanceCredential
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: query
+          description: 1-based target version ordinal. Defaults to the current version.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/ld+json:
+            schema:
+              type: string
+              description: VC 2.0 JSON-LD payload
+          application/vc+jwt:
+            schema:
+              type: string
+              description: VC-JWT compact serialization
+          application/json:
+            schema:
+              type: string
+              description: VC 2.0 JSON-LD payload
+      responses:
+        '201':
+          description: Provenance credential stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceCredential'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    get:
+      tags:
+        - Assets
+      summary: List provenance credentials for an asset.
+      description: >
+        Returns a paginated list of provenance credentials sorted by issuedAt descending.
+        Optionally filter by version. Required permission: ASSET_READ or ADMIN_ALL
+      operationId: listProvenanceCredentials
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: query
+          description: Filter by 1-based version ordinal.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: page
+          in: query
+          description: 0-based page index.
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size (1–100).
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated provenance credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceCredentials'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/provenance/verify:
+    post:
+      tags:
+        - Assets
+      summary: Verify all provenance credentials for an asset.
+      description: >
+        Verifies all provenance credentials for the asset (optionally filtered by version).
+        Returns an aggregated result with per-credential status. Required permission: ASSET_UPDATE
+        or ADMIN_ALL
+      operationId: verifyAllProvenanceCredentials
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: query
+          description: Filter by 1-based version ordinal.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Aggregated verification result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceVerificationResult'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/provenance/{credentialId}:
+    get:
+      tags:
+        - Assets
+      summary: Get a single provenance credential.
+      description: >
+        Returns the full provenance credential record including the raw VC content.
+        Required permission: ASSET_READ or ADMIN_ALL
+      operationId: getProvenanceCredential
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: credentialId
+          in: path
+          description: VC id field of the provenance credential
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The provenance credential record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceCredential'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{id}/provenance/{credentialId}/verify:
+    post:
+      tags:
+        - Assets
+      summary: Verify a single provenance credential.
+      description: >
+        Validates the signature and DID of the given provenance credential and persists the
+        extended verification result. Required permission: ASSET_UPDATE or ADMIN_ALL
+      operationId: verifyProvenanceCredential
+      security:
+        - jwt: []
+      parameters:
+        - name: id
+          in: path
+          description: IRI identifier of the asset
+          required: true
+          schema:
+            type: string
+        - name: credentialId
+          in: path
+          description: VC id field of the provenance credential
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result persisted and returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvenanceVerificationResult'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

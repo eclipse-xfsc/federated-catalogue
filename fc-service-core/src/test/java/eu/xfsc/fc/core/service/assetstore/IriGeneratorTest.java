@@ -135,6 +135,66 @@ class IriGeneratorTest {
         assertEquals("http://example.org/MyScheme", iri);
     }
 
+  @Test
+  void resolveIri_relativeIdWithBase_expandsToAbsoluteIri() {
+    // @id has no prefix separator — resolved via @base in the inline context.
+    // A predicate is required: JSON-LD expansion drops nodes with no triples.
+    String jsonLd = """
+        {
+            "@context": {"@base": "http://example.org/", "ex": "http://example.org/"},
+            "@id": "item1",
+            "ex:name": "Cloud Storage Service"
+        }
+        """;
+    ContentAccessorDirect content = new ContentAccessorDirect(jsonLd);
+    String iri = iriGenerator.resolveIri(content, true);
+    assertEquals("http://example.org/item1", iri);
+  }
+
+  @Test
+  void resolveIri_compactIdWithUnreachableContext_fallsBackToUuidUrn() {
+    // Expansion fails (unreachable context) and the raw @id is a compact IRI
+    // that fails iriValidator — UUID URN is the correct fallback.
+    String jsonLd = """
+        {
+            "@context": "http://localhost:19999/nonexistent-context",
+            "@id": "ex:item1"
+        }
+        """;
+    ContentAccessorDirect content = new ContentAccessorDirect(jsonLd);
+    String iri = iriGenerator.resolveIri(content, true);
+    assertTrue(iri.startsWith("urn:uuid:"));
+  }
+
+  @Test
+  void resolveIri_absoluteIdWithUnreachableContext_fallsBackToRawId() {
+    // Expansion fails (unreachable context URL) — raw @id is already absolute, so it is returned.
+    String jsonLd = """
+        {
+            "@context": "http://localhost:19999/nonexistent-context",
+            "@id": "http://example.org/PersonShape",
+            "@type": "sh:NodeShape"
+        }
+        """;
+    ContentAccessorDirect content = new ContentAccessorDirect(jsonLd);
+    String iri = iriGenerator.resolveIri(content, true);
+    assertEquals("http://example.org/PersonShape", iri);
+  }
+
+  @Test
+  void resolveIri_compactIriWithInlineContext_expandsToAbsoluteIri() {
+    String jsonLd = """
+        {
+            "@context": {"ex": "http://example.org/"},
+            "@id": "ex:item1",
+            "ex:name": "Cloud Storage Service"
+        }
+        """;
+    ContentAccessorDirect content = new ContentAccessorDirect(jsonLd);
+    String iri = iriGenerator.resolveIri(content, true);
+    assertEquals("http://example.org/item1", iri);
+  }
+
     @Test
     void resolveIri_rdfWithoutId_fallsBackToUuidUrn() {
         String jsonLd = """

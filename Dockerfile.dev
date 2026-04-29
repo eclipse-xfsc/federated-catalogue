@@ -2,10 +2,10 @@
 # Skips the Maven build stage to avoid downloading dependencies inside Docker.
 # CI/production should continue using the main Dockerfile.
 
-FROM bellsoft/liberica-openjdk-alpine:21 as fc-service-server
+FROM bellsoft/liberica-openjdk-alpine:21 AS fc-service-server
 COPY fc-service-server/target/fc-service-server-*.jar fc-service-server.jar
 ENTRYPOINT ["java", "-jar", "/fc-service-server.jar"]
 
-FROM bellsoft/liberica-openjdk-alpine:21 as fc-demo-portal
+FROM bellsoft/liberica-openjdk-alpine:21 AS fc-demo-portal
 COPY fc-demo-portal/target/fc-demo-portal-*.jar fc-demo-portal.jar
 ENTRYPOINT ["java", "-jar", "/fc-demo-portal.jar"]

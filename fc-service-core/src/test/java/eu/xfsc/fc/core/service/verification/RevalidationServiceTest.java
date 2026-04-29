@@ -22,6 +22,7 @@ import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
+import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
@@ -45,6 +46,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,6 +99,9 @@ public class RevalidationServiceTest {
 
   @Autowired
   private SchemaStore schemaStore;
+
+  @MockitoBean
+  private ProvenanceService provenanceService;
 
   //@Autowired
   //private Neo4j embeddedDatabaseServer;

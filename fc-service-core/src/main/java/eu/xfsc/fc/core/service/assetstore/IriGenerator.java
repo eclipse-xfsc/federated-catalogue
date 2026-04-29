@@ -1,15 +1,21 @@
 package eu.xfsc.fc.core.service.assetstore;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.apicatalog.jsonld.JsonLd;
+import com.apicatalog.jsonld.JsonLdError;
+import com.apicatalog.jsonld.document.JsonDocument;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -121,18 +127,43 @@ public class IriGenerator {
         }
       }
 
-      // Direct @id (covers OWL ontologies, SHACL shapes, SKOS concept schemes)
+      // Generic JSON-LD: expand the document so @context prefixes are resolved before
+      // reading @id — this is standard JSON-LD processing and handles both compact IRIs
+      // (e.g. "ex:item1") and already-absolute IRIs uniformly.
+      // Falls back to the raw @id value when expansion fails (e.g. remote context unreachable).
       if (json.has("@id")) {
-        String id = json.get("@id").asText();
-        if (!id.isBlank()) {
-          return id;
+        String rawId = json.get("@id").asText();
+        if (!rawId.isBlank()) {
+          return expandTopLevelId(text, rawId);
         }
       }
-
       return null;
     } catch (IOException e) {
       log.warn("extractIdFromRdf; could not parse RDF content as JSON: {}", e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Expands the JSON-LD document and returns the top-level {@code @id} value.
+   * Falls back to {@code rawId} when expansion fails (e.g. remote context unreachable).
+   */
+  private String expandTopLevelId(String jsonLdText, String rawId) {
+    try {
+      JsonDocument document = JsonDocument.of(new StringReader(jsonLdText));
+      JsonArray expanded = JsonLd.expand(document).get();
+      if (!expanded.isEmpty()) {
+        JsonObject first = expanded.getJsonObject(0);
+        if (first.containsKey("@id")) {
+          String id = first.getString("@id");
+          if (!id.isBlank()) {
+            return id;
+          }
+        }
+      }
+    } catch (JsonLdError e) {
+      log.warn("expandTopLevelId; JSON-LD expansion failed, using raw @id '{}': {}", rawId, e.getMessage());
+    }
+    return rawId;
   }
 }

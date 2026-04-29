@@ -1,16 +1,36 @@
 package eu.xfsc.fc.core.service.assetstore;
 
-import static eu.xfsc.fc.core.util.TestUtil.assertThatAssetHasTheSameData;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.config.DidResolverConfig;
+import eu.xfsc.fc.core.config.DocumentLoaderConfig;
+import eu.xfsc.fc.core.config.DocumentLoaderProperties;
 import eu.xfsc.fc.core.config.FileStoreConfig;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
-import eu.xfsc.fc.core.pojo.*;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
+import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
+import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.NotFoundException;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.CredentialClaim;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
+import eu.xfsc.fc.core.pojo.GraphQuery;
+import eu.xfsc.fc.core.pojo.RdfClaim;
+import eu.xfsc.fc.core.pojo.Validator;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
+import eu.xfsc.fc.core.service.graphdb.GraphStore;
+import eu.xfsc.fc.core.service.provenance.ProvenanceService;
+import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
+import eu.xfsc.fc.core.util.HashUtils;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -26,27 +46,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
-import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
-import eu.xfsc.fc.core.exception.ConflictException;
-import eu.xfsc.fc.core.exception.NotFoundException;
-import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
-import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
-import eu.xfsc.fc.core.util.HashUtils;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
-import lombok.extern.slf4j.Slf4j;
+import static eu.xfsc.fc.core.util.TestUtil.assertThatAssetHasTheSameData;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName.class)
@@ -68,6 +76,9 @@ public class AssetStoreTest {
       SpringApplication.run(TestApplication.class, args);
     }
   }
+
+  @MockitoBean
+  private ProvenanceService provenanceService;
 
   @Autowired
   private AssetStore assetStorePublisher;
