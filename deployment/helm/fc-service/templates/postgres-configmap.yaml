@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fc-service.postgres.fullname" . }}-init
+  labels:
+    {{- include "fc-service.postgres.labels" . | nindent 4 }}
+data:
+  01-init.sh: |
+    #!/bin/bash
+    set -e
+
+    # Create keycloak database and user
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      -- Create keycloak database if it doesn't exist
+      SELECT 'CREATE DATABASE keycloak'
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'keycloak')\gexec
+
+      -- Grant privileges
+      GRANT ALL PRIVILEGES ON DATABASE keycloak TO {{ .Values.postgresql.auth.username }};
+    EOSQL
+
+    echo "PostgreSQL initialization completed"

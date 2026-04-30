@@ -16,12 +16,8 @@ version: 0.4.0
 appVersion: "2.1.0"
 
 dependencies:
-  - name: postgresql
-    version: 12.4.3
-    repository: "oci://registry-1.docker.io/bitnamicharts"
-  - name: neo4j
-    version: 5.18.1
-    repository: "https://neo4j.github.io/helm-charts/"
-  - name: keycloak
-    version: 26.0
-    repository: "oci://registry-1.docker.io/bitnamicharts"
+  - name: keycloakx
+    version: 7.1.9
+    repository: "https://codecentric.github.io/helm-charts"
+    condition: keycloakx.enabled
+    alias: keycloak

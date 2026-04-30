@@ -8,6 +8,8 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "fc-service.selectorLabels" . | nindent 6 }}
@@ -33,10 +35,10 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- with .Values.env }}
           env:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- toYaml .Values.env | nindent 12 }}
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: "https://{{ .Values.hosts.keycloak }}/auth/realms/gaia-x"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
@@ -53,6 +55,14 @@ spec:
             periodSeconds: {{ .Values.probes.periodSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -64,9 +74,6 @@ spec:
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- if .Values.restartPolicy }}
-      restartPolicy: {{ .Values.restartPolicy }}
       {{- end }}
       {{- with .Values.hostAliases }}
       hostAliases:

@@ -4,7 +4,7 @@ spring:
       on-profile: test
 #  jpa:
 #    open-in-view: false
-   
+
   liquibase:
     change-log: classpath:/liquibase/master-changelog.xml
     contexts: test 

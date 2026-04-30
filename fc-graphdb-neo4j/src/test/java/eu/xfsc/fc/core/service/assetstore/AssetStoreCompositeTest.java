@@ -1,15 +1,54 @@
 package eu.xfsc.fc.core.service.assetstore;
 
-import static eu.xfsc.fc.core.util.TestUtil.assertThatAssetHasTheSameData;
-import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
-
-import java.util.List;
-import java.util.Map;
-
+import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.config.DidResolverConfig;
+import eu.xfsc.fc.core.config.DocumentLoaderConfig;
+import eu.xfsc.fc.core.config.DocumentLoaderProperties;
+import eu.xfsc.fc.core.config.FileStoreConfig;
+import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
-import eu.xfsc.fc.core.dao.assets.AssetRepository;
+import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
+import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
+import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
+import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
+import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
+import eu.xfsc.fc.core.exception.NotFoundException;
+import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.GraphQuery;
+import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
+import eu.xfsc.fc.core.security.SecurityAuditorAware;
+import eu.xfsc.fc.core.service.graphdb.GraphStore;
+import eu.xfsc.fc.core.service.provenance.ProvenanceService;
+import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
+import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
+import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
+import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
+import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
+import eu.xfsc.fc.core.service.validation.ValidationResultStoreImpl;
+import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
+import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
+import eu.xfsc.fc.core.service.verification.FormatDetector;
+import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
+import eu.xfsc.fc.core.service.verification.LoireJwtParser;
+import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
+import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
+import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
+import eu.xfsc.fc.core.service.verification.Vc2Processor;
+import eu.xfsc.fc.core.service.verification.VerificationConstants;
+import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
+import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
+import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
+import eu.xfsc.fc.core.util.GraphRebuilder;
+import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -25,52 +64,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.config.FileStoreConfig;
-import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
-import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
-import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
-import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
-import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
-import eu.xfsc.fc.core.exception.NotFoundException;
-import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.GraphQuery;
-import eu.xfsc.fc.core.pojo.AssetMetadata;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
-import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
-import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
-import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
-import eu.xfsc.fc.core.service.verification.FormatDetector;
-import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
-import eu.xfsc.fc.core.service.verification.LoireJwtParser;
-import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
-import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
-import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.service.verification.Vc2Processor;
-import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
-import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
-import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
-import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
-import eu.xfsc.fc.core.service.validation.ValidationResultStoreImpl;
-import eu.xfsc.fc.core.util.GraphRebuilder;
-import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
-import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Map;
+
+import static eu.xfsc.fc.core.util.TestUtil.assertThatAssetHasTheSameData;
+import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.MethodName.class)
@@ -130,6 +130,9 @@ public class AssetStoreCompositeTest {
             SpringApplication.run(TestApplication.class, args);
         }
     }
+
+    @MockitoBean
+    private ProvenanceService provenanceService;
 
     @Autowired
     private VerificationServiceImpl verificationService;

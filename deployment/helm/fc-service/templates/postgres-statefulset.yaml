@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fc-service.postgres.fullname" . }}
+  labels:
+    {{- include "fc-service.postgres.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "fc-service.postgres.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "fc-service.postgres.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "fc-service.postgres.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: postgres
+        image: {{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresql.auth.database }}
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresql.auth.username }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.postgresql.auth.password }}
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        securityContext:
+          allowPrivilegeEscalation: false
+          # capabilities.drop omitted: postgres entrypoint needs CAP_CHOWN/CAP_FOWNER as root during init
+          # runAsNonRoot/runAsUser omitted: postgres entrypoint uses gosu to drop privileges
+          # and requires root for init; enforcing non-root would break first-time initialisation.
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: {{ include "fc-service.postgres.fullname" . }}-init
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.postgresql.persistence.size }}

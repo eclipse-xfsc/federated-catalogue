@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "fc-service.fuseki.fullname" . }}
+  labels:
+    {{- include "fc-service.fuseki.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "fc-service.fuseki.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "fc-service.fuseki.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "fc-service.fuseki.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 9008
+      containers:
+      - name: fuseki
+        image: {{ .Values.fuseki.image.repository }}:{{ .Values.fuseki.image.tag }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3030
+          name: http
+        env:
+        - name: ADMIN_PASSWORD
+          value: {{ .Values.fuseki.adminPassword | quote }}
+        - name: FUSEKI_DATASET_1
+          value: {{ .Values.fuseki.dataset | quote }}
+        - name: JVM_ARGS
+          value: {{ .Values.fuseki.jvmArgs | quote }}
+        volumeMounts:
+        - name: fuseki-data
+          mountPath: /fuseki
+        resources:
+          {{- toYaml .Values.fuseki.resources | nindent 10 }}
+  volumeClaimTemplates:
+  - metadata:
+      name: fuseki-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.fuseki.persistence.size }}
