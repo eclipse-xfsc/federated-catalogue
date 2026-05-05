@@ -15,6 +15,7 @@ import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.pubsub.AssetPublisher;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -30,14 +31,15 @@ public class AssetStoreConfig {
       IriGenerator iriGenerator, AssetRepository assetRepository,
       ProtectedNamespaceProperties namespaceProperties,
       ProvenanceService provenanceService,
+      ValidationResultStore validationResultStore,
       AssetPublisher assetPublisher) {
     AssetStore assetStore;
     if ("none".equals(pubImpl)) {
       assetStore = new AssetStoreImpl(dao, graphDb, fileStore, iriGenerator, assetRepository,
-          namespaceProperties, provenanceService);
+          namespaceProperties, provenanceService, validationResultStore);
     } else {
       assetStore = new PublishingAssetStore(dao, graphDb, fileStore, iriGenerator, assetRepository,
-          namespaceProperties, provenanceService, assetPublisher);
+          namespaceProperties, provenanceService, validationResultStore, assetPublisher);
     }
     log.debug("getAssetStore; returning {} for impl {}", assetStore, pubImpl);
     return assetStore;

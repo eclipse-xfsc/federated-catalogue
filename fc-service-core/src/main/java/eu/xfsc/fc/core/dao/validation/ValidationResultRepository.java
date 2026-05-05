@@ -3,9 +3,9 @@ package eu.xfsc.fc.core.dao.validation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 /** Spring Data JPA repository for {@link ValidationResult} entities. */
 public interface ValidationResultRepository extends JpaRepository<ValidationResult, Long> {
 
@@ -19,5 +19,19 @@ public interface ValidationResultRepository extends JpaRepository<ValidationResu
       countQuery = "SELECT COUNT(*) FROM validation_result WHERE :assetId = ANY(asset_ids)",
       nativeQuery = true)
   Page<ValidationResult> findByAssetId(@Param("assetId") String assetId, Pageable pageable);
+
+  /**
+   * Marks all validation results that reference the given asset ID as outdated with the supplied reason.
+   */
+  @Modifying(clearAutomatically = true)
+  @Query(value = "UPDATE validation_result SET outdated = true, outdated_reason = :reason "
+      + "WHERE :assetId = ANY(asset_ids)", nativeQuery = true)
+  void markOutdatedByAssetId(@Param("assetId") String assetId, @Param("reason") String reason);
+
+  /** Deletes all validation results that reference the given asset ID. */
+  @Modifying
+  @Query(value = "DELETE FROM validation_result WHERE :assetId = ANY(asset_ids)",
+      nativeQuery = true)
+  void deleteByAssetId(@Param("assetId") String assetId);
 
 }

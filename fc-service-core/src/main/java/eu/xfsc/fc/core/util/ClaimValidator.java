@@ -226,7 +226,7 @@ public class ClaimValidator {
       return ModelPrinter.get().print(reportResource.getModel());
     }   
     
-    private static final String CREDENTIAL_SUBJECT = "https://www.w3.org/2018/credentials#credentialSubject";
+    private static final String CREDENTIAL_SUBJECT = CredentialConstants.CREDENTIAL_SUBJECT_URI;
     
     public static TrustFrameworkBaseClass getSubjectType(ContentAccessor ontology, StreamManager sm, String subject,
         Map<TrustFrameworkBaseClass, List<String>> classUris) {

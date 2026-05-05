@@ -21,6 +21,7 @@ import org.apache.jena.rdf.model.Statement;
 
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.RdfClaim;
+import eu.xfsc.fc.core.util.CredentialConstants;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
@@ -33,10 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CredentialSubjectClaimExtractor implements ClaimExtractor {
 
-  private static final String CREDENTIAL_SUBJECT_URI =
-      "https://www.w3.org/2018/credentials#credentialSubject";
-  private static final String VERIFIABLE_CREDENTIAL_URI =
-      "https://www.w3.org/2018/credentials#verifiableCredential";
+  private static final String CREDENTIAL_SUBJECT_URI = CredentialConstants.CREDENTIAL_SUBJECT_URI;
+  private static final String VERIFIABLE_CREDENTIAL_URI = CredentialConstants.VERIFIABLE_CREDENTIAL_URI;
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
 

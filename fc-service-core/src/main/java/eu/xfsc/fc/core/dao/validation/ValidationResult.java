@@ -103,4 +103,13 @@ public class ValidationResult {
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
 
+  /** True when the asset was updated or revoked after this result was produced. */
+  @Column(name = "outdated", nullable = false)
+  private boolean outdated;
+
+  /** Why this result was marked outdated; null when {@code outdated} is false. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "outdated_reason", length = 50)
+  private OutdatedReason outdatedReason;
+
 }

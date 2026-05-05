@@ -27,6 +27,7 @@ import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.service.assetstore.IriGenerator;
 import eu.xfsc.fc.core.service.assetstore.IriValidator;
@@ -102,6 +103,9 @@ public class RevalidationServiceTest {
 
   @MockitoBean
   private ProvenanceService provenanceService;
+
+  @MockitoBean
+  private ValidationResultStore validationResultStore;
 
   //@Autowired
   //private Neo4j embeddedDatabaseServer;

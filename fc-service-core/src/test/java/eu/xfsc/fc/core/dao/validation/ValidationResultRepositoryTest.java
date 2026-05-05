@@ -1,5 +1,6 @@
 package eu.xfsc.fc.core.dao.validation;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -150,6 +152,62 @@ class ValidationResultRepositoryTest {
     Page<ValidationResult> page3 = repository.findAll(PageRequest.of(2, 2));
     assertEquals(1, page3.getNumberOfElements(), "Last page should have 1 element");
     assertTrue(!page3.hasNext(), "Last page should not have next");
+  }
+
+  @Test
+  @Transactional
+  void markOutdatedByAssetId_existingResults_marksAllOutdatedWithReason() {
+    final String assetId = "https://example.org/asset/mark-1";
+
+    repository.save(buildResult(
+        new String[]{assetId}, new String[]{"ref/1"}, true, GraphSyncStatus.SYNCED));
+    repository.save(buildResult(
+        new String[]{assetId, "https://example.org/asset/other"}, new String[]{"ref/2"},
+        true, GraphSyncStatus.SYNCED));
+
+    repository.markOutdatedByAssetId(assetId, OutdatedReason.ASSET_UPDATED.name());
+
+    Page<ValidationResult> page = repository.findByAssetId(assetId, PageRequest.of(0, 10));
+    assertEquals(2, page.getTotalElements());
+    page.getContent().forEach(r -> {
+      assertTrue(r.isOutdated(), "Result must be marked outdated");
+      assertEquals(OutdatedReason.ASSET_UPDATED, r.getOutdatedReason());
+    });
+  }
+
+  @Test
+  @Transactional
+  void markOutdatedByAssetId_alreadyOutdated_isIdempotent() {
+    final String assetId = "https://example.org/asset/idem-1";
+    repository.save(buildResult(new String[]{assetId}, new String[]{"ref/1"}, true, GraphSyncStatus.SYNCED));
+
+    repository.markOutdatedByAssetId(assetId, OutdatedReason.ASSET_REVOKED.name());
+    repository.markOutdatedByAssetId(assetId, OutdatedReason.ASSET_REVOKED.name());
+
+    Page<ValidationResult> page = repository.findByAssetId(assetId, PageRequest.of(0, 10));
+    assertEquals(1, page.getTotalElements());
+    assertTrue(page.getContent().getFirst().isOutdated());
+    assertEquals(OutdatedReason.ASSET_REVOKED, page.getContent().getFirst().getOutdatedReason());
+  }
+
+  @Test
+  @Transactional
+  void deleteByAssetId_existingResults_deletesAll() {
+    final String assetId = "https://example.org/asset/delete-1";
+
+    repository.save(buildResult(new String[]{assetId}, new String[]{"ref/1"}, true, GraphSyncStatus.SYNCED));
+    repository.save(buildResult(new String[]{assetId}, new String[]{"ref/2"}, false, GraphSyncStatus.FAILED));
+
+    repository.deleteByAssetId(assetId);
+
+    Page<ValidationResult> page = repository.findByAssetId(assetId, PageRequest.of(0, 10));
+    assertEquals(0, page.getTotalElements(), "All results for the asset must be deleted");
+  }
+
+  @Test
+  @Transactional
+  void deleteByAssetId_noMatchingResults_noError() {
+    assertDoesNotThrow(() -> repository.deleteByAssetId("https://example.org/asset/none"));
   }
 
   @Test

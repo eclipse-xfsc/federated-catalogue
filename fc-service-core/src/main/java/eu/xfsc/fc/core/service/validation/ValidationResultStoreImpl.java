@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.validation;
 
 import eu.xfsc.fc.core.dao.validation.GraphSyncStatus;
+import eu.xfsc.fc.core.dao.validation.OutdatedReason;
 import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import eu.xfsc.fc.core.dao.validation.ValidationResultRepository;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
@@ -84,6 +85,20 @@ public class ValidationResultStoreImpl implements ValidationResultStore {
       result.setGraphSyncStatus(GraphSyncStatus.FAILED);
       repository.saveAndFlush(result);
     }
+  }
+
+  @Override
+  @Transactional
+  public void markOutdatedByAssetId(String assetId, OutdatedReason reason) {
+    repository.markOutdatedByAssetId(assetId, reason.name());
+    log.debug("markOutdatedByAssetId; marked outdated assetId={}, reason={}", assetId, reason.name());
+  }
+
+  @Override
+  @Transactional
+  public void deleteByAssetId(String assetId) {
+    repository.deleteByAssetId(assetId);
+    log.debug("deleteByAssetId; deleted validation results assetId={}", assetId);
   }
 
   private ValidationResult buildEntity(ValidationResultRecord record) {
