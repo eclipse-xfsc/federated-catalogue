@@ -35,6 +35,7 @@ import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.graphdb.config.GraphDbConfig;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -98,6 +99,8 @@ public class Neo4jGraphStoreAccuracyTest {
   
   @MockitoBean
   private ProvenanceService provenanceService;
+  @MockitoBean
+  private ValidationResultStore validationResultStore;
 
   @Autowired
   private Neo4j embeddedDatabaseServer;

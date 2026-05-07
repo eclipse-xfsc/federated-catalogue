@@ -32,6 +32,7 @@ import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
 import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
@@ -144,6 +145,9 @@ public class CesCompositePublisherTest {
 
     @MockitoBean
     private ProvenanceService provenanceService;
+
+    @MockitoBean
+    private ValidationResultStore validationResultStore;
 
     private MockWebServer mockCesService;
     private MockWebServer mockCompService;

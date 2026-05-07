@@ -28,6 +28,7 @@ import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.util.HashUtils;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -99,6 +100,9 @@ public class AssetStoreTest {
 
     @MockitoBean
     private ProvenanceService provenanceService;
+
+    @MockitoBean
+    private ValidationResultStore validationResultStore;
 
     @Autowired
     private AssetStore assetStorePublisher;

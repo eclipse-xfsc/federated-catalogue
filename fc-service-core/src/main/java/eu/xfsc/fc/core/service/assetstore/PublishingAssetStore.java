@@ -11,6 +11,7 @@ import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.pubsub.AssetPublisher;
 import eu.xfsc.fc.core.service.pubsub.AssetPublisher.AssetEvent;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 
 public class PublishingAssetStore extends AssetStoreImpl {
 
@@ -20,9 +21,10 @@ public class PublishingAssetStore extends AssetStoreImpl {
       IriGenerator iriGenerator, AssetRepository assetRepository,
       ProtectedNamespaceProperties namespaceProperties,
       ProvenanceService provenanceService,
+      ValidationResultStore validationResultStore,
       AssetPublisher assetPublisher) {
     super(dao, graphDb, fileStore, iriGenerator, assetRepository, namespaceProperties,
-        provenanceService);
+        provenanceService, validationResultStore);
     this.assetPublisher = assetPublisher;
   }
 

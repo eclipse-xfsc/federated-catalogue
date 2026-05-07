@@ -754,6 +754,14 @@ components:
           type: string
           format: date-time
           description: Timestamp of record creation in the database
+        outdated:
+          type: boolean
+          description: True if the result has been superseded by a newer validation run or asset lifecycle event
+        outdatedReason:
+          type: string
+          enum: [ASSET_UPDATED, ASSET_REVOKED]
+          nullable: true
+          description: Reason the result was marked outdated; null when outdated is false
 
     ProvenanceCredential:
       type: object

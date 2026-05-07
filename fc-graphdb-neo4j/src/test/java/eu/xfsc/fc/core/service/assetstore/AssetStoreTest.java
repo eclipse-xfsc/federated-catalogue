@@ -25,6 +25,7 @@ import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.util.HashUtils;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
@@ -79,6 +80,9 @@ public class AssetStoreTest {
 
   @MockitoBean
   private ProvenanceService provenanceService;
+
+  @MockitoBean
+  private ValidationResultStore validationResultStore;
 
   @Autowired
   private AssetStore assetStorePublisher;
