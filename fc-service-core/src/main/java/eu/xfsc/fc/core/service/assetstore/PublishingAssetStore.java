@@ -8,10 +8,9 @@ import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import eu.xfsc.fc.core.service.pubsub.AssetPublisher;
+import org.springframework.context.ApplicationEventPublisher;
 import eu.xfsc.fc.core.service.pubsub.AssetPublisher.AssetEvent;
-import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 
 public class PublishingAssetStore extends AssetStoreImpl {
 
@@ -19,12 +18,16 @@ public class PublishingAssetStore extends AssetStoreImpl {
 
   public PublishingAssetStore(AssetDao dao, GraphStore graphDb, FileStore fileStore,
       IriGenerator iriGenerator, AssetRepository assetRepository,
-      ProtectedNamespaceProperties namespaceProperties,
-      ProvenanceService provenanceService,
-      ValidationResultStore validationResultStore,
+      ProtectedNamespaceProperties namespaceProperties, ApplicationEventPublisher eventPublisher,
       AssetPublisher assetPublisher) {
-    super(dao, graphDb, fileStore, iriGenerator, assetRepository, namespaceProperties,
-        provenanceService, validationResultStore);
+    super(
+        dao,
+        graphDb,
+        fileStore,
+        iriGenerator,
+        assetRepository,
+        namespaceProperties,
+        eventPublisher);
     this.assetPublisher = assetPublisher;
   }
 

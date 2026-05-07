@@ -5,6 +5,7 @@ import eu.xfsc.fc.core.dao.validation.OutdatedReason;
 import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import eu.xfsc.fc.core.dao.validation.ValidationResultRepository;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,11 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
  * Implements {@link ValidationResultStore} and provides
  * validation result persistence with graph DB sync.
  *
- * <p>Write sequence: PostgreSQL INSERT + graph DB write both happen inside the {@code @Transactional}
- * boundary; PostgreSQL commits only when {@code store()} returns. If PostgreSQL fails to commit after a
- * successful graph write, graph triples will exist without a corresponding PostgreSQL row.
+ * <p>Write sequence: relational DB INSERT + graph DB write both happen inside the {@code @Transactional}
+ * boundary; the DB commits only when {@code store()} returns. If the DB fails to commit after a
+ * successful graph write, graph triples will exist without a corresponding DB row.
  * If the graph write itself fails, the row is marked
- * {@code FAILED} and no retry is attempted. PostgreSQL is the system of record.</p>
+ * {@code FAILED} and no retry is attempted. The relational DB is the system of record.</p>
  */
 @Slf4j
 @Service
@@ -36,8 +37,8 @@ public class ValidationResultStoreImpl implements ValidationResultStore {
   /**
    * {@inheritDoc}
    *
-   * <p>Persists the result to PostgreSQL (with tamper-proof hash), then attempts a
-   * graph DB write (best-effort). The PostgreSQL row is the source of truth; a failed graph
+   * <p>Persists the result to the relational DB (with tamper-proof hash), then attempts a
+   * graph DB write (best-effort). The DB row is the source of truth; a failed graph
    * write marks the row {@code FAILED} and is not retried.</p>
    */
   @Override
@@ -49,7 +50,7 @@ public class ValidationResultStoreImpl implements ValidationResultStore {
     log.debug("store; saved ValidationResult id={}, conforms={}", saved.getId(), saved.isConforms());
 
     // Note: the graph write happens while the @Transactional method is still open.
-    // PostgreSQL commits when store() returns. Best-effort: graph write failure marks row FAILED; no retry.
+    // The DB transaction commits when store() returns. Best-effort: graph write failure marks row FAILED; no retry.
     tryWriteToGraph(saved);
 
     return saved.getId();
@@ -75,6 +76,23 @@ public class ValidationResultStoreImpl implements ValidationResultStore {
 
   @Override
   @Transactional
+  public void deleteByAssetId(String assetId) {
+    List<ValidationResult> results = repository.findAllByAssetId(assetId);
+    log.debug("deleteByAssetId; found {} results for assetId={}", results.size(), assetId);
+    for (ValidationResult result : results) {
+      String iri = graphWriter.resultIri(result.getId());
+      try {
+        graphStore.deleteValidationResultClaims(iri);
+      } catch (Exception e) {
+        log.warn("deleteByAssetId; graph cleanup failed for result id={}: {}", result.getId(), e.getMessage());
+      }
+    }
+    repository.deleteAllByAssetId(assetId);
+    log.debug("deleteByAssetId; deleted {} DB rows for assetId={}", results.size(), assetId);
+  }
+
+  @Override
+  @Transactional
   public void syncToGraph(ValidationResult result, GraphStore graphStore) {
     try {
       graphWriter.write(result, graphStore);
@@ -92,13 +110,6 @@ public class ValidationResultStoreImpl implements ValidationResultStore {
   public void markOutdatedByAssetId(String assetId, OutdatedReason reason) {
     repository.markOutdatedByAssetId(assetId, reason.name());
     log.debug("markOutdatedByAssetId; marked outdated assetId={}, reason={}", assetId, reason.name());
-  }
-
-  @Override
-  @Transactional
-  public void deleteByAssetId(String assetId) {
-    repository.deleteByAssetId(assetId);
-    log.debug("deleteByAssetId; deleted validation results assetId={}", assetId);
   }
 
   private ValidationResult buildEntity(ValidationResultRecord record) {

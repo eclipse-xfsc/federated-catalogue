@@ -142,6 +142,8 @@ federated-catalogue:
       - text/turtle
       - application/n-triples
       - application/rdf+xml
+  validation:
+    max-assets-per-request: 20  # Maximum number of asset IDs allowed in a single validateAssets request
   assets:
     human-readable-content-types:
       - application/pdf

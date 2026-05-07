@@ -33,6 +33,17 @@ public interface GraphStore {
     void deleteClaims(String credentialSubject);
 
     /**
+     * Deletes all graph triples associated with a validation result.
+     *
+     * <p>Removes triples where {@code resultIri} appears as subject or object,
+     * including {@code fcmeta:hasValidationResult} links from asset nodes and
+     * all {@code fcmeta:*} properties on the result node itself.</p>
+     *
+     * @param resultIri the IRI of the validation result (e.g. {@code fcmeta:ValidationResult/123})
+     */
+    void deleteValidationResultClaims(String resultIri);
+
+    /**
      * Query the graph when Cypher query is passed in query object and this
      * returns list of Maps with key value pairs as a result.
      *

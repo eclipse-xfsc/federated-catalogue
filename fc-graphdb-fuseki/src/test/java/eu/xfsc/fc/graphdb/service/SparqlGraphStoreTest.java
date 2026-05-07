@@ -390,6 +390,47 @@ public class SparqlGraphStoreTest {
     }
 
     @Test
+    void deleteValidationResultClaims_removesMatchingTriples_preservesUnrelated() {
+        String assetId1 = "http://example.org/asset/1";
+        String assetId2 = "http://example.org/asset/2";
+        String resultIri1 = "http://example.org/result/1";
+        String resultIri2 = "http://example.org/result/2";
+        String conformsPredicate = "http://example.org/conforms";
+
+        // Seed result1: property triple + link triple (assetId1 -> resultIri1)
+        graphStore.addClaims(List.of(
+            typeClaim(resultIri1, "http://example.org/ValidationResult"),
+            literalClaim(resultIri1, conformsPredicate, "true")
+        ), assetId1);
+        graphStore.addClaims(List.of(
+            new CredentialClaim("<" + assetId1 + ">", "<http://example.org/hasValidationResult>", "<" + resultIri1 + ">")
+        ), assetId1);
+
+        // Seed result2: same structure but different IRI — must survive the deletion
+        graphStore.addClaims(List.of(
+            typeClaim(resultIri2, "http://example.org/ValidationResult"),
+            literalClaim(resultIri2, conformsPredicate, "true")
+        ), assetId2);
+        graphStore.addClaims(List.of(
+            new CredentialClaim("<" + assetId2 + ">", "<http://example.org/hasValidationResult>", "<" + resultIri2 + ">")
+        ), assetId2);
+
+        long countBefore = queryAllClaimsByCredentialSubject().getResults().size();
+        assertTrue(countBefore > 0, "Precondition: claims must be present before deletion");
+
+        graphStore.deleteValidationResultClaims(resultIri1);
+
+        List<Map<String, Object>> remaining = queryAllClaimsByCredentialSubject().getResults();
+        boolean result1Gone = remaining.stream().noneMatch(r ->
+            resultIri1.equals(r.get("s")) || resultIri1.equals(r.get("o")));
+        assertTrue(result1Gone, "All triples referencing result1 IRI should be deleted");
+
+        boolean result2Intact = remaining.stream().anyMatch(r ->
+            resultIri2.equals(r.get("s")) || resultIri2.equals(r.get("o")));
+        assertTrue(result2Intact, "Triples for result2 should not be affected");
+    }
+
+    @Test
     void queryData_sparqlStarFilterBySpecificCredential_returnsOnlyThatCredential() {
         String credA = "http://example.org/credFilterA";
         String credB = "http://example.org/credFilterB";
@@ -410,7 +451,6 @@ public class SparqlGraphStoreTest {
             "Filter by credA should not return credB's claims");
     }
 
-    // --- Helpers ---
 
     private PaginatedResults<Map<String, Object>> querySparql(String sparql) {
         return graphStore.queryData(new GraphQuery(

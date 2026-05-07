@@ -37,9 +37,11 @@ import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
 import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
-import eu.xfsc.fc.core.service.verification.FormatDetector;
+import eu.xfsc.fc.core.service.verification.CredentialFormatDetector;
 import eu.xfsc.fc.core.service.verification.LoireMatcher;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
+import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
+import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
 import eu.xfsc.fc.core.service.verification.LoireJwtParser;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
@@ -96,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         DocumentLoaderProperties.class,
         DocumentLoaderConfig.class,
         DummyGraphStore.class, SchemaAuditRepository.class, FileStoreConfig.class,
-        FormatDetector.class,
+        CredentialFormatDetector.class,
         HttpDocumentResolver.class,
         IriGenerator.class,
         IriValidator.class,
@@ -113,6 +115,8 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
         SchemaJpaDao.class,
         SchemaModuleConfigService.class,
         SchemaStoreImpl.class,
+        RdfAssetParser.class,
+        ShaclValidationExecutor.class,
         SchemaValidationServiceImpl.class,
         ValidatorCacheJpaDao.class,
         Vc2Processor.class,

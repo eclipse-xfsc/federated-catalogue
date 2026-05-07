@@ -72,7 +72,7 @@ public class NonCredentialRdfGraphExtractionTest {
   private static final String RDFXML_OBJECT = "File Storage Service";
 
   // Single-triple JSON-LD document — no VerifiableCredential/VerifiablePresentation wrapper.
-  // FormatDetector returns UNKNOWN → non-credential extraction path is taken → JenaAllTriplesExtractor is used.
+  // CredentialFormatDetector returns UNKNOWN → non-credential extraction path is taken → JenaAllTriplesExtractor is used.
   private static final String SINGLE_TRIPLE_JSONLD = """
       {
           "@context": {"ex": "http://example.org/"},

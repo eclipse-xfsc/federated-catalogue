@@ -31,6 +31,7 @@ public final class VerificationConstants {
   public static final String MEDIA_TYPE_VP_JWT = "application/vp+jwt";
   public static final String MEDIA_TYPE_VC_LD_JSON = "application/vc+ld+json";
   public static final String MEDIA_TYPE_VP_LD_JSON = "application/vp+ld+json";
+  public static final String MEDIA_TYPE_LD_JSON = "application/ld+json";
 
     // RDF format media types
     public static final String MEDIA_TYPE_TURTLE = "text/turtle";

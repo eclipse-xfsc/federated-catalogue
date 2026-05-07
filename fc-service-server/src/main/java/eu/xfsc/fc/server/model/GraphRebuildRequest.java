@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 @lombok.ToString
 public class GraphRebuildRequest {
     
+    
     @Min(1)   
     private int chunkCount;
     @Min(0)   

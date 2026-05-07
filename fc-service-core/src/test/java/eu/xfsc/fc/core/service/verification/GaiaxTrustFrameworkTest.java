@@ -40,6 +40,8 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
 import eu.xfsc.fc.core.pojo.Validator;
+import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
+import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
@@ -72,7 +74,8 @@ import lombok.extern.slf4j.Slf4j;
     DocumentLoaderConfig.class, DocumentLoaderProperties.class, VerificationServiceImpl.class,
     SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class, DidResolverConfig.class,
     DidDocumentResolver.class, ValidatorCacheJpaDao.class,
-    ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class, SecurityAuditorAware.class})
+    ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class, SecurityAuditorAware.class,
+    RdfAssetParser.class, ShaclValidationExecutor.class, LoireJwtParser.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 public class GaiaxTrustFrameworkTest {
 
