@@ -2,22 +2,12 @@ package eu.xfsc.fc.core.service.pubsub;
 
 import eu.xfsc.fc.client.ExternalServiceException;
 import eu.xfsc.fc.core.config.AssetStoreConfig;
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.JacksonConfig;
-import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.PubSubConfig;
+import eu.xfsc.fc.core.config.VerificationStackTestConfig;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.cestracker.CesTrackerJpaDao;
-import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
-import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
-import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -29,24 +19,9 @@ import eu.xfsc.fc.core.service.assetstore.IriValidator;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
-import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.validation.ValidationResultStore;
-import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
-import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
-import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
-import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
-import eu.xfsc.fc.core.service.verification.FormatDetector;
-import eu.xfsc.fc.core.service.verification.LoireMatcher;
-import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
-import eu.xfsc.fc.core.service.verification.LoireJwtParser;
-import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
-import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
-import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import okhttp3.mockwebserver.MockResponse;
@@ -82,44 +57,18 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 @SpringBootTest(properties = {"publisher.impl=ces", "publisher.url=http://localhost:9091", "publisher.comp-url=http://localhost:9090"})
 @ActiveProfiles({"test"})
 @ContextConfiguration(classes = {
-        AssetJpaDao.class,
-        AssetAuditRepository.class,
-        AssetStoreConfig.class,
-        CesCompositePublisherTest.TestApplication.class,
-        CesTrackerJpaDao.class,
-        ClaimExtractionService.class,
-        CredentialVerificationStrategy.class,
-        DanubeTechFormatMatcher.class,
-        DatabaseConfig.class,
-        DidDocumentResolver.class,
-        DidResolverConfig.class,
-        DocumentLoaderProperties.class,
-        DocumentLoaderConfig.class,
-        DummyGraphStore.class, SchemaAuditRepository.class, FileStoreConfig.class,
-        FormatDetector.class,
-        HttpDocumentResolver.class,
-        IriGenerator.class,
-        IriValidator.class,
-        JwtContentPreprocessor.class,
-        JacksonConfig.class,
-        JenaAllTriplesExtractor.class,
-        JwtSignatureVerifier.class,
-        LoireMatcher.class,
-        LoireJwtParser.class,
-        ProtectedNamespaceFilter.class,
-        ProtectedNamespaceProperties.class,
-        PubSubConfig.class,
-        AdminConfigRepository.class,
-        SchemaJpaDao.class,
-        SchemaModuleConfigService.class,
-        SchemaStoreImpl.class,
-        SchemaValidationServiceImpl.class,
-        ValidatorCacheJpaDao.class,
-        Vc2Processor.class,
-        VerificationServiceImpl.class,
-        SecurityAuditorAware.class,
+    CesCompositePublisherTest.TestApplication.class,
+    VerificationStackTestConfig.class,
+    AssetAuditRepository.class,
+    AssetJpaDao.class,
+    AssetStoreConfig.class,
+    CesTrackerJpaDao.class,
+    DummyGraphStore.class,
+    IriGenerator.class,
+    IriValidator.class,
+    JacksonConfig.class,
+    PubSubConfig.class
 })
-//@Import(EmbeddedNeo4JConfig.class)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class CesCompositePublisherTest {
 

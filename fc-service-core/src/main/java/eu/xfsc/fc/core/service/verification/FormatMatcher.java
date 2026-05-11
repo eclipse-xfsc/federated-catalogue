@@ -9,7 +9,7 @@ import java.util.stream.StreamSupport;
 /**
  * Strategy interface for credential format detection.
  *
- * <p>Implementations are Spring beans collected by {@link FormatDetector}. Each matcher
+ * <p>Implementations are Spring beans collected by {@link CredentialFormatDetector}. Each matcher
  * inspects a {@link DetectionContext} and returns the format it recognises, or
  * {@link Optional#empty()} to pass to the next matcher.
  *

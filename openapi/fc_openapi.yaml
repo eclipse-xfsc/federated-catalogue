@@ -729,7 +729,7 @@ components:
           description: Validator IDs (schema or trust framework) used for validation
         validatorType:
           type: string
-          enum: [SCHEMA, TRUST_FRAMEWORK]
+          enum: [SHACL, JSON_SCHEMA, XML_SCHEMA, TRUST_FRAMEWORK]
           description: Distinguishes on-demand schema validation from external trust framework validation results
         conforms:
           type: boolean
@@ -855,6 +855,114 @@ components:
           type: array
           items:
             type: string
+
+    ValidationRequest:
+      type: object
+      required:
+        - assetIds
+      properties:
+        assetIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 20
+          description: >
+            Asset IRIs to validate (1 up to the configured maximum, default 20 - see
+            `federated-catalogue.validation.max-assets-per-request`). A single-ID request runs full type-based dispatch
+            (SHACL for RDF assets, JSON Schema for JSON, XML Schema for XML).
+            Multiple IDs merge all assets into a single data graph for SHACL-only validation;
+            all assets must be RDF assets in that case.
+        schemaIds:
+          type: array
+          items:
+            type: string
+          description: >
+            Optional schema IDs to validate against. For single-asset requests, each schema
+            must match the asset type (SHACL shape for RDF, JSON Schema for JSON, XML Schema
+            for XML). For multi-asset requests, each must be a SHACL shape.
+            Mutually exclusive with validateAgainstAllSchemas=true.
+        validateAgainstAllSchemas:
+          type: boolean
+          default: false
+          description: >
+            If true, validate against all stored schemas matching the asset type (single-asset)
+            or all stored SHACL shapes (multi-asset).
+
+    ValidationResponse:
+      type: object
+      required:
+        - assetIds
+        - schemaIds
+        - conforms
+        - validatedAt
+        - validationResultIds
+      properties:
+        assetIds:
+          type: array
+          items:
+            type: string
+          description: Asset IRIs that were validated
+        schemaIds:
+          type: array
+          items:
+            type: string
+          description: Schema IDs that were validated against
+        conforms:
+          type: boolean
+          description: True if all assets passed validation against all schemas
+        validatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the validation run
+        validationResultIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          minItems: 1
+          description: >
+            IDs of all ValidationResult records stored for this request, one per validator paradigm that ran.
+        report:
+          $ref: '#/components/schemas/ValidationReport'
+
+    ValidationReport:
+      type: object
+      required:
+        - conforms
+      properties:
+        conforms:
+          type: boolean
+          description: True if validation passed with no violations
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationViolation'
+          description: List of constraint violations (empty if conforms=true)
+        rawReport:
+          type: string
+          nullable: true
+          description: Serialised raw report (SHACL Turtle for RDF; error message for JSON/XML)
+
+    ValidationViolation:
+      type: object
+      properties:
+        focusNode:
+          type: string
+          description: The RDF resource that violated the constraint
+        resultPath:
+          type: string
+          description: The property path involved in the violation
+        message:
+          type: string
+          description: Human-readable violation message
+        severity:
+          type: string
+          enum: [VIOLATION, WARNING, INFO]
+          description: Violation severity level
+        sourceShape:
+          type: string
+          description: The SHACL shape that was violated
 
   parameters:
     OffsetParam:
@@ -1462,6 +1570,51 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/validate:
+    post:
+      tags:
+        - Assets
+      summary: Validate one or more assets against stored schemas
+      description: >
+        Validates stored assets against SHACL, JSON Schema, or XML Schema depending on asset
+        type and request size. A single-ID request runs full type-based dispatch: RDF assets
+        validate via SHACL (and optionally JSON Schema / XML Schema if the serialisation
+        matches); non-RDF assets validate via JSON Schema or XML Schema. A multi-ID request
+        merges all asset content into a single data graph and validates via SHACL only
+        (R₁ ∪ R₂ against S); all assets must be RDF assets. Maximum number of assets per request
+        is configurable via `federated-catalogue.validation.max-assets-per-request` (default: 20).
+      operationId: validateAssets
+      security:
+        - jwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequest'
+      responses:
+        '200':
+          description: Validation completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Asset type is not validatable (not RDF or unsupported content type)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServerError'
   /assets/{id}:

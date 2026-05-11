@@ -56,7 +56,6 @@ class RevalidatorChunksDaoTest {
     schemaFileRepository.deleteAll();
   }
 
-  // --- Helpers ---
 
   private void insertChunk(int chunkId, Instant lastcheck) {
     jdbc.update("INSERT INTO revalidatorchunks(chunkid, lastcheck) VALUES (?, ?)", chunkId, java.sql.Timestamp.from(lastcheck));

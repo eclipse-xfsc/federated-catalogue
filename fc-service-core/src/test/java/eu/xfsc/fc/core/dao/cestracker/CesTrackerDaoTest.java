@@ -46,7 +46,6 @@ class CesTrackerDaoTest {
     jdbcTemplate.update("DELETE FROM ces_tracker");
   }
 
-  // --- Helper ---
 
   private static CesTracking buildTracking(String cesId, String event, Instant createdAt,
       int credProcessed, String credId, String error) {

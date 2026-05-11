@@ -30,6 +30,11 @@ public class DummyGraphStore implements GraphStore {
     }
 
     @Override
+    public void deleteValidationResultClaims(String resultIri) {
+        // Dummy implementation
+    }
+
+    @Override
     public PaginatedResults<Map<String, Object>> queryData(GraphQuery query) {
         // Dummy implementation
         return new PaginatedResults<>(Collections.emptyList());

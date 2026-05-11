@@ -176,7 +176,6 @@ class GraphAdminServiceTest {
     assertEquals("out-of-sync", body.getSyncAssessment());
   }
 
-  // --- Helpers ---
 
   private void stubEnabledBackend(GraphBackendType type, boolean healthy) {
     when(graphStore.getBackendType()).thenReturn(type);

@@ -65,7 +65,6 @@ class AssetDaoTest {
     assetDao.deleteAll();
   }
 
-  // --- Helper ---
 
   private static AssetRecord buildRecord(String hash, String subjectId, String issuer,
       Instant uploadTime, Instant statusTime, Instant expirationTime,

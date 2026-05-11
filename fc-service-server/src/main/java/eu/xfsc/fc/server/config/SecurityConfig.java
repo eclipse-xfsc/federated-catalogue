@@ -91,6 +91,8 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.GET, "/assets/*/human-readable").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets/*/machine-readable").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets/*/validations").hasAnyRole(ASSET_READ, ADMIN_ALL)
+          .requestMatchers(HttpMethod.POST, "/assets/validate").hasAnyRole(ASSET_READ, ADMIN_ALL)
+          .requestMatchers(HttpMethod.POST, "/assets/*/validate").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets/*/provenance").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.GET, "/assets/*/provenance", "/assets/*/provenance/*").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets/*/provenance/*/verify", "/assets/*/provenance/verify").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)

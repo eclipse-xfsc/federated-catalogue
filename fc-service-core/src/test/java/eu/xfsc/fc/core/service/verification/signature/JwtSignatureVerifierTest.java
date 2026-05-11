@@ -319,7 +319,6 @@ class JwtSignatureVerifierTest {
     assertThrows(ClientException.class, () -> verifier.verifyFromDataUrl(dataUrl));
   }
 
-  // --- helpers ---
 
   private void mockDidDoc(String kid, Map<String, Object> jwkMap) {
     VerificationMethod vm = mock(VerificationMethod.class);

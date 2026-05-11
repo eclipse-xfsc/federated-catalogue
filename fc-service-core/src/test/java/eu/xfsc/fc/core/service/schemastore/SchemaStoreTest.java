@@ -55,6 +55,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
+import eu.xfsc.fc.core.config.TrustFrameworkRegistryConfig;
+import eu.xfsc.fc.core.config.XmlSecurityConfig;
 import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
@@ -78,7 +80,8 @@ import lombok.extern.slf4j.Slf4j;
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {SchemaStoreTest.TestApplication.class, FileStoreConfig.class,
   SchemaStoreTest.class, SchemaStoreImpl.class, DatabaseConfig.class, SchemaJpaDao.class, SchemaAuditRepository.class,
-  ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class, SecurityAuditorAware.class})
+    ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class, SecurityAuditorAware.class,
+    TrustFrameworkRegistryConfig.class, XmlSecurityConfig.class})
 @Transactional
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
 public class SchemaStoreTest {
@@ -414,15 +417,15 @@ public class SchemaStoreTest {
   @Test
   void testAddDeleteDefaultSchemas() {
     int initialized = schemaStore.initializeDefaultSchemas();
-    assertEquals(2, initialized, "Expected different number of schemas initialized.");
+    assertTrue(initialized >= 2, "Expected at least bundle ontology and shapes to be initialized.");
     Map<SchemaType, List<String>> schemaList = schemaStore.getSchemaList();
-    assertEquals(1, schemaList.get(SchemaType.ONTOLOGY).size());
-    assertEquals(1, schemaList.get(SchemaType.SHAPE).size());
-    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/2511"), "2511 ontology identifier not found in schema list.");
+    assertTrue(schemaList.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/2511"),
+        "2511 ontology identifier not found in schema list.");
+    assertFalse(schemaList.get(SchemaType.SHAPE).isEmpty(), "SHAPE schema list must not be empty.");
     schemaStore.deleteSchema("https://w3id.org/gaia-x/2511");
     Map<SchemaType, List<String>> schemaListDelete = schemaStore.getSchemaList();
-    assertTrue(schemaListDelete.get(SchemaType.ONTOLOGY).isEmpty(),
-        "Ontology schema list should be empty after deletion.");
+    assertFalse(schemaListDelete.get(SchemaType.ONTOLOGY).contains("https://w3id.org/gaia-x/2511"),
+        "gx-2511 ontology should have been deleted.");
   }
 
   /**

@@ -1,10 +1,5 @@
 package eu.xfsc.fc.core.util;
 
-import static org.apache.jena.rdf.model.ResourceFactory.createProperty;
-import static org.apache.jena.rdf.model.ResourceFactory.createResource;
-import static org.apache.jena.rdf.model.ResourceFactory.createStatement;
-import static org.apache.jena.rdf.model.ResourceFactory.createTypedLiteral;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -19,37 +14,33 @@ import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.datatypes.DatatypeFormatException;
-import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.ontology.OntModel;
 import org.apache.jena.ontology.OntModelSpec;
-import org.apache.jena.query.Query;
-import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
-import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.RiotException;
 import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.shared.impl.JenaParameters;
 import org.apache.jena.vocabulary.RDF;
-import org.topbraid.shacl.util.ModelPrinter;
-import org.topbraid.shacl.validation.ValidationUtil;
-import org.topbraid.shacl.vocabulary.SH;
-
 
 import eu.xfsc.fc.core.exception.QueryException;
-import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
+import eu.xfsc.fc.core.pojo.RdfClaim;
+import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
+import eu.xfsc.fc.core.service.trustframework.ResolvedRole;
+import eu.xfsc.fc.core.service.trustframework.RoleConfig;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
+import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -64,19 +55,19 @@ public class ClaimValidator {
         // save the actual settings to not interfere with other modules which
         // rely on other settings
         eagerJenaLiteralValidation =
-                org.apache.jena.shared.impl.JenaParameters.enableEagerLiteralValidation;
+            JenaParameters.enableEagerLiteralValidation;
         jenaAcceptanceOfUnknownLiteralDatatypes =
-                org.apache.jena.shared.impl.JenaParameters.enableSilentAcceptanceOfUnknownDatatypes;
+            JenaParameters.enableSilentAcceptanceOfUnknownDatatypes;
 
         // Now switch to picky mode
-        org.apache.jena.shared.impl.JenaParameters.enableEagerLiteralValidation = true;
-        org.apache.jena.shared.impl.JenaParameters.enableSilentAcceptanceOfUnknownDatatypes = false;
+      JenaParameters.enableEagerLiteralValidation = true;
+      JenaParameters.enableSilentAcceptanceOfUnknownDatatypes = false;
     }
 
     private void resetJenaLiteralValidation() {
-        org.apache.jena.shared.impl.JenaParameters.enableEagerLiteralValidation =
+      JenaParameters.enableEagerLiteralValidation =
                 eagerJenaLiteralValidation;
-        org.apache.jena.shared.impl.JenaParameters.enableSilentAcceptanceOfUnknownDatatypes =
+      JenaParameters.enableSilentAcceptanceOfUnknownDatatypes =
                 jenaAcceptanceOfUnknownLiteralDatatypes;
     }
 
@@ -173,63 +164,30 @@ public class ClaimValidator {
     
     public Pair<String, Set<String>> resolveClaims(List<RdfClaim> claims, String subject) {
         Model model = validateClaims(claims);
-        String added = ExtendClaims.addPropertyGraphUri(model, subject);
+      String added = ExtendClaims.addPropertyGraphUri(model, subject, VerificationConstants.GAIAX_CLAIMS_GRAPH_URI);
         Set<String> props = ExtendClaims.getMultivalProp(model);
         return Pair.of(added, props);
     }
     
     
-    /**
-     * Method that validates a dataGraph against shaclShape
-     * @param claims the claims to be validated
-     * @param schema the shacl shape to be used for validation
-     * @param sm StreamManager to be used for parsing the schema
-     * @return SchemaValidationResult object
-     */
-    public static String validateClaimsBySchema(List<RdfClaim> claims, ContentAccessor schema, StreamManager sm) {
-      Model data = ModelFactory.createDefaultModel();
-      Model shape = ModelFactory.createDefaultModel();
-      RDFParser.create()
-              .streamManager(sm)
-              .source(schema.getContentAsStream())
-              .lang(Lang.TURTLE)
-              .parse(shape);
-
-      for (RdfClaim claim: claims) {
-        log.trace("validateClaimsBySchema; {}", claim);
-        Statement triple = claim.getTriple();
-        if (triple != null) {
-          // Statement-based claim: add directly to preserve blank node identity and datatypes
-          data.add(triple);
-          continue;
-        }
-        // String-based claim fallback: derive type from formatted object string
-        RDFNode node;
-        String objectStr = claim.getObjectString();
-        if (objectStr != null && objectStr.startsWith("\"")) {
-          node = createTypedLiteral(claim.getObjectValue(), (RDFDatatype) null);
-        } else {
-          node = createResource(claim.getObjectValue());
-        }
-        Statement s = createStatement(createResource(claim.getSubjectValue()), createProperty(claim.getPredicateValue()), node);
-        data.add(s);
-      }
-      
-      Resource reportResource = ValidationUtil.validateModel(data, shape, true);
-      log.debug("validateClaimsBySchema; got result: {}", reportResource);
-      data.close();
-      shape.close();
-
-      if (reportResource.getProperty(SH.conforms).getBoolean()) {
-    	  return null;
-      }
-      return ModelPrinter.get().print(reportResource.getModel());
-    }   
-    
     private static final String CREDENTIAL_SUBJECT = CredentialConstants.CREDENTIAL_SUBJECT_URI;
-    
-    public static TrustFrameworkBaseClass getSubjectType(ContentAccessor ontology, StreamManager sm, String subject,
-        Map<TrustFrameworkBaseClass, List<String>> classUris) {
+
+  /**
+   * Resolves the trust-framework role of the credential subject.
+   *
+   * <p>Fast path: looks up each type URI in the registry's pre-built index (populated at boot
+   * from bundle ontologies). Slow path: when the registry has no match and a composite ontology
+   * is provided, performs a SPARQL subclass walk over that ontology — needed for subclasses
+   * introduced via dynamically uploaded schemas.
+   *
+   * @param sm                Jena stream manager (for JSON-LD context resolution)
+   * @param subject           JSON-LD credential string whose {@code credentialSubject} type is inspected
+   * @param registry          the active trust-framework registry
+   * @param compositeOntology union ontology to use as fallback; may be {@code null}
+   * @return the first resolved role, or {@link ResolvedRole#UNKNOWN} when no framework claims the type
+   */
+  public static ResolvedRole resolveSubjectRole(StreamManager sm, String subject,
+                                                TrustFrameworkRegistry registry, ContentAccessor compositeOntology) {
         try {
           Model data = ModelFactory.createDefaultModel();
           RDFParser.create()
@@ -238,53 +196,77 @@ public class ClaimValidator {
                   .lang(Lang.JSONLD11)
                   .parse(data);
 
+          List<String> unresolved = new ArrayList<>();
           NodeIterator node = data.listObjectsOfProperty(data.createProperty(CREDENTIAL_SUBJECT));
           while (node.hasNext()) {
             NodeIterator typeNode = data.listObjectsOfProperty(node.nextNode().asResource(), RDF.type);
-            List<RDFNode> rdfNodeList = typeNode.toList();
-            for (RDFNode rdfNode: rdfNodeList) {
-              String resourceURI = rdfNode.asResource().getURI();
-              // Check whether the type is or is at least derived from one of the base types according to the TrustFramework
-              for (Map.Entry<TrustFrameworkBaseClass, List<String>> classEntry: classUris.entrySet()) {
-                for (String rootUri : classEntry.getValue()) {
-                  if (checkTypeSubClass(ontology, resourceURI, rootUri)) {
-                    return classEntry.getKey();
-                  }
-                }
+            for (RDFNode rdfNode : typeNode.toList()) {
+              if (!rdfNode.isURIResource()) {
+                continue;
               }
+              String typeUri = rdfNode.asResource().getURI();
+              ResolvedRole role = registry.resolveRole(typeUri);
+              if (role.isResolved()) {
+                return role;
+              }
+              unresolved.add(typeUri);
             }
+          }
+          if (compositeOntology != null && !unresolved.isEmpty()) {
+            return resolveViaOntology(unresolved, registry, compositeOntology);
           }
         } catch (Exception e) {
-          log.debug("getSubjectType.error: {}", e.getMessage());
+          log.debug("resolveSubjectRole.error: {}", e.getMessage());
         }
-        return null;
-      }
+    return ResolvedRole.UNKNOWN;
+  }
 
-    private static boolean checkTypeSubClass(ContentAccessor ontology, String type, String gaxType) {
-        log.trace("checkTypeSubClass.enter; got type: {}, gaxType: {}", type, gaxType);
-        if (type.equals(gaxType)) {
-          return true;
+  private static ResolvedRole resolveViaOntology(List<String> typeUris,
+                                                 TrustFrameworkRegistry registry, ContentAccessor compositeOntology) {
+    OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
+        model.read(new StringReader(compositeOntology.getContentAsString()), null, Lang.TURTLE.getName());
+    for (TrustFrameworkBundle bundle : registry.getBundles()) {
+      FrameworkBundleConfig config = bundle.config();
+      for (Map.Entry<String, RoleConfig> roleEntry : config.roles().entrySet()) {
+        String roleName = roleEntry.getKey();
+        RoleConfig roleConfig = roleEntry.getValue();
+        List<String> rootUris = new ArrayList<>();
+        if (config.namespace() != null) {
+          rootUris.add(config.namespace() + roleName);
         }
-        
-        String queryString = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-                             "select ?uri where { ?uri rdfs:subClassOf <" + gaxType + ">}";
-        Query query = QueryFactory.create(queryString);
-        //ContentAccessor gaxOntology = schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY);
-        OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
-        model.read(new StringReader(ontology.getContentAsString()), null, Lang.TURTLE.getName());
-        List<String> subClassUris = new ArrayList<>();
-        try (QueryExecution qe = QueryExecutionFactory.create(query, model)) {
-            ResultSet results = qe.execSelect();
-            while (results.hasNext()) {
-                subClassUris.add(results.next().get("uri").toString());
+        rootUris.addAll(roleConfig.additionalRoots());
+        ResolvedRole resolved = new ResolvedRole(config.id(), roleName);
+        for (String typeUri : typeUris) {
+          for (String rootUri : rootUris) {
+            if (isSubclassOf(typeUri, rootUri, model)) {
+              return resolved;
             }
-        }
-        for (String node : subClassUris) {
-          if (node.equals(type)) {
-            return true;
           }
         }
-        return false;
-    }    
+      }
+    }
+    return ResolvedRole.UNKNOWN;
+  }
+
+  private static boolean isSubclassOf(String typeUri, String rootUri, OntModel model) {
+    if (!isValidSparqlUri(typeUri) || !isValidSparqlUri(rootUri)) {
+      return false;
+    }
+    String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+        + "ASK { <" + typeUri + "> rdfs:subClassOf+ <" + rootUri + "> }";
+    try (var qe = QueryExecutionFactory.create(QueryFactory.create(query), model)) {
+      return qe.execAsk();
+    }
+  }
+
+  private static boolean isValidSparqlUri(String uri) {
+    return uri != null
+        && !uri.contains(">")
+        && !uri.contains("<")
+        && !uri.contains(" ")
+        && !uri.contains("\n")
+        && !uri.contains("\r");
+  }
 
 }
+

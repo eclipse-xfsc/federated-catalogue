@@ -10,10 +10,14 @@ import eu.xfsc.fc.api.generated.model.ProvenanceCredential;
 import eu.xfsc.fc.api.generated.model.ProvenanceCredentials;
 import eu.xfsc.fc.api.generated.model.ProvenanceVerificationResult;
 import eu.xfsc.fc.api.generated.model.StoredValidationResult;
+import eu.xfsc.fc.api.generated.model.ValidationRequest;
+import eu.xfsc.fc.api.generated.model.ValidationResponse;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
+import eu.xfsc.fc.core.service.validation.AssetValidationService;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.AssetType;
@@ -80,6 +84,7 @@ public class AssetService implements AssetsApiDelegate {
   @Qualifier("assetFileStore") private final FileStore assetFileStore;
   private final AssetProperties assetProperties;
   private final ValidationResultStore validationResultStore;
+  private final AssetValidationService assetValidationService;
   private final ProvenanceService provenanceService;
 
   /**
@@ -531,6 +536,24 @@ public class AssetService implements AssetsApiDelegate {
     }
   }
 
+
+  /**
+   * POST /assets/validate — validates one or more assets against stored schemas.
+   *
+   * <p>Single-asset requests run full type-based dispatch (SHACL, JSON Schema, XML Schema).
+   * Multi-asset requests merge into one data graph for SHACL-only validation.</p>
+   *
+   * @param validationRequest asset IRIs and schema selection
+   * @return validation response with result ID and optional report
+   */
+  @Override
+  public ResponseEntity<ValidationResponse> validateAssets(ValidationRequest validationRequest) {
+    if (validationRequest == null) {
+      throw new ClientException("Request body is required");
+    }
+    log.debug("validateAssets; assetIds={}", validationRequest.getAssetIds());
+    return ResponseEntity.ok(assetValidationService.validateAssets(validationRequest));
+  }
 
   /**
    * Verify a credential body, check participant access, and store it.

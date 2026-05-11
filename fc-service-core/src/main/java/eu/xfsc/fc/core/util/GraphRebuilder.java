@@ -27,7 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 /**
- * A set of tools to rebuild the graph db.
+ * A set of tools to rebuild the graph store.
  */
 @Slf4j
 @AllArgsConstructor
@@ -118,7 +118,7 @@ public class GraphRebuilder {
 
     ProcessorUtils.shutdownProcessors(executorService, taskQueue, 10, TimeUnit.MINUTES);
 
-    // Separate pass: restore link triples from PostgreSQL.
+    // Separate pass: restore link triples from persisted asset metadata records.
     // This must NOT be merged into addAssetToGraph() because non-RDF (human-readable) assets
     // have contentAccessor = null; calling extractClaims(null) would throw a NullPointerException.
     rebuildLinkTriples();
@@ -131,7 +131,7 @@ public class GraphRebuilder {
 
   /**
    * Restores {@code fcmeta:hasHumanReadable} and {@code fcmeta:hasMachineReadable} triples
-   * from the {@code assets} PostgreSQL table.
+   * from stored asset metadata records.
    *
    * <p>Only machine-readable assets with a linked asset are fetched. One row is sufficient to
    * reconstruct both directions because {@link #writeLinkTriples} writes both triples.</p>
@@ -183,7 +183,7 @@ public class GraphRebuilder {
     }
 
   /**
-   * Rebuilds validation result triples in the graph DB from PostgreSQL records.
+   * Rebuilds validation result triples in the graph store from stored validation result records.
    *
    * <p>Iterates through all {@link ValidationResult} entities and re-projects their
    * {@code fcmeta:} triples to the graph store. Updates {@code graph_sync_status} to

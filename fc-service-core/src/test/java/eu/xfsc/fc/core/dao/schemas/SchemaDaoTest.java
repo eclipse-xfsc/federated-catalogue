@@ -61,7 +61,6 @@ class SchemaDaoTest {
     schemaDao.deleteAll();
   }
 
-  // --- Helper ---
 
   private static SchemaRecord buildRecord(String schemaId, String nameHash, SchemaType type,
       Instant uploadTime, Instant updateTime, String content, Set<String> terms) {
