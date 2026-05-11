@@ -1,23 +1,8 @@
 package eu.xfsc.fc.core.service.verification;
 
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.config.FileStoreConfig;
-import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
+import eu.xfsc.fc.core.config.VerificationStackTestConfig;
 import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheDao;
-import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
-import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.pojo.Validator;
-import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
-import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
-import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
-import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -41,12 +26,7 @@ import java.time.temporal.ChronoUnit;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {ValidatorCacheTest.TestApplication.class, ValidatorCacheJpaDao.class, DatabaseConfig.class, FileStoreConfig.class,
-        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
-        DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
-        JwtSignatureVerifier.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
-        SecurityAuditorAware.class,
-        RdfAssetParser.class, ShaclValidationExecutor.class, LoireJwtParser.class})
+@ContextConfiguration(classes = {ValidatorCacheTest.TestApplication.class, VerificationStackTestConfig.class})
 //@DirtiesContext
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 public class ValidatorCacheTest {

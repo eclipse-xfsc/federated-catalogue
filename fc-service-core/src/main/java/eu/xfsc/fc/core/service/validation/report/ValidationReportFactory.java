@@ -64,9 +64,9 @@ public class ValidationReportFactory {
       violations.add(violation);
     }
     return new ValidationReport()
-      .conforms(false)
-      .violations(violations)
-      .rawReport(ModelPrinter.get().print(reportResource.getModel()));
+        .conforms(false)
+        .violations(violations)
+        .rawReport(ModelPrinter.get().print(reportResource.getModel()));
   }
 
   /**
@@ -96,11 +96,11 @@ public class ValidationReportFactory {
    */
   public static ValidationReport fromSaxException(SAXException e) {
     return new ValidationReport()
-      .conforms(false)
-      .violations(List.of(new ValidationViolation()
+        .conforms(false)
+        .violations(List.of(new ValidationViolation()
         .message(e.getMessage())
-        .severity(ValidationViolation.SeverityEnum.VIOLATION)))
-      .rawReport(e.getMessage());
+            .severity(ValidationViolation.SeverityEnum.VIOLATION)))
+        .rawReport(e.getMessage());
   }
 
   private static ValidationViolation toJsonViolation(Error error) {

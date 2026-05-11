@@ -1,19 +1,10 @@
 package eu.xfsc.fc.core.service.verification;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.config.FileStoreConfig;
-import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
+import eu.xfsc.fc.core.config.VerificationStackTestConfig;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.revalidator.RevalidatorChunksJpaDao;
-import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
-import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -21,18 +12,12 @@ import eu.xfsc.fc.core.pojo.ContentAccessorFile;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
-import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
-import eu.xfsc.fc.core.service.provenance.ProvenanceService;
-import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
-import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
-import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
-import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
-import eu.xfsc.fc.core.service.validation.ValidationResultStore;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.service.assetstore.IriGenerator;
 import eu.xfsc.fc.core.service.assetstore.IriValidator;
+import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
+import eu.xfsc.fc.core.service.provenance.ProvenanceService;
+import eu.xfsc.fc.core.service.schemastore.SchemaStore;
+import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -71,12 +56,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {RevalidationServiceTest.TestApplication.class, RevalidationServiceImpl.class, RevalidatorChunksJpaDao.class, FileStoreConfig.class, DummyGraphStore.class,
-  VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class, ValidatorCacheJpaDao.class, AssetStoreImpl.class, AssetJpaDao.class, AssetAuditRepository.class,
-  DocumentLoaderConfig.class, DocumentLoaderProperties.class, DidResolverConfig.class, DidDocumentResolver.class, HttpDocumentResolver.class,
-  JwtSignatureVerifier.class, ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class,
-  IriGenerator.class, IriValidator.class, ObjectMapper.class, SecurityAuditorAware.class,
-  RdfAssetParser.class, ShaclValidationExecutor.class, LoireJwtParser.class})
+@ContextConfiguration(classes = {
+    RevalidationServiceTest.TestApplication.class,
+    VerificationStackTestConfig.class,
+    AssetAuditRepository.class,
+    AssetJpaDao.class,
+    AssetStoreImpl.class,
+    DummyGraphStore.class,
+    IriGenerator.class,
+    IriValidator.class,
+    ObjectMapper.class,
+    RevalidationServiceImpl.class,
+    RevalidatorChunksJpaDao.class
+})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 //@Import(EmbeddedNeo4JConfig.class)
 public class RevalidationServiceTest {
