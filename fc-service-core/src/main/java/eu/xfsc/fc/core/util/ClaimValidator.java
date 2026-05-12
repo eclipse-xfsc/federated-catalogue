@@ -225,7 +225,7 @@ public class ClaimValidator {
                                                  TrustFrameworkRegistry registry, ContentAccessor compositeOntology) {
     OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         model.read(new StringReader(compositeOntology.getContentAsString()), null, Lang.TURTLE.getName());
-    for (TrustFrameworkBundle bundle : registry.getBundles()) {
+    for (TrustFrameworkBundle bundle : registry.getActiveBundles()) {
       FrameworkBundleConfig config = bundle.config();
       for (Map.Entry<String, RoleConfig> roleEntry : config.roles().entrySet()) {
         String roleName = roleEntry.getKey();

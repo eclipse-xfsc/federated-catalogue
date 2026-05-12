@@ -48,7 +48,7 @@ import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.ParticipantMetaData;
 import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
@@ -194,7 +194,8 @@ public class ParticipantsControllerTest {
   @Order(10)
   public void addParticipantShouldReturnCreatedResponse() throws Exception {
     String json = getMockFileDataAsString(DEFAULT_PARTICIPANT_FILE);
-    ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
+    ParticipantMetaData part =
+        new ParticipantMetaData("did:example:credSub", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_CREATED, part);
 
     deleteParticipantFromAssetStore(part);
@@ -210,7 +211,7 @@ public class ParticipantsControllerTest {
             .getContentAsString();
     ParticipantMetaData partResult = objectMapper.readValue(response, ParticipantMetaData.class);
     assertNotNull(part);
-    assertEquals("did:example:issuer", partResult.getId());
+    assertEquals("did:example:credSub", partResult.getId());
     assertEquals("did:example:holder", partResult.getName());
     // Public key is null when signature verification is disabled (no validators extracted)
     assertNull(partResult.getPublicKey());
@@ -224,19 +225,20 @@ public class ParticipantsControllerTest {
   @Order(10)
   public void addDuplicateParticipantShouldReturnConflictResponse() throws Exception {
     String json = getMockFileDataAsString(DEFAULT_PARTICIPANT_FILE);
-    ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
+    ParticipantMetaData part =
+        new ParticipantMetaData("did:example:credSub", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_CREATED, part);
 
     deleteParticipantFromAssetStore(part);
 
     ContentAccessorDirect contentAccessor = new ContentAccessorDirect(json);
-    CredentialVerificationResultParticipant verResult = verificationService.verifyParticipantCredential(contentAccessor);
+    CredentialVerificationResult verResult = verificationService.verifyCredential(contentAccessor);
     AssetMetadata assetMetadata = new AssetMetadata(contentAccessor, verResult);
     assetStorePublisher.storeCredential(assetMetadata, verResult);
 
     List<Map<String, Object>> nodes = graphStore.queryData(new GraphQuery(
             "MATCH (n) WHERE $graphUri IN n.claimsGraphUri RETURN n",
-            Map.of("graphUri", "did:example:issuer")
+        Map.of("graphUri", "did:example:credSub")
     )).getResults();
     log.debug("addDuplicateParticipantShouldReturnConflictResponse-1; got {} nodes", nodes.size());
     assertEquals(1, nodes.size());
@@ -250,7 +252,7 @@ public class ParticipantsControllerTest {
 
     nodes = graphStore.queryData(new GraphQuery(
             "MATCH (n) WHERE $graphUri IN n.claimsGraphUri RETURN n",
-            Map.of("graphUri", "did:example:issuer")
+        Map.of("graphUri", "did:example:credSub")
     )).getResults();
     log.debug("addDuplicateParticipantShouldReturnConflictResponse-2; got {} nodes", nodes.size());
     assertEquals(1, nodes.size());
@@ -442,14 +444,15 @@ public class ParticipantsControllerTest {
   @Test
   @WithMockJwtAuth(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX}, // think how to provide claims to test Jwt converter
         claims = @OpenIdClaims(otherClaims = @Claims(
-        	stringClaims = {@StringClaim(name = "participant_id", value = "did:example:issuer")},
+            stringClaims = {@StringClaim(name = "participant_id", value = "did:example:credSub")},
         	stringArrayClaims = {@StringArrayClaim(name = "roles", value = "gaia-x-admin")}
         	)))
   @Order(30)
   public void updateParticipantShouldReturnSuccessResponse() throws Exception {
 
     String json = getMockFileDataAsString(DEFAULT_PARTICIPANT_FILE);
-    ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key", json);
+    ParticipantMetaData part =
+        new ParticipantMetaData("did:example:credSub", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_OK, part);
 
     String partId = URLEncoder.encode(part.getId(), Charset.defaultCharset());
@@ -466,7 +469,7 @@ public class ParticipantsControllerTest {
             .getContentAsString();
     ParticipantMetaData partResult = objectMapper.readValue(response, ParticipantMetaData.class);
     assertNotNull(part);
-    assertEquals("did:example:issuer", partResult.getId());
+    assertEquals("did:example:credSub", partResult.getId());
     assertEquals("did:example:holder", partResult.getName());
     // Public key is null when signature verification is disabled (no validators extracted)
     assertNull(partResult.getPublicKey());
@@ -493,17 +496,18 @@ public class ParticipantsControllerTest {
   @Test
   @WithMockJwtAuth(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX},
         claims = @OpenIdClaims(otherClaims = @Claims(stringClaims =
-            {@StringClaim(name = "participant_id", value = "did:example:issuer")})))
+            {@StringClaim(name = "participant_id", value = "did:example:credSub")})))
   @Order(30)
   public void updateParticipantWithOtherIdShouldReturnBadClientResponse() throws Exception {
 
     String json = getMockFileDataAsString(ALTERNATIVE_PARTICIPANT_FILE);
 
-    ParticipantMetaData part = new ParticipantMetaData("did:example:new-issuer", "did:example:holder", "did:example:holder#key", json);
+    ParticipantMetaData part =
+        new ParticipantMetaData("did:example:alt-credSub", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_OK, part);
 
     ContentAccessorDirect contentAccessor = new ContentAccessorDirect(json);
-    CredentialVerificationResultParticipant verResult = verificationService.verifyParticipantCredential(contentAccessor);
+    CredentialVerificationResult verResult = verificationService.verifyCredential(contentAccessor);
     AssetMetadata assetMetadata = new AssetMetadata(contentAccessor, verResult);
     assetStorePublisher.storeCredential(assetMetadata, verResult);
 
@@ -520,12 +524,13 @@ public class ParticipantsControllerTest {
   @Test
   @WithMockJwtAuth(authorities = {CATALOGUE_ADMIN_ROLE_WITH_PREFIX},
         claims = @OpenIdClaims(otherClaims = @Claims(stringClaims =
-            {@StringClaim(name = "participant_id", value = "did:example:new-issuer")})))
+            {@StringClaim(name = "participant_id", value = "did:example:alt-credSub")})))
   @Order(30)
   public void updateParticipantFailWithKeycloakErrorShouldReturnErrorWithoutDBStore() throws Exception {
 
     String json = getMockFileDataAsString(ALTERNATIVE_PARTICIPANT_FILE);
-    ParticipantMetaData part = new ParticipantMetaData("did:example:new-issuer", "did:example:holder", "did:example:holder#key", json);
+    ParticipantMetaData part =
+        new ParticipantMetaData("did:example:alt-credSub", "did:example:holder", "did:example:holder#key", json);
     setupKeycloak(HttpStatus.SC_INTERNAL_SERVER_ERROR, part);
     String partId = URLEncoder.encode(part.getId(), Charset.defaultCharset());
 
@@ -600,7 +605,7 @@ public class ParticipantsControllerTest {
     String json = getMockFileDataAsString(UNIQUE_PARTICIPANT_FILE);
     ParticipantMetaData part = new ParticipantMetaData("did:example:unique-issuer", "did:example:holder", "did:example:holder#key", json);
     ContentAccessorDirect contentAccessor = new ContentAccessorDirect(json);
-    CredentialVerificationResultParticipant verResult = verificationService.verifyParticipantCredential(contentAccessor);
+    CredentialVerificationResult verResult = verificationService.verifyCredential(contentAccessor);
     AssetMetadata assetMetadata = new AssetMetadata(contentAccessor, verResult);
     assetStorePublisher.storeCredential(assetMetadata, verResult);
 
@@ -629,14 +634,15 @@ public class ParticipantsControllerTest {
   @WithMockJwtAuth(authorities = {"ROLE_Ro-MU-CA"},
           claims = @OpenIdClaims(otherClaims = @Claims(stringClaims
                   = {
-            @StringClaim(name = "participant_id", value = "did:example:issuer")})))
+              @StringClaim(name = "participant_id", value = "did:example:credSub")})))
   @Order(60)
   public void deleteParticipantWithAllUsersSuccessShouldReturnSuccessResponse() throws Exception {
     //Initially adding user
     addParticipantShouldReturnCreatedResponse();
 
     String json = getMockFileDataAsString(DEFAULT_PARTICIPANT_FILE);
-    ParticipantMetaData part = new ParticipantMetaData("did:example:issuer", "did:example:holder", "did:example:holder#key-1", json);
+    ParticipantMetaData part =
+        new ParticipantMetaData("did:example:credSub", "did:example:holder", "did:example:holder#key-1", json);
 
     User userOfParticipant = getUserOfParticipant(part.getId());
     setupKeycloakForUsers(HttpStatus.SC_CREATED, userOfParticipant, userId);

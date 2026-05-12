@@ -21,8 +21,6 @@ import com.danubetech.verifiablecredentials.jsonld.VerifiableCredentialKeywords;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.core.dao.trustframework.TrustFramework;
-import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkRepository;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.exception.VerificationException;
@@ -30,11 +28,9 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
 import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
+import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
@@ -71,16 +67,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_PARTICIPANT;
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_RESOURCE;
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_SERVICE_OFFERING;
 
 
 /**
@@ -113,28 +104,10 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         return val != null ? val : map.get("@id");
     }
 
-    @Value("${federated-catalogue.verification.require-vp:true}")
+  @Value("${federated-catalogue.verification.require-vp:false}")
     private boolean requireVP;
-    @Value("${federated-catalogue.verification.trust-framework.gaiax.enabled:false}")
-    private boolean gaiaxTrustFrameworkEnabledEnv;
-
-    private final TrustFrameworkRepository trustFrameworkRepository;
     private final SchemaModuleConfigService schemaModuleConfigService;
-
-    /**
-     * Checks if the Gaia-X trust framework is enabled.
-     * Precedence: DB record (when present) overrides env var.
-     * When DB record is missing, falls back to the env var / property value.
-     */
-    private boolean isGaiaxTrustFrameworkEnabled() {
-      return trustFrameworkRepository.findById("gaia-x")
-          .map(TrustFramework::isEnabled)
-          .orElse(gaiaxTrustFrameworkEnabledEnv);
-    }
-
-
   private final TrustFrameworkRegistry trustFrameworkRegistry;
-
     private final JwtContentPreprocessor jwtPreprocessor;
     private final ProtectedNamespaceFilter protectedNamespaceFilter;
     private final SchemaStore schemaStore;
@@ -146,10 +119,9 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private final JwtSignatureVerifier jwtSignatureVerifier;
     private final CredentialFormatDetector formatDetector;
     private final LoireJwtParser loireJwtParser;
+  private final LoireMatcher loireMatcher;
     private final ClaimExtractionService claimExtractionService;
 
-    @Value("${federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url:}")
-    private String trustAnchorAddr;
     @Value("${federated-catalogue.verification.http-timeout:5000}")
     private int httpTimeout;
     @Value("${federated-catalogue.verification.validator-expire:1D}")
@@ -182,12 +154,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         Validator jwtValidator
     ) {}
 
-  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, String expectedRole,
-                                                         boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload,
+                                                       boolean verifySemantics,
+                                                       boolean verifySchema,
+                                                       boolean verifyVPSignatures,
                                                          boolean verifyVCSignatures) throws VerificationException {
     log.debug(
-        "verifyCredential.enter; strict: {}, expectedRole: {}, verifySemantics: {}, verifySchema: {}, verifyVPSignatures: {}, verifyVCSignatures: {}",
-        strict, expectedRole, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
+        "verifyCredential.enter; verifySemantics: {}, verifySchema: {}, verifyVPSignatures: {}, verifyVCSignatures: {}",
+        verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
         long stamp = System.currentTimeMillis();
 
         VerificationContext ctx = detectAndUnwrap(payload, verifyVCSignatures || verifyVPSignatures);
@@ -222,15 +196,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         ld.setDocumentLoader(this.documentLoader);
         log.debug("verifyCredential; content parsed, time taken: {}", System.currentTimeMillis() - stamp);
 
-        TypedCredentials typedCredentials = parseCredentials(ld, strict && requireVP, verifySemantics, ctx.format());
+    TypedCredentials typedCredentials = parseCredentials(ld, requireVP, verifySemantics, ctx.format());
 
-        if (verifySemantics && isGaiaxTrustFrameworkEnabled() && !typedCredentials.hasClasses()) {
+    if (verifySemantics && loireMatcher.isEnabled() && !typedCredentials.hasClasses()) {
             throw new VerificationException("Semantic Error: no proper CredentialSubject found");
         }
 
-    ResolvedRole resolvedRole = resolvePrimaryRole(typedCredentials, verifySemantics, expectedRole);
-
-        FilteredClaims filtered = extractAndValidateClaims(ctx.payload(), verifySemantics && strict);
+    ResolvedRole resolvedRole = resolvePrimaryRole(typedCredentials, verifySemantics);
+    FilteredClaims filtered = extractAndValidateClaims(ctx.payload());
 
         if (verifySchema) {
             if (!schemaModuleConfigService.isModuleEnabled(SchemaModuleType.SHACL)) {
@@ -290,7 +263,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             jwtValidator = jwtSignatureVerifier.verify(body);
         }
 
-        if (format == CredentialFormat.GAIAX_V2_LOIRE && isGaiaxTrustFrameworkEnabled()) {
+      if (format == CredentialFormat.GAIAX_V2_LOIRE && loireMatcher.isEnabled()) {
             enforceLoirePolicies(body, jwtValidator);
         }
 
@@ -339,44 +312,24 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     /**
      * Phase 2: Resolve the dominant role from typed credentials and validate type constraints.
      */
-    private ResolvedRole resolvePrimaryRole(TypedCredentials typedCredentials,
-                                            boolean verifySemantics, String expectedRole) {
-      ResolvedRole primaryRole = ResolvedRole.UNKNOWN;
+    private ResolvedRole resolvePrimaryRole(TypedCredentials typedCredentials, boolean verifySemantics) {
       Collection<ResolvedRole> roles = typedCredentials.getResolvedRoles();
-
-      if (roles.size() > 1) {
-        boolean hasParticipant = roles.stream().anyMatch(r -> ROLE_PARTICIPANT.equals(r.role()));
-        boolean hasServiceOffering = roles.stream().anyMatch(r -> ROLE_SERVICE_OFFERING.equals(r.role()));
-
-        if (verifySemantics && hasParticipant && hasServiceOffering) {
+      if (roles.isEmpty()) {
+        return ResolvedRole.UNKNOWN;
+      }
+      if (roles.size() > 1 && verifySemantics) {
+        long distinctRoles = roles.stream().map(ResolvedRole::role).distinct().count();
+        if (distinctRoles > 1) {
           throw new VerificationException("Semantic error: credential has several types: " + roles);
         }
-
-        if (hasParticipant) {
-          primaryRole =
-              roles.stream().filter(r -> ROLE_PARTICIPANT.equals(r.role())).findFirst().orElse(ResolvedRole.UNKNOWN);
-        } else if (hasServiceOffering) {
-          primaryRole = roles.stream().filter(r -> ROLE_SERVICE_OFFERING.equals(r.role())).findFirst()
-              .orElse(ResolvedRole.UNKNOWN);
-        } else {
-          primaryRole = roles.iterator().next();
-        }
-      } else if (!roles.isEmpty()) {
-        primaryRole = roles.iterator().next();
       }
-
-      if (verifySemantics && expectedRole != null && !expectedRole.isBlank()
-          && !expectedRole.equals(primaryRole.role())) {
-        throw new VerificationException(
-            "Semantic error: expected credential of type " + expectedRole + " but found " + primaryRole.role());
-      }
-      return primaryRole;
+      return roles.iterator().next();
     }
 
     /**
-     * Phase 3: Extract claims, filter protected namespaces, and validate subject uniqueness.
+     * Phase 3: Extract claims and filter protected namespaces.
      */
-    private FilteredClaims extractAndValidateClaims(ContentAccessor payload, boolean strictSemantics) {
+    private FilteredClaims extractAndValidateClaims(ContentAccessor payload) {
         long stamp = System.currentTimeMillis();
         // Resolve inner EVCs before claim extraction — claim extractors cannot handle
         // EVC wrappers with data: URIs. This is intentionally NOT in detectAndUnwrap()
@@ -384,42 +337,14 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         ContentAccessor claimPayload = resolveInnerEnvelopedCredentials(payload);
         List<RdfClaim> claims = claimExtractionService.extractCredentialClaims(claimPayload);
         FilteredClaims filtered = protectedNamespaceFilter.filterClaims(claims, "claims extraction");
-        claims = filtered.claims();
         log.debug("verifyCredential; claims extracted: {}, time taken: {}",
-                (claims == null ? "null" : claims.size()), System.currentTimeMillis() - stamp);
-
-        if (strictSemantics) {
-            validateSubjectUniqueness(claims);
-        }
+            (filtered.claims() == null ? "null" : filtered.claims().size()),
+            System.currentTimeMillis() - stamp);
         return filtered;
     }
 
-    private void validateSubjectUniqueness(List<RdfClaim> claims) {
-        Set<String> subjects = new HashSet<>();
-        Set<String> objects = new HashSet<>();
-        if (claims != null && !claims.isEmpty()) {
-            for (RdfClaim claim : claims) {
-                subjects.add(claim.getSubjectString());
-                objects.add(claim.getObjectString());
-            }
-        }
-        subjects.removeAll(objects);
-
-        if (subjects.size() > 1) {
-            String sep = System.lineSeparator();
-            StringBuilder sb = new StringBuilder(
-                "Semantic Errors: There are different subject ids in credential subjects: ").append(sep);
-            for (String s : subjects) {
-                sb.append(s).append(sep);
-            }
-            throw new VerificationException(sb.toString());
-        } else if (subjects.isEmpty()) {
-            throw new VerificationException("Semantic Errors: There is no uniquely identified credential subject");
-        }
-    }
-
     private void validateSchema(List<RdfClaim> claims) {
-        eu.xfsc.fc.core.pojo.SchemaValidationResult result =
+      SchemaValidationResult result =
             schemaValidationService.validateClaimsAgainstCompositeSchema(claims);
         if (result == null || !result.isConforming()) {
             throw new VerificationException(
@@ -464,36 +389,30 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Phase 5: Build the typed result object based on the resolved role.
+     * Phase 5: Build the generic result from credential data and the resolved role.
+     * No branching on role name — the role is stored as data, not used for dispatch.
      */
     private CredentialVerificationResult assembleResult(ResolvedRole resolvedRole,
-                                                        TypedCredentials typedCredentials, List<RdfClaim> claims, List<Validator> validators) {
-        String id = typedCredentials.getID();
+                                                        TypedCredentials typedCredentials, List<RdfClaim> graphClaims,
+                                                        List<Validator> validators) {
+      String credentialSubjectId = typedCredentials.getID();
         String issuer = typedCredentials.getIssuer();
         Instant issuedDate = typedCredentials.getIssuanceDate();
         Instant now = Instant.now();
         String status = AssetStatus.ACTIVE.getValue();
+      String role = resolvedRole.isResolved() ? resolvedRole.role() : null;
+      String profileId = resolvedRole.isResolved() ? resolvedRole.frameworkProfileId() : null;
 
-      if (ROLE_PARTICIPANT.equals(resolvedRole.role())) {
-            if (issuer == null) {
-                issuer = id;
-            }
-            String method = validators.isEmpty() ? null : validators.getFirst().getDidURI();
-            String holder = typedCredentials.getHolder();
-            String name = holder == null ? issuer : holder;
-            return new CredentialVerificationResultParticipant(now, status, issuer, issuedDate,
-                    claims, validators, name, method);
-        }
-      if (ROLE_SERVICE_OFFERING.equals(resolvedRole.role())) {
-            return new CredentialVerificationResultOffering(now, status, issuer, issuedDate,
-                    id, claims, validators);
-        }
-      if (ROLE_RESOURCE.equals(resolvedRole.role())) {
-            return new CredentialVerificationResultResource(now, status, issuer, issuedDate,
-                    id, claims, validators);
-        }
-        return new CredentialVerificationResult(now, status, issuer, issuedDate,
-                id, claims, validators);
+      String effectiveIssuer = issuer != null ? issuer : credentialSubjectId;
+      String holder = typedCredentials.getHolder();
+      String name = holder != null ? holder : effectiveIssuer;
+      String publicKey = validators.isEmpty() ? null : validators.getFirst().getDidURI();
+
+      CredentialVerificationResult result = new CredentialVerificationResult(now, status, effectiveIssuer,
+          issuedDate, credentialSubjectId, graphClaims, validators, role, profileId);
+      result.setName(name);
+      result.setPublicKey(publicKey);
+      return result;
     }
 
     private TypedCredentials parseCredentials(JsonLDObject ld, boolean vpRequired, boolean verifySemantics,
@@ -1045,7 +964,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
     /**
      * Fetches the certificate chain from the given x5u URL, validates certificate expiry,
-     * and checks the URI against the Gaia-X Trust Anchor Registry (when gaiax.enabled=true).
+     * and checks the URI against the active Loire trust anchor registry when the Loire framework
+     * is enabled. The registry URL is read from the active framework bundle's properties.
      *
      * <p>Note: does not perform PKIX path validation (RFC 5280) or revocation checking.
      * ICAM 24.07 does not explicitly require these — it requires x5c/x5u presence (MUST)
@@ -1053,7 +973,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
      */
     @SuppressWarnings("unchecked")
     private Instant hasPEMTrustAnchorAndIsNotExpired(String uri) throws VerificationException {
-        log.debug("hasPEMTrustAnchorAndIsNotExpired.enter; got uri: {}, isGaiaxTrustFrameworkEnabled(): {}", uri, isGaiaxTrustFrameworkEnabled());
+      log.debug("hasPEMTrustAnchorAndIsNotExpired.enter; got uri: {}, loireMatcher.isEnabled(): {}", uri,
+          loireMatcher.isEnabled());
         String pem = rest.getForObject(uri, String.class);
         InputStream certStream = new ByteArrayInputStream(Objects.requireNonNull(pem).getBytes(StandardCharsets.UTF_8));
         List<X509Certificate> certs;
@@ -1079,17 +1000,19 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             }
         }
 
-        // Only call Gaia-X Trust Anchor Registry when Gaia-X trust framework is enabled
-        if (isGaiaxTrustFrameworkEnabled()) {
-            if (trustAnchorAddr == null || trustAnchorAddr.isBlank()) {
-                log.warn("hasPEMTrustAnchorAndIsNotExpired; Gaia-X trust framework enabled but trust-anchor-url not configured");
-                throw new VerificationException("Signatures error; Gaia-X trust framework enabled but trust-anchor-url not configured");
-            }
+      // Only call Loire trust anchor registry when the Loire framework is enabled
+      if (loireMatcher.isEnabled()) {
+        String trustAnchorUrl = loireMatcher.trustAnchorUrl().orElseThrow(() -> {
+          log.warn("hasPEMTrustAnchorAndIsNotExpired; Loire framework enabled but bundle declares no trust_anchor_url");
+          return new VerificationException(
+              "Signatures error; Loire framework enabled but bundle declares no trust_anchor_url");
+        });
             try {
-                ResponseEntity<Map> resp = rest.postForEntity(trustAnchorAddr, Map.of("uri", uri), Map.class);
+              ResponseEntity<Map> resp = rest.postForEntity(trustAnchorUrl, Map.of("uri", uri), Map.class);
                 if (!resp.getStatusCode().is2xxSuccessful()) {
                     log.info("hasPEMTrustAnchorAndIsNotExpired; Trust anchor is not set in the registry. URI: {}", uri);
-                    throw new VerificationException("Signatures error; trust anchor is not registered in the Gaia-X registry. URI: " + uri);
+                  throw new VerificationException(
+                      "Signatures error; trust anchor is not registered in the Loire registry. URI: " + uri);
                 }
             } catch (VerificationException ex) {
                 throw ex;
@@ -1098,7 +1021,8 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 throw new VerificationException("Signatures error; " + ex.getMessage(), ex);
             }
         } else {
-            log.debug("hasPEMTrustAnchorAndIsNotExpired; skipping Gaia-X trust anchor registry validation (gaiax.enabled=false)");
+        log.debug(
+            "hasPEMTrustAnchorAndIsNotExpired; skipping Loire trust anchor registry validation (framework disabled)");
         }
         Instant exp = relevant == null ? null : relevant.getNotAfter().toInstant();
         log.debug("hasPEMTrustAnchorAndIsNotExpired.exit; returning: {}", exp);

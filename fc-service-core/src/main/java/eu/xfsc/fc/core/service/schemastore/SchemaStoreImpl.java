@@ -108,7 +108,7 @@ public class SchemaStoreImpl implements SchemaStore {
 
   private int addSchemasFromBundles() {
     int cnt = 0;
-    for (TrustFrameworkBundle bundle : trustFrameworkRegistry.getBundles()) {
+    for (TrustFrameworkBundle bundle : trustFrameworkRegistry.getActiveBundles()) {
       if (bundle.config().validationType() != ValidationType.SHACL) {
         continue;
       }

@@ -297,6 +297,6 @@ class ProvenanceServiceTest {
 
   private CredentialVerificationResult successResult(String subjectId, String issuer) {
     return new CredentialVerificationResult(
-        Instant.now(), "Active", issuer, ISSUED_AT, subjectId, List.of(), null);
+        Instant.now(), "Active", issuer, ISSUED_AT, subjectId, List.of(), null, "", "");
   }
 }

@@ -5,6 +5,7 @@ import eu.xfsc.fc.core.config.VerificationStackTestConfig;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.revalidator.RevalidatorChunksJpaDao;
+import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -235,7 +236,7 @@ public class RevalidationServiceTest {
       final AssetMetadata assetMetadata = new AssetMetadata(content, vr);
       assetStore.storeCredential(assetMetadata, vr);
       return assetMetadata.getAssetHash();
-    } catch (VerificationException exc) {
+    } catch (ClientException | VerificationException exc) {
       log.debug("Failed to add: {}", exc.getMessage());
       return null;
     } catch (Exception ex) {

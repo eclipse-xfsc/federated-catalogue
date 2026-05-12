@@ -1,20 +1,18 @@
 package eu.xfsc.fc.core.service.verification;
 
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_PARTICIPANT;
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_RESOURCE;
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_SERVICE_OFFERING;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -47,6 +45,9 @@ public class VerificationServiceImpl implements VerificationService {
   @Autowired
   private SchemaValidationService schemaValidationService;
 
+  @Autowired
+  private TrustFrameworkRegistry trustFrameworkRegistry;
+
   /** Package-private for testing: allows overriding the schema verification toggle. */
   void setVerifySchema(boolean verifySchema) {
     this.verifySchema = verifySchema;
@@ -54,45 +55,6 @@ public class VerificationServiceImpl implements VerificationService {
 
   private VerificationStrategy resolveStrategy(ContentAccessor payload) {
     return credentialStrategy;
-  }
-
-  /**
-   * Validates the credential payload (JSON-LD format) and extracts typed Participant metadata.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return a Participant metadata validation result. If the validation fails, the reason explains the issue.
-   */
-  @Override
-  public CredentialVerificationResultParticipant verifyParticipantCredential(ContentAccessor payload) throws VerificationException {
-    return (CredentialVerificationResultParticipant) resolveStrategy(payload).verifyCredential(payload, true,
-        ROLE_PARTICIPANT,
-            verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
-  }
-
-  /**
-   * Validates the credential payload (JSON-LD format) and extracts typed Offering metadata.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return a Verification result. If the verification fails, the reason explains the issue.
-   */
-  @Override
-  public CredentialVerificationResultOffering verifyOfferingCredential(ContentAccessor payload) throws VerificationException {
-    return (CredentialVerificationResultOffering) resolveStrategy(payload).verifyCredential(payload, true,
-        ROLE_SERVICE_OFFERING,
-            verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
-  }
-
-  /**
-   * Validates the credential payload (JSON-LD format) and extracts typed Resource metadata.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return a Verification result. If the verification fails, the reason explains the issue.
-   */
-  @Override
-  public CredentialVerificationResultResource verifyResourceCredential(ContentAccessor payload) throws VerificationException {
-    return (CredentialVerificationResultResource) resolveStrategy(payload).verifyCredential(payload, true,
-        ROLE_RESOURCE,
-            verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
   /**
@@ -109,8 +71,15 @@ public class VerificationServiceImpl implements VerificationService {
   @Override
   public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException {
-    return resolveStrategy(payload).verifyCredential(payload, false, "",
-            verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
+    CredentialVerificationResult result = resolveStrategy(payload).verifyCredential(payload,
+        verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
+    if (!(result instanceof NonCredentialVerificationResult) && result.getRole() == null) {
+      String bundleInfo = getActiveTrustFrameworkBundleInfos();
+      throw new ClientException(
+          "Credential type is not resolvable in any active trust-framework bundle."
+              + " Active bundles: [" + bundleInfo + "]");
+    }
+    return result;
   }
 
   /* Credential validation against SHACL Schemas — delegated to SchemaValidationService */
@@ -133,4 +102,9 @@ public class VerificationServiceImpl implements VerificationService {
     return schemaValidationService.validateCredentialAgainstSchema(payload, schema);
   }
 
+  private String getActiveTrustFrameworkBundleInfos() {
+    return trustFrameworkRegistry.getActiveBundles().stream()
+        .map(b -> b.config().id() + "=" + b.config().roles().keySet())
+        .collect(Collectors.joining(", "));
+  }
 }

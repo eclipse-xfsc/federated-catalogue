@@ -62,7 +62,7 @@ public abstract class BaseAssetSubscriber implements AssetSubscriber {
 						AssetResult assetResult = assetClient.getAssetByHash(hash, false, true);
 						ContentAccessor content = new ContentAccessorDirect(assetResult.getContent());
 						// how to get proper VR class?
-				        vr = verificationService.verifyOfferingCredential(content);
+                      vr = verificationService.verifyCredential(content);
 					    assetMeta = new AssetMetadata(vr.getId(), vr.getIssuer(), vr.getValidators(), content);
 					} else {
 						Map<String, Object> data = jsonMapper.readValue((String) params.get("data"), mapTypeRef);

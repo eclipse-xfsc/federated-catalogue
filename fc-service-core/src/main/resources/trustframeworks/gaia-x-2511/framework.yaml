@@ -5,9 +5,19 @@
 #   family         — groups related profiles (e.g. "gaia-x" groups all Gaia-X versions)
 #   namespace      — base URI prefix used to construct role root URIs (must end with '/' or '#')
 #   validation_type — "shacl" | "json-schema" (non-shacl values are accepted-but-deferred per ADR-12)
-#   roles          — map of role-name → role config; each role is resolvable via registry.resolveRole()
-#     additional_roots — explicit URIs mapped to this role that are NOT OWL subclasses of the root
-#                        (e.g. DigitalServiceOffering is not an OWL subclass of ServiceOffering in 2511)
+#   roles          — CURATED set of root classes the catalogue dispatches on. NOT auto-derivable
+#                    from the ontology: the Gaia-X 2511 ontology does not mark any class as a
+#                    "catalogue role" — verified against gx-2511.ttl, no such annotation exists
+#                    (no role-marker class, no skos scheme grouping the roles, no isRole flag).
+#                    Add a class here when the framework's spec or its conformity body issues
+#                    it as a top-level credential type (for Gaia-X: the GXDCH compliance service
+#                    mints VCs of type Participant, ServiceOffering, Resource — that is the
+#                    operative source). Subclasses of each root are indexed automatically via
+#                    rdfs:subClassOf*; you only declare the root.
+#     additional_roots — explicit URIs mapped to this role that are NOT OWL subclasses of the root.
+#                        Use only when an external ontology genuinely declares sibling classes
+#                        without subsumption — not as a workaround to collapse two distinct concepts
+#                        into the same role.
 #     types            — explicit type list for JSON Schema engines (forward-compat; unused for SHACL)
 #   properties     — framework-specific key/value metadata (reserved; not used by the resolver)
 
@@ -22,8 +32,16 @@ roles:
     types: [ ]
 
   ServiceOffering:
-    # gx:DigitalServiceOffering is not an OWL subclass of gx:ServiceOffering in gx-2511.
-    # It is covered here via additional_roots — the correct long-term mechanism for non-OWL mappings.
+    # additional_roots:
+    # It is mapped here defensively. The spec is internally inconsistent on DSO.
+    # - its skos:definition declares it abstract "(for inheritance not for
+    # instanciation)"
+    # $ the ontology defines no rdfs:subClassOf gx:ServiceOffering link and no concrete subclasses
+    # - but the SHACL layer assigns it its own sh:targetClass.
+    # Empirically (verified May 2026 against the gxdch repo):
+    # This mapping is inactive in practice today.
+    # additional_roots is the correct mechanism for this case: the intended
+    # way to map sibling classes that are genuinely declared without OWL subsumption.
     additional_roots:
       - "https://w3id.org/gaia-x/2511#DigitalServiceOffering"
     types: [ ]
@@ -32,4 +50,7 @@ roles:
     additional_roots: [ ]
     types: [ ]
 
-properties: { }
+properties:
+  # URL of the Gaia-X Trust Anchor Registry used during Loire x5u trust-chain validation.
+  # Consumed by LoireMatcher.trustAnchorUrl().
+  trust_anchor_url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
