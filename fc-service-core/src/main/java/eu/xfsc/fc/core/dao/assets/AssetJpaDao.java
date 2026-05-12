@@ -89,6 +89,9 @@ public class AssetJpaDao implements AssetDao {
             old.setFileSize(assetRecord.getFileSize());
             old.setOriginalFilename(assetRecord.getOriginalFilename());
             old.setStatus(ACTIVE_STATUS);
+            if (assetRecord.getContentKind() != null) {
+              old.setContentKind(assetRecord.getContentKind());
+            }
             repository.saveAndFlush(old);
             return new SubjectHashRecord(old.getSubjectId(), previousHash);
         }

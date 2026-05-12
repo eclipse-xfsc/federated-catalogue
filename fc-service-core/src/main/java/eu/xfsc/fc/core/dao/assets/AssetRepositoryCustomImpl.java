@@ -145,15 +145,17 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
     private String buildQuery(int offset, int limit) {
       final StringBuilder query;
       if (fullMeta) {
-        query = new StringBuilder("select asset_hash, subjectid, status, issuer,"
-            + " uploadtime, statustime, expirationtime, validators,"
-            + " content_type, file_size, original_filename");
+        query = new StringBuilder("""
+            select asset_hash, subjectid, status, issuer, \
+            uploadtime, statustime, expirationtime, validators, \
+            content_type, file_size, original_filename, content_kind""");
       } else {
-        query = new StringBuilder("select asset_hash, null as subjectid, status,"
-            + " null as issuer, null as uploadtime, null as statustime,"
-            + " null as expirationtime, null as validators,"
-            + " null as content_type, null::bigint as file_size,"
-            + " null as original_filename");
+        query = new StringBuilder("""
+            select asset_hash, null as subjectid, status, \
+            null as issuer, null as uploadtime, null as statustime, \
+            null as expirationtime, null as validators, \
+            null as content_type, null::bigint as file_size, \
+            null as original_filename, null as content_kind""");
       }
       if (returnContent) {
         query.append(", content");
@@ -208,6 +210,7 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
       String contentType = rs.getString("content_type");
       long fileSize = rs.getLong("file_size");
       String originalFilename = rs.getString("original_filename");
+      String contentKindStr = rs.getString("content_kind");
       return AssetRecord.builder()
           .assetHash(rs.getString("asset_hash"))
           .id(rs.getString("subjectid"))
@@ -222,6 +225,7 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
           .contentType(contentType)
           .fileSize(rs.wasNull() ? null : fileSize)
           .originalFilename(originalFilename)
+          .contentKind(contentKindStr == null ? null : ContentKind.valueOf(contentKindStr))
           .build();
     }
   }
