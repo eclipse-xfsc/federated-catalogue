@@ -8,8 +8,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.erdtman.jcs.JsonCanonicalizer;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,12 +27,13 @@ import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
-import eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CesAssetProcessor {
 
     @Value("${subscriber.verify.semantics:true}")
@@ -45,22 +46,17 @@ public class CesAssetProcessor {
     private boolean verifyVCSignature;
     @Value("${subscriber.verify.integrity:true}")
     private boolean verifyIntegrity;
-	
-    @Autowired
-	protected AssetStore assetStore;
-    @Autowired 
-	protected VerificationService verificationService;
-    @Autowired 
-	protected ObjectMapper jsonMapper;
-	
-	@Autowired
-	private CesTrackerDao ctDao;
-	@Autowired
-	private DidDocumentResolver didResolver;
-	@Autowired
-	private HttpDocumentResolver httpResolver;
-	
-	@Transactional(propagation = Propagation.REQUIRES_NEW) //, rollbackFor = Exception.class)
+
+  protected final AssetStore assetStore;
+  protected final VerificationService verificationService;
+  protected final ObjectMapper jsonMapper;
+
+  private final CesTrackerDao ctDao;
+  private final DidDocumentResolver didResolver;
+  private final HttpDocumentResolver httpResolver;
+  private final TrustFrameworkRegistry trustFrameworkRegistry;
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
 	public int processCesEvent(CesTracking ctr, Map<String, Object> data) {
 	    List<Map<String, Object>> subjects = (List<Map<String, Object>>) data.get("credentialSubject");
 	    try {
@@ -69,8 +65,7 @@ public class CesAssetProcessor {
 		    	String sub = jsonMapper.writeValueAsString(subject);
 		    	CesSubject ceSub = jsonMapper.readValue(sub, CesSubject.class);
 		    	ctr.setCredId(ceSub.getId());
-		    	TrustFrameworkBaseClass base = processibleSubject(ceSub);
-		    	if (base != null) {
+              if (isProcessibleSubject(ceSub)) {
 		    		if (processSubject(ceSub.getId(), ceSub.getGxIntegrity())) {
 		    			cnt++;
 		    		}
@@ -85,23 +80,17 @@ public class CesAssetProcessor {
 		return ctr.getCredProcessed();
 	}
 
-	private TrustFrameworkBaseClass processibleSubject(CesSubject ceSub) {
-		if (ceSub == null) {
-			return null;
+  private boolean isProcessibleSubject(CesSubject ceSub) {
+    if (ceSub == null || ceSub.getGxType() == null) {
+      return false;
 		}
 		String gxType = ceSub.getGxType();
-		if (gxType == null) {
-			return null;
+    if (!trustFrameworkRegistry.resolveRole(gxType).isResolved()) {
+      log.debug("isProcessibleSubject; type '{}' not recognized by registry — subject skipped"
+          + " (registry requires full URIs; CURIEs will not resolve)", gxType);
+      return false;
 		}
-		// TODO: get baseClass using ClaimsValidator.getSubjectType method.
-		// this will require some refactoring in VerificationService/SchemaStore/ClaimValidator classes..
-		if (gxType.endsWith(":LegalParticipant")) {
-			return TrustFrameworkBaseClass.PARTICIPANT;
-		}
-		if (gxType.endsWith(":ServiceOffering")) {
-			return TrustFrameworkBaseClass.SERVICE_OFFERING;
-		}
-		return null;
+    return true;
 	}
 	
 	private boolean processSubject(String subId, String subIntegrity) {

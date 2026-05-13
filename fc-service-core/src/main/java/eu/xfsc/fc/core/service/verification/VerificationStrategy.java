@@ -4,6 +4,7 @@ import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 
+
 /**
  * Strategy interface for credential verification.
  * Implementations encapsulate format-specific parsing, semantic validation,
@@ -26,7 +27,7 @@ public interface VerificationStrategy {
    *
    * @param payload            the credential content to verify
    * @param strict             whether strict mode is enabled (typed endpoints)
-   * @param expectedClass      the expected Trust Framework base class, or UNKNOWN
+   * @param expectedRole       the expected trust-framework role name, or empty/null for no expectation
    * @param verifySemantics    whether to perform semantic verification
    * @param verifySchema       whether to perform schema verification
    * @param verifyVPSignatures whether to verify VP signatures
@@ -34,7 +35,7 @@ public interface VerificationStrategy {
    * @return the verification result
    * @throws VerificationException if verification fails
    */
-  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
+  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, String expectedRole,
       boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
       boolean verifyVCSignatures) throws VerificationException;
 

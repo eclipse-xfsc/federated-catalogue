@@ -179,6 +179,7 @@ public class AssetAuditRepository {
         .fileSize(snapshot.getFileSize())
         .originalFilename(snapshot.getOriginalFilename())
         .changeComment(snapshot.getChangeComment())
+        .contentKind(snapshot.getContentKind())
         .build();
     record.setVersion(version);
     record.setIsCurrent(isCurrent);

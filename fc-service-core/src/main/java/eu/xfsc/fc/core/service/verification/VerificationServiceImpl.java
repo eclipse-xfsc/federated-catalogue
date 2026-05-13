@@ -1,9 +1,8 @@
 package eu.xfsc.fc.core.service.verification;
 
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.PARTICIPANT;
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.RESOURCE;
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.SERVICE_OFFERING;
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.UNKNOWN;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_PARTICIPANT;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_RESOURCE;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_SERVICE_OFFERING;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,11 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementation of the {@link VerificationService} interface.
- * Acts as the Context in the Strategy pattern, delegating RDF verification
- * and data extraction logic to format-specific {@link VerificationStrategy} implementations.
- * Routes by RDF serialization format (JSON-LD, Turtle, N-Triples, RDF/XML).
- * 
- * <p>Currently delegates all RDF credentials to {@link CredentialVerificationStrategy} (JSON-LD only).
+ * Thin delegate over a single {@link VerificationStrategy} implementation
+ * ({@link CredentialVerificationStrategy} for W3C VC/VP credentials in JSON-LD form).
+ *
+ * <p>Credential-format dispatch (Loire-JWT vs. danubetech VC2) is handled inside the
+ * verifier via {@link CredentialFormatDetector}; it is not a sibling-strategy axis at
+ * this level. Structural validation of stored assets against stored schemas is the
+ * responsibility of {@code AssetValidationService}, not this service.
  */
 @Slf4j
 @Component
@@ -51,15 +52,6 @@ public class VerificationServiceImpl implements VerificationService {
     this.verifySchema = verifySchema;
   }
 
-  /**
-   * Resolves the appropriate {@link VerificationStrategy} for the given payload.
-   * Currently always returns the credential strategy. When future asset types require
-   * different verification logic (e.g., non-RDF, non-credential), this method is the
-   * extension point for payload-based routing.
-   *
-   * @param payload the RDF content used to determine which strategy to apply (currently always JSON-LD)
-   * @return the resolved strategy
-   */
   private VerificationStrategy resolveStrategy(ContentAccessor payload) {
     return credentialStrategy;
   }
@@ -72,7 +64,8 @@ public class VerificationServiceImpl implements VerificationService {
    */
   @Override
   public CredentialVerificationResultParticipant verifyParticipantCredential(ContentAccessor payload) throws VerificationException {
-    return (CredentialVerificationResultParticipant) resolveStrategy(payload).verifyCredential(payload, true, PARTICIPANT,
+    return (CredentialVerificationResultParticipant) resolveStrategy(payload).verifyCredential(payload, true,
+        ROLE_PARTICIPANT,
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
@@ -84,7 +77,8 @@ public class VerificationServiceImpl implements VerificationService {
    */
   @Override
   public CredentialVerificationResultOffering verifyOfferingCredential(ContentAccessor payload) throws VerificationException {
-    return (CredentialVerificationResultOffering) resolveStrategy(payload).verifyCredential(payload, true, SERVICE_OFFERING,
+    return (CredentialVerificationResultOffering) resolveStrategy(payload).verifyCredential(payload, true,
+        ROLE_SERVICE_OFFERING,
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
@@ -96,7 +90,8 @@ public class VerificationServiceImpl implements VerificationService {
    */
   @Override
   public CredentialVerificationResultResource verifyResourceCredential(ContentAccessor payload) throws VerificationException {
-    return (CredentialVerificationResultResource) resolveStrategy(payload).verifyCredential(payload, true, RESOURCE,
+    return (CredentialVerificationResultResource) resolveStrategy(payload).verifyCredential(payload, true,
+        ROLE_RESOURCE,
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
   }
 
@@ -114,7 +109,7 @@ public class VerificationServiceImpl implements VerificationService {
   @Override
   public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException {
-    return resolveStrategy(payload).verifyCredential(payload, false, UNKNOWN,
+    return resolveStrategy(payload).verifyCredential(payload, false, "",
             verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
   }
 

@@ -671,7 +671,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "CHANGE_ME_dev_only",
+          "value": "CHANGE_ME_dev_only1",
           "temporary": false
         }
       ],
@@ -691,7 +691,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "CHANGE_ME_dev_only",
+          "value": "CHANGE_ME_dev_only1",
           "temporary": false
         }
       ],

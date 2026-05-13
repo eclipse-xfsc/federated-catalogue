@@ -19,4 +19,5 @@
     <include file="changesets/013-validation-result.xml" relativeToChangelogFile="true" />
     <include file="changesets/014-provenance-credentials.xml" relativeToChangelogFile="true" />
     <include file="changesets/015-validation-result-outdated.xml" relativeToChangelogFile="true" />
+    <include file="changesets/016-content-kind.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>
