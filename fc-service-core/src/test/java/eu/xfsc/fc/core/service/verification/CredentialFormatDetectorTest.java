@@ -26,10 +26,10 @@ import static eu.xfsc.fc.core.service.verification.TestVerificationConstants.GAI
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.VC_20_CONTEXT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class FormatDetectorTest {
+class CredentialFormatDetectorTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private final FormatDetector detector = new FormatDetector(OBJECT_MAPPER, List.of(
+    private final CredentialFormatDetector detector = new CredentialFormatDetector(OBJECT_MAPPER, List.of(
             new LoireMatcher(),
               new DanubeTechFormatMatcher()
     ));
@@ -258,7 +258,6 @@ class FormatDetectorTest {
         assertEquals(CredentialFormat.UNKNOWN, result);
     }
 
-    // --- helpers ---
 
     private String buildLoireVcJwt() throws Exception {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)

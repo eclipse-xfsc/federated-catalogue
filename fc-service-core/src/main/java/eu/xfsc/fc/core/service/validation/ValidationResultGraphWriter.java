@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Writes validation result metadata to the graph DB as {@code fcmeta:} RDF triples.
+ * Writes validation result metadata to the graph store as {@code fcmeta:} RDF triples.
  *
  * <p>Calls {@link GraphStore#addClaims(List, String)} directly, bypassing
  * {@code ProtectedNamespaceFilter}. This is intentional: the filter only blocks
@@ -47,7 +47,7 @@ public class ValidationResultGraphWriter {
    */
   public void write(ValidationResult result, GraphStore graphStore) {
     String fcmeta = namespaceProperties.getNamespace();
-    String resultIri = buildResultIri(result.getId(), fcmeta);
+    String resultIri = resultIri(result.getId());
     List<RdfClaim> claims = new ArrayList<>();
 
     // Link each asset subject IRI → this validation result
@@ -74,8 +74,14 @@ public class ValidationResultGraphWriter {
     log.debug("write; wrote {} fcmeta triples for result id={}", claims.size(), result.getId());
   }
 
-  private static String buildResultIri(Long id, String fcmeta) {
-    return fcmeta + "ValidationResult/" + id;
+  /**
+   * Returns the IRI for a stored validation result, using the configured {@code fcmeta:} namespace.
+   *
+   * @param id the numeric ID of the stored {@link eu.xfsc.fc.core.dao.validation.ValidationResult}
+   * @return the full validation result IRI
+   */
+  public String resultIri(Long id) {
+    return namespaceProperties.getNamespace() + "ValidationResult/" + id;
   }
 
   private static CredentialClaim iriTriple(String subject, String predicate, String object) {

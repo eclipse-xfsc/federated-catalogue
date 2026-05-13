@@ -12,13 +12,12 @@ import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.ContentAccessorBinary;
-import eu.xfsc.fc.core.dao.validation.OutdatedReason;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
-import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.util.HashUtils;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import org.junit.jupiter.api.AfterEach;
@@ -32,14 +31,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
 
 /**
  * Integration tests for cascade-delete behaviour in {@link AssetStoreImpl}.
@@ -67,9 +61,6 @@ class AssetStoreCascadeDeleteTest {
 
   @MockitoBean
   private ProvenanceService provenanceService;
-
-  @MockitoBean
-  private ValidationResultStore validationResultStore;
 
   @Autowired
   private AssetStore assetStore;
@@ -127,45 +118,6 @@ class AssetStoreCascadeDeleteTest {
     assetStore.deleteAsset(meta.getAssetHash());
 
     assertThrows(NotFoundException.class, () -> assetStore.getByHash(meta.getAssetHash()));
-  }
-
-  @Test
-  void deleteAsset_callsValidationResultDeleteForSingleAsset() {
-    final var meta = storeNonRdfAsset(null, "validate-cleanup-single");
-
-    assetStore.deleteAsset(meta.getAssetHash());
-
-    verify(validationResultStore).deleteByAssetId(meta.getId());
-  }
-
-  @Test
-  void storeCredential_existingAssetId_marksValidationResultsOutdated() {
-    storeNonRdfAsset(MR_ID, "update-test-v1");
-
-    final byte[] contentV2 = "update-test-v2".getBytes(StandardCharsets.UTF_8);
-    final Instant now = Instant.now();
-    final AssetMetadata meta = new AssetMetadata(
-        HashUtils.calculateSha256AsHex(contentV2), MR_ID, AssetStatus.ACTIVE,
-        TEST_ISSUER, null, now, now, new ContentAccessorBinary(contentV2));
-    meta.setContentType("application/ld+json");
-    meta.setFileSize((long) contentV2.length);
-
-    assetStore.storeCredential(meta, new CredentialVerificationResult(
-        now, "active", TEST_ISSUER, now, MR_ID, List.of(), null));
-
-    verify(validationResultStore).markOutdatedByAssetId(MR_ID, OutdatedReason.ASSET_UPDATED);
-  }
-
-  @Test
-  void deleteAsset_cascadeDelete_callsValidationResultDeleteForBothAssets() {
-    final var mrMeta = storeNonRdfAsset(MR_ID, "mr for validation verify");
-    final var hrMeta = storeNonRdfAsset(null, "hr for validation verify");
-    linkAssets(mrMeta.getId(), hrMeta.getId());
-
-    assetStore.deleteAsset(mrMeta.getAssetHash());
-
-    verify(validationResultStore).deleteByAssetId(mrMeta.getId());
-    verify(validationResultStore).deleteByAssetId(hrMeta.getId());
   }
 
   private void linkAssets(String mrId, String hrId) {

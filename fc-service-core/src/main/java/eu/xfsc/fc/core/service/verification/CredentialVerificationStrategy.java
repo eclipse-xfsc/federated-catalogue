@@ -157,7 +157,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private final DocumentLoader documentLoader;
     private final Vc2Processor vc2Processor;
     private final JwtSignatureVerifier jwtSignatureVerifier;
-    private final FormatDetector formatDetector;
+    private final CredentialFormatDetector formatDetector;
     private final LoireJwtParser loireJwtParser;
     private final ClaimExtractionService claimExtractionService;
 

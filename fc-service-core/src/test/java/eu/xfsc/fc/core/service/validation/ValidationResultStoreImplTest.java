@@ -43,35 +43,12 @@ class ValidationResultStoreImplTest {
   @InjectMocks
   private ValidationResultStoreImpl service;
 
-  // --- helper ---
-
-  private static ValidationResultRecord buildRecord(boolean conforms) {
-    return new ValidationResultRecord(
-        List.of("https://example.org/asset/1"),
-        List.of("https://example.org/schema/1"),
-        ValidatorType.SCHEMA,
-        conforms,
-        Instant.parse("2024-06-01T12:00:00Z"),
-        null);
-  }
-
-  private static ValidationResult entityWithId(long id) {
-    ValidationResult e = new ValidationResult();
-    e.setAssetIds(new String[]{"https://example.org/asset/1"});
-    e.setValidatorIds(new String[]{"https://example.org/schema/1"});
-    e.setValidatorType(ValidatorType.SCHEMA);
-    e.setConforms(true);
-    e.setValidatedAt(Instant.parse("2024-06-01T12:00:00Z"));
-    e.setId(id);
-    return e;
-  }
-
   // ===== store — graph write succeeds =====
 
   @Test
   void store_graphWriteSucceeds_statusTransitionsToSynced() {
     ValidationResultRecord record = buildRecord(true);
-    ValidationResult saved = entityWithId(1L);
+    ValidationResult saved = buildEntityWithId(1L);
     when(hasher.hash(any())).thenReturn("aabbcc");
     when(repository.save(any())).thenReturn(saved);
 
@@ -88,7 +65,7 @@ class ValidationResultStoreImplTest {
   @Test
   void store_graphWriteSucceeds_returnsId() {
     ValidationResultRecord record = buildRecord(false);
-    ValidationResult saved = entityWithId(99L);
+    ValidationResult saved = buildEntityWithId(99L);
     when(hasher.hash(any())).thenReturn("hash");
     when(repository.save(any())).thenReturn(saved);
 
@@ -102,7 +79,7 @@ class ValidationResultStoreImplTest {
   @Test
   void store_graphWriteFails_statusMarkedFailed() {
     ValidationResultRecord record = buildRecord(true);
-    ValidationResult saved = entityWithId(2L);
+    ValidationResult saved = buildEntityWithId(2L);
     when(hasher.hash(any())).thenReturn("aabbcc");
     when(repository.save(any())).thenReturn(saved);
     doThrow(new RuntimeException("graph unavailable"))
@@ -119,7 +96,7 @@ class ValidationResultStoreImplTest {
 
   @Test
   void getByAssetId_delegatesWithPageable() {
-    ValidationResult entity = entityWithId(5L);
+    ValidationResult entity = buildEntityWithId(5L);
     Pageable pageable = PageRequest.of(0, 10);
     Page<ValidationResult> page = new PageImpl<>(List.of(entity));
     when(repository.findByAssetId(eq("https://example.org/asset/1"), eq(pageable)))
@@ -135,7 +112,7 @@ class ValidationResultStoreImplTest {
 
   @Test
   void getById_existingId_returnsPopulatedOptional() {
-    ValidationResult entity = entityWithId(10L);
+    ValidationResult entity = buildEntityWithId(10L);
     when(repository.findById(10L)).thenReturn(Optional.of(entity));
 
     Optional<ValidationResult> result = service.getById(10L);
@@ -151,5 +128,70 @@ class ValidationResultStoreImplTest {
     Optional<ValidationResult> result = service.getById(999L);
 
     assertFalse(result.isPresent());
+  }
+
+  // ===== deleteByAssetId =====
+
+  @Test
+  void deleteByAssetId_existingResults_deletesGraphAndPostgresRows() {
+    ValidationResult result1 = buildEntityWithId(10L);
+    ValidationResult result2 = buildEntityWithId(11L);
+    when(repository.findAllByAssetId("https://example.org/asset/1"))
+        .thenReturn(List.of(result1, result2));
+    when(graphWriter.resultIri(10L)).thenReturn("https://fc.example.org/meta/ValidationResult/10");
+    when(graphWriter.resultIri(11L)).thenReturn("https://fc.example.org/meta/ValidationResult/11");
+
+    service.deleteByAssetId("https://example.org/asset/1");
+
+    verify(graphStore).deleteValidationResultClaims("https://fc.example.org/meta/ValidationResult/10");
+    verify(graphStore).deleteValidationResultClaims("https://fc.example.org/meta/ValidationResult/11");
+    verify(repository).deleteAllByAssetId("https://example.org/asset/1");
+  }
+
+  @Test
+  void deleteByAssetId_noResults_performsNoop() {
+    when(repository.findAllByAssetId("https://example.org/asset/unknown"))
+        .thenReturn(List.of());
+
+    service.deleteByAssetId("https://example.org/asset/unknown");
+
+    verify(repository).deleteAllByAssetId("https://example.org/asset/unknown");
+    org.mockito.Mockito.verifyNoInteractions(graphStore);
+  }
+
+  @Test
+  void deleteByAssetId_graphThrows_deletesDbRowsAnyway() {
+    ValidationResult result = buildEntityWithId(20L);
+    when(repository.findAllByAssetId("https://example.org/asset/1"))
+        .thenReturn(List.of(result));
+    when(graphWriter.resultIri(20L)).thenReturn("https://fc.example.org/meta/ValidationResult/20");
+    doThrow(new RuntimeException("graph unavailable"))
+        .when(graphStore).deleteValidationResultClaims(any());
+
+    service.deleteByAssetId("https://example.org/asset/1");
+
+    verify(repository).deleteAllByAssetId("https://example.org/asset/1");
+  }
+
+
+  private static ValidationResultRecord buildRecord(boolean conforms) {
+    return new ValidationResultRecord(
+        List.of("https://example.org/asset/1"),
+        List.of("https://example.org/schema/1"),
+        ValidatorType.SHACL,
+        conforms,
+        Instant.parse("2024-06-01T12:00:00Z"),
+        null);
+  }
+
+  private static ValidationResult buildEntityWithId(long id) {
+    ValidationResult e = new ValidationResult();
+    e.setAssetIds(new String[]{"https://example.org/asset/1"});
+    e.setValidatorIds(new String[]{"https://example.org/schema/1"});
+    e.setValidatorType(ValidatorType.SHACL);
+    e.setConforms(true);
+    e.setValidatedAt(Instant.parse("2024-06-01T12:00:00Z"));
+    e.setId(id);
+    return e;
   }
 }

@@ -1,10 +1,5 @@
 package eu.xfsc.fc.core.util;
 
-import static org.apache.jena.rdf.model.ResourceFactory.createProperty;
-import static org.apache.jena.rdf.model.ResourceFactory.createResource;
-import static org.apache.jena.rdf.model.ResourceFactory.createStatement;
-import static org.apache.jena.rdf.model.ResourceFactory.createTypedLiteral;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -19,7 +14,6 @@ import java.util.Set;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.datatypes.DatatypeFormatException;
-import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.ontology.OntModel;
@@ -33,18 +27,13 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.RiotException;
 import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.shared.impl.JenaParameters;
 import org.apache.jena.vocabulary.RDF;
-import org.topbraid.shacl.util.ModelPrinter;
-import org.topbraid.shacl.validation.ValidationUtil;
-import org.topbraid.shacl.vocabulary.SH;
-
 
 import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.pojo.RdfClaim;
@@ -64,19 +53,19 @@ public class ClaimValidator {
         // save the actual settings to not interfere with other modules which
         // rely on other settings
         eagerJenaLiteralValidation =
-                org.apache.jena.shared.impl.JenaParameters.enableEagerLiteralValidation;
+                JenaParameters.enableEagerLiteralValidation;
         jenaAcceptanceOfUnknownLiteralDatatypes =
-                org.apache.jena.shared.impl.JenaParameters.enableSilentAcceptanceOfUnknownDatatypes;
+                JenaParameters.enableSilentAcceptanceOfUnknownDatatypes;
 
         // Now switch to picky mode
-        org.apache.jena.shared.impl.JenaParameters.enableEagerLiteralValidation = true;
-        org.apache.jena.shared.impl.JenaParameters.enableSilentAcceptanceOfUnknownDatatypes = false;
+        JenaParameters.enableEagerLiteralValidation = true;
+        JenaParameters.enableSilentAcceptanceOfUnknownDatatypes = false;
     }
 
     private void resetJenaLiteralValidation() {
-        org.apache.jena.shared.impl.JenaParameters.enableEagerLiteralValidation =
+        JenaParameters.enableEagerLiteralValidation =
                 eagerJenaLiteralValidation;
-        org.apache.jena.shared.impl.JenaParameters.enableSilentAcceptanceOfUnknownDatatypes =
+        JenaParameters.enableSilentAcceptanceOfUnknownDatatypes =
                 jenaAcceptanceOfUnknownLiteralDatatypes;
     }
 
@@ -178,53 +167,6 @@ public class ClaimValidator {
         return Pair.of(added, props);
     }
     
-    
-    /**
-     * Method that validates a dataGraph against shaclShape
-     * @param claims the claims to be validated
-     * @param schema the shacl shape to be used for validation
-     * @param sm StreamManager to be used for parsing the schema
-     * @return SchemaValidationResult object
-     */
-    public static String validateClaimsBySchema(List<RdfClaim> claims, ContentAccessor schema, StreamManager sm) {
-      Model data = ModelFactory.createDefaultModel();
-      Model shape = ModelFactory.createDefaultModel();
-      RDFParser.create()
-              .streamManager(sm)
-              .source(schema.getContentAsStream())
-              .lang(Lang.TURTLE)
-              .parse(shape);
-
-      for (RdfClaim claim: claims) {
-        log.trace("validateClaimsBySchema; {}", claim);
-        Statement triple = claim.getTriple();
-        if (triple != null) {
-          // Statement-based claim: add directly to preserve blank node identity and datatypes
-          data.add(triple);
-          continue;
-        }
-        // String-based claim fallback: derive type from formatted object string
-        RDFNode node;
-        String objectStr = claim.getObjectString();
-        if (objectStr != null && objectStr.startsWith("\"")) {
-          node = createTypedLiteral(claim.getObjectValue(), (RDFDatatype) null);
-        } else {
-          node = createResource(claim.getObjectValue());
-        }
-        Statement s = createStatement(createResource(claim.getSubjectValue()), createProperty(claim.getPredicateValue()), node);
-        data.add(s);
-      }
-      
-      Resource reportResource = ValidationUtil.validateModel(data, shape, true);
-      log.debug("validateClaimsBySchema; got result: {}", reportResource);
-      data.close();
-      shape.close();
-
-      if (reportResource.getProperty(SH.conforms).getBoolean()) {
-    	  return null;
-      }
-      return ModelPrinter.get().print(reportResource.getModel());
-    }   
     
     private static final String CREDENTIAL_SUBJECT = CredentialConstants.CREDENTIAL_SUBJECT_URI;
     

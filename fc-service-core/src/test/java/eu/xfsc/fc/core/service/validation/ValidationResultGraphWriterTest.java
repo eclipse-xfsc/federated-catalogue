@@ -1,9 +1,11 @@
 package eu.xfsc.fc.core.service.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -32,19 +34,6 @@ class ValidationResultGraphWriterTest {
     graphStore = mock(GraphStore.class);
   }
 
-  // --- helper ---
-
-  private static ValidationResult buildResult(long id, String[] assetIds) {
-    ValidationResult r = new ValidationResult();
-    r.setAssetIds(assetIds);
-    r.setValidatorIds(new String[]{"https://example.org/schema/1"});
-    r.setValidatorType(ValidatorType.SCHEMA);
-    r.setConforms(true);
-    r.setValidatedAt(Instant.parse("2024-06-01T12:00:00Z"));
-    r.setId(id);
-    return r;
-  }
-
   // ===== write — single asset =====
 
   @Test
@@ -70,7 +59,7 @@ class ValidationResultGraphWriterTest {
     writer.write(result, graphStore);
 
     ArgumentCaptor<List<RdfClaim>> claimsCaptor = forClass(List.class);
-    verify(graphStore).addClaims(claimsCaptor.capture(), org.mockito.ArgumentMatchers.any());
+    verify(graphStore).addClaims(claimsCaptor.capture(), any());
 
     List<RdfClaim> claims = claimsCaptor.getValue();
     String expectedSubject = "<https://example.org/asset/1>";
@@ -94,7 +83,7 @@ class ValidationResultGraphWriterTest {
     writer.write(result, graphStore);
 
     ArgumentCaptor<List<RdfClaim>> claimsCaptor = forClass(List.class);
-    verify(graphStore).addClaims(claimsCaptor.capture(), org.mockito.ArgumentMatchers.any());
+    verify(graphStore).addClaims(claimsCaptor.capture(), any());
 
     List<RdfClaim> claims = claimsCaptor.getValue();
     assertEquals(6, claims.size(), "Two assets + 1 validatorId: 2 hasValidationResult + 1 validatorId + 3 property triples = 6");
@@ -111,7 +100,7 @@ class ValidationResultGraphWriterTest {
     writer.write(result, graphStore);
 
     ArgumentCaptor<String> subjectCaptor = forClass(String.class);
-    verify(graphStore).addClaims(org.mockito.ArgumentMatchers.any(), subjectCaptor.capture());
+    verify(graphStore).addClaims(any(), subjectCaptor.capture());
 
     assertEquals("https://example.org/asset/FIRST", subjectCaptor.getValue());
   }
@@ -126,7 +115,7 @@ class ValidationResultGraphWriterTest {
     writer.write(result, graphStore);
 
     ArgumentCaptor<List<RdfClaim>> claimsCaptor = forClass(List.class);
-    verify(graphStore).addClaims(claimsCaptor.capture(), org.mockito.ArgumentMatchers.any());
+    verify(graphStore).addClaims(claimsCaptor.capture(), any());
 
     String expectedPredicate = "<" + FCMETA + "validatorId>";
     String expectedObject = "<https://example.org/schema/1>";
@@ -148,7 +137,7 @@ class ValidationResultGraphWriterTest {
     writer.write(result, graphStore);
 
     ArgumentCaptor<List<RdfClaim>> claimsCaptor = forClass(List.class);
-    verify(graphStore).addClaims(claimsCaptor.capture(), org.mockito.ArgumentMatchers.any());
+    verify(graphStore).addClaims(claimsCaptor.capture(), any());
 
     // 1 hasValidationResult + 2 validatorId + 3 property triples = 6
     assertEquals(6, claimsCaptor.getValue().size());
@@ -165,15 +154,25 @@ class ValidationResultGraphWriterTest {
   void write_graphStoreThrowsException_propagatesException() {
     ValidationResult result = buildResult(1L, new String[]{"https://example.org/asset/1"});
     GraphStore failingStore = mock(GraphStore.class);
-    org.mockito.Mockito.doThrow(new RuntimeException("Graph DB connection failed"))
+    doThrow(new RuntimeException("Graph DB connection failed"))
         .when(failingStore).addClaims(any(), any());
 
-    try {
-      writer.write(result, failingStore);
-      org.junit.jupiter.api.Assertions.fail("Expected RuntimeException to be thrown");
-    } catch (RuntimeException e) {
-      assertEquals("Graph DB connection failed", e.getMessage());
-      verify(failingStore).addClaims(any(), any());
-    }
+    RuntimeException ex = assertThrows(RuntimeException.class,
+        () -> writer.write(result, failingStore));
+
+    assertEquals("Graph DB connection failed", ex.getMessage());
+    verify(failingStore).addClaims(any(), any());
+  }
+
+
+  private static ValidationResult buildResult(long id, String[] assetIds) {
+    ValidationResult r = new ValidationResult();
+    r.setAssetIds(assetIds);
+    r.setValidatorIds(new String[]{"https://example.org/schema/1"});
+    r.setValidatorType(ValidatorType.SHACL);
+    r.setConforms(true);
+    r.setValidatedAt(Instant.parse("2024-06-01T12:00:00Z"));
+    r.setId(id);
+    return r;
   }
 }

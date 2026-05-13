@@ -16,14 +16,8 @@ import org.apache.jena.rdf.model.Property;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.riot.Lang;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
 
 /**
  * Unit tests for {@link JenaAllTriplesExtractor}.
@@ -81,26 +75,6 @@ class JenaAllTriplesExtractorTest {
     assertEquals(claim.getObjectString(), result);
     assertFalse(result.startsWith("<"), "Blank node must not be formatted as IRI");
     assertFalse(result.startsWith("\""), "Blank node must not be formatted as literal");
-  }
-
-  // --- detectLang ---
-
-  @ParameterizedTest(name = "{index} => contentType: {0}, expected: {1}")
-  @MethodSource("detectLangTestCases")
-  void detectLang_returnsCorrectLanguage(String contentType, Lang expected) {
-    assertEquals(expected, JenaAllTriplesExtractor.detectLang(contentType));
-  }
-
-  private static Stream<Arguments> detectLangTestCases() {
-    return Stream.of(
-        Arguments.of(null, Lang.JSONLD),
-        Arguments.of("text/turtle", Lang.TURTLE),
-        Arguments.of("application/n-triples", Lang.NTRIPLES),
-        Arguments.of("application/rdf+xml", Lang.RDFXML),
-        Arguments.of("application/ld+json", Lang.JSONLD),
-        Arguments.of("application/json", Lang.JSONLD),
-        Arguments.of("unknown/type", Lang.JSONLD)
-    );
   }
 
   // --- extractClaims: parse formats ---

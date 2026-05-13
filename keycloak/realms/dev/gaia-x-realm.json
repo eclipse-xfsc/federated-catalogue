@@ -663,6 +663,46 @@
       },
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "username": "fc-ca-test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CHANGE_ME_dev_only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-gaia-x"
+      ],
+      "clientRoles": {
+        "federated-catalogue": [
+          "Ro-MU-CA"
+        ]
+      }
+    },
+    {
+      "username": "fc-restricted-test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CHANGE_ME_dev_only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-gaia-x"
+      ],
+      "clientRoles": {
+        "federated-catalogue": [
+          "SCHEMA_READ"
+        ]
+      }
     }
   ],
   "scopeMappings": [

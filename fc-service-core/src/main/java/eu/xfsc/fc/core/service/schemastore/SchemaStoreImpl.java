@@ -32,6 +32,7 @@ import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -77,6 +78,12 @@ public class SchemaStoreImpl implements SchemaStore {
 
   @Autowired
   private ProtectedNamespaceFilter protectedNamespaceFilter;
+
+  @Autowired
+  private ObjectProvider<DocumentBuilderFactory> secureDocumentBuilderFactoryProvider;
+
+  @Autowired
+  private ObjectProvider<SchemaFactory> secureXmlSchemaFactoryProvider;
 
   private static final Map<SchemaType, ContentAccessor> COMPOSITE_SCHEMAS = new ConcurrentHashMap<>();
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -302,17 +309,10 @@ public class SchemaStoreImpl implements SchemaStore {
   private SchemaAnalysisResult analyzeXmlSchema(ContentAccessor schema) {
     try {
       byte[] content = schema.getContentAsString().getBytes(StandardCharsets.UTF_8);
-      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-      dbf.setNamespaceAware(true);
-      // Disable DTDs entirely to prevent XXE attacks;
-      // uses a Xerces-specific feature URI as it's not part of standard XMLConstants.
-      dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-      dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+      DocumentBuilderFactory dbf = secureDocumentBuilderFactoryProvider.getObject();
       Document doc = dbf.newDocumentBuilder().parse(new ByteArrayInputStream(content));
 
-      SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-      factory.setProperty(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-      factory.setProperty(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+      SchemaFactory factory = secureXmlSchemaFactoryProvider.getObject();
       factory.newSchema(new DOMSource(doc));
 
       String targetNs = doc.getDocumentElement().getAttribute("targetNamespace");

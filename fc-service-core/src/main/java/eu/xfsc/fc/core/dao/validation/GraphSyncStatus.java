@@ -13,7 +13,7 @@ public enum GraphSyncStatus {
   SYNCED,
 
   /**
-   * The graph DB write failed. The PostgreSQL row is the source of truth.
+   * The graph write failed. The stored validation result row is the source of truth.
    * FAILED rows require manual intervention; no automatic retry is performed.
    */
   FAILED

@@ -435,6 +435,59 @@ public class Neo4jGraphStoreTest {
         graphGaia.deleteClaims(credentialSubject);
     }
 
+    @Test
+    void deleteValidationResultClaims_removesTargetNode_preservesUnrelatedNode() {
+        String resultIri1 = "https://example.org/result/del-1";
+        String resultIri2 = "https://example.org/result/del-2";
+
+        // Seed two nodes — n10s sets n.uri from the subject URI of imported N-Triples
+        graphGaia.addClaims(List.of(
+            new CredentialClaim(
+                "<" + resultIri1 + ">",
+                "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                "<http://example.org/ValidationResult>"
+            )
+        ), resultIri1);
+        graphGaia.addClaims(List.of(
+            new CredentialClaim(
+                "<" + resultIri2 + ">",
+                "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                "<http://example.org/ValidationResult>"
+            )
+        ), resultIri2);
+
+        // Precondition: both nodes must exist
+        GraphQuery findResult1Before = new GraphQuery(
+            "MATCH (n {uri: $uri}) RETURN n.uri AS found",
+            Map.of("uri", resultIri1), QueryLanguage.OPENCYPHER, GraphQuery.QUERY_TIMEOUT, false);
+        GraphQuery findResult2Before = new GraphQuery(
+            "MATCH (n {uri: $uri}) RETURN n.uri AS found",
+            Map.of("uri", resultIri2), QueryLanguage.OPENCYPHER, GraphQuery.QUERY_TIMEOUT, false);
+        Assertions.assertEquals(1, graphGaia.queryData(findResult1Before).getResults().size(),
+            "Precondition: result1 node must exist");
+        Assertions.assertEquals(1, graphGaia.queryData(findResult2Before).getResults().size(),
+            "Precondition: result2 node must exist");
+
+        graphGaia.deleteValidationResultClaims(resultIri1);
+
+        // result1 node must be gone
+        GraphQuery findResult1After = new GraphQuery(
+            "MATCH (n {uri: $uri}) RETURN n.uri AS found",
+            Map.of("uri", resultIri1), QueryLanguage.OPENCYPHER, GraphQuery.QUERY_TIMEOUT, false);
+        Assertions.assertTrue(graphGaia.queryData(findResult1After).getResults().isEmpty(),
+            "result1 node should be deleted");
+
+        // result2 node must still exist
+        GraphQuery findResult2After = new GraphQuery(
+            "MATCH (n {uri: $uri}) RETURN n.uri AS found",
+            Map.of("uri", resultIri2), QueryLanguage.OPENCYPHER, GraphQuery.QUERY_TIMEOUT, false);
+        Assertions.assertEquals(1, graphGaia.queryData(findResult2After).getResults().size(),
+            "result2 node should not be affected");
+
+        // cleanup
+        graphGaia.deleteValidationResultClaims(resultIri2);
+    }
+
     private List<RdfClaim> loadTestClaims(String path) throws Exception {
         try (InputStream is = new ClassPathResource(path).getInputStream()) {
             BufferedReader br = new BufferedReader(new InputStreamReader(is));

@@ -18,8 +18,7 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
-import eu.xfsc.fc.core.dao.validation.OutdatedReason;
-import eu.xfsc.fc.core.service.validation.ValidationResultStore;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -55,8 +54,7 @@ public class AssetStoreImpl implements AssetStore {
   private final IriGenerator iriGenerator;
   private final AssetRepository assetRepository;
   private final ProtectedNamespaceProperties namespaceProperties;
-  private final ProvenanceService provenanceService;
-  private final ValidationResultStore validationResultStore;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Override
   public ContentAccessor getFileByHash(final String hash) {
@@ -130,7 +128,6 @@ public class AssetStoreImpl implements AssetStore {
     }
     if (subjectHash != null && subjectHash.subjectId() != null) {
       graphDb.deleteClaims(subjectHash.subjectId());
-      validationResultStore.markOutdatedByAssetId(subjectHash.subjectId(), OutdatedReason.ASSET_UPDATED);
       // deleteClaims wipes all triples for the asset, including MR-HR link triples; re-write them
       tryRewriteLinkTriples(assetMetadata.getId());
     }
@@ -192,7 +189,6 @@ public class AssetStoreImpl implements AssetStore {
     	hash, AssetStatus.ACTIVE, ssr.getAssetStatus()));
     }
     graphDb.deleteClaims(ssr.subjectId());
-    validationResultStore.markOutdatedByAssetId(ssr.subjectId(), OutdatedReason.ASSET_REVOKED);
   }
 
   @Override
@@ -218,9 +214,7 @@ public class AssetStoreImpl implements AssetStore {
       throw new NotFoundException("no asset found for hash " + hash);
     }
 
-    provenanceService.deleteByAssetId(ssr.subjectId());
-    validationResultStore.deleteByAssetId(ssr.subjectId());
-
+    eventPublisher.publishEvent(new AssetDeletedEvent(ssr.subjectId()));
     if (ssr.getAssetStatus() == AssetStatus.ACTIVE) {
       graphDb.deleteClaims(ssr.subjectId());
     }

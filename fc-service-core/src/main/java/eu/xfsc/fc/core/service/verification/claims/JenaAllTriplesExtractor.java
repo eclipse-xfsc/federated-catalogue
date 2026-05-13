@@ -3,7 +3,7 @@ package eu.xfsc.fc.core.service.verification.claims;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.RdfClaim;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
+import eu.xfsc.fc.core.util.RdfFormatDetector;
 import eu.xfsc.fc.core.util.RdfNodeMapper;
 
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class JenaAllTriplesExtractor implements ClaimExtractor {
   @Override
   public List<RdfClaim> extractClaims(ContentAccessor content) {
     String body = content.getContentAsString();
-    Lang lang = detectLang(content.getContentType());
+    Lang lang = RdfFormatDetector.detect(content.getContentType(), body);
     Model model = parseWithFallback(body, lang);
     List<RdfClaim> claims = new ArrayList<>();
     StmtIterator it = model.listStatements();
@@ -91,22 +91,6 @@ public class JenaAllTriplesExtractor implements ClaimExtractor {
     if (lang == Lang.RDFXML && body.contains("<!DOCTYPE")) {
       throw new RiotException("RDF/XML input must not contain DOCTYPE declarations");
     }
-  }
-
-  /**
-   * Maps a MIME content type to a Jena {@link Lang}.
-   * Falls back to {@link Lang#JSONLD} for absent or unrecognized content types.
-   */
-  static Lang detectLang(String contentType) {
-    if (contentType == null) {
-      return Lang.JSONLD;
-    }
-    return switch (contentType.strip().toLowerCase()) {
-      case VerificationConstants.MEDIA_TYPE_TURTLE -> Lang.TURTLE;
-      case VerificationConstants.MEDIA_TYPE_NTRIPLES -> Lang.NTRIPLES;
-      case VerificationConstants.MEDIA_TYPE_RDF_XML -> Lang.RDFXML;
-      default -> Lang.JSONLD;
-    };
   }
 
   private RdfClaim toRdfClaim(Statement stmt) {

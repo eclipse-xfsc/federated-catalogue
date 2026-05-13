@@ -206,7 +206,6 @@ class LoireJwtParserTest {
     assertTrue(parser.isVpJwt(new ContentAccessorDirect(jwt)));
   }
 
-  // --- helpers ---
 
   private String buildLoireVcJwt() throws Exception {
     return buildJwtWithHeaders("vc+ld+json+jwt", "vc+ld+json");

@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class FormatDetector {
+public class CredentialFormatDetector {
 
     private final ObjectMapper objectMapper;
     private final List<FormatMatcher> matchers;
