@@ -489,7 +489,7 @@ public class AssetVersionControllerTest {
 
     CredentialVerificationResult vr = new CredentialVerificationResult(
         Instant.now(), AssetStatus.ACTIVE.getValue(),
-        TEST_ISSUER, Instant.now(), ASSET_IRI, List.of(), List.of());
+        TEST_ISSUER, Instant.now(), ASSET_IRI, List.of(), List.of(), "", "");
     assetStorePublisher.storeCredential(meta, vr);
   }
 }

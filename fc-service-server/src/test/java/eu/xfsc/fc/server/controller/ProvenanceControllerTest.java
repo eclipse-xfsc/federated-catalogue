@@ -30,6 +30,8 @@ import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -535,6 +537,6 @@ public class ProvenanceControllerTest {
   }
 
   private static String encode(String value) {
-    return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+    return URLEncoder.encode(value, StandardCharsets.UTF_8);
   }
 }

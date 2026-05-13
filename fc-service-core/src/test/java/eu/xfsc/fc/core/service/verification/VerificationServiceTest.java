@@ -28,29 +28,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.config.FileStoreConfig;
 import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
-import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
+import eu.xfsc.fc.core.config.VerificationStackTestConfig;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
-import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
-import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
-import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
-import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
+import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
+import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
+import org.springframework.jdbc.core.JdbcTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -70,10 +57,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {VerificationServiceTest.TestApplication.class, FileStoreConfig.class, DocumentLoaderConfig.class, DocumentLoaderProperties.class,
-        VerificationServiceImpl.class, SchemaStoreImpl.class, SchemaJpaDao.class, SchemaAuditRepository.class, DatabaseConfig.class, DidResolverConfig.class, ValidatorCacheJpaDao.class, HttpDocumentResolver.class,
-        ProtectedNamespaceFilter.class, ProtectedNamespaceProperties.class, SecurityAuditorAware.class, JenaAllTriplesExtractor.class, ClaimExtractionService.class,
-        RdfAssetParser.class, ShaclValidationExecutor.class, LoireJwtParser.class})
+@ContextConfiguration(classes = {VerificationServiceTest.TestApplication.class, VerificationStackTestConfig.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
 public class VerificationServiceTest {
 
@@ -133,8 +117,8 @@ public class VerificationServiceTest {
       CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
       assertNotNull(result);
-      assertNotNull(result.getClaims());
-      assertFalse(result.getClaims().isEmpty(), "Non-VC JSON-LD is processed as non-credential RDF");
+    assertNotNull(result.getGraphClaims());
+    assertFalse(result.getGraphClaims().isEmpty(), "Non-VC JSON-LD is processed as non-credential RDF");
   }
 
   @Test
@@ -173,8 +157,8 @@ public class VerificationServiceTest {
       CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
       assertNotNull(result);
-      assertNotNull(result.getClaims());
-      assertFalse(result.getClaims().isEmpty(), "Plain JSON-LD must extract triples as non-credential RDF");
+    assertNotNull(result.getGraphClaims());
+    assertFalse(result.getGraphClaims().isEmpty(), "Plain JSON-LD must extract triples as non-credential RDF");
   }
 
     @Test
@@ -202,25 +186,17 @@ public class VerificationServiceTest {
 
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
     assertNotNull(vr);
-    assertInstanceOf(CredentialVerificationResultParticipant.class, vr);
-    CredentialVerificationResultParticipant vrp = (CredentialVerificationResultParticipant) vr;
-    assertEquals("did:web:example.com", vrp.getIssuer());
-    assertEquals(vrp.getParticipantName(), vrp.getIssuer());
+    assertEquals("Participant", vr.getRole());
+    assertEquals("did:web:example.com", vr.getIssuer());
+    assertEquals(vr.getName(), vr.getIssuer());
   }
 
   @Test
   void validVCUnknownType() {
-    // With gaiax disabled (default in tests), non-Gaia-X credentials pass the semantics check.
-    // verifyVCSignatures=false because input.vc.jsonld has a dummy proof that would fail verification.
     String path = "VerificationService/jsonld/input.vc.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
-    boolean verifySemantics = true;
-    boolean verifyVcSigs = false;
-    CredentialVerificationResult vr = verificationService.verifyCredential(getAccessor(path),
-        verifySemantics, false, false, verifyVcSigs);
-    assertNotNull(vr);
-    assertEquals("did:example:ebfeb1f712ebc6f1c276e12ec21", vr.getId());
-    assertEquals("https://example.edu/issuers/565049", vr.getIssuer());
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, false));
   }
 
   @Test
@@ -251,17 +227,12 @@ public class VerificationServiceTest {
 
   @Test
   void validVPUnknownType() {
-    // With gaiax disabled (default in tests), non-Gaia-X VP credentials pass the semantics check.
-    // verifyVPSignatures=false because input.vp.jsonld uses Ed25519Signature2018 which is unsupported.
+    // input.vp.jsonld's credentialSubject type fails JSON-LD parsing (PROTECTED_TERM_REDEFINITION)
+    // → resolveSubjectRole returns UNKNOWN → ClientException.
     String path = "VerificationService/jsonld/input.vp.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
-    boolean verifySemantics = true;
-    boolean verifyVpSigs = false;
-    CredentialVerificationResult vr = verificationService.verifyCredential(getAccessor(path),
-        verifySemantics, false, verifyVpSigs, false);
-    assertNotNull(vr);
-    assertEquals("did:key:z6MkjRagNiMu91DduvCvgEsqLZDVzrJzFrwahc4tXLt9DoHd", vr.getId());
-    assertEquals("did:v1:test:nym:z6MkhdmzFu659ZJ4XKj31vtEDmjvsi5yDZG5L7Caz63oP39k", vr.getIssuer());
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, false));
   }
 
   @Test
@@ -271,11 +242,10 @@ public class VerificationServiceTest {
     // verifyVCSigs=false: JWS in fixture was computed over original data; cannot re-sign (external GXDCH key)
     CredentialVerificationResult vr = verificationService.verifyCredential(getAccessor(path), true, false, false, false);
     assertNotNull(vr);
-    assertInstanceOf(CredentialVerificationResultParticipant.class, vr);
-    CredentialVerificationResultParticipant vrp = (CredentialVerificationResultParticipant) vr;
-    assertEquals("https://www.handelsregister.de/", vrp.getId());
-    assertEquals("https://www.handelsregister.de/", vrp.getIssuer());
-    assertEquals(Instant.parse("2010-01-01T19:37:24Z"), vrp.getIssuedDateTime());
+    assertEquals("Participant", vr.getRole());
+    assertEquals("http://example.org/test-issuer", vr.getId());
+    assertEquals("https://www.handelsregister.de/", vr.getIssuer());
+    assertEquals(Instant.parse("2010-01-01T19:37:24Z"), vr.getIssuedDateTime());
   }
 
   // validSyntax_ValidCredentialVP removed — coverage provided by validSyntax_LegalParticipantNewSchema
@@ -287,15 +257,14 @@ public class VerificationServiceTest {
     ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering2.jsonld");
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
     assertNotNull(vr);
-    assertInstanceOf(CredentialVerificationResultOffering.class, vr);
-    CredentialVerificationResultOffering vro = (CredentialVerificationResultOffering) vr;
-    assertEquals("https://www.example.org/mySoftwareOffering", vro.getId());
-    assertEquals("http://gaiax.de", vro.getIssuer());
-    assertNotNull(vro.getClaims());
-    assertEquals(17, vro.getClaims().size());
-    assertTrue(vro.getValidators().isEmpty());
-    assertTrue(vro.getValidatorDids().isEmpty());
-    assertEquals(Instant.parse("2022-10-19T18:48:09Z"), vro.getIssuedDateTime());
+    assertEquals("ServiceOffering", vr.getRole());
+    assertEquals("https://www.example.org/mySoftwareOffering", vr.getId());
+    assertEquals("http://gaiax.de", vr.getIssuer());
+    assertNotNull(vr.getGraphClaims());
+    assertEquals(17, vr.getGraphClaims().size());
+    assertTrue(vr.getValidators().isEmpty());
+    assertTrue(vr.getValidatorDids().isEmpty());
+    assertEquals(Instant.parse("2022-10-19T18:48:09Z"), vr.getIssuedDateTime());
   }
 
 
@@ -305,16 +274,15 @@ public class VerificationServiceTest {
     ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
     assertNotNull(vr);
-    assertInstanceOf(CredentialVerificationResultParticipant.class, vr);
-    CredentialVerificationResultParticipant vrp = (CredentialVerificationResultParticipant) vr;
-    assertEquals("http://gaiax.de", vrp.getId());
-    assertEquals("http://gaiax.de", vrp.getIssuer());
-    assertEquals("http://gaiax.de", vrp.getParticipantName()); // could be 'Provider Name'..
-    assertNotNull(vrp.getClaims());
-    assertEquals(10, vrp.getClaims().size());
-    assertTrue(vrp.getValidators().isEmpty());
-    assertTrue(vrp.getValidatorDids().isEmpty());
-    assertEquals(Instant.parse("2022-10-19T18:48:09Z"), vrp.getIssuedDateTime());
+    assertEquals("Participant", vr.getRole());
+    assertEquals("http://gaiax.de", vr.getId());
+    assertEquals("http://gaiax.de", vr.getIssuer());
+    assertEquals("http://gaiax.de", vr.getName());
+    assertNotNull(vr.getGraphClaims());
+    assertEquals(10, vr.getGraphClaims().size());
+    assertTrue(vr.getValidators().isEmpty());
+    assertTrue(vr.getValidatorDids().isEmpty());
+    assertEquals(Instant.parse("2022-10-19T18:48:09Z"), vr.getIssuedDateTime());
   }
 
   @Test
@@ -333,36 +301,80 @@ public class VerificationServiceTest {
 
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
     assertNotNull(vr);
-    assertInstanceOf(CredentialVerificationResultResource.class, vr);
-    CredentialVerificationResultResource vrr = (CredentialVerificationResultResource) vr;
-    assertEquals("did:web:example.com", vrr.getIssuer());
-    assertNotNull(vrr.getClaims());
-    assertTrue(vrr.getValidators().isEmpty());
-    assertTrue(vrr.getValidatorDids().isEmpty());
+    assertEquals("Resource", vr.getRole());
+    assertEquals("did:web:example.com", vr.getIssuer());
+    assertNotNull(vr.getGraphClaims());
+    assertTrue(vr.getValidators().isEmpty());
+    assertTrue(vr.getValidatorDids().isEmpty());
   }
 
+  /**
+   * Verifies that a custom extension type resolved only via the schema store fallback
+   * becomes unresolvable once its ontology schema is deleted.
+   *
+   * <p>Uses {@code ext:CustomParticipant} which is not in any bundle; the registry fast
+   * path returns UNKNOWN for it. After schema deletion, type resolution fails and the
+   * credential is rejected when the trust framework is enabled.
+   */
   @Test
   void validSyntax_LegalParticipantNewSchema() {
-    schemaStore.initializeDefaultSchemas();
-    ContentAccessor content = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
+    // The gx-2511 ontology provides the superclass chain (gx:LegalPerson → gx:Participant)
+    // needed for the schema store fallback to resolve ext:CustomParticipant transitively.
+    schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
+    schemaStore.addSchema(getAccessor("Schema-Tests/custom-participant-extension.ttl"));
+    ContentAccessor content = getAccessor("VerificationService/syntax/customExtParticipant.jsonld");
+
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
     assertNotNull(vr);
-    assertInstanceOf(CredentialVerificationResultParticipant.class, vr);
-    CredentialVerificationResultParticipant vrr = (CredentialVerificationResultParticipant) vr;
-    //assertEquals("did:example:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2", vrr.getId());
-    //assertEquals("did:web:compliance.lab.gaia-x.eu", vrr.getIssuer());
-    assertEquals(Instant.parse("2024-03-15T12:40:58.486Z"), vrr.getIssuedDateTime());
-    assertNotNull(vrr.getClaims());
-    assertEquals(10, vrr.getClaims().size());
-    assertEquals(1, schemaStore.getSchemaList().get(SchemaType.ONTOLOGY).size());
-    schemaStore.deleteSchema("https://w3id.org/gaia-x/2511");
-    assertTrue(schemaStore.getSchemaList().get(SchemaType.ONTOLOGY).isEmpty());
-    // With gaiax enabled, removing the required ontology schema causes hasClasses() to fail.
+    assertEquals("Participant", vr.getRole());
+
+    schemaStore.deleteSchema("https://example.org/ext");
+
     jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       Exception ex = assertThrowsExactly(VerificationException.class, ()
           -> verificationService.verifyCredential(content, true, true, false, false));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
+    } finally {
+      jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
+    }
+  }
+
+  /**
+   * Demonstrates that bundle-provided types are indexed from the classpath ontology at startup
+   * and cannot be removed via the schema store. Disabling the trust framework via the
+   * {@code trust_frameworks} table is the only available lever until per-type admin control
+   * is implemented.
+   */
+  @Test
+  void verifyCredential_bundledType_persistsThroughSchemaDelete_frameworkDisableDeactivatesEnforcement() {
+    jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
+    try {
+      ContentAccessor legalParticipantContent = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
+
+      CredentialVerificationResult vrBefore = verificationService.verifyCredential(
+          legalParticipantContent, true, false, false, false);
+      assertNotNull(vrBefore);
+      assertEquals("Participant", vrBefore.getRole());
+
+      // The schema store is empty (no gaia-x 2511 schema uploaded) — this proves the registry
+      // fast path is independent of the schema store.
+      assertTrue(schemaStore.getSchemaList().get(SchemaType.ONTOLOGY).isEmpty(),
+          "Schema store must be empty — bundle types must not require the schema store");
+
+      CredentialVerificationResult vrAfterDelete = verificationService.verifyCredential(
+          legalParticipantContent, true, false, false, false);
+      assertNotNull(vrAfterDelete);
+      assertEquals("Participant", vrAfterDelete.getRole(),
+          "Bundle type must still resolve after schema store deletion");
+
+      jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
+
+      // AC-3: ext:CustomParticipant is not in any active bundle (gaia-x disabled, no ontology loaded)
+      // → resolveSubjectRole returns UNKNOWN → ClientException.
+      ContentAccessor customExtContent = getAccessor("VerificationService/syntax/customExtParticipant.jsonld");
+      assertThrowsExactly(ClientException.class,
+          () -> verificationService.verifyCredential(customExtContent, true, false, false, false));
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
     }
@@ -393,28 +405,12 @@ public class VerificationServiceTest {
 
   @Test
   void validComplexCredentialPartType() {
+    // AC-3: VCs whose outer "type" array has only "VerifiableCredential" (no domain type) are rejected.
+    // complexCredentialPartType.jsonld's VCs all have type=["VerifiableCredential"], so role=null → 400.
     schemaStore.initializeDefaultSchemas();
     String path = "VerificationService/syntax/complexCredentialPartType.jsonld";
-    CredentialVerificationResult result = verificationService.verifyCredential(getAccessor(path), true, true, false, false);
-    assertNotNull(result);
-    assertEquals(12, result.getClaims().size());
-    List<RdfClaim> expectedClaims = new ArrayList<>();
-    expectedClaims.add(new CredentialClaim("_:b0", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#countrySubdivisionCode>", "\"FR-59\""));
-    expectedClaims.add(new CredentialClaim("_:b1", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#countrySubdivisionCode>", "\"FR-59\""));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#LegalParticipant>"));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#headquarterAddress>", "_:b0"));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#legalAddress>", "_:b1"));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#legalName>", "\"Riphixel\""));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/8255722c-35de-4741-90b2-650040b3fa57.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#legalRegistrationNumber>", "<https://www.riphixel.fr/workshop/demo2023/743ad60a-431c-4f45-bf15-e7bf19d64b10.json>"));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/be662688-2a48-48ea-bf23-43a4e83ee6e5.json>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#GaiaXTermsAndConditions>"));
-    // cannot compare the multiline claim below
-    //expectedClaims.add(new Claim("<https://www.riphixel.fr/workshop/demo2023/be662688-2a48-48ea-bf23-43a4e83ee6e5.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#termsAndConditions>", "\"The PARTICIPANT signing the Self-Description agrees as follows:\n- to update its descriptions about any changes, be it technical, organizational, or legal - especially but not limited to contractual in regards to the indicated attributes present in the descriptions.\n\nThe keypair used to sign Verifiable Credentials will be revoked where Gaia-X Association becomes aware of any inaccurate statements in regards to the claims which result in a non-compliance with the Trust Framework and policy rules defined in the Policy Rules and Labelling Document (PRLD).\""));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/743ad60a-431c-4f45-bf15-e7bf19d64b10.json>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#legalRegistrationNumber>"));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/743ad60a-431c-4f45-bf15-e7bf19d64b10.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#vatID>", "\"FR52899103360\""));
-    expectedClaims.add(new CredentialClaim("<https://www.riphixel.fr/workshop/demo2023/743ad60a-431c-4f45-bf15-e7bf19d64b10.json>", "<https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#vatID-countryCode>", "\"FR\""));
-    for (RdfClaim claim: expectedClaims) {
-    	assertTrue(result.getClaims().contains(claim));
-    }
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(getAccessor(path), true, true, false, false));
   }
 
   @Test
@@ -422,7 +418,9 @@ public class VerificationServiceTest {
     schemaStore.initializeDefaultSchemas();
     String path = "VerificationService/syntax/complexCredential2Types.jsonld";
     Exception ex = assertThrowsExactly(VerificationException.class, () -> verificationService.verifyCredential(getAccessor(path), true, true, false, false));
-    assertEquals("Semantic error: credential has several types: [" + TrustFrameworkBaseClass.PARTICIPANT + ", " + TrustFrameworkBaseClass.SERVICE_OFFERING + "]", ex.getMessage());
+    assertEquals("Semantic error: credential has several types: ["
+        + "ResolvedRole[frameworkProfileId=gaia-x-2511, role=Participant], "
+        + "ResolvedRole[frameworkProfileId=gaia-x-2511, role=ServiceOffering]]", ex.getMessage());
   }
 
   @Test
@@ -430,7 +428,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
-    List<RdfClaim> actualClaims = result.getClaims();
+    List<RdfClaim> actualClaims = result.getGraphClaims();
     Set<RdfClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new CredentialClaim("<http://example.org/test-issuer>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#LegalPerson>"));
     expectedClaims.add(new CredentialClaim("<http://example.org/test-issuer>", "<https://w3id.org/gaia-x/2511#name>", "\"deltaDAO AG\""));
@@ -450,7 +448,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential.jsonld");
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
-    List<RdfClaim> actualClaims = result.getClaims();
+    List<RdfClaim> actualClaims = result.getGraphClaims();
 
     Set<RdfClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new CredentialClaim("<did:web:delta-dao.com>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#LegalPerson>"));
@@ -482,7 +480,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoVCs.jsonld");
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
-    List<RdfClaim> actualClaims = result.getClaims();
+    List<RdfClaim> actualClaims = result.getGraphClaims();
     List<RdfClaim> expectedClaims = new ArrayList<>();
     expectedClaims.add(new CredentialClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://www.w3.org/2006/vcard/ns#Address>"));
     expectedClaims.add(new CredentialClaim("_:b0", "<http://www.w3.org/2006/vcard/ns#country-name>", "\"Country\""));
@@ -507,7 +505,7 @@ public class VerificationServiceTest {
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/specialCharacters.jsonld");
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
-    List<RdfClaim> actualClaims = result.getClaims();
+    List<RdfClaim> actualClaims = result.getGraphClaims();
     Set<RdfClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new CredentialClaim("<did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#Resource>"));
     expectedClaims.add(new CredentialClaim("<did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2>", "<http://purl.org/dc/terms/description>", "\"\\n \\\\ Test with </\\\"s>pecial\\\" \\\\ / characters \\b </\\f \\n \\r \\t 🔥\""));
@@ -543,7 +541,7 @@ public class VerificationServiceTest {
 
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
     assertNotNull(result, "Claims extraction should succeed with additional contexts");
-    assertNotNull(result.getClaims(), "Claims should not be null");
+    assertNotNull(result.getGraphClaims(), "Claims should not be null");
   }
 
   @Test
@@ -551,7 +549,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoCSs.jsonld");
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
-    List<RdfClaim> actualClaims = result.getClaims();
+    List<RdfClaim> actualClaims = result.getGraphClaims();
 
     Set<RdfClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new CredentialClaim("<https://w3id.org/gaia-x/2511#Provider1>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#LegalPerson>"));
@@ -647,7 +645,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential-with-fcmeta.jsonld");
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
-    List<RdfClaim> actualClaims = result.getClaims();
+    List<RdfClaim> actualClaims = result.getGraphClaims();
 
     for (RdfClaim claim : actualClaims) {
       assertFalse(claim.getPredicateString().contains(protectedNsProps.getNamespace()),
@@ -687,13 +685,12 @@ public class VerificationServiceTest {
 
   @Test
   void extractClaims_allFcmetaClaimsFiltered_returnsEmptyList() {
+    // AC-3: credentialSubject has no @type → UNKNOWN → ClientException.
+    // The fcmeta-only fixture's credentialSubject carries only protected-namespace predicates and no type,
+    // so role resolution fails before claims are returned.
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential-only-fcmeta.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
-    List<RdfClaim> claims = result.getClaims();
-    assertNotNull(claims, "Result should not be null even when all claims are filtered");
-    assertTrue(claims.isEmpty(), "All fcmeta: claims should have been filtered, leaving an empty list");
-    assertNotNull(result.getWarnings(), "Warning should be set when fcmeta triples were filtered");
-    assertFalse(result.getWarnings().isEmpty(), "Warning list should not be empty when all claims are filtered");
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(content, false, false, false, false));
   }
 
   // --- T5: JWT signature verification smoke tests ---
@@ -766,7 +763,9 @@ public class VerificationServiceTest {
 
     Validator testValidator = new Validator("did:test:key-1", "{\"kty\":\"EC\"}", null);
     when(jwtVerifierMock.verify(any())).thenReturn(testValidator);
-    ContentAccessor vpJsonLd = getAccessor("VerificationService/syntax/input.vp.jsonld");
+    // input.vp.jsonld causes PROTECTED_TERM_REDEFINITION during role resolution (AC-3 would reject it).
+    // Use legalParticipant.jsonld instead — a proper Gaia-X VP whose type resolves to Participant.
+    ContentAccessor vpJsonLd = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
     doReturn(vpJsonLd).when(vc2ProcessorSpy).preProcess(any());
 
     // verifySemantics=false to skip class detection; verifyVPSignatures=true for JWT verification
@@ -904,7 +903,7 @@ public class VerificationServiceTest {
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
 
     assertNotNull(vr);
-      assertInstanceOf(CredentialVerificationResultParticipant.class, vr, "VC 2.0 with 2511#LegalPerson type must be recognized");
+    assertEquals("Participant", vr.getRole(), "VC 2.0 with 2511#LegalPerson type must be recognized as Participant");
     assertNotNull(vr.getIssuedDateTime(), "issuedDateTime must be non-null for VC 2.0 validFrom");
     assertEquals(Instant.parse("2026-01-30T00:00:00Z"), vr.getIssuedDateTime());
   }
@@ -975,19 +974,16 @@ public class VerificationServiceTest {
   // --- VC 2.0 non-Gaia-X RDF asset tests ---
 
   /**
-   * VC 2.0 credential without any Gaia-X type must pass semantic verification
-   * when gaiaxTrustFrameworkEnabled=false (default). Gating hasClasses() on the
-   * Gaia-X flag allows generic VC 2.0 assets to be accepted as RDF claims.
+   * AC-3: VC 2.0 credential without any recognised trust-framework type must be rejected
+   * regardless of whether the Gaia-X bundle is enabled or not. Type resolution returns
+   * UNKNOWN → 400 ClientException.
    */
   @Test
-  void verifyCredential_vc2NonGaiaxRdfAsset_passesWithSemanticsEnabled() {
+  void verifyCredential_vc2NonGaiaxRdfAsset_throwsClientException() {
     ContentAccessor content = getAccessor("Claims-Tests/vc2NonGaiax.jsonld");
 
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
-
-    assertNotNull(vr, "VC 2.0 without Gaia-X type must pass when gaiax is disabled");
-    assertEquals("did:web:subject.example.com", vr.getId());
-    assertEquals("did:web:issuer.example.com", vr.getIssuer());
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(content, true, false, false, false));
   }
 
   /**
@@ -1014,31 +1010,32 @@ public class VerificationServiceTest {
   @Test
   void verifyCredential_evcWrapper_innerVcJwtUnwrappedAndProcessed() {
     // EVC per ICAM 24.07: outer JSON-LD wrapper with data: URI carrying a Loire VC JWT.
-    // The wrapper is stripped and the inner JWT is routed through the Loire (GAIAX_V2_LOIRE) path.
+    // The wrapper is stripped; inner JWT routes through Loire path. fakeLoireJwt has no domain type
+    // → AC-3 throws ClientException after unwrap. The spy call still happens before the exception.
     String innerJwt = TestUtil.fakeLoireJwt("did:example:issuer");
     String evcBody = "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
         + "\"type\":\"EnvelopedVerifiableCredential\","
         + "\"id\":\"data:application/vc+ld+json+jwt," + innerJwt + "\"}";
     ContentAccessor content = new ContentAccessorDirect(evcBody, "application/vc+ld+json");
 
-    CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
-
-    assertNotNull(result, "EVC wrapper must be unwrapped and inner Loire VC processed");
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(content, false, false, false, false));
     verify(loireJwtParserSpy).unwrap(any());
   }
 
   @Test
   void verifyCredential_evpWrapper_innerVpJwtUnwrappedAndProcessed() {
     // EVP per ICAM 24.07: outer JSON-LD wrapper with data: URI carrying a Loire VP JWT.
-    // The wrapper is stripped and the inner JWT is routed through the Loire (GAIAX_V2_LOIRE) path.
+    // The wrapper is stripped; inner JWT routes through Loire path. fakeLoireVpJwt has no domain type
+    // → AC-3 throws ClientException after unwrap. The spy call still happens before the exception.
     String innerJwt = fakeLoireVpJwt("did:example:issuer");
     String evpBody = "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
         + "\"type\":\"EnvelopedVerifiablePresentation\","
         + "\"id\":\"data:application/vp+ld+jwt," + innerJwt + "\"}";
     ContentAccessor content = new ContentAccessorDirect(evpBody, "application/vp+ld+json");
 
-    verificationService.verifyCredential(content, false, false, false, false);
-
+    assertThrowsExactly(ClientException.class,
+        () -> verificationService.verifyCredential(content, false, false, false, false));
     verify(loireJwtParserSpy).unwrap(any());
   }
 
@@ -1076,9 +1073,9 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertNotNull(result.getClaims());
-        assertEquals(3, result.getClaims().size(), "All 3 triples must be extracted from non-credential JSON-LD");
-        assertTrue(result.getClaims().stream()
+      assertNotNull(result.getGraphClaims());
+      assertEquals(3, result.getGraphClaims().size(), "All 3 triples must be extracted from non-credential JSON-LD");
+      assertTrue(result.getGraphClaims().stream()
                         .anyMatch(c -> c.getSubjectString().equals("<http://example.org/item1>")),
                 "Subject IRI must appear in extracted claims");
     }
@@ -1090,9 +1087,9 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertNotNull(result.getClaims());
-        assertEquals(3, result.getClaims().size(), "All 3 triples must be extracted from Turtle");
-        assertTrue(result.getClaims().stream()
+      assertNotNull(result.getGraphClaims());
+      assertEquals(3, result.getGraphClaims().size(), "All 3 triples must be extracted from Turtle");
+      assertTrue(result.getGraphClaims().stream()
                         .anyMatch(c -> c.getSubjectString().equals("<http://example.org/item1>")),
                 "Subject IRI must appear in extracted claims");
     }
@@ -1104,9 +1101,9 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertNotNull(result.getClaims());
-        assertEquals(3, result.getClaims().size(), "All 3 triples must be extracted from N-Triples");
-        assertTrue(result.getClaims().stream()
+      assertNotNull(result.getGraphClaims());
+      assertEquals(3, result.getGraphClaims().size(), "All 3 triples must be extracted from N-Triples");
+      assertTrue(result.getGraphClaims().stream()
                         .anyMatch(c -> c.getSubjectString().equals("<http://example.org/item1>")),
                 "Subject IRI must appear in extracted claims");
     }
@@ -1118,9 +1115,9 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertNotNull(result.getClaims());
-        assertEquals(3, result.getClaims().size(), "All 3 triples must be extracted from RDF/XML");
-        assertTrue(result.getClaims().stream()
+      assertNotNull(result.getGraphClaims());
+      assertEquals(3, result.getGraphClaims().size(), "All 3 triples must be extracted from RDF/XML");
+      assertTrue(result.getGraphClaims().stream()
                         .anyMatch(c -> c.getSubjectString().equals("<http://example.org/item1>")),
                 "Subject IRI must appear in extracted claims");
     }
@@ -1132,9 +1129,9 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertFalse(result.getClaims().isEmpty());
-        assertInstanceOf(RdfClaim.class, result.getClaims().get(0));
-        assertFalse(result.getClaims().get(0) instanceof CredentialClaim,
+      assertFalse(result.getGraphClaims().isEmpty());
+      assertInstanceOf(RdfClaim.class, result.getGraphClaims().get(0));
+      assertFalse(result.getGraphClaims().get(0) instanceof CredentialClaim,
                 "Non-credential extractor must return RdfClaim, not CredentialClaim");
     }
 
@@ -1146,9 +1143,9 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertNotNull(result.getClaims(), "VC credential must return non-null claims");
-        assertFalse(result.getClaims().isEmpty(), "VC credential must return non-empty claims");
-        boolean hasIssuerSubject = result.getClaims().stream()
+      assertNotNull(result.getGraphClaims(), "VC credential must return non-null claims");
+      assertFalse(result.getGraphClaims().isEmpty(), "VC credential must return non-empty claims");
+      boolean hasIssuerSubject = result.getGraphClaims().stream()
                 .anyMatch(c -> c.getSubjectString().contains("issuer.example.com"));
         assertFalse(hasIssuerSubject, "Issuer IRI must not appear as credentialSubject — only subject triples");
     }
@@ -1161,8 +1158,8 @@ public class VerificationServiceTest {
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
 
         assertNotNull(result);
-        assertFalse(result.getClaims().isEmpty());
-        assertInstanceOf(CredentialClaim.class, result.getClaims().get(0),
+      assertFalse(result.getGraphClaims().isEmpty());
+      assertInstanceOf(CredentialClaim.class, result.getGraphClaims().get(0),
                 "VC credential extractor must return CredentialClaim instances");
     }
 

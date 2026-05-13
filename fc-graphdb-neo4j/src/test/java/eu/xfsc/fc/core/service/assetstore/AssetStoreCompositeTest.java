@@ -1,18 +1,11 @@
 package eu.xfsc.fc.core.service.assetstore;
 
-import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.config.DidResolverConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderConfig;
-import eu.xfsc.fc.core.config.DocumentLoaderProperties;
-import eu.xfsc.fc.core.config.FileStoreConfig;
-import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
-import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
+import eu.xfsc.fc.core.config.VerificationStackTestConfig;
+import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
+import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
-import eu.xfsc.fc.core.dao.schemas.SchemaAuditRepository;
-import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
-import eu.xfsc.fc.core.dao.validatorcache.ValidatorCacheJpaDao;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -20,29 +13,14 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
-import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
-import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
-import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
 import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
 import eu.xfsc.fc.core.service.validation.ValidationResultStore;
-import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
-import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
-import eu.xfsc.fc.core.service.verification.CredentialFormatDetector;
-import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
-import eu.xfsc.fc.core.service.verification.LoireJwtParser;
-import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
-import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
-import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
-import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
-import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
-import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
 import eu.xfsc.fc.core.util.GraphRebuilder;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
@@ -69,7 +47,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
-import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
 
 import java.util.List;
 import java.util.Map;
@@ -85,47 +62,18 @@ import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {
-        AdminConfigRepository.class,
+    AssetStoreCompositeTest.TestApplication.class,
+    VerificationStackTestConfig.class,
         AssetAuditRepository.class,
         AssetJpaDao.class,
-        AssetStoreCompositeTest.TestApplication.class,
-        AssetStoreCompositeTest.class,
         AssetStoreImpl.class,
-        ClaimExtractionService.class,
-        CredentialVerificationStrategy.class,
-        DanubeTechFormatMatcher.class,
-        DatabaseConfig.class,
-        DidDocumentResolver.class,
-        DidResolverConfig.class,
-        DocumentLoaderConfig.class,
-        DocumentLoaderProperties.class,
-        FileStoreConfig.class,
-        CredentialFormatDetector.class,
         GraphRebuilder.class,
-        HttpDocumentResolver.class,
         IriGenerator.class,
         IriValidator.class,
-        JenaAllTriplesExtractor.class,
-        JwtContentPreprocessor.class,
-        JwtSignatureVerifier.class,
-        LoireJwtParser.class,
         Neo4jGraphStore.class,
-        ProtectedNamespaceFilter.class,
-        ProtectedNamespaceProperties.class,
         RdfContentTypeProperties.class,
-        SchemaAuditRepository.class,
-        SchemaJpaDao.class,
-        SchemaModuleConfigService.class,
-        SchemaStoreImpl.class,
-        RdfAssetParser.class,
-        ShaclValidationExecutor.class,
-        SchemaValidationServiceImpl.class,
-        SecurityAuditorAware.class,
-        ValidatorCacheJpaDao.class,
         ValidationResultGraphWriter.class,
-        ValidationResultHasher.class,
-        Vc2Processor.class,
-        VerificationServiceImpl.class
+    ValidationResultHasher.class
 })
 @Slf4j
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)

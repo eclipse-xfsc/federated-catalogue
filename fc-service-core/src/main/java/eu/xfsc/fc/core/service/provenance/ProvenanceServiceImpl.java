@@ -31,6 +31,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Business-logic implementation for provenance credential operations.
@@ -276,7 +278,18 @@ public class ProvenanceServiceImpl implements ProvenanceService {
   }
 
   @Override
+  @Transactional
   public void deleteByAssetId(String assetId) {
+    // Provenance triples are written under the versioned subject IRI {assetId}:v{N}, so cascade
+    // cleanup must remove the graph projection per version before dropping the relational rows.
+    Set<Integer> versions = repository
+        .findByAssetIdOrderByIssuedAtDesc(assetId, Pageable.unpaged())
+        .getContent().stream()
+        .map(ProvenanceRecord::getAssetVersion)
+        .collect(Collectors.toSet());
+    for (Integer version : versions) {
+      graphStore.deleteClaims(assetId + ":v" + version);
+    }
     repository.deleteByAssetId(assetId);
   }
 }

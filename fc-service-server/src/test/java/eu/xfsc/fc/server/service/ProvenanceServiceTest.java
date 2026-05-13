@@ -20,6 +20,7 @@ import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.service.assetstore.AssetRecord;
@@ -138,6 +139,7 @@ class ProvenanceServiceTest {
             .contentType("application/ld+json")
             .fileSize(10L)
             .originalFilename("test.jsonld")
+            .contentKind(ContentKind.RDF)
             .build()));
   }
 
@@ -279,6 +281,27 @@ class ProvenanceServiceTest {
     assertFalse(result.getErrors().isEmpty());
   }
 
+  @Test
+  void deleteByAssetId_removesRelationalRowsAndProvOTriples() {
+    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    provenanceService.add(ASSET_ID, null, VALID_VC, null);
+    assertTrue(provenanceRepository.existsByCredentialId(CREDENTIAL_ID),
+        "precondition: row exists before cascade delete");
+    String sparql = "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <%s> <%s> }"
+        .formatted(CRED_SUBJECT_URI, ASSET_IRI);
+    assertFalse(graphStore.queryData(
+        new GraphQuery(sparql, Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)
+    ).getResults().isEmpty(), "precondition: PROV-O triple exists before cascade delete");
+
+    provenanceService.deleteByAssetId(ASSET_ID);
+
+    assertFalse(provenanceRepository.existsByCredentialId(CREDENTIAL_ID),
+        "Relational row must be removed");
+    assertTrue(graphStore.queryData(
+        new GraphQuery(sparql, Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)
+    ).getResults().isEmpty(), "PROV-O triple under versioned subject IRI must be removed");
+  }
+
   private void insertRecord(String credentialId, int version, Instant issuedAt) {
     transactionTemplate.executeWithoutResult(status ->
         provenanceRepository.save(ProvenanceRecord.builder()
@@ -295,6 +318,6 @@ class ProvenanceServiceTest {
 
   private CredentialVerificationResult successResult(String subjectId, String issuer) {
     return new CredentialVerificationResult(
-        Instant.now(), "Active", issuer, ISSUED_AT, subjectId, List.of(), null);
+        Instant.now(), "Active", issuer, ISSUED_AT, subjectId, List.of(), null, "", "");
   }
 }

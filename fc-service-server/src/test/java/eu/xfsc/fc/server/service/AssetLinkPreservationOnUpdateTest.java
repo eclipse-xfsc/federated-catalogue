@@ -133,7 +133,7 @@ public class AssetLinkPreservationOnUpdateTest {
       claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
           @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
   void replaceHumanReadableAsset_machineReadableAssetUnchanged() throws Exception {
-    storeMrVersion("MR content for AC-4.3");
+    storeMrVersion("MR content for HR replacement test");
     final var hrV1 = uploadHumanReadable(MR_IRI, "HR v1 content", "text/plain", "hr-v1.txt");
     final var mrAfterV1 = assetRepository.findBySubjectIdWithLinkedAsset(MR_IRI).orElseThrow();
     assertNotNull(mrAfterV1.getLinkedAsset(), "Link must exist after initial upload");
@@ -198,7 +198,7 @@ public class AssetLinkPreservationOnUpdateTest {
     meta.setContentAccessor(new ContentAccessorDirect(content));
     CredentialVerificationResult vr = new CredentialVerificationResult(
         Instant.now(), AssetStatus.ACTIVE.getValue(), TEST_ISSUER, Instant.now(), MR_IRI,
-        List.of(), List.of());
+        List.of(), List.of(), "", "");
     assetStore.storeCredential(meta, vr);
   }
 

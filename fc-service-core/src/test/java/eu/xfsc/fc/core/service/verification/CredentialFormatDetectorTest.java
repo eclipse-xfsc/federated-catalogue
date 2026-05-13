@@ -17,7 +17,12 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import java.util.List;
 import java.util.Map;
 
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
+
 import net.minidev.json.JSONObject;
+
+import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -30,7 +35,7 @@ class CredentialFormatDetectorTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final CredentialFormatDetector detector = new CredentialFormatDetector(OBJECT_MAPPER, List.of(
-            new LoireMatcher(),
+        new LoireMatcher(new TrustFrameworkRegistry(List.of()), mock(TrustFrameworkService.class)),
               new DanubeTechFormatMatcher()
     ));
     private static JWSSigner signer;

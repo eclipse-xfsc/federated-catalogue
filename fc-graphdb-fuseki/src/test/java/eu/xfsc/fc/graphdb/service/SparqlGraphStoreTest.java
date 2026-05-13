@@ -2,6 +2,7 @@ package eu.xfsc.fc.graphdb.service;
 
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
 import eu.xfsc.fc.core.exception.QueryException;
+import eu.xfsc.fc.core.exception.ServerException;
 import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
@@ -428,6 +429,25 @@ public class SparqlGraphStoreTest {
         boolean result2Intact = remaining.stream().anyMatch(r ->
             resultIri2.equals(r.get("s")) || resultIri2.equals(r.get("o")));
         assertTrue(result2Intact, "Triples for result2 should not be affected");
+    }
+
+    @Test
+    void deleteClaims_iriContainingSparqlInjection_rejected() {
+        // A subject IRI containing SPARQL-significant characters (`>`, `<`, `;`, whitespace) must be
+        // rejected by requireSafeIri before reaching the SPARQL UPDATE string interpolation.
+        String maliciousIri = "http://evil.example/x> .} ; DELETE WHERE { ?s ?p ?o . } #";
+
+        assertThrows(ServerException.class, () -> graphStore.deleteClaims(maliciousIri));
+    }
+
+    @Test
+    void addClaims_iriContainingSparqlInjection_rejected() {
+        String maliciousIri = "http://evil.example/x> .} ; DELETE WHERE { ?s ?p ?o . } #";
+        List<RdfClaim> claims = List.of(
+            typeClaim("http://example.org/legit", "http://example.org/T")
+        );
+
+        assertThrows(ServerException.class, () -> graphStore.addClaims(claims, maliciousIri));
     }
 
     @Test
