@@ -37,6 +37,7 @@ import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaDao;
 import eu.xfsc.fc.core.dao.schemas.SchemaJpaDao;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.service.assetstore.AssetRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
@@ -98,6 +99,7 @@ class EnversAuditTest {
         .contentType("application/ld+json")
         .fileSize(100L)
         .originalFilename("file.jsonld")
+        .contentKind(ContentKind.RDF)
         .build();
   }
 

@@ -69,6 +69,23 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    AssetEnrichmentResponse:
+      type: object
+      description: Response returned when an existing non-RDF asset is enriched with RDF metadata.
+      required:
+        - assetId
+        - triplesAdded
+        - triplesRejected
+      properties:
+        assetId:
+          type: string
+          description: IRI (subjectId) of the enriched asset.
+        triplesAdded:
+          type: integer
+          description: Number of RDF triples written to the graph store after namespace filtering.
+        triplesRejected:
+          type: integer
+          description: Number of triples filtered out due to protected namespace policy.
     Error:
       type: object
       properties:
@@ -158,6 +175,31 @@ components:
             - "2 triple(s) were removed from your upload because they use the reserved internal namespace
                <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
                This namespace is reserved for internal catalogue use only and cannot be set by external clients."
+        role:
+          type: string
+          description: >-
+            Resolved trust-framework role name (e.g. "Participant", "ServiceOffering").
+            Absent for non-credential RDF content.
+          example: Participant
+        frameworkProfileId:
+          type: string
+          description: >-
+            Bundle profile identifier that resolved the role (e.g. "gaia-x-2511").
+            Absent for non-credential RDF content.
+          example: gaia-x-2511
+        name:
+          type: string
+          description: Display name of the credential holder, or the issuer DID if no holder is present.
+        publicKey:
+          type: string
+          description: >-
+            DID URI of the first validator that signed the credential. Absent when no validators are present.
+        claims:
+          type: object
+          additionalProperties: true
+          description: >-
+            Raw claims from the credential, keyed by claim property URI. Single values are
+            strings; multi-valued properties are arrays of strings.
       required:
         - verificationTimestamp
         - lifecycleStatus #!! is not known when verifying external credentials. Remove from required -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
@@ -1495,9 +1537,14 @@ paths:
         - Assets
       summary: Add a new asset to the catalogue
       description: >-
-        Upload an asset. RDF content (JSON-LD credentials) is automatically
-        detected and routed through the verification pipeline. Non-RDF content
-        is stored directly.
+        Upload an asset. Non-RDF content is stored directly (HTTP 201).
+        RDF content is automatically detected and routed: if the RDF subject IRI
+        matches an existing non-RDF asset, the asset is enriched with metadata
+        (HTTP 200, returns AssetEnrichmentResponse); otherwise the RDF is
+        stored as a new or updated credential asset (HTTP 201, returns Asset).
+        Human-readable assets (attachments uploaded via
+        `/assets/{asset_id}/human-readable`) cannot be enriched with metadata —
+        attempting to enrich one returns HTTP 422.
       operationId: addAsset
       security:
         - jwt: []
@@ -1551,6 +1598,14 @@ paths:
               type: string
         required: true
       responses:
+        '200':
+          description: >-
+            Non-RDF asset enriched with RDF metadata. Returned when the uploaded
+            RDF payload matches the subject IRI of an existing non-RDF asset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetEnrichmentResponse'
         '201':
           description: Created
           headers:
@@ -1570,6 +1625,15 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+        '422':
+          description: >-
+            Unprocessable entity. Returned when the upload describes a subject IRI
+            that resolves to a human-readable attachment, which cannot be enriched
+            with metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServerError'
   /assets/validate:
@@ -2874,7 +2938,17 @@ paths:
           required: false
           schema:
             type: boolean
-            default: true  
+            default: true
+        - name: framework
+          in: query
+          description: >-
+            Trust-framework bundle identifier for disambiguation. Ignored when
+            exactly one bundle is active. Required when the credential type is
+            resolvable in more than one active bundle (e.g. two bundles both
+            declare a "Participant" role).
+          required: false
+          schema:
+            type: string
       requestBody:
         description: >-
           The credential to verify. For JSON-LD credentials, use application/json,

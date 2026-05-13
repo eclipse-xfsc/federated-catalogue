@@ -1,0 +1,45 @@
+{{- if .Values.did.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fc-service.did.fullname" . }}-artifacts
+  labels:
+    {{- include "fc-service.did.labels" . | nindent 4 }}
+data:
+  nginx.conf: |
+    pid /tmp/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        client_body_temp_path /tmp/client_body;
+        proxy_temp_path       /tmp/proxy;
+        fastcgi_temp_path     /tmp/fastcgi;
+        uwsgi_temp_path       /tmp/uwsgi;
+        scgi_temp_path        /tmp/scgi;
+
+        server {
+            listen 8080;
+            server_name _;
+
+            location /.well-known/did.json {
+                alias /etc/did-artifacts/did.json;
+                default_type application/did+ld+json;
+            }
+
+            location /certs/chain.pem {
+                alias /etc/did-artifacts/chain.pem;
+                default_type application/x-pem-file;
+            }
+        }
+    }
+  did.json: |
+{{ .Values.did.artifacts.didJson | indent 4 }}
+  chain.pem: |
+{{ .Values.did.artifacts.chainPem | indent 4 }}
+{{- end }}

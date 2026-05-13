@@ -16,7 +16,7 @@ import eu.xfsc.fc.core.pojo.ParticipantMetaData;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.Validator;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 
@@ -62,8 +62,8 @@ public class ParticipantsService implements ParticipantsApiDelegate {
   @Transactional
   public ResponseEntity<Participant> addParticipant(String body) {
     log.debug("addParticipant.enter; got credential of length: {}", body.length()); // it can be JWT?
-    Pair<CredentialVerificationResultParticipant, AssetMetadata> pairResult = validateCredential(body);
-    CredentialVerificationResultParticipant verificationResult = pairResult.getLeft();
+    Pair<CredentialVerificationResult, AssetMetadata> pairResult = validateCredential(body);
+    CredentialVerificationResult verificationResult = pairResult.getLeft();
     AssetMetadata assetMetadata = pairResult.getRight();
 
     assetStorePublisher.storeCredential(assetMetadata, verificationResult);
@@ -208,8 +208,8 @@ public class ParticipantsService implements ParticipantsApiDelegate {
     ParticipantMetaData participantExisted = partDao.select(participantId)
         .orElseThrow(() -> new NotFoundException("Participant not found: " + participantId));
 
-    Pair<CredentialVerificationResultParticipant, AssetMetadata> pairResult = validateCredential(body);
-    CredentialVerificationResultParticipant verificationResult = pairResult.getLeft();
+    Pair<CredentialVerificationResult, AssetMetadata> pairResult = validateCredential(body);
+    CredentialVerificationResult verificationResult = pairResult.getLeft();
     AssetMetadata assetMetadata = pairResult.getRight();
 
     ParticipantMetaData participantUpdated = toParticipantMetaData(verificationResult, assetMetadata);
@@ -233,10 +233,10 @@ public class ParticipantsService implements ParticipantsApiDelegate {
    * @param assetMetadata Metadata of the asset
    * @return ParticipantMetaData
    */
-  private ParticipantMetaData toParticipantMetaData(CredentialVerificationResultParticipant verificationResult,
+  private ParticipantMetaData toParticipantMetaData(CredentialVerificationResult verificationResult,
                                                     AssetMetadata assetMetadata) {
-    return new ParticipantMetaData(verificationResult.getId(), verificationResult.getParticipantName(),
-        verificationResult.getParticipantPublicKey(), assetMetadata.getContentAccessor().getContentAsString(),
+    return new ParticipantMetaData(verificationResult.getId(), verificationResult.getName(),
+        verificationResult.getPublicKey(), assetMetadata.getContentAccessor().getContentAsString(),
         assetMetadata.getAssetHash());
   }
 
@@ -246,16 +246,16 @@ public class ParticipantsService implements ParticipantsApiDelegate {
    * @param body credential
    * @return DTO object containing result and metadata of credential
    */
-  private Pair<CredentialVerificationResultParticipant, AssetMetadata> validateCredential(String body) {
+  private Pair<CredentialVerificationResult, AssetMetadata> validateCredential(String body) {
     ContentAccessorDirect contentAccessorDirect = new ContentAccessorDirect(body);
-    CredentialVerificationResultParticipant verificationResultParticipant =
-        verificationService.verifyParticipantCredential(contentAccessorDirect);
-    log.debug("validateCredential; verification result is: {}", verificationResultParticipant);
+    CredentialVerificationResult verificationResult =
+        verificationService.verifyCredential(contentAccessorDirect);
+    log.debug("validateCredential; verification result is: {}", verificationResult);
 
-    AssetMetadata assetMetadata = new AssetMetadata(contentAccessorDirect, verificationResultParticipant);
+    AssetMetadata assetMetadata = new AssetMetadata(contentAccessorDirect, verificationResult);
     log.debug("validateCredential; asset metadata is: {}", assetMetadata);
 
-    return Pair.of(verificationResultParticipant, assetMetadata);
+    return Pair.of(verificationResult, assetMetadata);
   }
 
   private void setParticipantPublicKey(ParticipantMetaData participant) {

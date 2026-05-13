@@ -15,8 +15,12 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.FilteredModel;
 import eu.xfsc.fc.core.service.filestore.FileStore;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
+import eu.xfsc.fc.core.service.trustframework.ValidationType;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.util.HashUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -31,8 +35,8 @@ import org.apache.jena.vocabulary.OWL2;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
 import org.apache.jena.vocabulary.SKOS;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -54,7 +58,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,22 +65,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- *
- */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SchemaStoreImpl implements SchemaStore {
 
-  @Autowired
   @Qualifier("schemaFileStore")
-  private FileStore fileStore;
-
-  @Autowired
-  private SchemaDao dao;
-
-  @Autowired
-  private ProtectedNamespaceFilter protectedNamespaceFilter;
+  private final FileStore fileStore;
+  private final SchemaDao dao;
+  private final ProtectedNamespaceFilter protectedNamespaceFilter;
+  private final TrustFrameworkRegistry trustFrameworkRegistry;
 
   @Autowired
   private ObjectProvider<DocumentBuilderFactory> secureDocumentBuilderFactoryProvider;
@@ -88,36 +85,66 @@ public class SchemaStoreImpl implements SchemaStore {
   private static final Map<SchemaType, ContentAccessor> COMPOSITE_SCHEMAS = new ConcurrentHashMap<>();
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-
   @Override
   public int initializeDefaultSchemas() {
     log.debug("initializeDefaultSchemas.enter");
     int count = 0;
     int found = dao.getSchemaCount();
     if (found == 0) {
-      try {	
+      try {
+        count += addSchemasFromBundles();
         count += addSchemasFromDirectory("defaultschema/ontology");
         count += addSchemasFromDirectory("defaultschema/shacl");
         log.info("initializeDefaultSchemas; added {} default schemas", count);
-        found = dao.getSchemaCount();// it returns 0 for some reason
+        found = dao.getSchemaCount();
       } catch (IOException ex) {
-    	log.error("initializeDfaultSchemas.error", ex);
-    	throw new ServerException(ex);
+        log.error("initializeDefaultSchemas.error", ex);
+        throw new ServerException(ex);
       }
     }
     log.info("initializeDefaultSchemas.exit; {} schemas found in Schema DB", found);
     return count;
-  }  
-  
+  }
+
+  private int addSchemasFromBundles() {
+    int cnt = 0;
+    for (TrustFrameworkBundle bundle : trustFrameworkRegistry.getActiveBundles()) {
+      if (bundle.config().validationType() != ValidationType.SHACL) {
+        continue;
+      }
+      if (bundle.ontology() != null) {
+        addSchema(bundle.ontology());
+        cnt++;
+        log.debug("addSchemasFromBundles; added ontology for bundle '{}'", bundle.config().id());
+      }
+      if (bundle.shapes() != null) {
+        addSchema(bundle.shapes());
+        cnt++;
+        log.debug("addSchemasFromBundles; added shapes for bundle '{}'", bundle.config().id());
+      }
+    }
+    return cnt;
+  }
+
   private int addSchemasFromDirectory(String path) throws IOException {
     PathMatchingResourcePatternResolver scanner = new PathMatchingResourcePatternResolver();
-    org.springframework.core.io.Resource[] resources = scanner.getResources(path + "/*");
+    org.springframework.core.io.Resource[] resources;
+    try {
+      resources = scanner.getResources(path + "/*");
+    } catch (java.io.FileNotFoundException ex) {
+      log.debug("addSchemasFromDirectory; overlay path '{}' not found, skipping", path);
+      return 0;
+    }
     int cnt = 0;
-    for (org.springframework.core.io.Resource resource: resources) {
+    for (org.springframework.core.io.Resource resource : resources) {
       log.debug("addSchemasFromDirectory; Adding schema: {}", resource.getFilename());
       String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-      addSchema(new ContentAccessorDirect(content));
-      cnt++;
+      try {
+        addSchema(new ContentAccessorDirect(content));
+        cnt++;
+      } catch (ConflictException ex) {
+        log.debug("addSchemasFromDirectory; Skipping duplicate schema: {}", resource.getFilename());
+      }
     }
     return cnt;
   }

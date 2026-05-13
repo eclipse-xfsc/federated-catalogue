@@ -1192,17 +1192,17 @@ class AssetValidationServiceImplTest {
     ObjectProvider<DocumentBuilderFactory> documentBuilderFactoryProvider = createProviderMock();
     ObjectProvider<SchemaFactory> schemaFactoryProvider = createProviderMock();
     XmlSchemaValidationStrategy xmlApplicabilityDelegate =
-      new XmlSchemaValidationStrategy(
-        mock(FileStore.class),
-        documentBuilderFactoryProvider,
-        schemaFactoryProvider);
+        new XmlSchemaValidationStrategy(
+            mock(FileStore.class),
+            documentBuilderFactoryProvider,
+            schemaFactoryProvider);
 
     when(xmlSchemaValidationStrategy.type()).thenReturn(ValidatorType.XML_SCHEMA);
     when(xmlSchemaValidationStrategy.moduleType()).thenReturn(SchemaModuleType.XML_SCHEMA);
     when(xmlSchemaValidationStrategy.acceptsSchema(any())).thenAnswer(
-      inv -> ((SchemaRecord) inv.getArgument(0)).type() == SchemaType.XML);
+        inv -> ((SchemaRecord) inv.getArgument(0)).type() == SchemaType.XML);
     when(xmlSchemaValidationStrategy.appliesTo(any())).thenAnswer(
-      inv -> xmlApplicabilityDelegate.appliesTo((AssetMetadata) inv.getArgument(0)));
+        inv -> xmlApplicabilityDelegate.appliesTo((AssetMetadata) inv.getArgument(0)));
   }
 
   private void givenShaclModuleEnabled() {

@@ -26,6 +26,11 @@ public final class VerificationConstants {
 
   public static final String VERIFIABLE_CREDENTIAL_KEY = "verifiableCredential";
 
+  /**
+   * Property URI used to annotate graph claims with their source credential subject IRI.
+   */
+  public static final String GAIAX_CLAIMS_GRAPH_URI = "https://w3id.org/gaia-x/2511#claimsGraphUri";
+
   // W3C VC-JOSE-COSE media types (IANA-registered)
   public static final String MEDIA_TYPE_VC_JWT = "application/vc+jwt";
   public static final String MEDIA_TYPE_VP_JWT = "application/vp+jwt";

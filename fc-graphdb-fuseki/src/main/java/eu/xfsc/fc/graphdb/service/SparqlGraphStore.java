@@ -142,12 +142,13 @@ public class SparqlGraphStore implements GraphStore {
     @Override
     public void addClaims(List<RdfClaim> claimList, String credentialSubject) {
         log.debug("addClaims.enter; got claims: {}, subject: {}", claimList, credentialSubject);
+        requireSafeIri(credentialSubject);
         if (!claimList.isEmpty()) {
             final Model starmodel = ModelFactory.createDefaultModel();
             final Model model = claimValidator.validateClaims(claimList);
             model.listStatements().forEachRemaining(stmt -> {
                 final Triple triple = stmt.asTriple();
-                final Node qTripleNode = NodeFactory.createTripleNode(triple);
+                final Node qTripleNode = NodeFactory.createTripleTerm(triple);
 
                 final Property credSubProp = starmodel.createProperty(PROP_CREDENTIAL_SUBJECT);
                 final Resource credSubValue = starmodel.createResource(credentialSubject);
@@ -160,6 +161,7 @@ public class SparqlGraphStore implements GraphStore {
     @Override
     public void deleteClaims(String credentialSubject) {
         log.debug("deleteClaims.enter; got subject: {}", credentialSubject);
+        requireSafeIri(credentialSubject);
         final String deleteQuery = String.format("DELETE WHERE { ?s <%s> <%s> .}", PROP_CREDENTIAL_SUBJECT, credentialSubject);
         Txn.executeWrite(rdfConnection, () -> rdfConnection.update(deleteQuery));
     }

@@ -20,6 +20,7 @@ import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.service.assetstore.AssetRecord;
@@ -138,6 +139,7 @@ class ProvenanceServiceTest {
             .contentType("application/ld+json")
             .fileSize(10L)
             .originalFilename("test.jsonld")
+            .contentKind(ContentKind.RDF)
             .build()));
   }
 
@@ -295,6 +297,6 @@ class ProvenanceServiceTest {
 
   private CredentialVerificationResult successResult(String subjectId, String issuer) {
     return new CredentialVerificationResult(
-        Instant.now(), "Active", issuer, ISSUED_AT, subjectId, List.of(), null);
+        Instant.now(), "Active", issuer, ISSUED_AT, subjectId, List.of(), null, "", "");
   }
 }
