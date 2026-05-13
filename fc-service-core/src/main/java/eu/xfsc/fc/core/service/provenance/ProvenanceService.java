@@ -8,8 +8,11 @@ import org.springframework.data.domain.Pageable;
 /**
  * Business-logic interface for provenance credential operations.
  *
- * <p>All mutating operations run under {@code REQUIRES_NEW} transaction semantics so they remain
- * invisible to Hibernate Envers and do not produce a new asset revision.</p>
+ * <p>Write operations that augment an existing asset ({@link #add}, {@link #verifyOne},
+ * {@link #verifyAll}) run under {@code REQUIRES_NEW} transaction semantics so they remain
+ * invisible to Hibernate Envers and do not produce a new asset revision. The cascade
+ * deletion {@link #deleteByAssetId} joins the calling transaction (default propagation) so
+ * that provenance cleanup is atomic with the asset deletion that triggered it.</p>
  *
  * <p>Error semantics:</p>
  * <ul>
