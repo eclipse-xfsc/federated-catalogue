@@ -72,7 +72,7 @@ public class JsonSchemaValidationStrategy implements ValidationStrategy {
     String ct = asset.getContentType();
     return ct != null
         && (ct.contains(MediaType.APPLICATION_JSON_VALUE)
-            || ct.contains(SchemaStore.MEDIA_TYPE_JSON_SCHEMA));
+        || ct.contains(SchemaStore.MEDIA_TYPE_JSON_SCHEMA));
   }
 
   @Override

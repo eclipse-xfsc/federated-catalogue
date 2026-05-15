@@ -129,6 +129,154 @@ TLS certificates are issued automatically by Let's Encrypt via HTTP-01 challenge
 
 ---
 
+## Optional: did:web hosting
+
+The chart can host a development-grade `did:web` endpoint alongside the catalogue. **Disabled by default** (`did.enabled: false`). Enable it when you need a public DID document and certificate chain reachable from the catalogue's verification flow — e.g. signing test credentials against your own DID.
+
+> **Development scope only — because of the certificate, not the DID server itself.** The chart serves
+> a TLS chain issued by Let's Encrypt, a domain-validation (DV) CA. Gaia-X production (GXDCH) only
+> accepts certificates issued by an eIDAS-qualified Trust Service Provider or an EV-SSL CA from the
+> Mozilla CA store, because those bind the cert to a validated legal entity — DV certs do not.
+> Production also requires registering the chain as a trust anchor with the GXDCH Registry, which is
+> out of scope here. The same DID server workload can be reused in production by swapping the manually
+> managed TLS secret for an eIDAS/EV chain and completing trust-anchor registration.
+
+### Resources created when enabled
+
+| Kind | Name | Purpose |
+|------|------|---------|
+| Deployment | `fc-did-server` | nginx serving the static artifacts |
+| Service | `fc-did-server` | ClusterIP on `did.service.port` |
+| ConfigMap | `fc-did-server-artifacts` | `did.json` + `chain.pem` + nginx config |
+| Ingress | `fc-did-server` | TLS termination at `hosts.did` |
+
+Endpoints exposed:
+
+- `https://<hosts.did>/.well-known/did.json`
+- `https://<hosts.did>/certs/chain.pem`
+
+### Setup
+
+#### 1. Obtain a TLS certificate for the DID host
+
+The DID host uses a **manually managed TLS secret** (not cert-manager) so the same private key can be reused for credential signing.
+
+```bash
+certbot certonly --standalone -d did.<EXTERNAL-IP>.sslip.io
+```
+
+Outputs at `/etc/letsencrypt/live/did.<EXTERNAL-IP>.sslip.io/`:
+- `privkey.pem` — TLS key + signer key
+- `fullchain.pem` — TLS chain + `x5u` chain
+
+#### 2. Create the TLS secret
+
+```bash
+kubectl create secret tls fc-did-server-tls \
+  --cert=/etc/letsencrypt/live/did.<EXTERNAL-IP>.sslip.io/fullchain.pem \
+  --key=/etc/letsencrypt/live/did.<EXTERNAL-IP>.sslip.io/privkey.pem \
+  -n federated-catalogue
+```
+
+The secret name must match `did.tls.secretName` (default `fc-did-server-tls`).
+
+#### 3. Build the DID document
+
+Adapt `docker/did-server/setup.sh` for the public hostname:
+
+- `HOSTNAME=did.<EXTERNAL-IP>.sslip.io`
+- `SIGNER_KEY=/etc/letsencrypt/live/did.<EXTERNAL-IP>.sslip.io/privkey.pem`
+- `x5u` → `https://did.<EXTERNAL-IP>.sslip.io/certs/chain.pem`
+
+The script writes `www/.well-known/did.json`. The `chain.pem` is `fullchain.pem` from step 1.
+
+#### 4. Configure values.yaml
+
+Set `hosts.did`, flip `did.enabled`, and paste the artifacts inline:
+
+```yaml
+hosts:
+  did: "did.<EXTERNAL-IP>.sslip.io"
+
+did:
+  enabled: true
+  tls:
+    secretName: fc-did-server-tls
+  artifacts:
+    didJson: |
+      {
+        "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/jws-2020/v1"],
+        "id": "did:web:did.<EXTERNAL-IP>.sslip.io",
+        "verificationMethod": [{
+          "id": "did:web:did.<EXTERNAL-IP>.sslip.io#0",
+          "type": "JsonWebKey2020",
+          "controller": "did:web:did.<EXTERNAL-IP>.sslip.io",
+          "publicKeyJwk": {
+            "kty": "RSA", "e": "AQAB", "n": "<from setup.sh>",
+            "kid": "signRSA2048", "alg": "PS256",
+            "x5u": "https://did.<EXTERNAL-IP>.sslip.io/certs/chain.pem"
+          }
+        }],
+        "authentication": ["did:web:did.<EXTERNAL-IP>.sslip.io#0"],
+        "assertionMethod": ["did:web:did.<EXTERNAL-IP>.sslip.io#0"]
+      }
+    chainPem: |
+      -----BEGIN CERTIFICATE-----
+      <leaf>
+      -----END CERTIFICATE-----
+      -----BEGIN CERTIFICATE-----
+      <intermediate>
+      -----END CERTIFICATE-----
+      -----BEGIN CERTIFICATE-----
+      <root>
+      -----END CERTIFICATE-----
+```
+
+Keep your populated values file out of version control if it contains environment-specific hostnames or chain material.
+
+#### 5. Deploy
+
+Same `helm upgrade --install` as the main flow. With `did.enabled: true` the DID resources are created; otherwise they are skipped.
+
+### Verify
+
+```bash
+# DID document reachable and parseable
+curl -s https://did.<EXTERNAL-IP>.sslip.io/.well-known/did.json | jq .id
+
+# x5u entry resolvable
+curl -s https://did.<EXTERNAL-IP>.sslip.io/.well-known/did.json \
+  | jq '.verificationMethod[0].publicKeyJwk.x5u'
+
+# Chain reachable, leaf subject correct
+curl -s https://did.<EXTERNAL-IP>.sslip.io/certs/chain.pem \
+  | openssl x509 -noout -subject
+
+# TLS trusted without flags
+curl -sv https://did.<EXTERNAL-IP>.sslip.io/.well-known/did.json 2>&1 \
+  | grep "SSL certificate verify"
+# Expected: SSL certificate verify ok.
+```
+
+### Sign credentials against the DID
+
+`cat-integration-tests/scripts/generate-jwt-fixture.py` signs with the LE private key:
+
+```bash
+python3 scripts/generate-jwt-fixture.py \
+  --payload my-participant.jsonld \
+  --key /etc/letsencrypt/live/did.<EXTERNAL-IP>.sslip.io/privkey.pem \
+  --kid "did:web:did.<EXTERNAL-IP>.sslip.io#0"
+```
+
+Submit the signed credential to the catalogue `/verification` endpoint with default flags (`gaiax.enabled=false`). Strict trust-anchor validation is intentionally out of scope.
+
+### Disable
+
+Set `did.enabled: false` (the default) and re-run `helm upgrade --install`. The DID resources are removed on the next reconcile.
+
+---
+
 ## Upgrading an existing release
 
 ```bash
