@@ -1,0 +1,23 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fc-service.fullname" . }}-filestore
+  labels:
+    {{- include "fc-service.labels" . | nindent 4 }}
+  annotations:
+    # Prevents `helm uninstall` from deleting the PVC object. Whether the
+    # underlying PersistentVolume survives is controlled by the StorageClass's
+    # reclaimPolicy (Retain vs. Delete), not by this annotation and not by any
+    # field on the PVC itself. See README §Persistent file store.
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes:
+    {{- toYaml .Values.persistence.accessModes | nindent 4 }}
+  {{- with .Values.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+{{- end }}
