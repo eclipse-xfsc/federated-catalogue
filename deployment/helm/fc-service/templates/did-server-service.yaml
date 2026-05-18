@@ -1,0 +1,16 @@
+{{- if .Values.did.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fc-service.did.fullname" . }}
+  labels:
+    {{- include "fc-service.did.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.did.service.port }}
+      targetPort: http
+  selector:
+    {{- include "fc-service.did.selectorLabels" . | nindent 4 }}
+{{- end }}

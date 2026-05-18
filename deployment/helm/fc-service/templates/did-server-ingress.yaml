@@ -1,0 +1,29 @@
+{{- if and .Values.did.enabled .Values.did.ingress.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "fc-service.did.fullname" . }}
+  labels:
+    {{- include "fc-service.did.labels" . | nindent 4 }}
+  {{- with .Values.did.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.did.ingress.className }}
+  tls:
+    - hosts:
+        - {{ .Values.hosts.did | quote }}
+      secretName: {{ .Values.did.tls.secretName }}
+  rules:
+    - host: {{ .Values.hosts.did | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "fc-service.did.fullname" . }}
+                port:
+                  number: {{ .Values.did.service.port }}
+{{- end }}

@@ -9,6 +9,7 @@ hosts:
   fcService: "fc-server.<EXTERNAL-IP>.sslip.io"
   keycloak: "key-server.<EXTERNAL-IP>.sslip.io"
   portal: "fc-demo-portal.<EXTERNAL-IP>.sslip.io"
+  did: "did.<EXTERNAL-IP>.sslip.io"
 
 name: fc-service
 replicaCount: 1
@@ -322,6 +323,29 @@ portal:
   nodeSelector: {}
   tolerations: []
   affinity: {}
+
+did:
+  enabled: false
+  fullnameOverride: fc-did-server
+  tls:
+    secretName: fc-did-server-tls
+  artifacts:
+    didJson: ""    # populate before deploy, see README
+    chainPem: ""   # populate before deploy, see README
+  service:
+    port: 8080
+  ingress:
+    enabled: true
+    className: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 101
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop: [ALL]
 
 fuseki:
   fullnameOverride: fc-fuseki

@@ -116,6 +116,33 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Fully qualified name for the DID server component.
+*/}}
+{{- define "fc-service.did.fullname" -}}
+{{- .Values.did.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+DID server labels
+*/}}
+{{- define "fc-service.did.labels" -}}
+helm.sh/chart: {{ include "fc-service.chart" . }}
+{{ include "fc-service.did.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+DID server selector labels
+*/}}
+{{- define "fc-service.did.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "fc-service.did.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 Fully qualified name for the Fuseki component.
 */}}
 {{- define "fc-service.fuseki.fullname" -}}

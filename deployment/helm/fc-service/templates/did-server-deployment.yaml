@@ -1,0 +1,47 @@
+{{- if .Values.did.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fc-service.did.fullname" . }}
+  labels:
+    {{- include "fc-service.did.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "fc-service.did.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "fc-service.did.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ include "fc-service.did.fullname" . }}
+          image: nginx:alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ .Values.did.service.port }}
+          readinessProbe:
+            httpGet:
+              path: /.well-known/did.json
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            {{- toYaml .Values.did.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: artifacts
+              mountPath: /etc/did-artifacts
+            - name: artifacts
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: artifacts
+          configMap:
+            name: {{ include "fc-service.did.fullname" . }}-artifacts
+        - name: tmp
+          emptyDir: {}
+{{- end }}
