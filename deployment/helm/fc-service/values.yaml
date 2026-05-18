@@ -381,8 +381,8 @@ did:
 fuseki:
   fullnameOverride: fc-fuseki
   image:
-    repository: docker.io/stain/jena-fuseki
-    tag: "5.1.0"
+    repository: docker.io/secoresearch/fuseki
+    tag: "5.5.0"
   dataset: ds
   adminPassword: admin
   jvmArgs: "-Xmx1g"
