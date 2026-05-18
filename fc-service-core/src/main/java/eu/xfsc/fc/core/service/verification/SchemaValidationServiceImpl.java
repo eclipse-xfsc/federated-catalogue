@@ -17,6 +17,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Statement;
 import org.springframework.stereotype.Component;
 import org.topbraid.shacl.util.ModelPrinter;
+import org.topbraid.shacl.validation.ValidationUtil;
 import org.topbraid.shacl.vocabulary.SH;
 
 import eu.xfsc.fc.core.pojo.RdfClaim;
@@ -24,7 +25,6 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
-import eu.xfsc.fc.core.service.validation.strategy.ShaclValidationExecutor;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 
 /**
@@ -32,7 +32,7 @@ import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
  *
  * <p>Performs SHACL validation by extracting RDF claims from a credential payload,
  * building a Jena data model, parsing the shape via {@link RdfAssetParser}, and
- * executing SHACL via the shared {@link ShaclValidationExecutor}.</p>
+ * invoking TopBraid SHACL via {@link ValidationUtil#validateModel}.</p>
  *
  * @see SchemaValidationService
  */
@@ -44,7 +44,6 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
   private final ClaimExtractionService claimExtractionService;
   private final SchemaStore schemaStore;
   private final RdfAssetParser rdfAssetParser;
-  private final ShaclValidationExecutor shaclValidationExecutor;
 
   /** {@inheritDoc} Delegates to {@link #validateCredentialAgainstSchema} with a {@code null} schema. */
   @Override
@@ -92,7 +91,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
   public SchemaValidationResult validateClaimsAgainstSchema(List<RdfClaim> claims, ContentAccessor schema) {
     Model shapesModel = rdfAssetParser.parseShape(schema);
     Model dataModel = buildDataModel(claims);
-    Resource reportResource = shaclValidationExecutor.validate(dataModel, shapesModel);
+    Resource reportResource = ValidationUtil.validateModel(dataModel, shapesModel, true);
     boolean conforms = reportResource.getProperty(SH.conforms).getBoolean();
     String rawReport = conforms ? null : ModelPrinter.get().print(reportResource.getModel());
     return new SchemaValidationResult(conforms, rawReport);

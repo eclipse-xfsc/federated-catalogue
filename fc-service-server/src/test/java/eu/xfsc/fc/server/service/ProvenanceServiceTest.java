@@ -281,6 +281,27 @@ class ProvenanceServiceTest {
     assertFalse(result.getErrors().isEmpty());
   }
 
+  @Test
+  void deleteByAssetId_removesRelationalRowsAndProvOTriples() {
+    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    provenanceService.add(ASSET_ID, null, VALID_VC, null);
+    assertTrue(provenanceRepository.existsByCredentialId(CREDENTIAL_ID),
+        "precondition: row exists before cascade delete");
+    String sparql = "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <%s> <%s> }"
+        .formatted(CRED_SUBJECT_URI, ASSET_IRI);
+    assertFalse(graphStore.queryData(
+        new GraphQuery(sparql, Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)
+    ).getResults().isEmpty(), "precondition: PROV-O triple exists before cascade delete");
+
+    provenanceService.deleteByAssetId(ASSET_ID);
+
+    assertFalse(provenanceRepository.existsByCredentialId(CREDENTIAL_ID),
+        "Relational row must be removed");
+    assertTrue(graphStore.queryData(
+        new GraphQuery(sparql, Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)
+    ).getResults().isEmpty(), "PROV-O triple under versioned subject IRI must be removed");
+  }
+
   private void insertRecord(String credentialId, int version, Instant issuedAt) {
     transactionTemplate.executeWithoutResult(status ->
         provenanceRepository.save(ProvenanceRecord.builder()

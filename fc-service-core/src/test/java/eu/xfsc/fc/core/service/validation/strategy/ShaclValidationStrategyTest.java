@@ -18,16 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {ShaclValidationStrategy.class, ShaclValidationExecutor.class, RdfAssetParser.class})
-@TestPropertySource(properties = {
-    "federated-catalogue.validation.shacl.timeout-seconds=10",
-    "federated-catalogue.validation.shacl.pool-size=2"
-})
+@ContextConfiguration(classes = {ShaclValidationStrategy.class, RdfAssetParser.class})
 class ShaclValidationStrategyTest {
 
   private static final String SHAPE_PERSON_NAME_REQUIRED = """

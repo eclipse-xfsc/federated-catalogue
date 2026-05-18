@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.springframework.stereotype.Service;
+import org.topbraid.shacl.validation.ValidationUtil;
 
 import java.util.List;
 
@@ -33,7 +34,6 @@ import java.util.List;
 public class ShaclValidationStrategy implements ValidationStrategy {
 
   private final RdfAssetParser rdfAssetParser;
-  private final ShaclValidationExecutor shaclValidationExecutor;
 
   @Override
   public ValidatorType type() {
@@ -70,7 +70,7 @@ public class ShaclValidationStrategy implements ValidationStrategy {
   public ValidationReport validate(List<AssetMetadata> assets, List<ContentAccessor> schemas) {
     Model shapesModel = buildMergedShapesModel(schemas);
     Model dataModel = buildMergedDataModel(assets);
-    return ValidationReportFactory.fromShacl(shaclValidationExecutor.validate(dataModel, shapesModel));
+    return ValidationReportFactory.fromShacl(ValidationUtil.validateModel(dataModel, shapesModel, true));
   }
 
   private Model buildMergedShapesModel(List<ContentAccessor> schemas) {
