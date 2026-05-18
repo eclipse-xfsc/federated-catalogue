@@ -8,8 +8,7 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.VerificationService;
@@ -597,7 +596,7 @@ public class QueryControllerTest {
     //adding 1st credential
     ContentAccessorDirect contentAccessor =
         new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(DEFAULT_PARTICIPANT_CREDENTIAL_FILE_NAME));
-    CredentialVerificationResultParticipant verificationResult = verificationService.verifyParticipantCredential(contentAccessor);
+    CredentialVerificationResult verificationResult = verificationService.verifyCredential(contentAccessor);
     AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(),
             verificationResult.getIssuer(), verificationResult.getValidators(), contentAccessor);
     assetStorePublisher.storeCredential(assetMetadata, verificationResult);
@@ -605,8 +604,8 @@ public class QueryControllerTest {
     //adding second credential
     ContentAccessorDirect contentAccessor2
             = new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(DEFAULT_SERVICE_CREDENTIAL_FILE_NAME));
-    CredentialVerificationResultOffering verificationResult2
-            = verificationService.verifyOfferingCredential(contentAccessor2);
+    CredentialVerificationResult verificationResult2
+        = verificationService.verifyCredential(contentAccessor2);
     AssetMetadata assetMetadata2 = new AssetMetadata(verificationResult2.getId(),
             verificationResult2.getIssuer(), verificationResult2.getValidators(), contentAccessor2);
     assetStorePublisher.storeCredential(assetMetadata2, verificationResult2);
@@ -614,8 +613,8 @@ public class QueryControllerTest {
     //adding credential 3
    ContentAccessorDirect contentAccessorDirect3 =
         new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString(UNIQUE_PARTICIPANT_CREDENTIAL_FILE_NAME));
-    CredentialVerificationResultParticipant verificationResult3
-        = verificationService.verifyParticipantCredential(contentAccessorDirect3);
+    CredentialVerificationResult verificationResult3
+        = verificationService.verifyCredential(contentAccessorDirect3);
     AssetMetadata assetMetadata3 = new AssetMetadata(verificationResult3.getId(),
         verificationResult3.getIssuer(), verificationResult3.getValidators(), contentAccessorDirect3);
     assetStorePublisher.storeCredential(assetMetadata3, verificationResult3);

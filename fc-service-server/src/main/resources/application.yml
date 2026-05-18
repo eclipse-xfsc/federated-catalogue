@@ -162,16 +162,12 @@ federated-catalogue:
   query:
     partners:
     self: "http://localhost:${server.port}"
+  # Comma-separated list of trust framework families to enable at startup.
+  # Use the family name declared in the bundle's framework.yaml (e.g. "gaia-x").
+  # Env: FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS=gaia-x
+  # Per-framework verification config (e.g. trust anchor URL) lives in the bundle, not here.
+  enabled-trust-frameworks: ""
   verification:
-    # Trust Framework Configuration
-    # When trust-framework.gaiax.enabled is false (default), credentials can be uploaded
-    # without Gaia-X compliance validation. The trust anchor registry will not be called.
-    # When true, full Gaia-X Trust Framework validation is enforced.
-    trust-framework:
-      gaiax:
-        enabled: false  # Set to true to enforce Gaia-X Trust Framework compliance
-        # URLs for Gaia-X Trust Framework services (only used when enabled: true)
-        trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
     http-timeout: 3000
     validator-expire: 1D
 

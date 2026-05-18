@@ -226,7 +226,7 @@ public class AssetControllerTest {
         if (assetMeta.getValidatorDids() != null && !assetMeta.getValidatorDids().isEmpty()) {
             result =  mockMvc.perform(MockMvcRequestBuilders.get("/assets")
                     .accept(MediaType.APPLICATION_JSON)
-                    .queryParam("validators", assetMeta.getValidatorDids().stream().collect(Collectors.joining(","))))
+                    .queryParam("validators", String.join(",", assetMeta.getValidatorDids())))
                     .andExpect(status().isOk())
                     .andReturn();
             assets = objectMapper.readValue(result.getResponse().getContentAsString(), Assets.class);
@@ -591,7 +591,7 @@ public class AssetControllerTest {
         @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
     public void revokeAsset_validRequest_returnsOk() throws Exception {
         final CredentialVerificationResult vr = new CredentialVerificationResult(Instant.now(), AssetStatus.ACTIVE.getValue(), "issuer",
-                Instant.now(), "vhash", List.of(), List.of());
+            Instant.now(), "vhash", List.of(), List.of(), "", "");
         assetStorePublisher.storeCredential(assetMeta, vr);
         mockMvc.perform(MockMvcRequestBuilders.post("/assets/{asset_hash}/revoke", assetMeta.getAssetHash())
                         .with(csrf())
@@ -672,7 +672,7 @@ public class AssetControllerTest {
         @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
     public void revokeAsset_nonActiveStatus_returnsConflict() throws Exception {
         final CredentialVerificationResult vr = new CredentialVerificationResult(Instant.now(), AssetStatus.ACTIVE.getValue(), "issuer",
-                Instant.now(), "vhash", List.of(), List.of());
+            Instant.now(), "vhash", List.of(), List.of(), "", "");
         AssetMetadata deprecatedMeta = createAssetMetadata();
         deprecatedMeta.setStatus(AssetStatus.DEPRECATED);
         assetStorePublisher.storeCredential(deprecatedMeta, vr);
@@ -944,7 +944,7 @@ public class AssetControllerTest {
     public void validateAssets_tooManyAssetIds_returnsBadRequest() throws Exception {
         List<String> twentyOneIds = java.util.stream.IntStream.range(0, 21)
                 .mapToObj(i -> "urn:uuid:00000000-0000-0000-0000-" + String.format("%012d", i))
-                .collect(Collectors.toList());
+            .toList();
         mockMvc.perform(MockMvcRequestBuilders.post("/assets/validate")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1042,6 +1042,6 @@ public class AssetControllerTest {
     }
 
     private CredentialVerificationResult getStaticVerificationResult() {
-        return verificationService.verifyOfferingCredential(assetMeta.getContentAccessor());
+      return verificationService.verifyCredential(assetMeta.getContentAccessor());
     }
 }

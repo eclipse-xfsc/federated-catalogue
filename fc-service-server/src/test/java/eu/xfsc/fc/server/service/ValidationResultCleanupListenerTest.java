@@ -67,7 +67,7 @@ class ValidationResultCleanupListenerTest {
     AssetMetadata asset = buildTestAsset();
     CredentialVerificationResult vr = new CredentialVerificationResult(
         Instant.now(), AssetStatus.ACTIVE.getValue(), TEST_ISSUER, Instant.now(), ASSET_ID,
-        List.of(), List.of());
+        List.of(), List.of(), "", "");
     assetStore.storeCredential(asset, vr);
 
     doThrow(new RuntimeException("forced listener failure"))

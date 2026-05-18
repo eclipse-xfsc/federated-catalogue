@@ -171,10 +171,13 @@ services:
       # Use docker-compose.strict.yml overlay to enable full verification.
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "${VERIFY_VP_SIGNATURE:-false}"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "${VERIFY_VC_SIGNATURE:-false}"
-      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "${GAIAX_TRUST_FRAMEWORK_ENABLED:-false}"
-      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "${VERIFY_SCHEMA:-false}"# Trust anchor URL — mock registry on did-server for test environments.
-      # Override in production with the real Gaia-X registry URL.
-      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_TRUST_ANCHOR_URL: "${FC_TRUST_ANCHOR_URL:-https://did-server/api/trustAnchor/chain/file}"
+      # Enable a trust framework by listing its family (matches framework.yaml `family` field).
+      # Multiple families: comma-separated, e.g. "gaia-x,untp".
+      FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS: "${ENABLED_TRUST_FRAMEWORKS:-}"
+      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "${VERIFY_SCHEMA:-false}"
+      # Per-framework verification config (e.g. trust anchor URL) is owned by the bundle's
+      # framework.yaml. To override the Loire trust anchor for test environments, mount a
+      # custom bundle directory at /app/trustframeworks/gaia-x-2511/.
       JAVA_TOOL_OPTIONS: >-
         -Djavax.net.ssl.trustStore=/opt/certs/custom-cacerts
         -Djavax.net.ssl.trustStorePassword=changeit

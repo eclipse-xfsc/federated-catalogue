@@ -38,6 +38,8 @@ public class VerificationService implements VerificationApiDelegate {
    * from the Catalogue.
    *
    * @param body JSON-LD credential to be verified.
+   * @param framework optional trust-framework bundle identifier for disambiguation; ignored when
+   *                  exactly one bundle is active.
    * @return Verification result (status code 200)
    *       or May contain hints how to solve the error or indicate what was wrong in the request. (status code 400)
    *       or Query Timeout: the query took longer than the configured timeout interval.
@@ -46,11 +48,13 @@ public class VerificationService implements VerificationApiDelegate {
    *       Must not outline any information about the internal structure of the server. (status code 500)
    */
   @Override
-  public ResponseEntity<VerificationResult> verify(Boolean verifySemantics, Boolean verifySchema, Boolean verifyVPSignature, Boolean verifyVCSignature, 
-          String body) {
-    log.debug("verify.enter; got body of length: {}; verify semantics: {}, schema: {}, vp-signature: {}, vc-signature: {}", 
-            body.length(), verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
-    VerificationResult verificationResult = verificationService.verifyCredential(new ContentAccessorDirect(body), 
+  public ResponseEntity<VerificationResult> verify(Boolean verifySemantics, Boolean verifySchema,
+                                                   Boolean verifyVPSignature, Boolean verifyVCSignature,
+                                                   String framework, String body) {
+    log.debug(
+        "verify.enter; got body of length: {}; verify semantics: {}, schema: {}, vp-signature: {}, vc-signature: {}, framework: {}",
+        body.length(), verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, framework);
+    VerificationResult verificationResult = verificationService.verifyCredential(new ContentAccessorDirect(body),
             verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
     log.debug("verify.exit; returning result: {}", verificationResult);
     return ResponseEntity.ok(verificationResult);

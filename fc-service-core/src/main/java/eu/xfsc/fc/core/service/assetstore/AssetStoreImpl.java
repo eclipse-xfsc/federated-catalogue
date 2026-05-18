@@ -119,7 +119,7 @@ public class AssetStoreImpl implements AssetStore {
       // deleteClaims wipes all triples for the asset, including MR-HR link triples; re-write them
       tryRewriteLinkTriples(assetMetadata.getId());
     }
-    graphDb.addClaims(verificationResult.getClaims(), assetMetadata.getId());
+    graphDb.addClaims(verificationResult.getGraphClaims(), assetMetadata.getId());
     return subjectHash;
   }
 

@@ -17,7 +17,6 @@ import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialClaim;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
 import eu.xfsc.fc.core.pojo.GraphQuery;
 import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.RdfClaim;
@@ -139,8 +138,9 @@ public class AssetStoreTest {
     }
 
     private static CredentialVerificationResult createVerificationResult(final int idSuffix, String subject) {
-        return new CredentialVerificationResultOffering(Instant.now(), AssetStatus.ACTIVE.getValue(), "issuer" + idSuffix, Instant.now(),
-                "id" + idSuffix, createClaims(subject), new ArrayList<>());
+      return new CredentialVerificationResult(Instant.now(), AssetStatus.ACTIVE.getValue(), "issuer" + idSuffix,
+          Instant.now(),
+            "id" + idSuffix, createClaims(subject), new ArrayList<>(), "", "");
     }
 
     private static CredentialVerificationResult createVerificationResult(final int idSuffix) {
@@ -155,8 +155,9 @@ public class AssetStoreTest {
                 vals.add(new Validator(did, "PK", Instant.now().plusSeconds(3600)));
             }
         }
-        return new CredentialVerificationResultOffering(assetMeta.getStatusDatetime(), AssetStatus.ACTIVE.getValue(), assetMeta.getIssuer(), assetMeta.getUploadDatetime(),
-                assetMeta.getId(), createClaims("<https://delta-dao.com/.well-known/serviceMVGPortal.json>"), vals);
+      return new CredentialVerificationResult(assetMeta.getStatusDatetime(), AssetStatus.ACTIVE.getValue(),
+          assetMeta.getIssuer(), assetMeta.getUploadDatetime(),
+            assetMeta.getId(), createClaims("<https://delta-dao.com/.well-known/serviceMVGPortal.json>"), vals, "", "");
     }
 
     /**
@@ -627,7 +628,7 @@ public class AssetStoreTest {
         signatures.add(new Validator("did:second", "", Instant.now().plus(1, ChronoUnit.DAYS)));
         signatures.add(new Validator("did:third", "", Instant.now().plus(2, ChronoUnit.DAYS)));
         return new CredentialVerificationResult(Instant.now(), AssetStatus.ACTIVE.getValue(), "issuer", Instant.now(),
-                id, new ArrayList<>(), signatures);
+            id, new ArrayList<>(), signatures, "", "");
     }
 
     @Test

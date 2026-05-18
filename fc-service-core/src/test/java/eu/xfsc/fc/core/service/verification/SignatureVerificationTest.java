@@ -38,8 +38,8 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 
 @SpringBootTest(properties = {
 	"federated-catalogue.verification.signature-verifier=uni-res",
-	"federated-catalogue.verification.did.base-url=https://dev.uniresolver.io/1.0",
-	"federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url=https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
+    "federated-catalogue.verification.did.base-url=https://dev.uniresolver.io/1.0"
+    // Trust anchor URL is sourced from the bundle's framework.yaml properties map.
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")

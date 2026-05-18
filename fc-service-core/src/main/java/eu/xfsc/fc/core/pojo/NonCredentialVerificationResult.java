@@ -7,7 +7,9 @@ import java.util.List;
  * Verification result for non-credential raw RDF content (e.g. Turtle, N-Triples, RDF/XML).
  *
  * <p>Unlike {@link CredentialVerificationResult}, non-credential RDF has no issuer, issuance date,
- * or credential ID. Those fields are always {@code null} for this subtype.</p>
+ * credential ID, role, or framework profile. Those fields are intentionally {@code null} for this
+ * subtype. The {@code @NotNull} constraints declared on those fields in the parent API model apply
+ * only to credential-based results and are not enforced for this subtype.</p>
  */
 public class NonCredentialVerificationResult extends CredentialVerificationResult {
 
@@ -16,17 +18,18 @@ public class NonCredentialVerificationResult extends CredentialVerificationResul
    *
    * @param verificationTimestamp time stamp of verification
    * @param lifecycleStatus       status according to GAIA-X lifecycle
-   * @param claims                extracted RDF claims (may be empty, not null)
+   * @param graphClaims           extracted RDF claims (may be empty, not null)
    */
-  public NonCredentialVerificationResult(Instant verificationTimestamp, String lifecycleStatus, List<RdfClaim> claims) {
-    super(verificationTimestamp, lifecycleStatus, null, null, null, claims, null);
+  public NonCredentialVerificationResult(Instant verificationTimestamp, String lifecycleStatus,
+                                         List<RdfClaim> graphClaims) {
+    super(verificationTimestamp, lifecycleStatus, null, null, null, graphClaims, null, null, null);
   }
 
   @Override
   public String toString() {
-    List<RdfClaim> claims = getClaims();
-    String cls = claims == null ? "null" : "" + claims.size();
-    return "NonCredentialVerificationResult [claims=" + cls
+    List<RdfClaim> graphClaims = getGraphClaims();
+    int claimCount = graphClaims == null ? 0 : graphClaims.size();
+    return "NonCredentialVerificationResult [graphClaims=" + claimCount
         + ", verificationTimestamp=" + getVerificationTimestamp()
         + ", lifecycleStatus=" + getLifecycleStatus() + "]";
   }

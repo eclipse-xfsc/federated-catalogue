@@ -173,6 +173,56 @@ public class VerificationControllerTest {
     }
   }
 
+  private static final String UNKNOWN_TYPE_VP = """
+      {
+        "@context": ["https://www.w3.org/ns/credentials/v2"],
+        "type": "VerifiablePresentation",
+        "verifiableCredential": [{
+          "@context": ["https://www.w3.org/ns/credentials/v2"],
+          "id": "http://example.edu/credentials/9999",
+          "type": "VerifiableCredential",
+          "issuer": "did:example:issuer",
+          "validFrom": "2024-01-01T00:00:00Z",
+          "credentialSubject": {
+            "@id": "did:example:subject",
+            "@type": "https://example.com/UnknownType123"
+          }
+        }]
+      }
+      """;
+
+  @Test
+  public void verify_credentialWithUnresolvableType_returnsBadRequest() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.post("/verification")
+            .queryParam("verifySemantics", "false")
+            .queryParam("verifyVPSignature", "false")
+            .queryParam("verifyVCSignature", "false")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(UNKNOWN_TYPE_VP)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void verify_unresolvableTypeError_responseContainsActiveBundleInfo() throws Exception {
+    String response = mockMvc.perform(MockMvcRequestBuilders.post("/verification")
+            .queryParam("verifySemantics", "false")
+            .queryParam("verifyVPSignature", "false")
+            .queryParam("verifyVCSignature", "false")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(UNKNOWN_TYPE_VP)
+            .with(csrf()))
+        .andExpect(status().isBadRequest())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+    Error error = objectMapper.readValue(response, Error.class);
+    assertTrue(error.getMessage().contains("gaia-x-2511"),
+        "Expected active bundle ID 'gaia-x-2511' in error message: " + error.getMessage());
+  }
+
   /** POST /verification with verifySchema=false accepts a SHACL-invalid credential. */
   @Test
   public void verifyShaclInvalidCredential_SchemaDisabled_ShouldReturnSuccess() throws Exception {

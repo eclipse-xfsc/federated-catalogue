@@ -19,6 +19,7 @@ import eu.xfsc.fc.core.service.verification.LoireMatcher;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
@@ -67,6 +68,7 @@ import org.springframework.context.annotation.Import;
     SecurityAuditorAware.class,
     ShaclValidationExecutor.class,
     TrustFrameworkRegistryConfig.class,
+    TrustFrameworkService.class,
     ValidatorCacheJpaDao.class,
     Vc2Processor.class,
     VerificationServiceImpl.class

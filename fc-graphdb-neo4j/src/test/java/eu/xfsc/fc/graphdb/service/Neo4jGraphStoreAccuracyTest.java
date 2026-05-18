@@ -14,7 +14,6 @@ import eu.xfsc.fc.core.service.assetstore.AssetStoreImpl;
 import eu.xfsc.fc.core.service.assetstore.IriGenerator;
 import eu.xfsc.fc.core.service.assetstore.IriValidator;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
-import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.graphdb.config.GraphDbConfig;
@@ -345,7 +344,7 @@ public class Neo4jGraphStoreAccuracyTest {
 
     List<RdfClaim> claimFile = List.of(claim, claimName);
 
-    verificationResult.setClaims(claimFile);
+    verificationResult.setGraphClaims(claimFile);
     verificationResult.setId(claimFile.getFirst().getSubjectValue());
 
     AssetMetadata assetMetadata = new AssetMetadata(verificationResult.getId(),
@@ -368,7 +367,7 @@ public class Neo4jGraphStoreAccuracyTest {
 
     List<RdfClaim> claimFile1 = List.of(claim1, claimName1);
 
-    verificationResult2.setClaims(claimFile1);
+    verificationResult2.setGraphClaims(claimFile1);
     verificationResult2.setId(claimFile1.getFirst().getSubjectValue());
 
     AssetMetadata assetMetadata2 = new AssetMetadata(
@@ -392,7 +391,7 @@ public class Neo4jGraphStoreAccuracyTest {
 
     List<RdfClaim> claimFile3 = List.of(claim3, claimName3);
 
-    verificationResult3.setClaims(claimFile3);
+    verificationResult3.setGraphClaims(claimFile3);
     verificationResult3.setId(claimFile3.getFirst().getSubjectValue());
 
     AssetMetadata assetMetadata3 = new AssetMetadata(
@@ -419,7 +418,7 @@ public class Neo4jGraphStoreAccuracyTest {
 
     List<RdfClaim> claimFile4 = List.of(claim4, claimName4);
 
-    verificationResult4.setClaims(claimFile4);
+    verificationResult4.setGraphClaims(claimFile4);
     verificationResult4.setId(claimFile4.getFirst().getSubjectValue());
 
     AssetMetadata assetMetadata4 = new AssetMetadata(

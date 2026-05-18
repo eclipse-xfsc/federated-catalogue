@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import org.junit.jupiter.api.Test;
 
 class TrustFrameworkRegistryTest {
@@ -61,7 +60,7 @@ class TrustFrameworkRegistryTest {
   private static TrustFrameworkBundle shaclBundle(String profileId, String namespace,
                                                   Map<String, RoleConfig> roles, String ontologyTtl) {
     var config = new FrameworkBundleConfig(profileId, "gaia-x", namespace, ValidationType.SHACL, roles, Map.of());
-    var ontology = new ContentAccessorDirect(ontologyTtl);
+    var ontology = new eu.xfsc.fc.core.pojo.ContentAccessorDirect(ontologyTtl);
     return new TrustFrameworkBundle(config, ontology, null);
   }
 
@@ -143,19 +142,19 @@ class TrustFrameworkRegistryTest {
 
   // bundle index methods
   @Test
-  void getBundles_returnsAllLoadedBundles() {
+  void getActiveBundles_returnsAllLoadedBundles() {
     var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.getBundles()).containsExactly(bundle);
+    assertThat(registry.getActiveBundles()).containsExactly(bundle);
   }
 
   @Test
-  void getBundles_returnsImmutableSnapshot() {
+  void getActiveBundles_returnsImmutableSnapshot() {
     var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThatThrownBy(() -> registry.getBundles().clear())
+    assertThatThrownBy(() -> registry.getActiveBundles().clear())
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -288,7 +287,7 @@ class TrustFrameworkRegistryTest {
     var config = new FrameworkBundleConfig("bad-bundle", "test", null, ValidationType.SHACL,
         Map.of("Role", new RoleConfig(List.of(), List.of())), Map.of());
     var bundle = new TrustFrameworkBundle(config,
-        new ContentAccessorDirect(MINIMAL_ONTOLOGY), null);
+        new eu.xfsc.fc.core.pojo.ContentAccessorDirect(MINIMAL_ONTOLOGY), null);
 
     assertThatThrownBy(() -> new TrustFrameworkRegistry(List.of(bundle)))
         .isInstanceOf(IllegalArgumentException.class);
@@ -300,7 +299,7 @@ class TrustFrameworkRegistryTest {
     var config = new FrameworkBundleConfig("bad-bundle", "test", "https://example.org", ValidationType.SHACL,
         Map.of("Role", new RoleConfig(List.of(), List.of())), Map.of());
     var bundle = new TrustFrameworkBundle(config,
-        new ContentAccessorDirect(MINIMAL_ONTOLOGY), null);
+        new eu.xfsc.fc.core.pojo.ContentAccessorDirect(MINIMAL_ONTOLOGY), null);
 
     assertThatThrownBy(() -> new TrustFrameworkRegistry(List.of(bundle)))
         .isInstanceOf(IllegalArgumentException.class);
@@ -315,5 +314,25 @@ class TrustFrameworkRegistryTest {
 
     assertThatCode(() -> new TrustFrameworkRegistry(List.of(bundle)))
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void getActiveBundles_excludesDeferredBundles() {
+    // SHACL bundle is active; JSON_SCHEMA bundle is deferred — getActiveBundles() must exclude deferred
+    var active = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
+    var deferred = jsonSchemaBundle("untp-v1");
+    var registry = new TrustFrameworkRegistry(List.of(active, deferred));
+
+    assertThat(registry.getActiveBundles())
+        .containsExactly(active)
+        .doesNotContain(deferred);
+  }
+
+  @Test
+  void getActiveBundles_allDeferred_returnsEmpty() {
+    var deferred = jsonSchemaBundle("untp-v1");
+    var registry = new TrustFrameworkRegistry(List.of(deferred));
+
+    assertThat(registry.getActiveBundles()).isEmpty();
   }
 }

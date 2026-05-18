@@ -8,22 +8,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import org.springframework.transaction.annotation.Transactional;
-
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
-import eu.xfsc.fc.core.dao.trustframework.TrustFramework;
-import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkMapper;
-import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkRepository;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.server.config.AdminDashboardConfig;
 import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Service for trust framework administration endpoints.
+ * HTTP delegate for the trust framework admin endpoints. Delegates persistence operations
+ * to {@link TrustFrameworkService}; only HTTP-shape concerns (status codes, DTO mapping,
+ * connectivity probing) live here.
  */
 @Slf4j
 @Service
@@ -31,58 +29,58 @@ import lombok.extern.slf4j.Slf4j;
 public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegate {
 
   private static final Duration CONNECTIVITY_TIMEOUT = Duration.ofSeconds(5);
+  private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
-  private final TrustFrameworkRepository trustFrameworkRepository;
+  private final TrustFrameworkService trustFrameworkService;
   private final AdminDashboardConfig adminDashboardConfig;
 
-  @Value("${federated-catalogue.verification.trust-framework.gaiax.enabled:#{null}}")
-  private Boolean gaiaxEnabledEnvVar;
+  @Value("${federated-catalogue.enabled-trust-frameworks:}")
+  private List<String> enabledTrustFrameworkFamilies;
 
   /**
-   * Seeds the Gaia-X trust framework enabled state from the environment variable on startup.
-   * If {@code FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED=true} is set,
-   * the DB row is updated to enabled=true, overriding the seeded default of false.
-   * This preserves backward compatibility with existing Docker Compose test workflows.
+   * Flips DB rows to {@code enabled=true} for each trust framework family listed in
+   * {@code federated-catalogue.enabled-trust-frameworks} (env:
+   * {@code FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS}). Unknown family IDs are ignored.
+   * This is the deployment-time override path; runtime changes go through the admin API.
    */
   @PostConstruct
-  private void seedGaiaxEnabledFromEnv() {
-    if (Boolean.TRUE.equals(gaiaxEnabledEnvVar)) {
-      trustFrameworkRepository.findById("gaia-x").ifPresent(entity -> {
-        entity.setEnabled(true);
-        trustFrameworkRepository.save(entity);
-      });
-      log.info("seedGaiaxEnabledFromEnv; enabled gaia-x trust framework from environment variable");
+  private void seedEnabledFrameworksFromConfig() {
+    for (String family : enabledTrustFrameworkFamilies) {
+      if (family == null || family.isBlank()) {
+        continue;
+      }
+      String id = family.trim();
+      try {
+        trustFrameworkService.setEnabled(id, true);
+        log.info("seedEnabledFrameworksFromConfig; enabled trust framework '{}' from config", id);
+      } catch (NotFoundException e) {
+        log.warn("seedEnabledFrameworksFromConfig; trust framework '{}' not registered — override ignored", id);
+      }
     }
   }
 
   @Override
   public ResponseEntity<List<TrustFrameworkEntry>> getTrustFrameworks() {
-    List<TrustFrameworkEntry> entries = trustFrameworkRepository.findAll().parallelStream()
-        .map(entity -> toEntry(TrustFrameworkMapper.toConfig(entity)))
+    List<TrustFrameworkEntry> entries = trustFrameworkService.findAll().stream()
+        .map(this::toEntry)
         .toList();
     return ResponseEntity.ok(entries);
   }
 
   @Override
-  @Transactional
   public ResponseEntity<Void> setTrustFrameworkEnabled(String id, Boolean enabled) {
-    TrustFramework entity = trustFrameworkRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("Trust framework not found: " + id));
-    entity.setEnabled(enabled);
-    trustFrameworkRepository.save(entity);
+    trustFrameworkService.setEnabled(id, enabled);
     return ResponseEntity.ok().build();
   }
 
   @Override
-  @Transactional
   public ResponseEntity<Void> updateTrustFrameworkConfig(String id,
       TrustFrameworkConfigUpdate config) {
-    TrustFramework entity = trustFrameworkRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("Trust framework not found: " + id));
-    entity.setServiceUrl(config.getServiceUrl());
-    entity.setApiVersion(config.getApiVersion());
-    entity.setTimeoutSeconds(config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : 30);
-    trustFrameworkRepository.save(entity);
+    int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
+    if (trustFrameworkService.updateConfig(id, config.getServiceUrl(), config.getApiVersion(), timeoutSeconds)
+        .isEmpty()) {
+      throw new NotFoundException("Trust framework not found: " + id);
+    }
     return ResponseEntity.ok().build();
   }
 

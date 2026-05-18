@@ -4,9 +4,6 @@ import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultOffering;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultParticipant;
-import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 
 import org.springframework.stereotype.Service;
 
@@ -22,30 +19,6 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public interface VerificationService {
-
-  /**
-   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return a Participant metadata validation result. If the validation fails, the reason explains the issue.
-   */
-  CredentialVerificationResultParticipant verifyParticipantCredential(ContentAccessor payload) throws VerificationException;
-
-  /**
-   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return a Verification result. If the verification fails, the reason explains the issue.
-   */
-  CredentialVerificationResultOffering verifyOfferingCredential(ContentAccessor payload) throws VerificationException;
-
-  /**
-   * Validates the credential payload (JSON-LD format) and extracts typed metadata.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return a Verification result. If the verification fails, the reason explains the issue.
-   */
-  CredentialVerificationResultResource verifyResourceCredential(ContentAccessor payload) throws VerificationException;
 
   /**
    * Validates the credential payload (JSON-LD format) and extracts typed metadata.

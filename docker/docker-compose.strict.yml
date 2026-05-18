@@ -9,8 +9,8 @@
 services:
   server:
     environment:
-      # Gaia-X Trust Framework enabled: Loire 2511 ontology and SHACL shapes are bundled.
-      FEDERATED_CATALOGUE_VERIFICATION_TRUST_FRAMEWORK_GAIAX_ENABLED: "true"
+      # Enable the gaia-x trust framework. List multiple families as "gaia-x,untp".
+      FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS: "gaia-x"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "true"
