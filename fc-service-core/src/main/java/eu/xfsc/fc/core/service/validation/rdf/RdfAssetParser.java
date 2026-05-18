@@ -126,8 +126,8 @@ public class RdfAssetParser {
     }
     String ct = asset.getContentType();
     return ct != null && (ct.contains(VerificationConstants.MEDIA_TYPE_LD_JSON)
-      || ct.contains(VerificationConstants.MEDIA_TYPE_VC_LD_JSON)
-      || ct.contains(VerificationConstants.MEDIA_TYPE_VP_LD_JSON));
+        || ct.contains(VerificationConstants.MEDIA_TYPE_VC_LD_JSON)
+        || ct.contains(VerificationConstants.MEDIA_TYPE_VP_LD_JSON));
   }
 
   /**

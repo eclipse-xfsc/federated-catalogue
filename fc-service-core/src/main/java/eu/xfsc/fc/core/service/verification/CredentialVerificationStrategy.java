@@ -38,6 +38,8 @@ import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
+import eu.xfsc.fc.core.service.trustframework.ResolvedRole;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.service.verification.signature.JwtSignatureVerifier;
@@ -69,8 +71,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,10 +78,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.PARTICIPANT;
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.RESOURCE;
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.SERVICE_OFFERING;
-import static eu.xfsc.fc.core.service.verification.TrustFrameworkBaseClass.UNKNOWN;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_PARTICIPANT;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_RESOURCE;
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.ROLE_SERVICE_OFFERING;
 
 
 /**
@@ -134,19 +133,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
 
-    @Value("${federated-catalogue.verification.participant.type}")
-    private String participantType;
-    @Value("${federated-catalogue.verification.service-offering.type}")
-    private String serviceOfferingType;
-    @Value("${federated-catalogue.verification.resource.type}")
-    private String resourceType;
-
-    // Additional sibling roots for SERVICE_OFFERING (e.g. gx:DigitalServiceOffering).
-    @Value("${federated-catalogue.verification.service-offering.additional-types:#{T(java.util.Collections).emptyList()}}")
-    private List<String> serviceOfferingAdditionalTypes;
-
-    /** Gaia-X 2511 type URIs for credential subject classification. */
-    private Map<TrustFrameworkBaseClass, List<String>> baseClassUris;
+  private final TrustFrameworkRegistry trustFrameworkRegistry;
 
     private final JwtContentPreprocessor jwtPreprocessor;
     private final ProtectedNamespaceFilter protectedNamespaceFilter;
@@ -182,15 +169,6 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     @PostConstruct
     private void initialize() {
         rest = restTemplate();
-
-        List<String> loireSoRoots = new ArrayList<>();
-        loireSoRoots.add(serviceOfferingType);
-        loireSoRoots.addAll(serviceOfferingAdditionalTypes);
-
-        baseClassUris = new EnumMap<>(TrustFrameworkBaseClass.class);
-        baseClassUris.put(SERVICE_OFFERING, loireSoRoots);
-        baseClassUris.put(RESOURCE, List.of(resourceType));
-        baseClassUris.put(PARTICIPANT, List.of(participantType));
     }
 
     /**
@@ -204,11 +182,12 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         Validator jwtValidator
     ) {}
 
-    public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, TrustFrameworkBaseClass expectedClass,
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean strict, String expectedRole,
                                                          boolean verifySemantics, boolean verifySchema, boolean verifyVPSignatures,
                                                          boolean verifyVCSignatures) throws VerificationException {
-        log.debug("verifyCredential.enter; strict: {}, expectedType: {}, verifySemantics: {}, verifySchema: {}, verifyVPSignatures: {}, verifyVCSignatures: {}",
-                strict, expectedClass, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
+    log.debug(
+        "verifyCredential.enter; strict: {}, expectedRole: {}, verifySemantics: {}, verifySchema: {}, verifyVPSignatures: {}, verifyVCSignatures: {}",
+        strict, expectedRole, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
         long stamp = System.currentTimeMillis();
 
         VerificationContext ctx = detectAndUnwrap(payload, verifyVCSignatures || verifyVPSignatures);
@@ -249,7 +228,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             throw new VerificationException("Semantic Error: no proper CredentialSubject found");
         }
 
-        TrustFrameworkBaseClass baseClass = resolvePrimaryBaseClass(typedCredentials, verifySemantics, expectedClass);
+    ResolvedRole resolvedRole = resolvePrimaryRole(typedCredentials, verifySemantics, expectedRole);
 
         FilteredClaims filtered = extractAndValidateClaims(ctx.payload(), verifySemantics && strict);
 
@@ -263,7 +242,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         List<Validator> validators = collectValidators(ctx, ld, typedCredentials,
                 verifySemantics, verifyVCSignatures, verifyVPSignatures);
 
-        CredentialVerificationResult result = assembleResult(baseClass, typedCredentials, filtered.claims(), validators);
+    CredentialVerificationResult result = assembleResult(resolvedRole, typedCredentials, filtered.claims(), validators);
         if (filtered.hasWarning()) {
             result.setWarnings(List.of(filtered.warning()));
         }
@@ -358,43 +337,40 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Phase 2: Resolve the dominant base class from typed credentials and validate type constraints.
+     * Phase 2: Resolve the dominant role from typed credentials and validate type constraints.
      */
-    private TrustFrameworkBaseClass resolvePrimaryBaseClass(TypedCredentials typedCredentials,
-        boolean verifySemantics, TrustFrameworkBaseClass expectedClass) {
-        int partCount = 0;
-        int soffCount = 0;
-        TrustFrameworkBaseClass baseClass = UNKNOWN;
-        Collection<TrustFrameworkBaseClass> baseClasses = typedCredentials.getBaseClasses();
+    private ResolvedRole resolvePrimaryRole(TypedCredentials typedCredentials,
+                                            boolean verifySemantics, String expectedRole) {
+      ResolvedRole primaryRole = ResolvedRole.UNKNOWN;
+      Collection<ResolvedRole> roles = typedCredentials.getResolvedRoles();
 
-        if (baseClasses.size() > 1) {
-            Map<TrustFrameworkBaseClass, Integer> classMap = baseClasses.stream()
-                .reduce(new HashMap<>(),
-                    (map, e) -> { map.merge(e, 1, Integer::sum); return map; },
-                    (m, m2) -> { m.putAll(m2); return m; });
-            partCount = classMap.getOrDefault(PARTICIPANT, 0);
-            soffCount = classMap.getOrDefault(SERVICE_OFFERING, 0);
-            if (partCount > 0) {
-                baseClass = PARTICIPANT;
-            } else if (soffCount > 0) {
-                baseClass = SERVICE_OFFERING;
-            } else if (classMap.get(RESOURCE) != null) {
-                baseClass = RESOURCE;
-            }
-        } else if (!baseClasses.isEmpty()) {
-            baseClass = baseClasses.iterator().next();
+      if (roles.size() > 1) {
+        boolean hasParticipant = roles.stream().anyMatch(r -> ROLE_PARTICIPANT.equals(r.role()));
+        boolean hasServiceOffering = roles.stream().anyMatch(r -> ROLE_SERVICE_OFFERING.equals(r.role()));
+
+        if (verifySemantics && hasParticipant && hasServiceOffering) {
+          throw new VerificationException("Semantic error: credential has several types: " + roles);
         }
 
-        if (verifySemantics) {
-            if (partCount > 0 && soffCount > 0) {
-                throw new VerificationException("Semantic error: credential has several types: " + baseClasses);
-            }
-            if (expectedClass != UNKNOWN && baseClass != expectedClass) {
-                throw new VerificationException(
-                    "Semantic error: expected credential of type " + expectedClass + " but found " + baseClass);
-            }
+        if (hasParticipant) {
+          primaryRole =
+              roles.stream().filter(r -> ROLE_PARTICIPANT.equals(r.role())).findFirst().orElse(ResolvedRole.UNKNOWN);
+        } else if (hasServiceOffering) {
+          primaryRole = roles.stream().filter(r -> ROLE_SERVICE_OFFERING.equals(r.role())).findFirst()
+              .orElse(ResolvedRole.UNKNOWN);
+        } else {
+          primaryRole = roles.iterator().next();
         }
-        return baseClass;
+      } else if (!roles.isEmpty()) {
+        primaryRole = roles.iterator().next();
+      }
+
+      if (verifySemantics && expectedRole != null && !expectedRole.isBlank()
+          && !expectedRole.equals(primaryRole.role())) {
+        throw new VerificationException(
+            "Semantic error: expected credential of type " + expectedRole + " but found " + primaryRole.role());
+      }
+      return primaryRole;
     }
 
     /**
@@ -488,9 +464,9 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Phase 5: Build the typed result object based on the resolved base class.
+     * Phase 5: Build the typed result object based on the resolved role.
      */
-    private CredentialVerificationResult assembleResult(TrustFrameworkBaseClass baseClass,
+    private CredentialVerificationResult assembleResult(ResolvedRole resolvedRole,
                                                         TypedCredentials typedCredentials, List<RdfClaim> claims, List<Validator> validators) {
         String id = typedCredentials.getID();
         String issuer = typedCredentials.getIssuer();
@@ -498,7 +474,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
         Instant now = Instant.now();
         String status = AssetStatus.ACTIVE.getValue();
 
-        if (baseClass == PARTICIPANT) {
+      if (ROLE_PARTICIPANT.equals(resolvedRole.role())) {
             if (issuer == null) {
                 issuer = id;
             }
@@ -508,11 +484,11 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
             return new CredentialVerificationResultParticipant(now, status, issuer, issuedDate,
                     claims, validators, name, method);
         }
-        if (baseClass == SERVICE_OFFERING) {
+      if (ROLE_SERVICE_OFFERING.equals(resolvedRole.role())) {
             return new CredentialVerificationResultOffering(now, status, issuer, issuedDate,
                     id, claims, validators);
         }
-        if (baseClass == RESOURCE) {
+      if (ROLE_RESOURCE.equals(resolvedRole.role())) {
             return new CredentialVerificationResultResource(now, status, issuer, issuedDate,
                     id, claims, validators);
         }
@@ -630,7 +606,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     private TypedCredentials getCredentials(VerifiablePresentation vp, CredentialFormat format) {
         log.trace("getCredentials.enter; got VP: {}", vp);
         Object obj = vp.getJsonObject().get(VERIFIABLE_CREDENTIAL_KEY);
-        Map<VerifiableCredential, TrustFrameworkBaseClass> creds;
+      Map<VerifiableCredential, ResolvedRole> creds;
         switch (obj) {
             case null -> creds = Collections.emptyMap();
             case List<?> l -> {
@@ -639,7 +615,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     if (entry instanceof String jwtStr) {
                         VerifiableCredential unwrapped = tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
                         if (unwrapped != null) {
-                            creds.put(unwrapped, resolveBaseClass(unwrapped, format));
+                          creds.put(unwrapped, resolveRole(unwrapped, format));
                         }
                         continue;
                     }
@@ -648,19 +624,19 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                     if (isEnvelopedVerifiableCredential(resolveType(entryMap), entryMap.get(RDF_CONTEXT_KEY))) {
                         VerifiableCredential unwrapped = tryUnwrapEnvelopedVc(entryMap, vp.getDocumentLoader());
                         if (unwrapped != null) {
-                            creds.put(unwrapped, resolveBaseClass(unwrapped, format));
+                          creds.put(unwrapped, resolveRole(unwrapped, format));
                         }
                         continue;
                     }
                     VerifiableCredential vc = VerifiableCredential.fromMap(entryMap);
                     vc.setDocumentLoader(vp.getDocumentLoader());
-                    creds.put(vc, resolveBaseClass(vc, format));
+                  creds.put(vc, resolveRole(vc, format));
                 }
             }
             case String jwtStr -> {
                 VerifiableCredential unwrapped = tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
                 if (unwrapped != null) {
-                    creds = Map.of(unwrapped, resolveBaseClass(unwrapped, format));
+                  creds = Map.of(unwrapped, resolveRole(unwrapped, format));
                 } else {
                     creds = Collections.emptyMap();
                 }
@@ -669,7 +645,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
                 @SuppressWarnings("unchecked")
                 VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) obj);
                 vc.setDocumentLoader(vp.getDocumentLoader());
-                creds = Map.of(vc, resolveBaseClass(vc, format));
+              creds = Map.of(vc, resolveRole(vc, format));
             }
         }
         TypedCredentials tcs = new TypedCredentials(vp, creds);
@@ -731,7 +707,7 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
 
     private TypedCredentials getCredentials(VerifiableCredential vc, CredentialFormat format) {
         log.trace("getCredentials.enter; got VC: {}", vc);
-        TypedCredentials tcs = new TypedCredentials(null, Map.of(vc, resolveBaseClass(vc, format)));
+      TypedCredentials tcs = new TypedCredentials(null, Map.of(vc, resolveRole(vc, format)));
         log.trace("getCredentials.exit; returning: {}", tcs);
         return tcs;
     }
@@ -769,16 +745,15 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     }
 
     /**
-     * Resolves the Gaia-X base class of a credential using the configured 2511 type URI set.
+     * Resolves the trust-framework role of a credential.
+     * Uses the registry index as the fast path; falls back to the composite schema ontology
+     * for subclasses introduced via dynamically uploaded schemas.
      */
-    private TrustFrameworkBaseClass resolveBaseClass(VerifiableCredential credential, CredentialFormat format) {
-        ContentAccessor ontology = schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY);
-        TrustFrameworkBaseClass result = ClaimValidator.getSubjectType(
-                ontology, getStreamManager(), credential.toJson(), baseClassUris);
-        if (result == null) {
-            result = UNKNOWN;
-        }
-        log.debug("resolveBaseClass; format: {}, got type result: {}", format, result);
+    private ResolvedRole resolveRole(VerifiableCredential credential, CredentialFormat format) {
+      ResolvedRole result = ClaimValidator.resolveSubjectRole(
+          getStreamManager(), credential.toJson(), trustFrameworkRegistry,
+          schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY));
+      log.debug("resolveRole; format: {}, got role: {}", format, result);
         return result;
     }
 
@@ -1181,11 +1156,13 @@ public class CredentialVerificationStrategy implements VerificationStrategy {
     /**
      * Rejects inline {@code x5c} certificate chains for all credential formats.
      *
-     * <p>Full x5c trust chain verification (chain building, Trust Anchor Registry lookup,
-     * and revocation checking) is not implemented. Accepting x5c with expiry-only checks
-     * would silently mask broken trust chains — credentials with unverified issuers would
-     * appear valid. Callers must use {@code x5u} instead, which goes through the Trust
-     * Anchor Registry validation path ({@link #hasPEMTrustAnchorAndIsNotExpired}).
+     * <p><b>Implementation limitation, not a framework rule.</b> ICAM 24.07 permits {@code x5c},
+     * but full trust chain verification (chain building, Trust Anchor Registry lookup,
+     * and revocation checking) is not yet implemented here. Accepting {@code x5c} with
+     * expiry-only checks would silently mask broken trust chains — credentials with
+     * unverified issuers would appear valid. Until full chain validation is implemented,
+     * callers must use {@code x5u} (Trust Anchor Registry URL) instead, which goes through
+     * the existing validation path ({@link #hasPEMTrustAnchorAndIsNotExpired}).
      */
     private void rejectX5cChain(JsonNode _x5cArray, String kid) {
         throw new ClientException(

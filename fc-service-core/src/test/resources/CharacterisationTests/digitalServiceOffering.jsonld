@@ -1,0 +1,38 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2"
+  ],
+  "type": [
+    "VerifiablePresentation"
+  ],
+  "holder": "did:web:example.com",
+  "verifiableCredential": {
+    "@context": [
+      "https://www.w3.org/ns/credentials/v2",
+      {
+        "gx": "https://w3id.org/gaia-x/2511#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
+      }
+    ],
+    "@type": [
+      "VerifiableCredential"
+    ],
+    "issuer": "did:web:example.com",
+    "validFrom": "2024-01-01T00:00:00Z",
+    "credentialSubject": {
+      "@id": "https://www.example.org/DigitalService1",
+      "@type": "gx:DigitalServiceOffering",
+      "gx:providedBy": {
+        "@id": "did:web:example.com"
+      },
+      "gx:termsAndConditions": {
+        "@type": "gx:TermsAndConditions",
+        "gx:content": {
+          "@type": "xsd:anyURI",
+          "@value": "https://example.com/tac"
+        },
+        "gx:hash": "abc123"
+      }
+    }
+  }
+}

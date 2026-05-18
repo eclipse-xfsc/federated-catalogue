@@ -1,0 +1,21 @@
+{
+  "@context": "https://www.w3.org/ns/credentials/v2",
+  "type": "VerifiablePresentation",
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/ns/credentials/v2",
+        {"ext": "https://example.org/ext#"}
+      ],
+      "type": ["VerifiableCredential"],
+      "id": "https://example.org/credentials/custom-participant-1",
+      "issuer": "did:web:example.org",
+      "validFrom": "2024-06-01T00:00:00Z",
+      "credentialSubject": {
+        "id": "did:web:example.org:participant",
+        "@type": "ext:CustomParticipant",
+        "ext:name": "Example Custom Participant"
+      }
+    }
+  ]
+}

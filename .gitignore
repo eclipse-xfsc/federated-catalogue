@@ -45,3 +45,7 @@ docker/certs/
 
 ### Kubernetes ###
 /deployment/helm/fc-service/charts/*.tgz
+
+### Temporary files
+*.tmp
+.*

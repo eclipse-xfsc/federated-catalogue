@@ -27,11 +27,12 @@ public class ExtendClaims {
      *
      * @param claims the RDF model containing claims to annotate
      * @param credentialSubject the credential's subject IRI (credentialSubject.id)
+     * @param claimsGraphUriStr the property URI used for the annotation (e.g. from the active bundle)
      * @return Triples as N-Triples string
      */
-    public static String addPropertyGraphUri(Model claims, String credentialSubject) {
+    public static String addPropertyGraphUri(Model claims, String credentialSubject, String claimsGraphUriStr) {
         Literal credentialSubjectLiteral = ResourceFactory.createStringLiteral(credentialSubject);
-        Property claimsGraphUri = ResourceFactory.createProperty("https://w3id.org/gaia-x/2511#claimsGraphUri");
+      Property claimsGraphUri = ResourceFactory.createProperty(claimsGraphUriStr);
 
         List<Statement> additionalTriples = new ArrayList<>();
 

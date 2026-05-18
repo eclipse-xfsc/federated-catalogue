@@ -149,12 +149,12 @@ public class Neo4jGraphStore implements GraphStore {
         }
     }
 
-    /**
-     * Deletes all graph claims linked to a validation result IRI.
-     *
-     * <p>The IRI is passed as a bound Cypher parameter ({@code $uri}), so query injection is
-     * prevented by the Neo4j driver and no string interpolation validation is required here.</p>
-     */
+  /**
+   * Deletes all graph claims linked to a validation result IRI.
+   *
+   * <p>The IRI is passed as a bound Cypher parameter ({@code $uri}), so query injection is
+   * prevented by the Neo4j driver and no string interpolation validation is required here.</p>
+   */
     @Override
     public void deleteValidationResultClaims(String resultIri) {
         try (Session session = driver.session()) {

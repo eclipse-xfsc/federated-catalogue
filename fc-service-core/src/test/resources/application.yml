@@ -48,14 +48,7 @@ federated-catalogue:
       gaiax:
         enabled: false
         trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
-    # 2511 type URIs — no legacy fallbacks; trustframework→2511 hierarchy in bundled ontology
-    participant:
-      type: "https://w3id.org/gaia-x/2511#Participant"
-    resource:
-      type: "https://w3id.org/gaia-x/2511#Resource"
-    service-offering:
-      type: "https://w3id.org/gaia-x/2511#ServiceOffering"
-      additional-types: "https://w3id.org/gaia-x/2511#DigitalServiceOffering"
+
     signature-verifier: local
     did:
       base-url: "https://dev.uniresolver.io/1.0/identifiers/"

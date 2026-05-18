@@ -11,12 +11,14 @@ import eu.xfsc.fc.core.pojo.CredentialVerificationResultResource;
 import org.springframework.stereotype.Service;
 
 /**
- * RDF data validation and verification interface.
- * Supports W3C Verifiable Credentials (with signature verification) and
- * generic RDF data (parsing + claim extraction only).
- * 
- * <p>Current implementation handles JSON-LD W3C Verifiable Credentials/Presentations.
- * Future: Support for plain RDF formats (Turtle, N-Triples, RDF/XML) without credentials.</p>
+ * Ingest-time verification of W3C Verifiable Credentials and Presentations.
+ * Parses JSON-LD VC/VP payloads, verifies signatures, applies the protected-namespace
+ * filter, and extracts typed claims for the upload pipeline.
+ *
+ * <p>Structural validation of stored assets against stored schemas (SHACL, JSON Schema,
+ * XML Schema) is the responsibility of
+ * {@link eu.xfsc.fc.core.service.validation.AssetValidationService} and is not exposed
+ * through this interface.</p>
  */
 @Service
 public interface VerificationService {
@@ -56,13 +58,13 @@ public interface VerificationService {
   /**
    * Validates the credential payload with custom verification toggles (JSON-LD format).
    *
-   * @param payload
-   * @param verifySemantics
-   * @param verifySchema
-   * @param verifyVPSignatures
-   * @param verifyVCSignatures
-   * @return
-   * @throws VerificationException
+   * @param payload ContentAccessor to credential which should be validated.
+   * @param verifySemantics - whether to perform semantic validation (e.g. required properties, value types)
+   * @param verifySchema - whether to perform schema validation (SHACL, JSON Schema, XML Schema)
+   * @param verifyVPSignatures - whether to perform VP signature verification (if the credential is a VP)
+   * @param verifyVCSignatures - whether to perform VC signature verification (if the credential is a VC)
+   * @return a credential metadata validation result. If the validation fails, the reason explains the issue.
+   * @throws VerificationException if the verification process encounters an error (e.g. invalid format, signature verification failure, schema validation failure).
    */
   CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException;

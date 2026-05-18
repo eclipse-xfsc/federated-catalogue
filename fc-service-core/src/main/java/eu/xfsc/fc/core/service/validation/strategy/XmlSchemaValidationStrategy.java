@@ -79,7 +79,7 @@ public class XmlSchemaValidationStrategy implements ValidationStrategy {
     String ct = asset.getContentType();
     return ct != null
         && (ct.contains(MediaType.APPLICATION_XML_VALUE)
-            || ct.contains(MediaType.TEXT_XML_VALUE));
+        || ct.contains(MediaType.TEXT_XML_VALUE));
   }
 
   @Override

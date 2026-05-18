@@ -4,6 +4,7 @@ import com.danubetech.verifiablecredentials.CredentialSubject;
 import com.danubetech.verifiablecredentials.VerifiableCredential;
 import com.danubetech.verifiablecredentials.VerifiablePresentation;
 import eu.xfsc.fc.core.exception.VerificationException;
+import eu.xfsc.fc.core.service.trustframework.ResolvedRole;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -22,15 +23,15 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 record TypedCredentials(VerifiablePresentation presentation,
-                        Map<VerifiableCredential, TrustFrameworkBaseClass> credentials) {
+                        Map<VerifiableCredential, ResolvedRole> credentials) {
 
     private VerifiableCredential getFirstVC() {
         return credentials.isEmpty() ? null : credentials.keySet().iterator().next();
     }
 
-    Collection<TrustFrameworkBaseClass> getBaseClasses() {
+  Collection<ResolvedRole> getResolvedRoles() {
         return credentials.values().stream()
-                .filter(bc -> bc != TrustFrameworkBaseClass.UNKNOWN).distinct().toList();
+            .filter(ResolvedRole::isResolved).distinct().toList();
     }
 
     Collection<VerifiableCredential> getCredentials() {
@@ -101,7 +102,7 @@ record TypedCredentials(VerifiablePresentation presentation,
     }
 
     boolean hasClasses() {
-        return credentials.values().stream().anyMatch(bc -> bc != TrustFrameworkBaseClass.UNKNOWN);
+      return credentials.values().stream().anyMatch(ResolvedRole::isResolved);
     }
 
     private List<CredentialSubject> getSubjects(VerifiableCredential credential) {
