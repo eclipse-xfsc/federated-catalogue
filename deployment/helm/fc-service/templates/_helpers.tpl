@@ -168,3 +168,38 @@ Fuseki selector labels
 app.kubernetes.io/name: {{ include "fc-service.fuseki.fullname" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Volumes for fc-service. Prepends a PVC-backed filestore volume and an overlay
+emptyDir for the context cache when persistence is enabled; always appends the
+user-supplied .Values.volumes (logs, tmp by default).
+*/}}
+{{- define "fc-service.volumes" -}}
+{{- if .Values.persistence.enabled }}
+- name: filestore
+  persistentVolumeClaim:
+    claimName: {{ include "fc-service.fullname" . }}-filestore
+- name: context-cache
+  emptyDir: {}
+{{- end }}
+{{- range .Values.volumes }}
+- {{ toYaml . | nindent 2 | trim }}
+{{- end }}
+{{- end -}}
+
+{{/*
+Volume mounts for fc-service. Mounts the filestore PVC at the configured path
+(must equal DATASTORE_FILE_PATH) and overlays the contextCacheFiles subdirectory
+with an ephemeral emptyDir so the context cache stays per-pod.
+*/}}
+{{- define "fc-service.volumeMounts" -}}
+{{- if .Values.persistence.enabled }}
+- name: filestore
+  mountPath: {{ .Values.persistence.mountPath }}
+- name: context-cache
+  mountPath: {{ printf "%s/contextCacheFiles" .Values.persistence.mountPath }}
+{{- end }}
+{{- range .Values.volumeMounts }}
+- {{ toYaml . | nindent 2 | trim }}
+{{- end }}
+{{- end -}}

@@ -35,8 +35,13 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  # Matches securityContext.runAsUser below. Required so the persistence PVC
+  # (mounted at /var/lib/fc-service/filestore) is owned by a group the
+  # non-root UID can write to. Honored by most CSI drivers; on drivers that
+  # ignore fsGroup (e.g. some NFS provisioners), set this to the value your
+  # provisioner expects or pre-chown the volume.
+  fsGroup: 1000
 
 securityContext:
   allowPrivilegeEscalation: false
@@ -103,6 +108,32 @@ autoscaling:
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 
+# Persistent file store for non-RDF asset binaries and persisted schema files.
+# Backs the assetFileStore and schemaFileStore Spring beans
+# (federated-catalogue.file-store.{asset,schema}.location, see
+# fc-service-core/.../FileStoreConfig.java). The contextCacheFileStore is
+# overlaid by an ephemeral emptyDir so the cache stays per-pod.
+#
+# The mount path MUST equal the DATASTORE_FILE_PATH env value below — Spring
+# binds DATASTORE_FILE_PATH to ${datastore.file-path}, which FileStoreImpl uses
+# as the base for all three stores.
+persistence:
+  enabled: true
+  mountPath: /var/lib/fc-service/filestore
+  size: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  # Empty = use the cluster's default StorageClass. If the cluster has no
+  # default StorageClass, set this explicitly or the PVC will stay Pending.
+  # On managed clusters whose default class has reclaimPolicy=Delete, the
+  # underlying PersistentVolume will be destroyed when the PVC is deleted —
+  # set this to a Retain-class explicitly if the volume must survive a
+  # `helm uninstall`. See README §Persistent file store.
+  storageClassName: ""
+
+# Additional ephemeral mounts. The persistent filestore + context-cache
+# overlay are added automatically by the fc-service.volumes /
+# fc-service.volumeMounts helpers when persistence.enabled is true.
 volumeMounts:
   - name: logs
     mountPath: /logs

@@ -309,8 +309,64 @@ The Keycloak OAuth2 client secret (`fc-keycloak-client-secret`) is intentionally
 - `readOnlyRootFilesystem: true`
 - All Linux capabilities dropped
 
-`/tmp` (Spring Boot JAR extraction) and `/logs` (Logback) are mounted as `emptyDir` volumes. Both are configurable via `volumes` / `volumeMounts` in `values.yaml`.
+`/tmp` (Spring Boot JAR extraction) and `/logs` (Logback) are mounted as `emptyDir` volumes. Both are configurable via `volumes` / `volumeMounts` in `values.yaml`. The non-RDF asset and schema stores are backed by a `PersistentVolumeClaim`; see *Persistent file store* below. The context cache (`contextCacheFiles`) is overlaid with an `emptyDir` to remain ephemeral.
 
 PostgreSQL runs as root (`allowPrivilegeEscalation: false` only) — required by the official image's gosu-based initialisation.
 
 Fuseki runs as UID 9008 (`fuseki` user). The pod security context sets `fsGroup: 9008` so the mounted PVC is writable on first start.
+
+---
+
+## Persistent file store
+
+The chart provisions one `PersistentVolumeClaim` for `fc-service` so that non-RDF asset binaries (`assetFileStore`) and persisted schema files (`schemaFileStore`) survive pod restarts and rescheduling. The `contextCacheFileStore` is kept ephemeral via an `emptyDir` overlaid on top of the PVC at the cache subdirectory.
+
+### Layout
+
+| Path inside the pod | Backed by | Persistence |
+|---|---|---|
+| `/var/lib/fc-service/filestore/assetFiles/` | PVC | Persistent |
+| `/var/lib/fc-service/filestore/schemaFiles/` | PVC | Persistent |
+| `/var/lib/fc-service/filestore/contextCacheFiles/` | `emptyDir` | Ephemeral (overlays PVC) |
+| `/tmp`, `/logs` | `emptyDir` | Ephemeral |
+
+The mount path **must** equal the `DATASTORE_FILE_PATH` env var, since Spring binds it to `${datastore.file-path}` which `FileStoreImpl` uses as the base path for all three stores. The subdirectory names (`assetFiles`, `schemaFiles`, `contextCacheFiles`) are the application's runtime defaults — no override is needed in the chart.
+
+### Values
+
+| Key | Default | Purpose |
+|---|---|---|
+| `persistence.enabled` | `true` | Toggle the PVC + the persistent volume mounts. Disabling reverts to the historical pure-`emptyDir` layout (any uploaded asset is lost on pod restart). |
+| `persistence.mountPath` | `/var/lib/fc-service/filestore` | Container path the PVC is mounted at. Must equal `DATASTORE_FILE_PATH`. |
+| `persistence.size` | `10Gi` | Requested PVC capacity. May be undersized for binary-heavy tenants — operators should size up before deployment. |
+| `persistence.accessModes` | `[ReadWriteOnce]` | RWO is sufficient for the single-replica deployment; horizontal scaling of `fc-service` requires a future RWX-or-object-store change. |
+| `persistence.storageClassName` | `""` | Empty selects the cluster's default `StorageClass`. **If your cluster has no default class, set this explicitly** or the PVC will stay `Pending`. On clusters whose default class has `reclaimPolicy: Delete`, the underlying `PersistentVolume` is destroyed when the PVC is deleted — pin a Retain-class here if the volume must survive. See *Reclaim policy* below. |
+| `podSecurityContext.fsGroup` | `1000` | Group ownership of the PVC mount — required for the non-root UID 1000 container to write to the volume. Some CSI drivers (notably certain NFS provisioners) ignore `fsGroup`; on those, pre-chown the volume or override this value. |
+
+### Reclaim policy
+
+Two independent layers control data survival, and they live at different places — there is no PVC-level reclaim field that does anything (the Kubernetes API silently drops `spec.persistentVolumeReclaimPolicy` on a PVC, because that field exists only on the `PersistentVolume`).
+
+1. **Helm-level: the chart sets `helm.sh/resource-policy: keep` on the PVC.** This means `helm uninstall` will not delete the PVC object. It does *not* protect the underlying volume.
+2. **StorageClass-level: the `StorageClass.reclaimPolicy` field.** This decides what happens to the underlying `PersistentVolume` once the PVC is deleted: `Retain` keeps the PV (data preserved, manual cleanup required), `Delete` destroys it.
+
+The chart can only directly control layer 1. For layer 2 you have two production-grade options:
+
+- **Pin a Retain-class** via `persistence.storageClassName`. Pre-create a `StorageClass` (or use one provided by your platform) with `reclaimPolicy: Retain`, then point the chart at it. Many managed clouds default to a `Delete`-class — in that case the default is **not safe** against a full `helm uninstall`.
+- **Treat the Helm annotation as enough**, accept that `helm uninstall` followed by an explicit `kubectl delete pvc` *will* destroy the volume, and rely on a backup outside this chart.
+
+The chart does not — and cannot — guarantee data survival across a `helm uninstall` on a cluster with a `Delete`-default provisioner. The `helm.sh/resource-policy: keep` annotation only guards the PVC object, not the PV behind it.
+
+### Resizing
+
+If your cluster's `StorageClass` has `allowVolumeExpansion: true`, increase `persistence.size` and re-apply the chart (or `kubectl edit pvc fc-service-filestore` directly). The pod must usually be restarted for the new size to be visible inside the container.
+
+### Disabling persistence
+
+For ephemeral test deployments, set `persistence.enabled=false`. The chart will not render the PVC and the pod falls back to writing the filestore to the container's root filesystem — which, combined with `readOnlyRootFilesystem: true`, means **file-store writes will fail**. Disabling is therefore only useful when uploads are not exercised (e.g., chart-rendering CI).
+
+### Known caveats
+
+- **No default StorageClass.** Set `persistence.storageClassName` explicitly, or the PVC stays `Pending` indefinitely.
+- **SELinux-enforcing clusters.** May require additional `seLinuxOptions` on the pod or PVC; not set by this chart.
+- **Single point of failure.** The PV typically lives on one node. If that node fails and the PV cannot be re-attached, the pod stays `Pending` until the PV is available. This is consistent with the single-replica `ReadWriteOnce` scope of this chart.
