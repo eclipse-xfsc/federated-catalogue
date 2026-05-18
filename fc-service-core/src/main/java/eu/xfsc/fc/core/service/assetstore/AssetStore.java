@@ -135,6 +135,28 @@ public interface AssetStore {
   ContentAccessor getFileById(String id);
 
   /**
+   * Finds a non-RDF asset suitable for metadata enrichment by its subject IRI.
+   * Returns the asset record when the asset exists and has {@code contentKind = NON_RDF}.
+   * Returns empty when no matching NON_RDF asset exists.
+   * Throws {@link eu.xfsc.fc.core.exception.VerificationException} when a matching asset is
+   * human-readable (enrichment of HR assets is not allowed, returns 422).
+   *
+   * @param subjectId the subject IRI to look up
+   * @return enrichable asset record, or empty if not found or not enrichable
+   */
+  Optional<AssetRecord> findEnrichableAsset(String subjectId);
+
+  /**
+   * Persists raw RDF enrichment content to the given asset.
+   * Sets the asset's content to the raw payload and records a change comment for auditing.
+   *
+   * @param asset          the asset record to enrich (must be a NON_RDF asset)
+   * @param rawRdfContent  raw RDF payload to store
+   * @throws eu.xfsc.fc.core.exception.NotFoundException if the asset cannot be found in the database
+   */
+  void saveEnrichedContent(AssetRecord asset, String rawRdfContent);
+
+  /**
    * Remove all assets from the AssetStore.
    */
   void clear();

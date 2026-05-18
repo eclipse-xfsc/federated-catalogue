@@ -30,6 +30,7 @@ public final class AssetMapper {
         .fileSize(entity.getFileSize())
         .originalFilename(entity.getOriginalFilename())
         .changeComment(entity.getChangeComment())
+        .contentKind(entity.getContentKind())
         .build();
   }
 
@@ -52,6 +53,10 @@ public final class AssetMapper {
     entity.setFileSize(record.getFileSize());
     entity.setOriginalFilename(record.getOriginalFilename());
     entity.setChangeComment(record.getChangeComment());
+    if (record.getContentKind() == null) {
+      throw new IllegalStateException("ContentKind must not be null for asset record: " + record.getId());
+    }
+    entity.setContentKind(record.getContentKind());
     return entity;
   }
 }

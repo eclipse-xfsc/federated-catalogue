@@ -87,6 +87,10 @@ public class Asset {
   @Column(name = "asset_type", length = 50)
   private AssetType assetType;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "content_kind", nullable = false)
+  private ContentKind contentKind;
+
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "linked_asset_id")
   private Asset linkedAsset;

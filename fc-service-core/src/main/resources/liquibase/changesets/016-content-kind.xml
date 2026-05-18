@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd"
+  logicalFilePath="liquibase/changesets/016-content-kind.xml">
+
+  <changeSet id="016-1" author="saackef">
+    <comment>Add content_kind column to assets and assets_aud tables</comment>
+
+    <addColumn tableName="assets">
+      <column name="content_kind" type="varchar(10)" defaultValue="RDF">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+
+    <addColumn tableName="assets_aud">
+      <column name="content_kind" type="varchar(10)">
+        <constraints nullable="true"/>
+      </column>
+    </addColumn>
+
+    <comment>Backfill existing assets based on null/non-null content</comment>
+    <sql>
+      UPDATE assets SET content_kind = 'NON_RDF' WHERE content IS NULL
+    </sql>
+
+    <sql>
+      UPDATE assets SET content_kind = 'RDF' WHERE content IS NOT NULL
+    </sql>
+
+    <!-- Make the column non-nullable in assets table -->
+    <addNotNullConstraint tableName="assets" columnName="content_kind" columnDataType="varchar(10)"/>
+
+  </changeSet>
+
+</databaseChangeLog>

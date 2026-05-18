@@ -5,8 +5,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import org.springframework.http.MediaType;
-import org.springframework.web.util.UriUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.util.UriUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -15,10 +15,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import eu.xfsc.fc.api.generated.model.Asset;
 import eu.xfsc.fc.core.exception.ServerException;
-import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.server.service.AssetUploadService;
+import eu.xfsc.fc.server.service.UploadResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +38,7 @@ public class AssetUploadController {
 
     @PostMapping(value = "/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Asset> addAssetMultipart(
+    public ResponseEntity<?> addAssetMultipart(
             @RequestPart("file") MultipartFile file) {
         log.debug("addAssetMultipart.enter; filename: {}, contentType: {}, size: {}",
                 file.getOriginalFilename(), file.getContentType(), file.getSize());
@@ -52,20 +51,35 @@ public class AssetUploadController {
         }
 
         String contentType = file.getContentType() != null ? file.getContentType() : DEFAULT_CONTENT_TYPE;
-        AssetMetadata result = assetUploadService.processUpload(content, contentType, file.getOriginalFilename());
-        // encodePathSegment encodes colons (:) and slashes (/) in IRIs like urn:uuid:... or http://...
-        // so the Location header contains a valid single path segment after /assets/
-        return ResponseEntity.created(URI.create("/assets/" + UriUtils.encodePathSegment(result.getId(), StandardCharsets.UTF_8))).body(result);
+        return buildUploadResponse(assetUploadService.processUpload(content, contentType, file.getOriginalFilename()));
     }
 
     @PostMapping(value = "/assets", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Asset> addAssetOctetStream(
+    public ResponseEntity<?> addAssetOctetStream(
             @RequestBody byte[] content,
             @RequestHeader(value = "Content-Type", defaultValue = DEFAULT_CONTENT_TYPE) String contentType) {
         log.debug("addAssetOctetStream.enter; contentType: {}, size: {}", contentType, content.length);
 
-        AssetMetadata result = assetUploadService.processUpload(content, contentType, null);
-        return ResponseEntity.created(URI.create("/assets/" + UriUtils.encodePathSegment(result.getId(), StandardCharsets.UTF_8))).body(result);
+        return buildUploadResponse(assetUploadService.processUpload(content, contentType, null));
+    }
+
+    private ResponseEntity<?> buildUploadResponse(UploadResult result) {
+        return switch (result) {
+            case UploadResult.AssetEnriched ae -> {
+                log.debug("buildUploadResponse; enrichment completed with {} triples added",
+                        ae.response().getTriplesAdded());
+                yield ResponseEntity.ok(ae.response());
+            }
+            case UploadResult.AssetCreated ac -> {
+                // encodePathSegment encodes colons (:) and slashes (/) in IRIs like urn:uuid:... or http://...
+                // so the Location header contains a valid single path segment after /assets/
+                log.debug("buildUploadResponse; asset created with hash: {}", ac.metadata().getAssetHash());
+                yield ResponseEntity.created(
+                        URI.create("/assets/" + UriUtils.encodePathSegment(
+                                ac.metadata().getId(), StandardCharsets.UTF_8)))
+                    .body(ac.metadata());
+            }
+        };
     }
 }

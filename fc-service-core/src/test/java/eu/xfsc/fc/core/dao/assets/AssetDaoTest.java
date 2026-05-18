@@ -11,8 +11,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 
-import eu.xfsc.fc.core.dao.schemas.SchemaFile;
-import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -83,6 +81,7 @@ class AssetDaoTest {
         .contentType(contentType)
         .fileSize(fileSize)
         .originalFilename(originalFilename)
+        .contentKind(ContentKind.RDF)
         .build();
   }
 

@@ -1,6 +1,7 @@
 package eu.xfsc.fc.server.service;
 
 import eu.xfsc.fc.api.generated.model.Asset;
+import eu.xfsc.fc.api.generated.model.AssetEnrichmentResponse;
 import eu.xfsc.fc.api.generated.model.AssetResult;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.api.generated.model.AssetVersion;
@@ -229,12 +230,40 @@ public class AssetService implements AssetsApiDelegate {
    */
   @Override
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public ResponseEntity<Asset> addAsset(String body) {
+  public ResponseEntity<AssetEnrichmentResponse> addAsset(String body) {
     log.debug("addAsset.enter; got asset of length: {}", body.length());
-    AssetMetadata assetMetadata = verifyAndStore(body, null, null);
-    log.debug("addAsset.exit; returning asset with id: {}", assetMetadata.getId());
-    String encodedId = UriUtils.encodePathSegment(assetMetadata.getId(), StandardCharsets.UTF_8);
-    return ResponseEntity.created(URI.create("/assets/" + encodedId)).body(assetMetadata);
+
+    // Route through the enrichment-aware upload service so that JSON-body POSTs share the same
+    // RDF-vs-non-RDF detection and metadata-enrichment branching as the multipart/octet-stream paths.
+    UploadResult result = assetUploadService.processUpload(
+        body.getBytes(StandardCharsets.UTF_8), resolveRequestContentType(), null);
+
+    return switch (result) {
+      case UploadResult.AssetEnriched ae -> {
+        log.debug("addAsset.exit; enrichment, assetId={}, triplesAdded={}",
+            ae.response().getAssetId(), ae.response().getTriplesAdded());
+        yield ResponseEntity.ok(ae.response());
+      }
+      case UploadResult.AssetCreated ac -> {
+        String encodedId = UriUtils.encodePathSegment(ac.metadata().getId(), StandardCharsets.UTF_8);
+        log.debug("addAsset.exit; created asset id={}, hash={}",
+            ac.metadata().getId(), ac.metadata().getAssetHash());
+        // The generated AssetsApiDelegate#addAsset signature is fixed to the lowest declared 2xx
+        // response (200 → AssetEnrichmentResponse). For the 201 branch the body is an Asset; the
+        // type parameter is irrelevant at runtime (Jackson serialises by actual type) and the wire
+        // contract per OpenAPI is honoured. The cast is the single boundary required by the
+        // openapi-generator delegate pattern.
+        @SuppressWarnings("unchecked")
+        ResponseEntity<AssetEnrichmentResponse> created = (ResponseEntity<AssetEnrichmentResponse>) (ResponseEntity<?>)
+            ResponseEntity.created(URI.create("/assets/" + encodedId)).body(ac.metadata());
+        yield created;
+      }
+    };
+  }
+
+  private String resolveRequestContentType() {
+    String contentType = httpServletRequest.getHeader(HttpHeaders.CONTENT_TYPE);
+    return contentType != null ? contentType : MediaType.APPLICATION_JSON_VALUE;
   }
 
   /**
@@ -438,8 +467,8 @@ public class AssetService implements AssetsApiDelegate {
       throw new ServerException("Failed to read uploaded file", ex);
     }
 
-    final AssetMetadata hrMetadata = assetUploadService.processUpload(
-        content, contentType, StringUtils.sanitizeFilename(file.getOriginalFilename()), existingHrId);
+    final AssetMetadata hrMetadata = ((UploadResult.AssetCreated) assetUploadService.processUpload(
+        content, contentType, StringUtils.sanitizeFilename(file.getOriginalFilename()), existingHrId)).metadata();
     assetStorePublisher.linkAssets(decodedId, hrMetadata.getId());
     try {
       assetStorePublisher.writeAssetLinkTriples(decodedId, hrMetadata.getId());
