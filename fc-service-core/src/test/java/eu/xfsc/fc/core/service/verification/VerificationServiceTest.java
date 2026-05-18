@@ -73,6 +73,9 @@ public class VerificationServiceTest {
   private VerificationServiceImpl verificationService;
 
   @Autowired
+  private SchemaValidationService schemaValidationService;
+
+  @Autowired
   private ClaimExtractionService claimExtractionService;
 
     @Autowired
@@ -83,9 +86,6 @@ public class VerificationServiceTest {
 
   @MockitoSpyBean
   private JwtContentPreprocessor jwtPreprocessorSpy;
-
-  @MockitoSpyBean
-  private Vc2Processor vc2ProcessorSpy;
 
   @MockitoSpyBean
   private LoireJwtParser loireJwtParserSpy;
@@ -122,13 +122,13 @@ public class VerificationServiceTest {
   }
 
   @Test
-  void verifyCredential_vc2JwtWrappedInput_vc2ProcessorPreProcessInvoked() {
+  void verifyCredential_vc2JwtWrappedInput_jwtPreprocessorUnwrapInvoked() {
     String vcJson = getAccessor("Claims-Tests/participantVC2.jsonld").getContentAsString();
     ContentAccessor content = new ContentAccessorDirect(fakeVcJwt(vcJson));
 
     verificationService.verifyCredential(content, false, false, false, false);
 
-    verify(vc2ProcessorSpy).preProcess(any());
+    verify(jwtPreprocessorSpy).unwrap(any());
   }
 
   @Test
@@ -571,7 +571,7 @@ public class VerificationServiceTest {
 
   @Test
   void verifyValidationResultInvalid() {
-    SchemaValidationResult validationResult = verificationService.verifyCredentialAgainstSchema(
+    SchemaValidationResult validationResult = schemaValidationService.validateCredentialAgainstSchema(
             getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"), getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
 
     if (!validationResult.isConforming()) {
@@ -581,7 +581,7 @@ public class VerificationServiceTest {
 
   @Test
   void verifyValidationResultValid() {
-    SchemaValidationResult validationResult = verificationService.verifyCredentialAgainstSchema(
+    SchemaValidationResult validationResult = schemaValidationService.validateCredentialAgainstSchema(
             getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"), getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
     assertTrue(validationResult.isConforming());
 
@@ -590,7 +590,7 @@ public class VerificationServiceTest {
   @Test
   void verifyInvalidCredentialValidation_Result_Against_CompositeSchema() {
     schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-    SchemaValidationResult result = verificationService.verifyCredentialAgainstCompositeSchema(
+    SchemaValidationResult result = schemaValidationService.validateCredentialAgainstCompositeSchema(
     		getAccessor("Validation-Tests/legalPerson_one_VC_Invalid.jsonld"));
     assertFalse(result.isConforming(), "Validation should have failed.");
     assertTrue(result.getValidationReport().contains("Property needs to have at least 1 value"));
@@ -599,7 +599,7 @@ public class VerificationServiceTest {
   @Test
   void verifyValidCredentialValidation_Result_Against_CompositeSchema() {
     schemaStore.addSchema(getAccessor("Schema-Tests/mergedShapesGraph.ttl"));
-    SchemaValidationResult validationResult = verificationService.verifyCredentialAgainstCompositeSchema(
+    SchemaValidationResult validationResult = schemaValidationService.validateCredentialAgainstCompositeSchema(
             getAccessor("Validation-Tests/legalPerson_one_VC_Valid.jsonld"));
     assertTrue(validationResult.isConforming());
   }
@@ -744,7 +744,7 @@ public class VerificationServiceTest {
     when(jwtVerifierMock.verify(any())).thenReturn(testValidator);
     // Mock the unwrap so the VP passes the preProcess step
     ContentAccessor vpJsonLd = getAccessor("VerificationService/syntax/input.vp.jsonld");
-    doReturn(vpJsonLd).when(vc2ProcessorSpy).preProcess(any());
+    doReturn(vpJsonLd).when(jwtPreprocessorSpy).unwrap(any());
 
     VerificationException ex = assertThrowsExactly(VerificationException.class,
         () -> verificationService.verifyCredential(vpJwt, true, false, true, false));
@@ -766,7 +766,7 @@ public class VerificationServiceTest {
     // input.vp.jsonld causes PROTECTED_TERM_REDEFINITION during role resolution (AC-3 would reject it).
     // Use legalParticipant.jsonld instead — a proper Gaia-X VP whose type resolves to Participant.
     ContentAccessor vpJsonLd = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
-    doReturn(vpJsonLd).when(vc2ProcessorSpy).preProcess(any());
+    doReturn(vpJsonLd).when(jwtPreprocessorSpy).unwrap(any());
 
     // verifySemantics=false to skip class detection; verifyVPSignatures=true for JWT verification
     CredentialVerificationResult result =

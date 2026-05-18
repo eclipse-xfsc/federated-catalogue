@@ -2,6 +2,7 @@ package eu.xfsc.fc.core.service.verification;
 
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -10,24 +11,34 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.NonCredentialVerificationResult;
-import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import lombok.extern.slf4j.Slf4j;
 
+import static eu.xfsc.fc.core.service.verification.VerificationConstants.JWT_PREFIX;
+
 
 /**
  * Implementation of the {@link VerificationService} interface.
- * Thin delegate over a single {@link VerificationStrategy} implementation
- * ({@link CredentialVerificationStrategy} for W3C VC/VP credentials in JSON-LD form).
  *
- * <p>Credential-format dispatch (Loire-JWT vs. danubetech VC2) is handled inside the
- * verifier via {@link CredentialFormatDetector}; it is not a sibling-strategy axis at
- * this level. Structural validation of stored assets against stored schemas is the
+ * <p>Dispatches each incoming payload to one of two {@link RdfIngestionStrategy}
+ * implementations based on a quick format peek:
+ * <ul>
+ *   <li>{@link CredentialVerificationStrategy} — for any recognised credential format
+ *       (Loire JWT, danubetech VC 2.0 JSON-LD or JWT, W3C VC 2.0 Enveloped wrappers) and
+ *       for ambiguous JWTs (which it rejects with a clear error).</li>
+ *   <li>{@link NonCredentialIngestionStrategy} — for non-credential JSON-LD or other RDF
+ *       payloads the catalogue ingests as raw triples.</li>
+ * </ul>
+ *
+ * <p>Per-credential-family dispatch (Loire vs. VC 2.0 etc.) happens inside the credential
+ * strategy via {@link CredentialFormatDetector} and the {@link CredentialFormatProcessor}
+ * chain. Structural validation of stored assets against stored schemas is the
  * responsibility of {@code AssetValidationService}, not this service.
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class VerificationServiceImpl implements VerificationService {
 
   @Value("${federated-catalogue.verification.semantics:true}")
@@ -39,22 +50,28 @@ public class VerificationServiceImpl implements VerificationService {
   @Value("${federated-catalogue.verification.vc-signature:true}")
   private boolean verifyVCSignature;
 
-  @Autowired
-  private VerificationStrategy credentialStrategy;
-
-  @Autowired
-  private SchemaValidationService schemaValidationService;
-
-  @Autowired
-  private TrustFrameworkRegistry trustFrameworkRegistry;
+  private final CredentialVerificationStrategy credentialStrategy;
+  private final NonCredentialIngestionStrategy nonCredentialStrategy;
+  private final CredentialFormatDetector formatDetector;
+  private final TrustFrameworkRegistry trustFrameworkRegistry;
 
   /** Package-private for testing: allows overriding the schema verification toggle. */
   void setVerifySchema(boolean verifySchema) {
     this.verifySchema = verifySchema;
   }
 
-  private VerificationStrategy resolveStrategy(ContentAccessor payload) {
-    return credentialStrategy;
+  /**
+   * Picks the strategy for this payload. JWT bodies always go to the credential strategy
+   * (it handles both recognised and ambiguous JWTs); JSON-LD/RDF bodies are detected once
+   * and routed to the non-credential strategy when no credential format matches.
+   */
+  private RdfIngestionStrategy resolveStrategy(ContentAccessor payload) {
+    String body = payload.getContentAsString().strip();
+    if (body.startsWith(JWT_PREFIX)) {
+      return credentialStrategy;
+    }
+    return formatDetector.detect(payload) == CredentialFormat.UNKNOWN
+        ? nonCredentialStrategy : credentialStrategy;
   }
 
   /**
@@ -71,7 +88,7 @@ public class VerificationServiceImpl implements VerificationService {
   @Override
   public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException {
-    CredentialVerificationResult result = resolveStrategy(payload).verifyCredential(payload,
+    CredentialVerificationResult result = resolveStrategy(payload).ingest(payload,
         verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
     if (!(result instanceof NonCredentialVerificationResult) && result.getRole() == null) {
       String bundleInfo = getActiveTrustFrameworkBundleInfos();
@@ -80,26 +97,6 @@ public class VerificationServiceImpl implements VerificationService {
               + " Active bundles: [" + bundleInfo + "]");
     }
     return result;
-  }
-
-  /* Credential validation against SHACL Schemas — delegated to SchemaValidationService */
-
-  /**
-   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstCompositeSchema} directly.
-   */
-  @Deprecated
-  @Override
-  public SchemaValidationResult verifyCredentialAgainstCompositeSchema(ContentAccessor payload) {
-    return schemaValidationService.validateCredentialAgainstCompositeSchema(payload);
-  }
-
-  /**
-   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstSchema} directly.
-   */
-  @Deprecated
-  @Override
-  public SchemaValidationResult verifyCredentialAgainstSchema(ContentAccessor payload, ContentAccessor schema) {
-    return schemaValidationService.validateCredentialAgainstSchema(payload, schema);
   }
 
   private String getActiveTrustFrameworkBundleInfos() {

@@ -24,7 +24,14 @@ import org.springframework.stereotype.Component;
  * The preprocessor first attempts to parse as a VC 2.0 JWT, then as a VP 2.0 JWT.
  * Non-JWT content is returned unchanged.
  *
- * <p>Signature verification is out of scope here — see Issue #12.
+ * <p><b>Why two JWT unwrappers?</b> This class handles the danubetech-style JWT encoding
+ * where credential fields are nested inside a {@code vc} or {@code vp} wrapper claim
+ * in the JWT payload. W3C VC-JOSE-COSE (the standard JWT securing mechanism for VC 2.0,
+ * used by Loire / ICAM 24.07) explicitly forbids {@code vc}/{@code vp} wrapper claims
+ * and places credential fields directly at the JWT payload root — danubetech does not
+ * support that layout. The two formats differ at the JWT payload level, not merely in
+ * credential schema, which is why they require separate parsers.
+ * See {@link LoireJwtParser} for the root-claims path.
  */
 @Slf4j
 @Component

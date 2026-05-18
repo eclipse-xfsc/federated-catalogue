@@ -76,10 +76,10 @@
         <!-- most recent 5.x.x version 5.6.0 caused problems with neosemantics 5.18 fat-jar that bundles a conflicting apache-commons-lang3 version -->
         <jena.version>5.5.0</jena.version>
         <topbraid.version>1.4.4</topbraid.version>
-        <vc.version>1.27.0</vc.version>
-        <key-format.version>1.23.0</key-format.version>
+        <vc.version>1.29.0</vc.version>
+        <key-format.version>1.32.0</key-format.version>
         <did.version>1.20.0</did.version>
-        <dataintegrity.version>1.22.0</dataintegrity.version>
+        <dataintegrity.version>1.24.0</dataintegrity.version>
         <uni-resolver.version>0.51.0</uni-resolver.version>
         <titanium.version>1.7.0</titanium.version>
         <caffeine.version>3.2.3</caffeine.version>
@@ -95,7 +95,7 @@
         <embedded.postgres.binaries.version>14.19.0</embedded.postgres.binaries.version>
         <embedded.postgres.test.version>2.4.0</embedded.postgres.test.version>
         <jose4j.version>0.9.6</jose4j.version>
-        <nimbus-jose-jwt.version>10.0.2</nimbus-jose-jwt.version>
+        <nimbus-jose-jwt.version>10.9</nimbus-jose-jwt.version>
         <tink.version>1.20.0</tink.version>
         <okhttp.version>5.3.0</okhttp.version>
         <!-- plugins -->

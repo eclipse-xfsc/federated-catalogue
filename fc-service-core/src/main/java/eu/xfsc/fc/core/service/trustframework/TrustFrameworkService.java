@@ -35,6 +35,15 @@ public class TrustFrameworkService {
   }
 
   /**
+   * Returns true when at least one trust framework is enabled. Used by the verification
+   * pipeline to switch between strict mode (credentials must declare a recognized class)
+   * and permissive mode (untyped credentials are accepted).
+   */
+  public boolean hasAnyEnabled() {
+    return trustFrameworkRepository.countByEnabledTrue() > 0;
+  }
+
+  /**
    * Sets the enabled flag for the trust framework identified by the given family ID.
    * Throws when no record exists for the family.
    */

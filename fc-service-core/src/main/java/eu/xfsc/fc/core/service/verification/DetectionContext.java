@@ -5,8 +5,9 @@ import com.nimbusds.jwt.SignedJWT;
 import org.springframework.lang.Nullable;
 
 /**
- * Pre-parsed credential payload, built once by {@link CredentialFormatDetector} and passed to each
- * {@link FormatMatcher}. Avoids reparsing the JWT or body JSON per matcher.
+ * Pre-parsed credential payload, built once by {@link CredentialFormatDetector} and passed
+ * to each {@link CredentialFormatProcessor}. Avoids reparsing the JWT or body JSON per
+ * processor.
  *
  * <p>{@code parsedJson} holds:
  * <ul>

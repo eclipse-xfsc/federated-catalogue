@@ -1,7 +1,6 @@
 package eu.xfsc.fc.core.service.verification;
 
 import static eu.xfsc.fc.core.service.verification.VerificationConstants.JWT_PREFIX;
-import static eu.xfsc.fc.core.service.verification.VerificationConstants.VC_20_CONTEXT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,14 +21,15 @@ import org.springframework.stereotype.Component;
 
 /**
  * Routes incoming credential payloads to the correct processing path by delegating to an
- * ordered list of {@link FormatMatcher} beans.
+ * ordered list of {@link CredentialFormatProcessor} beans.
  *
- * <p>The credential is pre-parsed once into a {@link DetectionContext} and then each matcher
- * is tried in order until one claims the format. If no matcher matches,
- * {@link CredentialFormat#UNKNOWN} is returned.
+ * <p>The credential is pre-parsed once into a {@link DetectionContext} and then each
+ * processor's {@code match()} is tried in order until one claims the format. If none
+ * matches, {@link CredentialFormat#UNKNOWN} is returned.
  *
- * <p>To add support for a new trust framework, implement {@link FormatMatcher}, annotate it
- * with {@code @Component} and {@code @Order}, and Spring will pick it up automatically.
+ * <p>To add support for a new trust framework, implement {@link CredentialFormatProcessor},
+ * annotate it with {@code @Component} and {@code @Order}, and Spring will pick it up
+ * automatically.
  */
 @Slf4j
 @Component
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
 public class CredentialFormatDetector {
 
     private final ObjectMapper objectMapper;
-    private final List<FormatMatcher> matchers;
+  private final List<CredentialFormatProcessor> processors;
 
     /**
      * Detects the credential format of the given payload.
@@ -48,8 +48,8 @@ public class CredentialFormatDetector {
     public CredentialFormat detect(ContentAccessor content) {
         String body = content.getContentAsString().strip();
         DetectionContext ctx = buildContext(body);
-        CredentialFormat format = matchers.stream()
-                .map(m -> m.match(ctx))
+      CredentialFormat format = processors.stream()
+          .map(p -> p.match(ctx))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst()

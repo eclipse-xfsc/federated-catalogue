@@ -8,18 +8,20 @@ import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.resolve.DidDocumentResolver;
 import eu.xfsc.fc.core.service.resolve.HttpDocumentResolver;
 import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
 import eu.xfsc.fc.core.service.verification.CredentialFormatDetector;
 import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
-import eu.xfsc.fc.core.service.verification.DanubeTechFormatMatcher;
+import eu.xfsc.fc.core.service.verification.EnvelopedCredentialResolver;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
+import eu.xfsc.fc.core.service.verification.LoireCredentialProcessor;
 import eu.xfsc.fc.core.service.verification.LoireJwtParser;
-import eu.xfsc.fc.core.service.verification.LoireMatcher;
+import eu.xfsc.fc.core.service.verification.LoirePolicyEnforcer;
+import eu.xfsc.fc.core.service.verification.NonCredentialIngestionStrategy;
+import eu.xfsc.fc.core.service.verification.Vc2DanubeTechCredentialProcessor;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaValidationServiceImpl;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
-import eu.xfsc.fc.core.service.verification.Vc2Processor;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 import eu.xfsc.fc.core.service.verification.claims.JenaAllTriplesExtractor;
@@ -42,19 +44,21 @@ import org.springframework.context.annotation.Import;
     ClaimExtractionService.class,
     CredentialFormatDetector.class,
     CredentialVerificationStrategy.class,
-    DanubeTechFormatMatcher.class,
     DatabaseConfig.class,
     DidDocumentResolver.class,
     DidResolverConfig.class,
     DocumentLoaderConfig.class,
     DocumentLoaderProperties.class,
+    EnvelopedCredentialResolver.class,
     FileStoreConfig.class,
     HttpDocumentResolver.class,
     JenaAllTriplesExtractor.class,
     JwtContentPreprocessor.class,
     JwtSignatureVerifier.class,
+    LoireCredentialProcessor.class,
     LoireJwtParser.class,
-    LoireMatcher.class,
+    LoirePolicyEnforcer.class,
+    NonCredentialIngestionStrategy.class,
     ObjectMapper.class,
     ProtectedNamespaceFilter.class,
     ProtectedNamespaceProperties.class,
@@ -68,7 +72,7 @@ import org.springframework.context.annotation.Import;
     TrustFrameworkRegistryConfig.class,
     TrustFrameworkService.class,
     ValidatorCacheJpaDao.class,
-    Vc2Processor.class,
+    Vc2DanubeTechCredentialProcessor.class,
     VerificationServiceImpl.class
 })
 public class VerificationStackTestConfig {
