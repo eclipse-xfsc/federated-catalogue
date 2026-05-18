@@ -2,7 +2,6 @@ package eu.xfsc.fc.core.service.verification;
 
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
-import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 
 import org.springframework.stereotype.Service;
@@ -41,26 +40,5 @@ public interface VerificationService {
    */
   CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException;
-
-  /**
-   * The function validates the credential against the given schema.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @param schema ContentAccessor - the schema to validate credential against (null = composite)
-   * @return the result of the semantic validation.
-   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstSchema} directly.
-   */
-  @Deprecated
-  SchemaValidationResult verifyCredentialAgainstSchema(ContentAccessor payload, ContentAccessor schema);
-
-  /**
-   * The function validates the credential against the composite schema.
-   *
-   * @param payload ContentAccessor to credential which should be validated.
-   * @return the result of the semantic validation.
-   * @deprecated Use {@link SchemaValidationService#validateCredentialAgainstCompositeSchema} directly.
-   */
-  @Deprecated
-  SchemaValidationResult verifyCredentialAgainstCompositeSchema(ContentAccessor payload);
 
 }

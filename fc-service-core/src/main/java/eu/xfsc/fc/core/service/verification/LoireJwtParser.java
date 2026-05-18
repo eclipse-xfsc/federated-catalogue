@@ -21,8 +21,15 @@ import org.springframework.stereotype.Component;
  * Parses Loire-format JWTs (W3C VC-JOSE-COSE / ICAM 24.07) where the credential
  * is the top-level JWT payload — no {@code vc}/{@code vp} wrapper claims.
  *
- * <p>This parser bypasses the danubetech library which expects wrapper claims.
- * After unwrapping, the payload is a standard JSON-LD credential that can be
+ * <p><b>Why two JWT unwrappers?</b> The danubetech library (used by {@link JwtContentPreprocessor})
+ * expects credential fields nested inside a {@code vc}/{@code vp} wrapper claim. W3C VC-JOSE-COSE
+ * explicitly forbids those wrapper claims:
+ * {@link <a href="https://www.w3.org/TR/vc-jose-cose/#jwt-format-and-requirements">
+ *   credential fields must sit directly at the JWT payload root.</a>}.
+ * Danubetech does not support that layout, so Loire JWTs require a separate parser.
+ * The two formats differ at the JWT payload level, not merely in credential schema.
+ *
+ * <p>After unwrapping, the payload is a standard JSON-LD credential that can be
  * processed by the existing claim extractors and SHACL validators.
  *
  * <p>Accepted header values (W3C VC-JOSE-COSE values are canonical and IANA-registered;

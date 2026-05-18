@@ -169,7 +169,6 @@ federated-catalogue:
   enabled-trust-frameworks: ""
   verification:
     http-timeout: 3000
-    validator-expire: 1D
 
     semantics: true
     schema: false

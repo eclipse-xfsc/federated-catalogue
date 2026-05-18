@@ -68,7 +68,11 @@ class ProvenanceCleanupListenerTest {
     AssetMetadata asset = buildTestAsset();
     CredentialVerificationResult vr = new CredentialVerificationResult(
         Instant.now(), AssetStatus.ACTIVE.getValue(), TEST_ISSUER, Instant.now(), ASSET_ID,
+<<<<<<< merge-to-upstream/cleanup-credential-verification-strategy
+        List.of(), List.of(), null, null);
+=======
         List.of(), List.of(), "", "");
+>>>>>>> main
     assetStore.storeCredential(asset, vr);
 
     doThrow(new RuntimeException("forced listener failure"))

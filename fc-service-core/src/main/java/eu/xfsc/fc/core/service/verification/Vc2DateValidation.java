@@ -2,50 +2,31 @@ package eu.xfsc.fc.core.service.verification;
 
 import com.danubetech.verifiablecredentials.VerifiableCredential;
 import eu.xfsc.fc.core.exception.ClientException;
-import eu.xfsc.fc.core.pojo.ContentAccessor;
+
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 /**
- * VC 2.0 pre-processing strategy.
+ * Validates VC 2.0 date fields: {@code validFrom} (required, must be in the past) and
+ * {@code validUntil} (optional, must be in the future if present).
  *
- * <p>Delegates to {@link JwtContentPreprocessor#unwrap(ContentAccessor)} to convert
- * JWT-wrapped VC 2.0 / VP 2.0 payloads to JSON-LD before the main verification
- * pipeline processes them. Non-JWT payloads are returned unchanged by {@code unwrap()}.
+ * <p>Stateless utility — there is only one credential-data-model version this catalogue
+ * accepts (VC 2.0), so version-dispatch was collapsed into a static call.
  */
-@Component
-@RequiredArgsConstructor
-public class Vc2Processor implements VersionedCredentialProcessor {
+final class Vc2DateValidation {
 
-  private final JwtContentPreprocessor jwtPreprocessor;
-
-  /**
-   * Unwraps a JWT-wrapped VC 2.0 or VP 2.0 payload to JSON-LD.
-   *
-   * <p>Delegates to {@link JwtContentPreprocessor#unwrap(ContentAccessor)}.
-   * If the payload is not JWT-wrapped, it is returned unchanged.
-   *
-   * @param payload the incoming credential content
-   * @return JWT-unwrapped JSON-LD content, or the original content if not JWT-wrapped
-   */
-  @Override
-  public ContentAccessor preProcess(ContentAccessor payload) {
-    return jwtPreprocessor.unwrap(payload);
+  private Vc2DateValidation() {
+    // utility class
   }
 
   /**
-   * Validates VC 2.0 date fields: {@code validFrom} (required, must be in the past)
-   * and {@code validUntil} (optional, must be in the future if present).
-   *
    * @param credential the credential to validate
-   * @param idx the index of this credential within its presentation
-   * @return error string; empty if valid
+   * @param idx        the index of this credential within its presentation (0 for standalone VCs)
+   * @return an error string (potentially multi-line) describing any violations;
+   * empty string if all date fields are valid
    * @throws ClientException if a date field value cannot be parsed as an ISO-8601 instant
    */
-  @Override
-  public String validateDates(VerifiableCredential credential, int idx) {
+  static String validate(VerifiableCredential credential, int idx) {
     StringBuilder sb = new StringBuilder();
     String sep = System.lineSeparator();
     Instant now = Instant.now();
