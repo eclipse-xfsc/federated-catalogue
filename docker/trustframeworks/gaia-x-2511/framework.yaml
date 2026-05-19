@@ -1,9 +1,17 @@
-# Filesystem overlay for the classpath gaia-x-2511 bundle.
+# Filesystem overlay for the active Gaia-X compliance bundle (release-tagged
+# directory name follows the classpath bundle id; rename alongside future Gaia-X
+# releases).
 # Mounted at /app/trustframeworks-override by docker-compose.strict.yml.
 # Only diffs from the classpath bundle live here; everything else is inherited.
 #
 # Redirects trust-anchor resolution from the public Gaia-X Lab registry to the
 # internal did-server nginx mock (see docker/did-server/).
+#
+# service_url is inherited from the classpath bundle (live GXDCH). To target a
+# different GXDCH endpoint for a given stage (Lab-GXDCH, internal mirror), ship
+# a stage-specific overlay that hardcodes service_url here. The local-dev /
+# BDD WireMock path is covered by the separate mock-2026 family overlay and
+# does not require switching the Gaia-X endpoint.
 id: gaia-x-2511
 properties:
   trust_anchor_url: "https://did-server/api/trustAnchor/chain/file"
