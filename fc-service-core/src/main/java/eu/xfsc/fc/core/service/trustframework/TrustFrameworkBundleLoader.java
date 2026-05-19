@@ -42,7 +42,7 @@ public class TrustFrameworkBundleLoader {
   private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
   };
   private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder()
-      .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+      .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
       .build();
 
   private final String overridePath;
@@ -95,54 +95,59 @@ public class TrustFrameworkBundleLoader {
     } else {
       log.info("Loaded {} trust-framework bundle(s) from classpath", classpathCount);
     }
+    applyFilesystemOverrides(resolver, byId, classpathCount);
+    return new ArrayList<>(byId.values());
+  }
 
+  private void applyFilesystemOverrides(PathMatchingResourcePatternResolver resolver,
+                                        LinkedHashMap<String, TrustFrameworkBundle> byId, int classpathCount)
+      throws IOException {
+    if (overridePath == null || overridePath.isBlank()) {
+      return;
+    }
+    var overrideDir = new File(overridePath);
+    if (!overrideDir.exists() || !overrideDir.isDirectory()) {
+      log.warn("Trust-framework override path '{}' does not exist or is not a directory — skipping", overridePath);
+      return;
+    }
+    var pattern = String.format(FILESYSTEM_BUNDLE_PATTERN, overridePath);
+    Resource[] fsYamls = resolver.getResources(pattern);
     int overlayCount = 0;
     int addedCount = 0;
-    if (overridePath != null && !overridePath.isBlank()) {
-      var overrideDir = new File(overridePath);
-      if (!overrideDir.exists() || !overrideDir.isDirectory()) {
-        log.warn("Trust-framework override path '{}' does not exist or is not a directory — skipping", overridePath);
-      } else {
-        var pattern = String.format(FILESYSTEM_BUNDLE_PATTERN, overridePath);
-        Resource[] fsYamls = resolver.getResources(pattern);
-        for (Resource yaml : fsYamls) {
-          try {
-            Map<String, Object> fsMap;
-            try (var stream = yaml.getInputStream()) {
-              fsMap = YAML_MAPPER.readValue(stream, MAP_TYPE);
-            }
-            Object rawId = fsMap.get("id");
-            if (rawId == null || rawId.toString().isBlank()) {
-              log.warn("Skipping override at '{}' — missing 'id' field", yaml.getDescription());
-              continue;
-            }
-            String id = rawId.toString();
-            TrustFrameworkBundle existing = byId.get(id);
-            if (existing != null) {
-              Map<String, Object> baseMap = YAML_MAPPER.convertValue(existing.config(), MAP_TYPE);
-              Map<String, Object> merged = deepMerge(baseMap, fsMap);
-              FrameworkBundleConfig mergedConfig = YAML_MAPPER.convertValue(merged, FrameworkBundleConfig.class);
-              var fsOntology = loadSibling(yaml, "ontology.ttl");
-              var fsShapes = loadSibling(yaml, "shapes.ttl");
-              var ontology = fsOntology != null ? fsOntology : existing.ontology();
-              var shapes = fsShapes != null ? fsShapes : existing.shapes();
-              byId.put(id, new TrustFrameworkBundle(mergedConfig, ontology, shapes));
-              overlayCount++;
-            } else {
-              var bundle = loadBundle(yaml);
-              byId.put(bundle.config().id(), bundle);
-              addedCount++;
-            }
-          } catch (Exception e) {
-            log.warn("Skipping override at '{}' — failed: {}", yaml.getDescription(), e.getMessage());
-          }
+    for (Resource yaml : fsYamls) {
+      try {
+        Map<String, Object> fsMap;
+        try (var stream = yaml.getInputStream()) {
+          fsMap = YAML_MAPPER.readValue(stream, MAP_TYPE);
         }
-        log.info("Trust-framework bundles loaded — classpath={}, overlay={}, added={}, total={}, overridePath={}",
-            classpathCount, overlayCount, addedCount, byId.size(), overridePath);
+        Object rawId = fsMap.get("id");
+        if (rawId == null || rawId.toString().isBlank()) {
+          log.warn("Skipping override at '{}' — missing 'id' field", yaml.getDescription());
+          continue;
+        }
+        String id = rawId.toString();
+        TrustFrameworkBundle existing = byId.get(id);
+        if (existing != null) {
+          Map<String, Object> baseMap = YAML_MAPPER.convertValue(existing.config(), MAP_TYPE);
+          Map<String, Object> merged = deepMerge(baseMap, fsMap);
+          FrameworkBundleConfig mergedConfig = YAML_MAPPER.convertValue(merged, FrameworkBundleConfig.class);
+          var fsOntology = loadSibling(yaml, "ontology.ttl");
+          var fsShapes = loadSibling(yaml, "shapes.ttl");
+          var ontology = fsOntology != null ? fsOntology : existing.ontology();
+          var shapes = fsShapes != null ? fsShapes : existing.shapes();
+          byId.put(id, new TrustFrameworkBundle(mergedConfig, ontology, shapes));
+          overlayCount++;
+        } else {
+          var bundle = loadBundle(yaml);
+          byId.put(bundle.config().id(), bundle);
+          addedCount++;
+        }
+      } catch (Exception e) {
+        log.warn("Skipping override at '{}' — failed: {}", yaml.getDescription(), e.getMessage());
       }
     }
-
-    return new ArrayList<>(byId.values());
+    log.info("Trust-framework bundles loaded — classpath={}, overlay={}, added={}, total={}, overridePath={}",
+        classpathCount, overlayCount, addedCount, byId.size(), overridePath);
   }
 
   /**
