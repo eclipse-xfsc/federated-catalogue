@@ -1,0 +1,24 @@
+# Mock Trust Framework — filesystem override bundle
+#
+# Overrides service_url to point at the compliance-mock WireMock container
+# on the gaia-x Docker network.  Loaded via the filesystem override mechanism:
+# the directory containing this bundle is mounted at the path configured by
+# FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH in docker-compose.strict.yml.
+#
+# For BDD tests the WireMock admin API is reachable from the host at
+# http://localhost:8089 (set CAT_WIREMOCK_HOST accordingly in env.sh).
+
+id: mock-2026
+family: mock
+namespace: "https://example.com/mock/2026#"
+validation_type: shacl
+
+roles:
+  MockParticipant:
+    additional_roots: [ ]
+    types: [ ]
+
+properties:
+  client_type: gxdch-loire
+  api_version: loire
+  service_url: "http://compliance-mock:8080"

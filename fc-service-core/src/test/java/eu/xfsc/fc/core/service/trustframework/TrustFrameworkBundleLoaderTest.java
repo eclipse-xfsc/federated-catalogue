@@ -16,9 +16,12 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 
@@ -162,6 +165,94 @@ class TrustFrameworkBundleLoaderTest {
     assertThatThrownBy(() -> loader.loadBundle(yamlResource))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("id");
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Filesystem override tests (load())
+  // ──────────────────────────────────────────────────────────────────
+
+  private static final String CLASSPATH_BUNDLE_ID = "gaia-x-2511";
+  private static final String OVERRIDE_TRUST_ANCHOR_URL = "https://override.example.com/trustanchor";
+  private static final String NEW_BUNDLE_ID = "custom-framework-test";
+
+  @Test
+  void load_overridePathBlank_returnsClasspathBundlesOnly() throws IOException {
+    var loaderNoOverride = new TrustFrameworkBundleLoader("");
+
+    var bundles = loaderNoOverride.load();
+
+    assertThat(bundles)
+        .as("blank override path must return classpath bundles unchanged")
+        .anyMatch(b -> CLASSPATH_BUNDLE_ID.equals(b.config().id()));
+    assertThat(bundles)
+        .as("no extra bundles should be injected when override path is blank")
+        .noneMatch(b -> NEW_BUNDLE_ID.equals(b.config().id()));
+  }
+
+  @Test
+  void load_overridePathPointsToBundleWithSameId_overridesClasspathBundle(@TempDir Path tempDir) throws IOException {
+    String overrideYaml = "id: " + CLASSPATH_BUNDLE_ID + "\n"
+        + "family: gaia-x\n"
+        + "namespace: \"https://w3id.org/gaia-x/2511#\"\n"
+        + "validation_type: shacl\n"
+        + "properties:\n"
+        + "  trust_anchor_url: \"" + OVERRIDE_TRUST_ANCHOR_URL + "\"\n";
+    Path bundleDir = tempDir.resolve(CLASSPATH_BUNDLE_ID);
+    Files.createDirectories(bundleDir);
+    Files.writeString(bundleDir.resolve("framework.yaml"), overrideYaml);
+
+    var loaderWithOverride = new TrustFrameworkBundleLoader(tempDir.toString());
+
+    var bundles = loaderWithOverride.load();
+
+    var overridden = bundles.stream()
+        .filter(b -> CLASSPATH_BUNDLE_ID.equals(b.config().id()))
+        .findFirst();
+    assertThat(overridden)
+        .as("bundle with id '" + CLASSPATH_BUNDLE_ID + "' must be present after override")
+        .isPresent();
+    assertThat(overridden.get().config().properties().get("trust_anchor_url"))
+        .as("trust_anchor_url must match the filesystem override, not the classpath default")
+        .isEqualTo(OVERRIDE_TRUST_ANCHOR_URL);
+  }
+
+  @Test
+  void load_overridePathPointsToBundleWithNewId_addsBundle(@TempDir Path tempDir) throws IOException {
+    String newBundleYaml = "id: " + NEW_BUNDLE_ID + "\n"
+        + "family: custom\n"
+        + "namespace: \"https://example.com/custom#\"\n"
+        + "validation_type: shacl\n";
+    Path bundleDir = tempDir.resolve(NEW_BUNDLE_ID);
+    Files.createDirectories(bundleDir);
+    Files.writeString(bundleDir.resolve("framework.yaml"), newBundleYaml);
+
+    var loaderWithOverride = new TrustFrameworkBundleLoader(tempDir.toString());
+
+    var bundles = loaderWithOverride.load();
+
+    assertThat(bundles)
+        .as("new bundle id must appear in the returned list")
+        .anyMatch(b -> NEW_BUNDLE_ID.equals(b.config().id()));
+    assertThat(bundles.stream().filter(b -> NEW_BUNDLE_ID.equals(b.config().id())).count())
+        .as("new bundle must appear exactly once")
+        .isEqualTo(1);
+  }
+
+  @Test
+  void load_overridePathDoesNotExist_logsWarningAndReturnsClasspathOnly() throws IOException {
+    var logs = startCapturingLogs(TrustFrameworkBundleLoader.class);
+    String nonExistentPath = "/tmp/nonexistent-trust-override-" + System.nanoTime();
+    var loaderBadPath = new TrustFrameworkBundleLoader(nonExistentPath);
+
+    var bundles = loaderBadPath.load();
+
+    assertThat(bundles)
+        .as("classpath bundles must still be returned when override path does not exist")
+        .anyMatch(b -> CLASSPATH_BUNDLE_ID.equals(b.config().id()));
+    assertThat(logs.list)
+        .as("a WARN must be logged when the override directory does not exist")
+        .anyMatch(e -> e.getLevel() == Level.WARN
+            && e.getFormattedMessage().contains(nonExistentPath));
   }
 
   // ──────────────────────────────────────────────────────────────────
