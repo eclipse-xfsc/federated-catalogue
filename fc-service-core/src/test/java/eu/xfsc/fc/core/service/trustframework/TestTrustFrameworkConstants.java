@@ -34,11 +34,6 @@ class TestTrustFrameworkConstants {
    */
   static final int TIMEOUT_SECONDS = 30;
 
-  /**
-   * Property key for the trust-anchor URL in the gaia-x-2511 bundle properties map.
-   */
-  static final String TRUST_ANCHOR_URL_PROP = "trust_anchor_url";
-
   private TestTrustFrameworkConstants() {
   }
 }

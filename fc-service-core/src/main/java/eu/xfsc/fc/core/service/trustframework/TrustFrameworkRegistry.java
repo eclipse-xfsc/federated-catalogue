@@ -64,6 +64,7 @@ public class TrustFrameworkRegistry {
   public static final String SERVICE_URL = "service_url";
   public static final String API_VERSION = "api_version";
   public static final String TIMEOUT_SECONDS = "timeout_seconds";
+  public static final String TRUST_ANCHOR_URL = "trust_anchor_url";
 
   private final Map<String, ResolvedRole> typeIndex;
   private final Map<String, TrustFrameworkBundle> bundleIndex;

@@ -39,11 +39,7 @@ class TrustFrameworkStartupLoggerTest {
   void onApplicationEvent_gaiaXFamilyDisabled_logsDiscoverabilityHintWithProfileAndPaths(
       CapturedOutput output) {
 
-    FrameworkBundleConfig config = new FrameworkBundleConfig(
-        "gaia-x-2511", "gaia-x", "https://w3id.org/gaia-x/2511#",
-        ValidationType.SHACL, Map.of(), Map.of());
-    TrustFrameworkBundle bundle = new TrustFrameworkBundle(config, null, null);
-    when(registry.getAllBundles()).thenReturn(List.of(bundle));
+    when(registry.getAllBundles()).thenReturn(singleGaiaXBundle());
     when(trustFrameworkService.isEnabled("gaia-x")).thenReturn(false);
     TrustFrameworkStartupLogger logger =
         new TrustFrameworkStartupLogger(registry, trustFrameworkService);
@@ -60,11 +56,7 @@ class TrustFrameworkStartupLoggerTest {
   void onApplicationEvent_gaiaXFamilyEnabled_doesNotLogDiscoverabilityHint(
       CapturedOutput output) {
 
-    FrameworkBundleConfig config = new FrameworkBundleConfig(
-        "gaia-x-2511", "gaia-x", "https://w3id.org/gaia-x/2511#",
-        ValidationType.SHACL, Map.of(), Map.of());
-    TrustFrameworkBundle bundle = new TrustFrameworkBundle(config, null, null);
-    when(registry.getAllBundles()).thenReturn(List.of(bundle));
+    when(registry.getAllBundles()).thenReturn(singleGaiaXBundle());
     when(trustFrameworkService.isEnabled("gaia-x")).thenReturn(true);
     TrustFrameworkStartupLogger logger =
         new TrustFrameworkStartupLogger(registry, trustFrameworkService);
@@ -85,5 +77,12 @@ class TrustFrameworkStartupLoggerTest {
     logger.onApplicationEvent(event);
 
     assertThat(output.getAll()).doesNotContain("trust-framework");
+  }
+
+  private List<TrustFrameworkBundle> singleGaiaXBundle() {
+    FrameworkBundleConfig config = new FrameworkBundleConfig(
+        "gaia-x-2511", "gaia-x", "https://w3id.org/gaia-x/2511#",
+        ValidationType.SHACL, Map.of(), Map.of());
+    return List.of(new TrustFrameworkBundle(config, null, null));
   }
 }

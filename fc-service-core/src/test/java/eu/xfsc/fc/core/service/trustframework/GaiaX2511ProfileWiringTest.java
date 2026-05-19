@@ -5,7 +5,7 @@ import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.GXDCH_LOIRE_SERVICE_URL;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.PROFILE_GAIA_X_2511;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TIMEOUT_SECONDS;
-import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TRUST_ANCHOR_URL_PROP;
+import static eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry.TRUST_ANCHOR_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import eu.xfsc.fc.core.service.trustframework.compliance.TrustFrameworkProfileConfig;
@@ -73,7 +73,7 @@ class GaiaX2511ProfileWiringTest {
   @Test
   void getBundle_forGaiaX2511_trustAnchorUrlIsNonBlank() {
     String trustAnchorUrl = registry.getBundle(PROFILE_GAIA_X_2511)
-        .map(b -> b.config().properties().get(TRUST_ANCHOR_URL_PROP))
+        .map(b -> b.config().properties().get(TRUST_ANCHOR_URL))
         .orElseThrow(() -> new AssertionError("No bundle registered for " + PROFILE_GAIA_X_2511));
 
     assertThat(trustAnchorUrl)
