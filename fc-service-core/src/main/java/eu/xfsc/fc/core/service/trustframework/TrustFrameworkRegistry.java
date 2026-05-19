@@ -134,6 +134,16 @@ public class TrustFrameworkRegistry {
   }
 
   /**
+   * Returns every bundle that was registered at construction time, whether active or deferred.
+   * Modifications to the returned collection will not affect the registry's internal state.
+   *
+   * @return immutable collection of all registered bundles; never null
+   */
+  public Collection<TrustFrameworkBundle> getAllBundles() {
+    return List.copyOf(bundleIndex.values());
+  }
+
+  /**
    * Returns only the bundles that are currently active (i.e. their validation engine is wired and
    * their types participate in role resolution).
    * Modifications to the returned collection will not affect the registry's internal state.
