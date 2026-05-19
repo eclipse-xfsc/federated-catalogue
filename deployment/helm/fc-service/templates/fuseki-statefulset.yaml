@@ -31,6 +31,10 @@ spec:
           value: {{ .Values.fuseki.dataset | quote }}
         - name: JVM_ARGS
           value: {{ .Values.fuseki.jvmArgs | quote }}
+        - name: ENABLE_UPDATE
+          value: "true"
+        - name: ENABLE_DATA_WRITE
+          value: "true"
         volumeMounts:
         - name: fuseki-data
           mountPath: /fuseki
