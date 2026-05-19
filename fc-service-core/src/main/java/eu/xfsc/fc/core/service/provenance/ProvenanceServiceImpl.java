@@ -246,7 +246,7 @@ public class ProvenanceServiceImpl implements ProvenanceService {
     Instant now = Instant.now();
     try {
       ContentAccessorDirect content = new ContentAccessorDirect(entity.getCredentialContent());
-      CredentialVerificationResult result = verificationService.verifyCredential(content);
+      CredentialVerificationResult result = verificationService.verifyCredential(content, false);
 
       return new ProvenanceVerificationResult()
           .isValid(true)
