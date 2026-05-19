@@ -16,5 +16,5 @@ roles:
 
 properties:
   client_type: gxdch-loire
-  api_version: loire
+  api_version: "v2"
   service_url: "http://localhost"
