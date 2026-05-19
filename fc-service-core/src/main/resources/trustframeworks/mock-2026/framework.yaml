@@ -1,0 +1,22 @@
+# Mock Trust Framework bundle — for local development and integration testing only
+#
+# This bundle is intentionally minimal: no ontology, no SHACL shapes.
+# validation_type is "shacl" so the bundle is indexed by TrustFrameworkRegistry,
+# but there are no shape files to validate against.
+#
+# serviceUrl should be overridden per environment (e.g. WireMock container in compose).
+
+id: mock-2026
+family: mock
+namespace: "https://example.com/mock/2026#"
+validation_type: shacl
+
+roles:
+  MockParticipant:
+    additional_roots: [ ]
+    types: [ ]
+
+properties:
+  client_type: gxdch-loire
+  api_version: loire
+  service_url: "http://localhost"
