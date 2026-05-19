@@ -1,24 +1,13 @@
-# Mock Trust Framework — filesystem override bundle
+# Filesystem overlay for the classpath mock-2026 bundle.
+# Mounted at /app/trustframeworks-override by docker-compose.strict.yml.
 #
-# Overrides service_url to point at the compliance-mock WireMock container
-# on the gaia-x Docker network.  Loaded via the filesystem override mechanism:
-# the directory containing this bundle is mounted at the path configured by
-# FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH in docker-compose.strict.yml.
+# Purpose: mock-2026 — exercises the catalogue's "call a GXDCH compliance service"
+# code path against a WireMock stub instead of a real GXDCH operator.
+# mock-2026 stays as the permanent local-dev / BDD compliance-stub path
+# (driven by @uses.compliance-mock scenarios in cat-integration-tests).
 #
-# For BDD tests the WireMock admin API is reachable from the host at
-# http://localhost:8089 (set CAT_WIREMOCK_HOST accordingly in env.sh).
-
+# Redirects service_url from the classpath placeholder ("http://localhost")
+# to the compliance-mock WireMock container on the gaia-x Docker network.
 id: mock-2026
-family: mock
-namespace: "https://example.com/mock/2026#"
-validation_type: shacl
-
-roles:
-  MockParticipant:
-    additional_roots: [ ]
-    types: [ ]
-
 properties:
-  client_type: gxdch-loire
-  api_version: loire
   service_url: "http://compliance-mock:8080"
