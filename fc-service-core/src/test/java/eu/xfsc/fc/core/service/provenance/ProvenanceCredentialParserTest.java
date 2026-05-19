@@ -143,7 +143,7 @@ class ProvenanceCredentialParserTest {
   @Test
   void parseAndValidateVc_bypassesTrustFrameworkRoleCheck() {
     // Provenance VCs intentionally lack Participant/ServiceOffering/Resource type — the
-    // role-resolution guard added in CAT-FR-CO-01 must be opted out on this path.
+    // role-resolution guard must be opted out on this path.
     String rawVc = vcWith("prov:wasGeneratedBy", OBJECT_VALUE);
     when(verificationService.verifyCredential(ArgumentMatchers.any(ContentAccessor.class), ArgumentMatchers.eq(false)))
         .thenReturn(mock(CredentialVerificationResult.class));
