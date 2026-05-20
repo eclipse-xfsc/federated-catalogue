@@ -14,14 +14,21 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Revalidates all active assets against the composite schema.
+ *
+ * <p>The background sweep is gated by the SHACL module toggle: when SHACL is
+ * administratively disabled, {@link #handleTask} skips per-asset validation rather than
+ * revoke previously-conforming assets. When the admin flips SHACL back on, the toggle
+ * write path calls {@link #startValidating} to reset every chunk's {@code lastcheck} time
+ * so the next manager cycle re-sweeps assets that were skipped while SHACL was off.
  */
 @Slf4j
+@RequiredArgsConstructor
 public class RevalidationServiceImpl implements RevalidationService {
 
   private static final String REVALIDATOR_THREAD_NAME = "revalidator";
@@ -51,14 +58,10 @@ public class RevalidationServiceImpl implements RevalidationService {
   @Value("${federated-catalogue.instance-count:3}")
   private int instanceCount;
 
-  @Autowired
-  private RevalidatorChunksDao dao;
-
-  @Autowired
-  private AssetStore assetStorePublisher;
-
-  @Autowired
-  private SchemaValidationService schemaValidationService;
+  private final RevalidatorChunksDao dao;
+  private final AssetStore assetStorePublisher;
+  private final SchemaValidationService schemaValidationService;
+  private final SchemaModuleConfigService schemaModuleConfigService;
 
   private BlockingQueue<String> taskQueue;
   private ExecutorService executorService;
@@ -93,7 +96,17 @@ public class RevalidationServiceImpl implements RevalidationService {
     this.batchSize = batchSize;
   }
 
-  private void handleTask(final String assetHash) {
+  // Package-private for unit testing the SHACL-toggle gate without spinning up the
+  // executor / manager thread pair. Worker threads call this via method-reference.
+  void handleTask(final String assetHash) {
+    if (!schemaModuleConfigService.isModuleEnabled(SchemaModuleType.SHACL)) {
+      // SHACL is administratively disabled. Skip this task — do not revoke. The chunk's
+      // lastcheck advance at pickup leaves the asset recorded as "checked"; the admin
+      // write path that re-enables SHACL calls startValidating() to reset chunk times
+      // and re-sweep assets that were skipped while SHACL was off.
+      log.debug("handleTask; SHACL module disabled — skipping asset {}", assetHash);
+      return;
+    }
     ContentAccessor content = assetStorePublisher.getFileByHash(assetHash);
     try {
       schemaValidationService.validateCredentialAgainstCompositeSchema(content);
