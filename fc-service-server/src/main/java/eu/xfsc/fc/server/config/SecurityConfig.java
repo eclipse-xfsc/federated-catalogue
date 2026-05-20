@@ -135,7 +135,11 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.PUT, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
 
           // Schema Validation Admin APIs
-          .requestMatchers(HttpMethod.GET, "/admin/schema-validation").hasRole(ADMIN_ALL)
+          // Both GET wildcards are load-bearing: any future GET /admin/schema-validation/<x>
+          // route is auto-gated to ADMIN_ALL by the `/**` matcher below. If a sub-path should
+          // ever be broader, add a more specific matcher ABOVE this line — anyRequest()
+          // .authenticated() further down does NOT enforce roles, only login status.
+          .requestMatchers(HttpMethod.GET, "/admin/schema-validation", "/admin/schema-validation/**").hasRole(ADMIN_ALL)
           .requestMatchers(HttpMethod.PUT, "/admin/schema-validation/**").hasRole(ADMIN_ALL)
 
           // Graph Database Admin APIs

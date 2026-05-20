@@ -148,8 +148,8 @@ public class AssetValidationServiceImpl implements AssetValidationService {
    *
    * @throws ClientException if no registered strategy accepts a schema type,
    *     if a non-SHACL strategy receives more than one schema,
-   *     or if the matched strategy does not apply to the asset's format
-   * @throws VerificationException if the matched strategy's module is disabled
+   *     if the matched strategy does not apply to the asset's format,
+   *     or if the matched strategy's module is disabled ({@code module_disabled:<MODULE>})
    */
   private List<StrategyJob> planExplicit(AssetMetadata asset, List<String> schemaIds) {
     Map<ValidationStrategy, List<SchemaRecord>> byStrategy = new LinkedHashMap<>();
@@ -194,7 +194,7 @@ public class AssetValidationServiceImpl implements AssetValidationService {
    *
    * @throws NotFoundException if at least one applicable, enabled strategy has no stored schemas
    *     (applies to non-RDF assets with a single applicable schema type)
-   * @throws VerificationException if no strategy is both enabled and applicable
+   * @throws ClientException if no strategy is both enabled and applicable
    */
   private List<StrategyJob> planAllApplicable(AssetMetadata asset) {
     List<StrategyJob> jobs = new ArrayList<>();
@@ -229,7 +229,7 @@ public class AssetValidationServiceImpl implements AssetValidationService {
             "No schema found for validation of asset " + asset.getId()
                 + ". Ensure schemas of the applicable type are stored.");
       }
-      throw new VerificationException(
+      throw new ClientException(
           "No validation module is enabled or applicable for asset " + asset.getId()
               + ". Enable at least one applicable module via admin settings (SHACL, "
               + SchemaModuleType.JSON_SCHEMA + ", or " + SchemaModuleType.XML_SCHEMA + ").");
@@ -324,7 +324,7 @@ public class AssetValidationServiceImpl implements AssetValidationService {
 
   private void requireModuleEnabled(String moduleType) {
     if (!moduleConfig.isModuleEnabled(moduleType)) {
-      throw new VerificationException("Validation module " + moduleType + " is disabled");
+      throw new ClientException(SchemaModuleConfigService.MODULE_DISABLED_PREFIX + moduleType);
     }
   }
 

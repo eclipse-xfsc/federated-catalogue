@@ -19,6 +19,15 @@ import lombok.RequiredArgsConstructor;
 public class SchemaModuleConfigService {
 
   public static final String CACHE_NAME = "schemaModuleConfig";
+
+  /**
+   * Error-body prefix returned by every gate that rejects a request because a schema module
+   * is administratively disabled. Concatenated with a {@link SchemaModuleType} constant —
+   * e.g. {@code module_disabled:SHACL}. The OpenAPI spec documents this exact prefix for
+   * 400 responses on the validation and verification endpoints.
+   */
+  public static final String MODULE_DISABLED_PREFIX = "module_disabled:";
+
   private static final String CONFIG_PREFIX = "schema.module.";
   private static final String CONFIG_SUFFIX = ".enabled";
 
@@ -40,6 +49,18 @@ public class SchemaModuleConfigService {
 
   /**
    * Evicts all cached module state. Call after any schema module config write.
+   *
+   * <p>The eviction is intentionally coarse ({@code allEntries = true}): a write that
+   * touches a single module key invalidates every cached module entry, not just the one
+   * that changed. This is the right trade-off here because module writes are admin
+   * operations (rare, well-defined latency) while module reads are on every credential
+   * verification (the hot path). Per-key eviction would shave a sub-millisecond
+   * re-read off the next request for the three unaffected modules, at the cost of a
+   * subtle bug class where eviction key derivation drifts from the read key.</p>
+   *
+   * <p>If module writes ever become frequent enough that re-warming the cache four
+   * times per write becomes measurable, narrow the eviction with
+   * {@code key = "#moduleType"} on the write methods that pass the type through.</p>
    */
   @CacheEvict(value = CACHE_NAME, allEntries = true)
   public void evictCache() {

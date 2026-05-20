@@ -1,6 +1,7 @@
 package eu.xfsc.fc.server.controller;
 
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -113,6 +114,35 @@ public class SchemaValidationAdminControllerTest {
             .put("/admin/schema-validation/modules/INVALID")
             .param("enabled", "true")
             .with(csrf()))
-        .andExpect(status().isBadRequest());
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value(containsString("SHACL")))
+        .andExpect(jsonPath("$.message").value(containsString("JSON_SCHEMA")))
+        .andExpect(jsonPath("$.message").value(containsString("XML_SCHEMA")))
+        .andExpect(jsonPath("$.message").value(containsString("OWL")));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void getOntologyImpact_withAdminRole_returnsItemsArray() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/schema-validation/ontologies")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.items").exists())
+        .andExpect(jsonPath("$.items").isArray());
+  }
+
+  @Test
+  @WithMockUser
+  void getOntologyImpact_withoutAdminRole_returns403() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/schema-validation/ontologies")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void getOntologyImpact_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/schema-validation/ontologies")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isUnauthorized());
   }
 }
