@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="nowak" id="2026-05-20-trust-framework-role-states">
+        <comment>
+            Per-role enabled/disabled state for trust framework bundles.
+            Absence of a row means enabled=true (default). No seed rows — the existing
+            gaia-x seed row in trust_frameworks is unaffected; all its roles remain enabled
+            by default without needing explicit rows here.
+        </comment>
+
+        <createTable tableName="trust_framework_role_states">
+            <column name="framework_id" type="varchar(255)">
+                <constraints primaryKey="true" primaryKeyName="pk_tf_role_states" nullable="false"/>
+            </column>
+            <column name="role_name" type="varchar(255)">
+                <constraints primaryKey="true" primaryKeyName="pk_tf_role_states" nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>
