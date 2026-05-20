@@ -82,15 +82,26 @@ public class VerificationServiceImpl implements VerificationService {
    */
   @Override
   public CredentialVerificationResult verifyCredential(ContentAccessor payload) throws VerificationException {
-    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
+    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, true);
+  }
+
+  @Override
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean requireRole)
+      throws VerificationException {
+    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, requireRole);
   }
 
   @Override
   public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException {
+    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures, true);
+  }
+
+  private CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
+		  boolean verifyVPSignatures, boolean verifyVCSignatures, boolean requireRole) throws VerificationException {
     CredentialVerificationResult result = resolveStrategy(payload).ingest(payload,
         verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
-    if (!(result instanceof NonCredentialVerificationResult) && result.getRole() == null) {
+    if (requireRole && !(result instanceof NonCredentialVerificationResult) && result.getRole() == null) {
       String bundleInfo = getActiveTrustFrameworkBundleInfos();
       throw new ClientException(
           "Credential type is not resolvable in any active trust-framework bundle."

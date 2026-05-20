@@ -52,7 +52,9 @@ public class ProvenanceCredentialParser {
   public CredentialVerificationResult parseAndValidateVc(String rawVc, String format) {
     try {
       ContentAccessorDirect content = new ContentAccessorDirect(rawVc, format);
-      return verificationService.verifyCredential(content);
+      // Provenance credentials carry PROV-O predicates instead of trust-framework roles
+      // (Participant/ServiceOffering/Resource), so role resolution must be bypassed.
+      return verificationService.verifyCredential(content, false);
     } catch (VerificationException ex) {
       throw new ClientException("Invalid provenance credential: " + ex.getMessage(), ex);
     }

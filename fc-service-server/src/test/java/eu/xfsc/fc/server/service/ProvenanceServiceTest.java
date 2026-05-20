@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
@@ -145,7 +146,7 @@ class ProvenanceServiceTest {
 
   @Test
   void add_validVc_storesPersistentRecord() {
-    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    when(verificationService.verifyCredential(any(), eq(false))).thenReturn(successResult(ASSET_IRI, ISSUER));
 
     ProvenanceCredential result = provenanceService.add(ASSET_ID, null, VALID_VC, null);
 
@@ -158,7 +159,7 @@ class ProvenanceServiceTest {
 
   @Test
   void add_validVc_storesProvOTriplesInGraph() {
-    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    when(verificationService.verifyCredential(any(), eq(false))).thenReturn(successResult(ASSET_IRI, ISSUER));
 
     provenanceService.add(ASSET_ID, null, VALID_VC, null);
 
@@ -176,7 +177,7 @@ class ProvenanceServiceTest {
 
   @Test
   void add_wrongSubjectId_throwsClientException() {
-    when(verificationService.verifyCredential(any()))
+    when(verificationService.verifyCredential(any(), eq(false)))
         .thenReturn(successResult("did:web:wrong:subject", ISSUER));
 
     assertThrows(ClientException.class, () ->
@@ -185,7 +186,7 @@ class ProvenanceServiceTest {
 
   @Test
   void add_noPredicate_throwsClientException() {
-    when(verificationService.verifyCredential(any()))
+    when(verificationService.verifyCredential(any(), eq(false)))
         .thenReturn(successResult(ASSET_IRI, ISSUER));
 
     assertThrows(ClientException.class, () ->
@@ -194,7 +195,7 @@ class ProvenanceServiceTest {
 
   @Test
   void add_duplicateCredentialId_throwsConflictException() {
-    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    when(verificationService.verifyCredential(any(), eq(false))).thenReturn(successResult(ASSET_IRI, ISSUER));
 
     provenanceService.add(ASSET_ID, null, VALID_VC, null);
 
@@ -204,7 +205,7 @@ class ProvenanceServiceTest {
 
   @Test
   void add_protectedNamespaceObject_throwsClientException() {
-    when(verificationService.verifyCredential(any()))
+    when(verificationService.verifyCredential(any(), eq(false)))
         .thenReturn(successResult(ASSET_IRI, ISSUER));
 
     assertThrows(ClientException.class, () ->
@@ -245,7 +246,7 @@ class ProvenanceServiceTest {
   @Test
   void verifyOne_validVc_returnsValidResult() {
     insertRecord(CREDENTIAL_ID, 1, ISSUED_AT);
-    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    when(verificationService.verifyCredential(any(), eq(false))).thenReturn(successResult(ASSET_IRI, ISSUER));
 
     var result = provenanceService.verifyOne(ASSET_ID, CREDENTIAL_ID);
 
@@ -271,7 +272,7 @@ class ProvenanceServiceTest {
     insertRecord("did:vc:prov-later-001", 1, laterTime);
     insertRecord("did:vc:prov-earlier-001", 1, ISSUED_AT);
 
-    when(verificationService.verifyCredential(any()))
+    when(verificationService.verifyCredential(any(), eq(false)))
         .thenReturn(successResult(ASSET_IRI, ISSUER))
         .thenThrow(new VerificationException("Signature invalid"));
 
@@ -283,7 +284,7 @@ class ProvenanceServiceTest {
 
   @Test
   void deleteByAssetId_removesRelationalRowsAndProvOTriples() {
-    when(verificationService.verifyCredential(any())).thenReturn(successResult(ASSET_IRI, ISSUER));
+    when(verificationService.verifyCredential(any(), eq(false))).thenReturn(successResult(ASSET_IRI, ISSUER));
     provenanceService.add(ASSET_ID, null, VALID_VC, null);
     assertTrue(provenanceRepository.existsByCredentialId(CREDENTIAL_ID),
         "precondition: row exists before cascade delete");
