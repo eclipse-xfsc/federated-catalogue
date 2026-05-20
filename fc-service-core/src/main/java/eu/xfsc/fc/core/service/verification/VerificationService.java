@@ -28,6 +28,22 @@ public interface VerificationService {
   CredentialVerificationResult verifyCredential(ContentAccessor payload) throws VerificationException;
 
   /**
+   * Validates the credential payload with an explicit trust-framework role requirement.
+   *
+   * <p>Use {@code requireRole = false} for credential families that intentionally do not
+   * carry a trust-framework-recognised type — e.g. provenance credentials whose
+   * {@code credentialSubject} only declares PROV-O predicates. With the default
+   * {@code requireRole = true}, an unresolvable type yields a {@link eu.xfsc.fc.core.exception.ClientException}.</p>
+   *
+   * @param payload ContentAccessor to credential which should be validated.
+   * @param requireRole whether to reject the credential when its type cannot be resolved
+   *     to a role in any active trust-framework bundle.
+   * @return a credential metadata validation result.
+   */
+  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean requireRole)
+      throws VerificationException;
+
+  /**
    * Validates the credential payload with custom verification toggles (JSON-LD format).
    *
    * @param payload ContentAccessor to credential which should be validated.

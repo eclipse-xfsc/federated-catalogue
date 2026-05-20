@@ -5,9 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.core.dao.provenance.ProvenanceType;
 import eu.xfsc.fc.core.exception.ClientException;
+import eu.xfsc.fc.core.pojo.ContentAccessor;
+import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -17,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -131,6 +138,19 @@ class ProvenanceCredentialParserTest {
         """.formatted(SUBJECT_ID);
 
     assertThrows(ClientException.class, () -> parser.extractCredentialInfo(vc));
+  }
+
+  @Test
+  void parseAndValidateVc_bypassesTrustFrameworkRoleCheck() {
+    // Provenance VCs intentionally lack Participant/ServiceOffering/Resource type — the
+    // role-resolution guard must be opted out on this path.
+    String rawVc = vcWith("prov:wasGeneratedBy", OBJECT_VALUE);
+    when(verificationService.verifyCredential(ArgumentMatchers.any(ContentAccessor.class), ArgumentMatchers.eq(false)))
+        .thenReturn(mock(CredentialVerificationResult.class));
+
+    parser.parseAndValidateVc(rawVc, "JSONLD");
+
+    verify(verificationService).verifyCredential(ArgumentMatchers.any(ContentAccessor.class), ArgumentMatchers.eq(false));
   }
 
   @Test
