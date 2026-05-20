@@ -169,6 +169,7 @@ public class TrustFrameworkService {
    * @return map of role name → effective enabled state; never null; preserves declaration order
    * @throws NotFoundException when the bundle profile ID is not registered in the registry
    */
+  @Transactional(readOnly = true)
   public Map<String, Boolean> getRoleStates(String frameworkId) {
     if (trustFrameworkRegistry.getBundle(frameworkId).isEmpty()) {
       throw new NotFoundException("Trust framework bundle not found in registry: " + frameworkId);
