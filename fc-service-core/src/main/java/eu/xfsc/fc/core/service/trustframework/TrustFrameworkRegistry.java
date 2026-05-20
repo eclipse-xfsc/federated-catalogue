@@ -178,8 +178,7 @@ public class TrustFrameworkRegistry {
    * <p>{@code compliance_path} is required in every bundle that exposes a compliance endpoint:
    * the trust-framework client family for a given client type is wire-shape-opinionated but
    * path-agnostic, so each framework declares its own endpoint path. A blank or missing value
-   * causes this method to throw, surfacing the misconfiguration at startup rather than at
-   * first compliance check.
+   * causes this method to throw with an {@link IllegalStateException}.
    *
    * <p>Other absent fields fall back to safe defaults:
    * {@code apiVersion} defaults to {@code DEFAULT_API_VERSION}, {@code timeoutSeconds} to {@code DEFAULT_TIMEOUT_SECONDS}.
