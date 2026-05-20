@@ -180,6 +180,11 @@ $(document).ready(function() {
         },
         error: function() {
           $cb.prop('checked', !enabled);
+          // Recompute the all-disabled warning after the checkbox revert so it
+          // reflects the current (reverted) state rather than the failed toggle.
+          // Reproduction: disable the last enabled role → server returns 5xx →
+          // checkbox reverts to checked but warning remained visible (stale state).
+          recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
           var $banner = $('#tfRoleErrorBanner');
           $banner.text('Failed to update role "' + roleName + '". Please try again.').show();
           clearTimeout($banner.data('hideTimer'));
