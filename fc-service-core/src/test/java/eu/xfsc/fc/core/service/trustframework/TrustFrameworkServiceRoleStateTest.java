@@ -71,9 +71,14 @@ class TrustFrameworkServiceRoleStateTest {
   @Autowired
   private TrustFrameworkRoleStateRepository roleStateRepo;
 
+  /** Family ID as stored in the {@code trust_frameworks} table (the DB row key). */
+  private static final String FAMILY_GAIA_X = "gaia-x";
+
   @AfterEach
   void cleanUp() {
     roleStateRepo.deleteAll();
+    // Restore the family to the Liquibase-seeded default (disabled) so tests are order-independent.
+    service.setEnabled(FAMILY_GAIA_X, false);
   }
 
   // ===== isRoleEnabled — default-true semantics =====
@@ -86,6 +91,8 @@ class TrustFrameworkServiceRoleStateTest {
 
   @Test
   void isRoleEnabled_afterSetFalse_returnsFalse() {
+    // Role-toggle is only effective when the bundle family is enabled.
+    service.setEnabled(FAMILY_GAIA_X, true);
     service.setRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_PARTICIPANT, false);
 
     assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_PARTICIPANT)).isFalse();
@@ -93,6 +100,7 @@ class TrustFrameworkServiceRoleStateTest {
 
   @Test
   void isRoleEnabled_afterSetTrue_returnsTrue() {
+    service.setEnabled(FAMILY_GAIA_X, true);
     service.setRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_PARTICIPANT, false);
     service.setRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_PARTICIPANT, true);
 
@@ -179,5 +187,65 @@ class TrustFrameworkServiceRoleStateTest {
     assertThat(rows.get(0).getFrameworkId()).isEqualTo(BUNDLE_GAIA_X_2511);
     assertThat(rows.get(0).getRoleName()).isEqualTo(ROLE_PARTICIPANT);
     assertThat(rows.get(0).isEnabled()).isFalse();
+  }
+
+  // ===== bundle-off dominance (AC-1 bullet 4) =====
+
+  /**
+   * When the family bundle is disabled AND the role is explicitly disabled,
+   * {@code isRoleEnabled} must return {@code true}: the role-toggle layer is bypassed
+   * because bundle-off already blocks all resolution through that bundle.
+   * The caller (ClaimValidator) will receive a bundle-disabled rejection separately;
+   * the role-toggle must not add a second rejection on top.
+   */
+  @Test
+  void isRoleEnabled_bundleDisabled_roleExplicitlyDisabled_returnsTrueBypassingRoleCheck() {
+    // DB seed has gaia-x enabled=false (Liquibase default) — no need to call setEnabled here
+    service.setRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_SERVICE_OFFERING, false);
+
+    // Bundle-off dominates: role-toggle check is bypassed → returns true
+    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_SERVICE_OFFERING)).isTrue();
+  }
+
+  /**
+   * When the family bundle is disabled and no role row exists (default-true),
+   * {@code isRoleEnabled} must still return {@code true} (bundle-off dominates).
+   */
+  @Test
+  void isRoleEnabled_bundleDisabled_noRoleRow_returnsTrueBypassingRoleCheck() {
+    // DB seed has gaia-x enabled=false — bundle is off, no role row set
+    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_PARTICIPANT)).isTrue();
+  }
+
+  /**
+   * When the family bundle is enabled and the role is explicitly disabled,
+   * {@code isRoleEnabled} must return {@code false} — normal role-toggle behavior.
+   */
+  @Test
+  void isRoleEnabled_bundleEnabled_roleDisabled_returnsFalse() {
+    service.setEnabled(FAMILY_GAIA_X, true);
+    service.setRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_SERVICE_OFFERING, false);
+
+    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_SERVICE_OFFERING)).isFalse();
+  }
+
+  /**
+   * When the family bundle is enabled and no role row exists,
+   * {@code isRoleEnabled} must return {@code true} — default-true semantics apply.
+   */
+  @Test
+  void isRoleEnabled_bundleEnabled_noRoleRow_returnsTrue() {
+    service.setEnabled(FAMILY_GAIA_X, true);
+
+    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, ROLE_PARTICIPANT)).isTrue();
+  }
+
+  /**
+   * For a framework ID that is not known to the registry,
+   * {@code isRoleEnabled} must return {@code true} — preserve existing caller semantics.
+   */
+  @Test
+  void isRoleEnabled_unknownFrameworkId_returnsTrue() {
+    assertThat(service.isRoleEnabled(UNKNOWN_BUNDLE, ROLE_PARTICIPANT)).isTrue();
   }
 }

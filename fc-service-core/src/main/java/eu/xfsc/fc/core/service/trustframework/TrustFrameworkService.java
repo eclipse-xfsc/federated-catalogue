@@ -102,15 +102,33 @@ public class TrustFrameworkService {
    * Returns true if the named role in the given bundle profile is enabled.
    * Absence of a persisted state row means the role is enabled by default.
    *
+   * <p><strong>Bundle-off dominance (AC-1 bullet 4):</strong> when the bundle's family is
+   * disabled in persistence, this method returns {@code true} regardless of the role's
+   * persisted state. The role-toggle layer has no effect while the bundle is off — rejection
+   * is handled by the bundle-disabled pathway in the caller. This prevents a double-rejection
+   * and makes role-toggle state semantically inert for disabled bundles.
+   *
    * <p>This method does not validate that the bundle or role is registered —
    * call sites that need validation should use {@link #setRoleEnabled} or
    * {@link #getRoleStates}, which both throw on unknown input.
    *
    * @param frameworkId registry bundle profile ID (e.g. {@code gaia-x-2511})
    * @param roleName    role name from the bundle (e.g. {@code Participant})
-   * @return true if enabled (including default when no row exists), false if explicitly disabled
+   * @return true if enabled (including default when no row exists, or when bundle family is
+   *         disabled), false if explicitly disabled and the bundle family is enabled
    */
+  @Transactional(readOnly = true)
   public boolean isRoleEnabled(String frameworkId, String roleName) {
+    // Bundle-off dominance: if the bundle's family is disabled, the role-toggle is bypassed.
+    // Unknown frameworkId → no bundle → no family to look up → fall through to role-state check.
+    boolean familyDisabled = trustFrameworkRegistry.getBundle(frameworkId)
+        .map(bundle -> bundle.config().family())
+        .flatMap(trustFrameworkRepository::findById)
+        .map(tf -> !tf.isEnabled())
+        .orElse(false);
+    if (familyDisabled) {
+      return true;
+    }
     return roleStateRepository.findByFrameworkIdAndRoleName(frameworkId, roleName)
         .map(TrustFrameworkRoleState::isEnabled)
         .orElse(true);
