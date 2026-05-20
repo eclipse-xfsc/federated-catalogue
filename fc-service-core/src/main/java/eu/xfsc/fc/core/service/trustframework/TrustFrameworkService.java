@@ -102,7 +102,7 @@ public class TrustFrameworkService {
    * Returns true if the named role in the given bundle profile is enabled.
    * Absence of a persisted state row means the role is enabled by default.
    *
-   * <p><strong>Bundle-off dominance (AC-1 bullet 4):</strong> when the bundle's family is
+   * <p><strong>Bundle-off dominance:</strong> when the bundle's family is
    * disabled in persistence, this method returns {@code true} regardless of the role's
    * persisted state. The role-toggle layer has no effect while the bundle is off — rejection
    * is handled by the bundle-disabled pathway in the caller. This prevents a double-rejection
@@ -152,7 +152,7 @@ public class TrustFrameworkService {
     Set<String> knownRoles = trustFrameworkRegistry.getEffectiveRoles(frameworkId);
     if (!knownRoles.contains(roleName)) {
       throw new NotFoundException(
-          "Role '" + roleName + "' not declared in bundle '" + frameworkId + "'");
+          "Role '%s' not declared in bundle '%s'".formatted(roleName, frameworkId));
     }
     var id = new TrustFrameworkRoleStateId(frameworkId, roleName);
     var state = roleStateRepository.findById(id)

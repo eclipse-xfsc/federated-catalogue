@@ -1,5 +1,10 @@
 package eu.xfsc.fc.core.service.verification;
 
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_FAMILY_GAIA_X;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_DIGITAL_SERVICE_OFFERING;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_PARTICIPANT;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_RESOURCE;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_SERVICE_OFFERING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,7 +53,7 @@ class RoleToggleResolutionTest {
 
   /** Predicate that disables only "Participant". */
   private static final BiPredicate<String, String> PARTICIPANT_DISABLED =
-      (bundleId, roleName) -> !("Participant".equals(roleName));
+      (bundleId, roleName) -> !(TFW_ROLE_PARTICIPANT.equals(roleName));
 
   private TrustFrameworkRegistry loireRegistry;
   private TrustFrameworkRegistry rootsOnlyRegistry;
@@ -69,25 +74,25 @@ class RoleToggleResolutionTest {
     streamManager = StreamManager.get().clone();
 
     Map<String, RoleConfig> loireRoles = Map.of(
-        "Participant",     new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(
-            List.of(NAMESPACE + "DigitalServiceOffering"), List.of()),
-        "Resource",        new RoleConfig(List.of(), List.of())
+        TFW_ROLE_PARTICIPANT, new RoleConfig(List.of(), List.of()),
+        TFW_ROLE_SERVICE_OFFERING, new RoleConfig(
+            List.of(NAMESPACE + TFW_ROLE_DIGITAL_SERVICE_OFFERING), List.of()),
+        TFW_ROLE_RESOURCE, new RoleConfig(List.of(), List.of())
     );
     FrameworkBundleConfig loireConfig = new FrameworkBundleConfig(
-        PROFILE_ID, "gaia-x", NAMESPACE, ValidationType.SHACL, loireRoles, Map.of());
+        PROFILE_ID, TFW_FAMILY_GAIA_X, NAMESPACE, ValidationType.SHACL, loireRoles, Map.of());
     loireRegistry = new TrustFrameworkRegistry(
         List.of(new TrustFrameworkBundle(loireConfig, gx2511Ontology, null)));
 
     // roots-only (no boot-time ontology) — forces composite-ontology slow path
     Map<String, RoleConfig> rootsOnlyRoles = Map.of(
-        "Participant",     new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(
-            List.of(NAMESPACE + "DigitalServiceOffering"), List.of()),
-        "Resource",        new RoleConfig(List.of(), List.of())
+        TFW_ROLE_PARTICIPANT, new RoleConfig(List.of(), List.of()),
+        TFW_ROLE_SERVICE_OFFERING, new RoleConfig(
+            List.of(NAMESPACE + TFW_ROLE_DIGITAL_SERVICE_OFFERING), List.of()),
+        TFW_ROLE_RESOURCE, new RoleConfig(List.of(), List.of())
     );
     FrameworkBundleConfig rootsOnlyConfig = new FrameworkBundleConfig(
-        PROFILE_ID, "gaia-x", NAMESPACE, ValidationType.SHACL, rootsOnlyRoles, Map.of());
+        PROFILE_ID, TFW_FAMILY_GAIA_X, NAMESPACE, ValidationType.SHACL, rootsOnlyRoles, Map.of());
     rootsOnlyRegistry = new TrustFrameworkRegistry(
         List.of(new TrustFrameworkBundle(rootsOnlyConfig, null, null)));
 
@@ -100,10 +105,6 @@ class RoleToggleResolutionTest {
         """.formatted(NAMESPACE));
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Cycle 1 – direct registry hit on disabled role → ClientException
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("Direct match on disabled role throws ClientException")
   void resolveSubjectRole_directMatch_disabledRole_throwsClientException() {
@@ -115,25 +116,17 @@ class RoleToggleResolutionTest {
         "A disabled role direct match must throw ClientException (HTTP 400)");
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Cycle 2 – additional_roots match on disabled role → ClientException
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("additionalRoots match on disabled role throws ClientException")
   void resolveSubjectRole_additionalRootsMatch_disabledRole_throwsClientException() {
     // gx:DigitalServiceOffering is indexed via additionalRoots, not namespace+roleName
-    String credential = buildCredential(NAMESPACE + "DigitalServiceOffering");
+    String credential = buildCredential(NAMESPACE + TFW_ROLE_DIGITAL_SERVICE_OFFERING);
 
     assertThrows(ClientException.class, () ->
         ClaimValidator.resolveSubjectRole(
             streamManager, credential, loireRegistry, null, ALL_DISABLED),
         "A disabled role matched via additionalRoots must throw ClientException");
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Cycle 3 – ontology subclass walk hit on disabled role → ClientException
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @Test
   @DisplayName("Ontology subclass walk on disabled role throws ClientException")
@@ -147,26 +140,18 @@ class RoleToggleResolutionTest {
         "A disabled role matched via ontology subclass walk must throw ClientException");
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Cycle 4 – only Participant disabled; ServiceOffering still resolves normally
-  // ─────────────────────────────────────────────────────────────────────────────
-
   @Test
   @DisplayName("Enabled role in same bundle resolves normally when another role is disabled")
   void resolveSubjectRole_enabledRole_whileOtherRoleDisabled_resolvesNormally() {
-    // PARTICIPANT_DISABLED disables only "Participant"; "ServiceOffering" remains enabled
-    String credential = buildCredential(NAMESPACE + "DigitalServiceOffering");
+    // PARTICIPANT_DISABLED disables only TFW_ROLE_PARTICIPANT; TFW_ROLE_SERVICE_OFFERING remains enabled
+    String credential = buildCredential(NAMESPACE + TFW_ROLE_DIGITAL_SERVICE_OFFERING);
 
     ResolvedRole result = ClaimValidator.resolveSubjectRole(
         streamManager, credential, loireRegistry, null, PARTICIPANT_DISABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "ServiceOffering"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_SERVICE_OFFERING), result,
         "ServiceOffering must resolve normally even when Participant is disabled");
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Cycle 5 – default-true predicate keeps existing behaviour (regression)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   @Test
   @DisplayName("Default-true predicate (all-enabled) resolves Participant normally")
@@ -176,7 +161,7 @@ class RoleToggleResolutionTest {
     ResolvedRole result = ClaimValidator.resolveSubjectRole(
         streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "Participant"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_PARTICIPANT), result,
         "With all roles enabled the predicate must not interfere with normal resolution");
   }
 
@@ -191,10 +176,6 @@ class RoleToggleResolutionTest {
     assertFalse(result.isResolved(),
         "Type not in any registered bundle should still return UNKNOWN");
   }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Helper
-  // ─────────────────────────────────────────────────────────────────────────────
 
   private static String buildCredential(String subjectTypeUri) {
     return """

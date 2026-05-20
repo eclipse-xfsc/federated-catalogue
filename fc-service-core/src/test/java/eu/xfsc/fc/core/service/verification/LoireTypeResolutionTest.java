@@ -10,6 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_PARTICIPANT;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_DIGITAL_SERVICE_OFFERING;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_SERVICE_OFFERING;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_RESOURCE;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_FAMILY_GAIA_X;
+
 import org.apache.jena.riot.system.stream.StreamManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -60,30 +66,28 @@ class LoireTypeResolutionTest {
 
     // 2511 roles — mirrors the production gaia-x-2511 bundle
     Map<String, RoleConfig> loireRoles = Map.of(
-        "Participant", new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(
-            List.of(NAMESPACE + "DigitalServiceOffering"), List.of()),
-        "Resource", new RoleConfig(List.of(), List.of())
+        TFW_ROLE_PARTICIPANT, new RoleConfig(List.of(), List.of()),
+        TFW_ROLE_SERVICE_OFFERING, new RoleConfig(
+            List.of(NAMESPACE + TFW_ROLE_DIGITAL_SERVICE_OFFERING), List.of()),
+        TFW_ROLE_RESOURCE, new RoleConfig(List.of(), List.of())
     );
     FrameworkBundleConfig loireConfig = new FrameworkBundleConfig(
-        PROFILE_ID, "gaia-x", NAMESPACE, ValidationType.SHACL, loireRoles, Map.of());
+        PROFILE_ID, TFW_FAMILY_GAIA_X, NAMESPACE, ValidationType.SHACL, loireRoles, Map.of());
     loireRegistry = new TrustFrameworkRegistry(
         List.of(new TrustFrameworkBundle(loireConfig, gx2511Ontology, null)));
 
     // Legacy gax-core roles — intentionally different namespace
     Map<String, RoleConfig> legacyRoles = Map.of(
-        "Participant", new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(List.of(), List.of()),
-        "Resource", new RoleConfig(List.of(), List.of())
+        TFW_ROLE_PARTICIPANT, new RoleConfig(List.of(), List.of()),
+        TFW_ROLE_SERVICE_OFFERING, new RoleConfig(List.of(), List.of()),
+        TFW_ROLE_RESOURCE, new RoleConfig(List.of(), List.of())
     );
     FrameworkBundleConfig legacyConfig = new FrameworkBundleConfig(
-        "gaia-x-legacy", "gaia-x", "https://w3id.org/gaia-x/core#",
+        "gaia-x-legacy", TFW_FAMILY_GAIA_X, "https://w3id.org/gaia-x/core#",
         ValidationType.SHACL, legacyRoles, Map.of());
     legacyRegistry = new TrustFrameworkRegistry(
         List.of(new TrustFrameworkBundle(legacyConfig, gx2511Ontology, null)));
   }
-
-  // ==================== 2511 type resolution (Loire path) ====================
 
   @Test
   @DisplayName("gx:LegalPerson resolves to Participant via 2511 ontology")
@@ -93,7 +97,7 @@ class LoireTypeResolutionTest {
     ResolvedRole result =
         ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "Participant"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_PARTICIPANT), result,
         "gx:LegalPerson → gx:Participant → gx:GaiaXEntity; should resolve to Participant");
   }
 
@@ -105,7 +109,7 @@ class LoireTypeResolutionTest {
     ResolvedRole result =
         ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "ServiceOffering"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_SERVICE_OFFERING), result,
         "gx:DigitalServiceOffering is a sibling of gx:ServiceOffering; resolves via additionalRoots");
   }
 
@@ -117,7 +121,7 @@ class LoireTypeResolutionTest {
     ResolvedRole result =
         ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "ServiceOffering"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_SERVICE_OFFERING), result,
         "gx:DataProduct rdfs:subClassOf gx:DigitalServiceOffering; traversal from DSO root reaches DataProduct");
   }
 
@@ -129,7 +133,7 @@ class LoireTypeResolutionTest {
     ResolvedRole result =
         ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "Resource"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_RESOURCE), result,
         "gx:VirtualResource rdfs:subClassOf gx:Resource; should resolve to Resource");
   }
 
@@ -144,8 +148,6 @@ class LoireTypeResolutionTest {
     assertFalse(result.isResolved(), "Type not in the 2511 hierarchy should return UNKNOWN");
   }
 
-  // ==================== Namespace isolation ====================
-
   @Test
   @DisplayName("2511 type returns UNKNOWN when legacy (gax-core) registry is used — hierarchies disconnected")
   void resolveSubjectRole_loireType_withLegacyRegistry_returnsUnknown() {
@@ -158,8 +160,6 @@ class LoireTypeResolutionTest {
         "gx:2511#LegalPerson is not a subclass of gax-core:Participant; "
             + "disconnected hierarchies must not cross-resolve");
   }
-
-  // ==================== Composite ontology slow path ====================
 
   private static final String COMPOSITE_ONTOLOGY_TTL = """
       @prefix gx: <https://w3id.org/gaia-x/2511#> .
@@ -179,7 +179,7 @@ class LoireTypeResolutionTest {
     ResolvedRole result =
         ClaimValidator.resolveSubjectRole(streamManager, credential, rootsOnlyRegistry, compositeOntology, ALL_ENABLED);
 
-    assertEquals(new ResolvedRole(PROFILE_ID, "Participant"), result,
+    assertEquals(new ResolvedRole(PROFILE_ID, TFW_ROLE_PARTICIPANT), result,
         "Custom subclass absent from boot index should resolve via composite ontology");
   }
 
@@ -196,17 +196,16 @@ class LoireTypeResolutionTest {
         "Custom subclass absent from boot index with no ontology fallback should return UNKNOWN");
   }
 
-  // ==================== Helpers ====================
 
   private TrustFrameworkRegistry buildRootsOnlyRegistry() {
     Map<String, RoleConfig> roles = Map.of(
-        "Participant", new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(
-            List.of(NAMESPACE + "DigitalServiceOffering"), List.of()),
-        "Resource", new RoleConfig(List.of(), List.of())
+        TFW_ROLE_PARTICIPANT, new RoleConfig(List.of(), List.of()),
+        TFW_ROLE_SERVICE_OFFERING, new RoleConfig(
+            List.of(NAMESPACE + TFW_ROLE_DIGITAL_SERVICE_OFFERING), List.of()),
+        TFW_ROLE_RESOURCE, new RoleConfig(List.of(), List.of())
     );
     FrameworkBundleConfig config = new FrameworkBundleConfig(
-        PROFILE_ID, "gaia-x", NAMESPACE, ValidationType.SHACL, roles, Map.of());
+        PROFILE_ID, TFW_FAMILY_GAIA_X, NAMESPACE, ValidationType.SHACL, roles, Map.of());
     return new TrustFrameworkRegistry(
         List.of(new TrustFrameworkBundle(config, null, null)));
   }
