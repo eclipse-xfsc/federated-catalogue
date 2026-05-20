@@ -15,14 +15,19 @@ class TestTrustFrameworkConstants {
   static final String PROFILE_GAIA_X_2511 = "gaia-x-2511";
 
   /**
-   * Client-type string identifying the GXDCH Loire v2 compliance client.
+   * Client-type string identifying the generic REST + JWT-VC compliance client.
    */
-  static final String CLIENT_TYPE_GXDCH_LOIRE = "gxdch-loire";
+  static final String CLIENT_TYPE_JWT_VC = "jwt-vc-compliance";
 
   /**
    * Canonical base URL of the live GXDCH Loire compliance service.
    */
   static final String GXDCH_LOIRE_SERVICE_URL = "https://compliance.gaia-x.eu/v2";
+
+  /**
+   * Compliance endpoint path used by the Gaia-X Loire / GXDCH deployment.
+   */
+  static final String GXDCH_LOIRE_COMPLIANCE_PATH = "/api/credential-offers/standard-compliance";
 
   /**
    * API version string for the GXDCH Loire v2 compliance protocol.

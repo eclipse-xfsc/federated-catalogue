@@ -89,7 +89,8 @@ class ComplianceCheckServiceTest {
 
   @Test
   void runComplianceCheck_profileConfigPresent_storeReceivesFamilyIdFromRegistry() {
-    var profileConfig = new TrustFrameworkProfileConfig(PROFILE_ID, FAMILY_ID, "gxdch", null, "1.0", 30);
+    var profileConfig = new TrustFrameworkProfileConfig(
+        PROFILE_ID, FAMILY_ID, "jwt-vc-compliance", null, "/api/credential-offers/standard-compliance", "1.0", 30);
     var outcome = new IssuedAttestation(CANNED_VC_JWT, null);
     when(orchestrator.check(any(), any(), any())).thenReturn(outcome);
     when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(profileConfig));

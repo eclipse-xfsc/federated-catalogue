@@ -1,7 +1,8 @@
 package eu.xfsc.fc.core.service.trustframework;
 
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.API_VERSION_V2;
-import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.CLIENT_TYPE_GXDCH_LOIRE;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.CLIENT_TYPE_JWT_VC;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.GXDCH_LOIRE_COMPLIANCE_PATH;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.GXDCH_LOIRE_SERVICE_URL;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.PROFILE_GAIA_X_2511;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TIMEOUT_SECONDS;
@@ -19,9 +20,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Pure registry-wiring test for the {@code gaia-x-2511} profile.
  *
- * <p>Asserts that the four new compliance properties ({@code client_type}, {@code api_version},
- * {@code service_url}, {@code timeout_seconds}) are correctly propagated from
- * {@code gaia-x-2511/framework.yaml} through {@link TrustFrameworkBundleLoader} into
+ * <p>Asserts that the compliance properties ({@code client_type}, {@code api_version},
+ * {@code service_url}, {@code compliance_path}, {@code timeout_seconds}) are correctly propagated
+ * from {@code gaia-x-2511/framework.yaml} through {@link TrustFrameworkBundleLoader} into
  * {@link TrustFrameworkRegistry}. No HTTP traffic, no live service, no Spring context.
  */
 class GaiaX2511ProfileWiringTest {
@@ -35,12 +36,21 @@ class GaiaX2511ProfileWiringTest {
   }
 
   @Test
-  void getProfileConfig_forGaiaX2511_clientTypeIsLoireGxdch() {
+  void getProfileConfig_forGaiaX2511_clientTypeIsJwtVcCompliance() {
     TrustFrameworkProfileConfig config = loadConfig();
 
     assertThat(config.clientType())
-        .as("client_type must be 'gxdch-loire' in gaia-x-2511/framework.yaml")
-        .isEqualTo(CLIENT_TYPE_GXDCH_LOIRE);
+        .as("client_type must be 'jwt-vc-compliance' in gaia-x-2511/framework.yaml")
+        .isEqualTo(CLIENT_TYPE_JWT_VC);
+  }
+
+  @Test
+  void getProfileConfig_forGaiaX2511_compliancePathIsLoireEndpoint() {
+    TrustFrameworkProfileConfig config = loadConfig();
+
+    assertThat(config.compliancePath())
+        .as("compliance_path must be the Loire standard-compliance endpoint in gaia-x-2511/framework.yaml")
+        .isEqualTo(GXDCH_LOIRE_COMPLIANCE_PATH);
   }
 
   @Test

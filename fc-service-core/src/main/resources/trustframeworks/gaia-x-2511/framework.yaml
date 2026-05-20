@@ -51,10 +51,15 @@ roles:
     types: [ ]
 
 properties:
-  client_type: gxdch-loire
+  # Generic REST + JWT-VC compliance client (see JwtVcComplianceClient). The Gaia-X Loire / GXDCH
+  # compliance endpoint is the reference deployment for this wire shape.
+  client_type: jwt-vc-compliance
   # Informational only — dispatch uses client_type
   api_version: "v2"
   service_url: "https://compliance.gaia-x.eu/v2"
+  # Endpoint path appended to service_url. Required — no default. Per-framework value because
+  # the client family is path-agnostic; see ADR-12.
+  compliance_path: "/api/credential-offers/standard-compliance"
   timeout_seconds: 30
   # URL of the Gaia-X Trust Anchor Registry used during Loire x5u trust-chain validation.
   # Consumed by LoireMatcher.trustAnchorUrl().

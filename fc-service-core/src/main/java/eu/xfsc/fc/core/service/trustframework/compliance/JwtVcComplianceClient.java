@@ -28,18 +28,40 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * {@link TrustFrameworkClient} implementation for the GXDCH Loire (V2) compliance API.
+ * Generic {@link TrustFrameworkClient} for compliance services that follow the REST + JWT-VC
+ * exchange shape: the catalogue POSTs a Verifiable Presentation JWT as the request body and the
+ * service returns either {@code HTTP 201} with a Verifiable Credential JWT (compliant) or
+ * {@code HTTP 400} with an error body (non-compliant).
  *
- * <p>Posts a JWT Verifiable Presentation to the Loire standard-compliance endpoint and maps
- * the response to a {@link ComplianceCheckOutcome}.
+ * <p>What is generic and what is framework-specific:
+ * <ul>
+ *   <li><strong>Generic (this class):</strong> the wire shape itself — POST a VP JWT, expect a
+ *       201/400 outcome, parse the response as a JWT, map {@code exp} to validity.</li>
+ *   <li><strong>Framework-specific (bundle):</strong> the base URL ({@code service_url}) and the
+ *       endpoint path ({@code compliance_path}) live in the bundle's {@code properties} block, so
+ *       a new framework that shares this wire shape needs no Java code — only a new bundle.</li>
+ * </ul>
+ *
+ * <p>The Gaia-X Loire / GXDCH compliance endpoint is the reference deployment for this shape;
+ * additional bundles that exercise this client are expected as more frameworks standardise on
+ * the same exchange.
+ *
+ * <p>The {@code vcid} query-parameter name is currently hard-wired because every known bundle
+ * uses the same convention; lifting it into the bundle properties is straightforward when a
+ * framework adopts a different name.
+ *
+ * <p>Note on signature verification: the returned compliance credential JWT is not signature-checked
+ * here. It arrives over HTTPS directly from the compliance service, so the transport layer
+ * provides authenticity. The raw JWT is stored verbatim so downstream relying parties can verify
+ * it independently if required.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GxdchComplianceClient implements TrustFrameworkClient {
+public class JwtVcComplianceClient implements TrustFrameworkClient {
 
-  private static final String CLIENT_TYPE = "gxdch-loire";
-  private static final String COMPLIANCE_PATH = "/api/credential-offers/standard-compliance";
+  private static final String CLIENT_TYPE = "jwt-vc-compliance";
+  private static final String VCID_QUERY_PARAM = "vcid";
 
   private final ConcurrentHashMap<Integer, RestTemplate> restTemplateCache = new ConcurrentHashMap<>();
 
@@ -49,7 +71,7 @@ public class GxdchComplianceClient implements TrustFrameworkClient {
   }
 
   /**
-   * Submits the VP JWT to the Loire compliance endpoint and returns the outcome.
+   * Submits the VP JWT to the configured compliance endpoint and returns the outcome.
    *
    * <p>Short-circuits to {@link UnverifiableAttestation} with
    * {@link FailureCategory#UNVERIFIABLE_ATTESTATION} when the VP JWT payload has no {@code id}
@@ -59,12 +81,12 @@ public class GxdchComplianceClient implements TrustFrameworkClient {
    * {@link IssuedAttestation}. A 201 body that is not a parseable JWT maps to
    * {@link UnverifiableAttestation} rather than returning null-field attestation fields.
    * On HTTP 400, the asset is non-compliant and an {@link UnverifiableAttestation} is returned.
-   * HTTP 5xx and I/O exceptions bubble to the caller (orchestrator maps them to
+   * HTTP 5xx and I/O exceptions bubble to the orchestrator, which maps them to
    * {@link eu.xfsc.fc.core.exception.ServiceUnavailableException} /
-   * {@link eu.xfsc.fc.core.exception.TimeoutException}).
+   * {@link eu.xfsc.fc.core.exception.TimeoutException}.
    *
    * @param credential the VP JWT to submit
-   * @param config     profile configuration providing the Loire service URL and timeout
+   * @param config     profile configuration providing the service URL, compliance path, and timeout
    * @return the compliance check outcome; never {@code null}
    */
   @Override
@@ -81,8 +103,8 @@ public class GxdchComplianceClient implements TrustFrameworkClient {
 
     String serviceUrl = config.serviceUrl().replaceAll("/+$", "");
     // URI.create() preserves existing percent-encoding; Apache HttpClient uses raw form as-is.
-    URI uri = URI.create(serviceUrl + COMPLIANCE_PATH
-        + "?vcid=" + URLEncoder.encode(assetId, StandardCharsets.UTF_8));
+    URI uri = URI.create(serviceUrl + config.compliancePath()
+        + "?" + VCID_QUERY_PARAM + "=" + URLEncoder.encode(assetId, StandardCharsets.UTF_8));
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.TEXT_PLAIN);
@@ -134,9 +156,6 @@ public class GxdchComplianceClient implements TrustFrameworkClient {
   private ComplianceCheckOutcome parseComplianceJwt(String jwt) {
     try {
       JWTClaimsSet claims = readJwtPayload(jwt);
-      // Signature not verified: the compliance credential arrives over HTTPS directly from GXDCH;
-      // the transport layer provides authenticity. The raw JWT is stored as-is for downstream
-      // relying parties who may verify it independently.
       Instant validUntil = claims.getExpirationTime() != null
           ? claims.getExpirationTime().toInstant()
           : null;
