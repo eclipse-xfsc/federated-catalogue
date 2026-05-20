@@ -1,6 +1,7 @@
 package eu.xfsc.fc.server.service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -103,35 +105,30 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     entry.setTimeoutSeconds(config.timeoutSeconds());
     entry.setEnabled(config.enabled());
     entry.setConnected(checkConnectivity(config));
-    entry.setRoles(aggregateRolesForFamily(config.id()));
+    entry.setBundles(buildBundleEntries(config.id()));
     return entry;
   }
 
   /**
-   * Aggregates the per-role enabled state across all bundles belonging to the given family.
-   * When the same role name appears in multiple bundles with conflicting states, the last bundle
-   * wins and a warning is logged (single-bundle-per-family is the norm today).
+   * Builds a list of {@link TrustFrameworkBundleEntry} for each bundle belonging to the given
+   * family, carrying the per-bundle role enabled states so the UI can address role-toggle PUTs
+   * by the correct bundle profile ID.
    *
    * @param familyId trust framework family identifier (e.g. {@code gaia-x})
-   * @return merged map of role name → effective enabled state; empty if no bundles belong to family
+   * @return list of bundle entries in registry order; empty if no bundles belong to the family
    */
-  private Map<String, Boolean> aggregateRolesForFamily(String familyId) {
-    Map<String, Boolean> merged = new java.util.LinkedHashMap<>();
+  private List<TrustFrameworkBundleEntry> buildBundleEntries(String familyId) {
+    List<TrustFrameworkBundleEntry> result = new ArrayList<>();
     for (TrustFrameworkBundle bundle : trustFrameworkRegistry.getAllBundles()) {
       if (!familyId.equals(bundle.config().family())) {
         continue;
       }
-      Map<String, Boolean> bundleRoles = trustFrameworkService.getRoleStates(bundle.config().id());
-      for (Map.Entry<String, Boolean> roleEntry : bundleRoles.entrySet()) {
-        if (merged.containsKey(roleEntry.getKey())
-            && !merged.get(roleEntry.getKey()).equals(roleEntry.getValue())) {
-          log.warn("aggregateRolesForFamily; role '{}' in family '{}' has conflicting states across bundles — "
-              + "last bundle '{}' wins", roleEntry.getKey(), familyId, bundle.config().id());
-        }
-        merged.put(roleEntry.getKey(), roleEntry.getValue());
-      }
+      TrustFrameworkBundleEntry bundleEntry = new TrustFrameworkBundleEntry();
+      bundleEntry.setId(bundle.config().id());
+      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundle.config().id()));
+      result.add(bundleEntry);
     }
-    return merged;
+    return result;
   }
 
   private boolean checkConnectivity(TrustFrameworkConfig config) {

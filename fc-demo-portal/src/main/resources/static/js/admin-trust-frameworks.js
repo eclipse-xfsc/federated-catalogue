@@ -78,6 +78,8 @@ $(document).ready(function() {
               .attr('data-url',     data.serviceUrl || '')
               .attr('data-version', data.apiVersion || '')
               .attr('data-timeout', data.timeoutSeconds || 30)
+              .attr('data-enabled', data.enabled ? 'true' : 'false')
+              .attr('data-bundles', JSON.stringify(data.bundles || []))
               .append('<i class="bi bi-gear"></i>')
               .prop('outerHTML');
           }
@@ -104,12 +106,97 @@ $(document).ready(function() {
     // Config button handler
     $('#tfTable').on('click', '.tf-config', function() {
       var $btn = $(this);
+      var familyEnabled = $btn.data('enabled') === 'true' || $btn.data('enabled') === true;
+      var bundles = $btn.data('bundles') || [];
+      if (typeof bundles === 'string') {
+        try { bundles = JSON.parse(bundles); } catch(e) { bundles = []; }
+      }
+
       $('#tfConfigId').val($btn.data('id'));
       $('#tfServiceUrl').val($btn.data('url'));
       $('#tfApiVersion').val($btn.data('version'));
       $('#tfTimeout').val($btn.data('timeout'));
+
+      // Render role checkboxes
+      var $container = $('#tfRolesContainer').empty();
+      $('#tfRoleErrorBanner').hide();
+      var multiBundle = bundles.length > 1;
+      bundles.forEach(function(bundle) {
+        var roles = bundle.roles || {};
+        Object.keys(roles).forEach(function(roleName) {
+          var roleEnabled = roles[roleName];
+          var inputId = 'role-' + bundle.id + '-' + roleName;
+          var $check = $('<div class="form-check">').append(
+            $('<input>', {
+              type: 'checkbox',
+              class: 'form-check-input tf-role-toggle',
+              id: inputId,
+              'data-bundle': bundle.id,
+              'data-role': roleName
+            })
+              .prop('checked', roleEnabled)
+              .prop('disabled', !familyEnabled),
+            $('<label>', {
+              class: 'form-check-label' + (!familyEnabled ? ' text-muted' : ''),
+              for: inputId,
+              title: 'When disabled, this role and all its OWL subclasses reject credentials with HTTP 400.',
+              'data-bs-toggle': 'tooltip'
+            }).append(
+              document.createTextNode(roleName + ' '),
+              multiBundle
+                ? $('<small class="text-muted">').text('(' + bundle.id + ')')
+                : $()
+            )
+          );
+          $container.append($check);
+        });
+      });
+
+      // Initialize Bootstrap tooltips for the newly rendered labels
+      $container.find('[data-bs-toggle="tooltip"]').each(function() {
+        new bootstrap.Tooltip(this);
+      });
+
+      $('#tfConfigModal').data('familyEnabled', familyEnabled);
+      recomputeAllDisabledWarning(familyEnabled);
       new bootstrap.Modal('#tfConfigModal').show();
     });
+
+    // Role toggle change handler
+    $('#tfConfigModal').on('change', '.tf-role-toggle', function() {
+      var $cb = $(this);
+      var bundleId = $cb.data('bundle');
+      var roleName = $cb.data('role');
+      var enabled = $cb.is(':checked');
+
+      $.ajax({
+        url: '/admin/trust-frameworks/' + encodeURIComponent(bundleId)
+          + '/roles/' + encodeURIComponent(roleName)
+          + '/enabled?enabled=' + enabled,
+        type: 'PUT',
+        success: function() {
+          $('#tfRoleErrorBanner').hide();
+          recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
+        },
+        error: function() {
+          $cb.prop('checked', !enabled);
+          var $banner = $('#tfRoleErrorBanner');
+          $banner.text('Failed to update role "' + roleName + '". Please try again.').show();
+          clearTimeout($banner.data('hideTimer'));
+          $banner.data('hideTimer', setTimeout(function() { $banner.hide(); }, 5000));
+        }
+      });
+    });
+
+    function recomputeAllDisabledWarning(familyEnabled) {
+      if (!familyEnabled) {
+        $('#tfRolesAllDisabledWarning').hide();
+        return;
+      }
+      var allUnchecked = $('#tfRolesContainer .tf-role-toggle:checked').length === 0
+        && $('#tfRolesContainer .tf-role-toggle').length > 0;
+      $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
+    }
 
     // Config save handler
     $('#tfConfigSave').on('click', function() {

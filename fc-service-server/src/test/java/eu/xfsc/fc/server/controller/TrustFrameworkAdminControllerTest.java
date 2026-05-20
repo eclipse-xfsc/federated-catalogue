@@ -223,13 +223,14 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void getTrustFrameworks_includesRolesField() throws Exception {
+  void getTrustFrameworks_includesBundlesField() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].roles", notNullValue()))
-        .andExpect(jsonPath("$[0].roles.Participant").value(true))
-        .andExpect(jsonPath("$[0].roles.ServiceOffering").value(true))
-        .andExpect(jsonPath("$[0].roles.Resource").value(true));
+        .andExpect(jsonPath("$[0].bundles", hasSize(1)))
+        .andExpect(jsonPath("$[0].bundles[0].id").value("gaia-x-2511"))
+        .andExpect(jsonPath("$[0].bundles[0].roles.Participant").value(true))
+        .andExpect(jsonPath("$[0].bundles[0].roles.ServiceOffering").value(true))
+        .andExpect(jsonPath("$[0].bundles[0].roles.Resource").value(true));
   }
 }
