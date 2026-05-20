@@ -99,6 +99,11 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.POST, "/assets").hasAnyRole(ASSET_CREATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.DELETE, "/assets/*").hasAnyRole(ASSET_DELETE, ADMIN_ALL)
 
+          // Compliance check APIs
+          .requestMatchers(HttpMethod.POST, "/assets/*/compliance-check").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
+          .requestMatchers(HttpMethod.GET, "/assets/*/compliance-checks").hasAnyRole(ASSET_READ, ADMIN_ALL)
+          .requestMatchers(HttpMethod.GET, "/trust-frameworks").authenticated()
+
           // Validation result read APIs
           .requestMatchers(HttpMethod.GET, "/validations/**").hasAnyRole(ASSET_READ, ADMIN_ALL)
 

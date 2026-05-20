@@ -21,6 +21,7 @@ import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.exception.ServerException;
+import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.exception.UnsupportedQueryLanguageException;
 import eu.xfsc.fc.core.exception.VerificationException;
@@ -133,6 +134,18 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     log.info("handleGraphStoreDisabledException; error: {}", exception.getMessage());
     return new ResponseEntity<>(
         new Error("graph_store_disabled", exception.getMessage()), SERVICE_UNAVAILABLE);
+  }
+
+  /**
+   * Method handles the ServiceUnavailableException.
+   *
+   * @param exception Thrown ServiceUnavailableException.
+   * @return The custom Federated Catalogue application error with status code 503.
+   */
+  @ExceptionHandler({ServiceUnavailableException.class})
+  protected ResponseEntity<Error> handleServiceUnavailableException(ServiceUnavailableException exception) {
+    log.warn("handleServiceUnavailableException; error: {}", exception.getMessage(), exception);
+    return new ResponseEntity<>(new Error("service_unavailable", exception.getMessage()), SERVICE_UNAVAILABLE);
   }
 
   /**

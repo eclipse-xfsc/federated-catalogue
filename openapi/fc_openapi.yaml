@@ -1006,6 +1006,47 @@ components:
           type: string
           description: The SHACL shape that was violated
 
+    ComplianceCheckRequest:
+      type: object
+      required: [ frameworkProfileId, credential ]
+      properties:
+        frameworkProfileId:
+          type: string
+          description: The trust-framework profile ID to check against (e.g. "mock-2026")
+        credential:
+          type: string
+          description: Raw VP JWT credential to submit to the compliance service
+
+    ComplianceCheckResult:
+      type: object
+      properties:
+        conforms:
+          type: boolean
+          description: True when the compliance service issued an attestation
+        failureCategory:
+          type: string
+          nullable: true
+          description: Set when conforms is false; describes how the check failed (currently UNVERIFIABLE_ATTESTATION)
+        attestationCredential:
+          type: string
+          nullable: true
+          description: Raw JWT compliance credential returned by the service (present only on conforms=true)
+
+    TrustFrameworkPublicEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Family ID (e.g. "gaia-x", "mock")
+        name:
+          type: string
+          description: Human-readable family name
+        profiles:
+          type: array
+          items:
+            type: string
+          description: Profile IDs registered for this family (e.g. ["gaia-x-2511"])
+
   parameters:
     OffsetParam:
       name: offset
@@ -1098,6 +1139,8 @@ tags:
     description: Graph database status and backend switching.
   - name: Validations
     description: Stored validation results.
+  - name: Compliance
+    description: Trust-framework compliance check endpoints.
 paths:
   /admin/me:
     get:
@@ -2105,6 +2148,110 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /assets/{id}/compliance-check:
+    post:
+      tags:
+        - Compliance
+      summary: Run a compliance check for an asset
+      operationId: runComplianceCheck
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComplianceCheckRequest'
+      responses:
+        '200':
+          description: Compliance check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceCheckResult'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          description: Compliance service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '504':
+          description: Compliance service did not respond in time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /assets/{id}/compliance-checks:
+    get:
+      tags:
+        - Compliance
+      summary: Get stored compliance check results for an asset
+      operationId: getComplianceChecks
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/OffsetParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: List of compliance check results for the asset
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StoredValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /trust-frameworks:
+    get:
+      tags:
+        - Compliance
+      summary: List enabled trust frameworks and their profiles (public discovery)
+      operationId: getTrustFrameworksPublic
+      security:
+        - jwt: [ ]
+      responses:
+        '200':
+          description: List of enabled trust framework families with their profile IDs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrustFrameworkPublicEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
 
