@@ -1,16 +1,39 @@
 # Strict verification overlay — enables signature, schema, and Gaia-X Trust Framework validation.
+# Also adds the mock compliance service (WireMock) for @uses.compliance-mock BDD scenarios.
 #
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.strict.yml --env-file dev.env up
 #   ./dev.sh strict
 #
+# BDD tests: set CAT_WIREMOCK_HOST=http://localhost:8089 in env.sh.
+#
 # See: cat-integration-tests/docs/adr/003-interim-two-config-test-strategy.md
 
 services:
+  compliance-mock:
+    container_name: "compliance-mock"
+    image: wiremock/wiremock:3.13.2
+    networks:
+      - "gaia-x"
+    ports:
+      # 8089 on host to avoid conflict with Keycloak (8080).
+      # BDD tests reach WireMock admin API at http://localhost:8089.
+      - "8089:8080"
+
   server:
     environment:
-      # Enable the gaia-x trust framework. List multiple families as "gaia-x,untp".
-      FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS: "gaia-x"
+      # Enable gaia-x and mock trust frameworks.
+      FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS: "gaia-x,mock"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "true"
+      # Mount the trustframeworks directory as the filesystem override source.
+      # Bundles here override classpath bundles by id (e.g. redirecting URLs to local services).
+      FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH: /app/trustframeworks-override
+    volumes:
+      # Mount all bundle subdirectories as the override directory.
+      # Each subdirectory (e.g. mock-2026/, gaia-x-2511/) overrides the matching classpath bundle by id.
+      - ./trustframeworks:/app/trustframeworks-override:ro
+    depends_on:
+      compliance-mock:
+        condition: service_started

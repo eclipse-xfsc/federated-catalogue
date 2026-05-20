@@ -1,10 +1,8 @@
-# Mock Trust Framework bundle — for local development and integration testing only
-#
-# This bundle is intentionally minimal: no ontology, no SHACL shapes.
-# validation_type is "shacl" so the bundle is indexed by TrustFrameworkRegistry,
-# but there are no shape files to validate against.
-#
-# serviceUrl should be overridden per environment (e.g. WireMock container in compose).
+# Mock Trust Framework bundle
+# This bundle IS the "call a GXDCH compliance service" code path; it targets a WireMock stub
+# in local-dev and BDD environments (driven by @uses.compliance-mock scenarios).
+# This bundle remains as the permanent
+# local-dev / BDD compliance-stub path. No ontology or SHACL shapes: intentionally minimal.
 
 id: mock-2026
 family: mock

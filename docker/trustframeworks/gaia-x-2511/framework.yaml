@@ -1,0 +1,9 @@
+# Filesystem overlay for the classpath gaia-x-2511 bundle.
+# Mounted at /app/trustframeworks-override by docker-compose.strict.yml.
+# Only diffs from the classpath bundle live here; everything else is inherited.
+#
+# Redirects trust-anchor resolution from the public Gaia-X Lab registry to the
+# internal did-server nginx mock (see docker/did-server/).
+id: gaia-x-2511
+properties:
+  trust_anchor_url: "https://did-server/api/trustAnchor/chain/file"

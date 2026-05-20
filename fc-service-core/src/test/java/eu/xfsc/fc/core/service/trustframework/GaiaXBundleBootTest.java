@@ -23,7 +23,7 @@ class GaiaXBundleBootTest {
   private static final String GX_LEGAL_PERSON = "https://w3id.org/gaia-x/2511#LegalPerson";
 
   private List<TrustFrameworkBundle> loadBundles() throws IOException {
-    return new TrustFrameworkBundleLoader().loadFromClasspath();
+    return new TrustFrameworkBundleLoader().load();
   }
 
   @Test
