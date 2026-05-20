@@ -19,6 +19,7 @@ import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphDatabaseSwitchResult;
 import eu.xfsc.fc.api.generated.model.AdminStats;
 import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
+import eu.xfsc.fc.api.generated.model.OntologyImpactList;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
@@ -109,6 +110,13 @@ public class AdminController {
       @RequestParam("enabled") boolean enabled,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
     adminClient.setSchemaModuleEnabled(type, enabled, authorizedClient);
+  }
+
+  /** List uploaded ontologies and their per-role subclass contributions. */
+  @GetMapping("/schema-validation/ontologies")
+  public OntologyImpactList getOntologyImpact(
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    return adminClient.getOntologyImpact(authorizedClient);
   }
 
   // --- Graph Database ---

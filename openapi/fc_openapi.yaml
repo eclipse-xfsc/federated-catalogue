@@ -726,6 +726,72 @@ components:
         enabled:
           type: boolean
           description: Whether this module is active
+    OntologyImpactList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyImpactEntry'
+        noActiveBundles:
+          type: boolean
+          default: false
+          description: >-
+            True when no trust-framework bundles are active. In that case
+            contributions cannot be computed for any ontology; the UI
+            should surface a banner explaining that the OWL toggle has no
+            roles to gate.
+      required:
+        - items
+        - noActiveBundles
+    OntologyImpactEntry:
+      type: object
+      description: >-
+        One runtime-uploaded ontology and its contribution to each
+        registered trust-framework role.
+      properties:
+        id:
+          type: string
+          description: Schema identifier
+        name:
+          type: string
+          description: >-
+            Display name for the ontology. Derived from the parsed
+            owl:Ontology IRI when present; falls back to the schema id.
+        uploadedAt:
+          type: string
+          format: date-time
+          description: When the ontology was uploaded
+        contributions:
+          type: object
+          description: >-
+            For each registered role name, the number of distinct
+            rdfs:subClassOf+ descendants reachable from the role's primary
+            root and additional_roots, aggregated across active
+            trust-framework bundles. Roles with zero contributions are
+            omitted. Empty when parseError is true.
+          additionalProperties:
+            type: integer
+            format: int32
+        parseError:
+          type: boolean
+          default: false
+          description: >-
+            True when the ontology could not be parsed or the subclass
+            walk timed out. The contributions map will be empty; the UI
+            should render a warning row so the admin does not conclude
+            the ontology is safe to ignore.
+        parseErrorMessage:
+          type: string
+          nullable: true
+          description: >-
+            Human-readable explanation when parseError is true. Null
+            otherwise.
+      required:
+        - id
+        - name
+        - contributions
+        - parseError
     GraphDatabaseStatus:
       type: object
       properties:
@@ -1330,6 +1396,11 @@ paths:
       tags:
         - SchemaValidationAdmin
       summary: Toggle a schema validation module
+      description: >-
+        Enables or disables one of the four schema validation modules.
+        Disabling a module makes affected endpoints return `400 module_disabled:<MODULE>`
+        (see `/assets/validate` and `/verification`). Storage of schemas is unaffected —
+        stored schemas remain queryable through `/schemas/**` regardless of toggle state.
       operationId: setSchemaModuleEnabled
       security:
         - jwt: []
@@ -1339,6 +1410,11 @@ paths:
           required: true
           schema:
             type: string
+            enum:
+              - SHACL
+              - JSON_SCHEMA
+              - XML_SCHEMA
+              - OWL
         - name: enabled
           in: query
           required: true
@@ -1353,6 +1429,35 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/schema-validation/ontologies:
+    get:
+      tags:
+        - SchemaValidationAdmin
+      summary: List uploaded ontologies and their subclass contributions to registered roles
+      description: >-
+        Returns the runtime-uploaded ontologies currently consulted by the OWL
+        module when it is enabled, with the number of subclasses each ontology
+        contributes to each registered trust-framework role (Participant,
+        ServiceOffering, Resource for the Gaia-X 2511 bundle). Read-only —
+        admins toggle the OWL module as a whole on
+        `PUT /admin/schema-validation/modules/{type}`. This endpoint surfaces
+        what that toggle is gating.
+      operationId: getOntologyImpact
+      security:
+        - jwt: []
+      responses:
+        '200':
+          description: List of ontologies with per-role subclass counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OntologyImpactList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
   /admin/graph-database:
@@ -1709,7 +1814,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ValidationResponse'
         '400':
-          $ref: '#/components/responses/ClientError'
+          description: >-
+            Client error. Includes `module_disabled:<MODULE>` when a schema validation
+            module required by the request is administratively disabled
+            (see `PUT /admin/schema-validation/modules/{type}`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3138,7 +3250,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerificationResult'
         '400':
-          $ref: '#/components/responses/ClientError'
+          description: >-
+            Client error. When `verifySchema=true` and the SHACL module is
+            administratively disabled, the body is `module_disabled:SHACL`
+            (see `PUT /admin/schema-validation/modules/{type}`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '422':
           $ref: '#/components/responses/Unprocessible'
         '500':

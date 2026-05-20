@@ -12,6 +12,7 @@ import static eu.xfsc.fc.core.util.KeycloakUtils.getErrorMessage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
@@ -303,8 +304,11 @@ public class UserDaoImpl implements UserDao {
     List<String> partIds = userRepo.getAttributes() == null ? null
         : userRepo.getAttributes().get(ATR_PARTICIPANT_ID);
     String participantId = partIds == null ? null : partIds.getFirst();
-    return new UserProfile(participantId, userRepo.getFirstName(), userRepo.getLastName(), userRepo.getEmail(),
-        toRoleIds(roles), userRepo.getId(), userRepo.getFirstName() + " " + userRepo.getLastName());
+    String firstName = Objects.toString(userRepo.getFirstName(), "");
+    String lastName = Objects.toString(userRepo.getLastName(), "");
+    String displayName = (firstName + " " + lastName).trim();
+    return new UserProfile(participantId, firstName, lastName, userRepo.getEmail(),
+        toRoleIds(roles), userRepo.getId(), displayName);
   }
 
   /**

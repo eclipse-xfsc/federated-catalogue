@@ -188,7 +188,7 @@ class AssetValidationServiceImplTest {
   }
 
   @Test
-  void validateAsset_rdfAsset_shaclModuleDisabled_throwsVerificationException() {
+  void validateAsset_rdfAsset_shaclModuleDisabled_throwsClientException() {
     registerStrategyList();
     registerShaclStrategy();
     when(assetStore.getById(ASSET_ID)).thenReturn(buildRdfAsset(ASSET_ID));
@@ -199,7 +199,8 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(SCHEMA_ID));
 
-    assertThrows(VerificationException.class, () -> service.validateAssets(request));
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertEquals("module_disabled:" + SchemaModuleType.SHACL, ex.getMessage());
   }
 
   @Test
@@ -261,7 +262,7 @@ class AssetValidationServiceImplTest {
   }
 
   @Test
-  void validateAsset_rdfAsset_validateAll_shaclEnabledNoShapesAndNoOtherModule_throwsVerificationException() {
+  void validateAsset_rdfAsset_validateAll_shaclEnabledNoShapesAndNoOtherModule_throwsClientException() {
     when(assetStore.getById(ASSET_ID)).thenReturn(buildRdfAsset(ASSET_ID));
     givenShaclModuleEnabled();
     when(schemaStore.getCompositeSchema(SchemaType.SHAPE)).thenReturn(null);
@@ -271,13 +272,13 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setValidateAgainstAllSchemas(true);
 
-    assertThrows(VerificationException.class, () -> service.validateAssets(request));
+    assertThrows(ClientException.class, () -> service.validateAssets(request));
   }
 
   // === validateAsset — RDF validateAll C-2: skip disabled modules ===
 
   @Test
-  void validateAsset_rdfAsset_validateAll_allModulesDisabled_throwsVerificationException() {
+  void validateAsset_rdfAsset_validateAll_allModulesDisabled_throwsClientException() {
     registerStrategyList();
     when(assetStore.getById(ASSET_ID)).thenReturn(buildRdfAsset(ASSET_ID));
     // no module mocked → all return false
@@ -286,7 +287,7 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setValidateAgainstAllSchemas(true);
 
-    assertThrows(VerificationException.class, () -> service.validateAssets(request));
+    assertThrows(ClientException.class, () -> service.validateAssets(request));
   }
 
   // === Positive tests for RDF serializations + SHACL ===
@@ -494,7 +495,7 @@ class AssetValidationServiceImplTest {
   }
 
   @Test
-  void validateAsset_jsonAsset_jsonModuleDisabled_throwsVerificationException() {
+  void validateAsset_jsonAsset_jsonModuleDisabled_throwsClientException() {
     registerStrategyList();
     registerJsonStrategy();
     when(assetStore.getById(ASSET_ID)).thenReturn(buildNonRdfAssetWithContentType(ASSET_ID, "application/json"));
@@ -505,7 +506,8 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(JSON_SCHEMA_ID));
 
-    assertThrows(VerificationException.class, () -> service.validateAssets(request));
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertEquals("module_disabled:" + SchemaModuleType.JSON_SCHEMA, ex.getMessage());
   }
 
   @Test
@@ -609,7 +611,7 @@ class AssetValidationServiceImplTest {
   }
 
   @Test
-  void validateAsset_xmlAsset_xmlModuleDisabled_throwsVerificationException() {
+  void validateAsset_xmlAsset_xmlModuleDisabled_throwsClientException() {
     registerStrategyList();
     registerXmlStrategy();
     when(assetStore.getById(ASSET_ID)).thenReturn(buildNonRdfAssetWithContentType(ASSET_ID, "application/xml"));
@@ -620,7 +622,8 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(XML_SCHEMA_ID));
 
-    assertThrows(VerificationException.class, () -> service.validateAssets(request));
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertEquals("module_disabled:" + SchemaModuleType.XML_SCHEMA, ex.getMessage());
   }
 
   @Test
@@ -824,7 +827,7 @@ class AssetValidationServiceImplTest {
   }
 
   @Test
-  void validateAssets_shaclModuleDisabled_throwsVerificationException() {
+  void validateAssets_shaclModuleDisabled_throwsClientException() {
     when(moduleConfigService.isModuleEnabled(SchemaModuleType.SHACL)).thenReturn(false);
     when(assetStore.getById(ASSET_ID)).thenReturn(buildRdfAsset(ASSET_ID));
     when(assetStore.getById(ASSET_ID_2)).thenReturn(buildRdfAsset(ASSET_ID_2));
@@ -833,7 +836,8 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID, ASSET_ID_2));
     request.setSchemaIds(List.of(SCHEMA_ID));
 
-    assertThrows(VerificationException.class, () -> service.validateAssets(request));
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertEquals("module_disabled:" + SchemaModuleType.SHACL, ex.getMessage());
   }
 
   @Test
