@@ -2,6 +2,7 @@ package eu.xfsc.fc.server.service;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,8 @@ import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.server.config.AdminDashboardConfig;
 import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
@@ -32,6 +35,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
   private final TrustFrameworkService trustFrameworkService;
+  private final TrustFrameworkRegistry trustFrameworkRegistry;
   private final AdminDashboardConfig adminDashboardConfig;
 
   @Value("${federated-catalogue.enabled-trust-frameworks:}")
@@ -74,6 +78,12 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   }
 
   @Override
+  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
+    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
   public ResponseEntity<Void> updateTrustFrameworkConfig(String id,
       TrustFrameworkConfigUpdate config) {
     int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
@@ -93,7 +103,35 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     entry.setTimeoutSeconds(config.timeoutSeconds());
     entry.setEnabled(config.enabled());
     entry.setConnected(checkConnectivity(config));
+    entry.setRoles(aggregateRolesForFamily(config.id()));
     return entry;
+  }
+
+  /**
+   * Aggregates the per-role enabled state across all bundles belonging to the given family.
+   * When the same role name appears in multiple bundles with conflicting states, the last bundle
+   * wins and a warning is logged (single-bundle-per-family is the norm today).
+   *
+   * @param familyId trust framework family identifier (e.g. {@code gaia-x})
+   * @return merged map of role name → effective enabled state; empty if no bundles belong to family
+   */
+  private Map<String, Boolean> aggregateRolesForFamily(String familyId) {
+    Map<String, Boolean> merged = new java.util.LinkedHashMap<>();
+    for (TrustFrameworkBundle bundle : trustFrameworkRegistry.getAllBundles()) {
+      if (!familyId.equals(bundle.config().family())) {
+        continue;
+      }
+      Map<String, Boolean> bundleRoles = trustFrameworkService.getRoleStates(bundle.config().id());
+      for (Map.Entry<String, Boolean> roleEntry : bundleRoles.entrySet()) {
+        if (merged.containsKey(roleEntry.getKey())
+            && !merged.get(roleEntry.getKey()).equals(roleEntry.getValue())) {
+          log.warn("aggregateRolesForFamily; role '{}' in family '{}' has conflicting states across bundles — "
+              + "last bundle '{}' wins", roleEntry.getKey(), familyId, bundle.config().id());
+        }
+        merged.put(roleEntry.getKey(), roleEntry.getValue());
+      }
+    }
+    return merged;
   }
 
   private boolean checkConnectivity(TrustFrameworkConfig config) {

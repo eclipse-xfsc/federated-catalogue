@@ -48,7 +48,7 @@ class TrustFrameworkStartupLoggerTest {
 
     assertThat(output.getAll())
         .contains("trust-framework 'gaia-x' registered (profiles: gaia-x-2511) — disabled.")
-        .contains("PATCH /admin/trust-frameworks/gaia-x {\"enabled\":true}")
+        .contains("PUT /admin/trust-frameworks/gaia-x/enabled?enabled=true")
         .contains("FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS=gaia-x");
   }
 
