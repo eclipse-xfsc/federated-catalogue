@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
 
 import org.apache.jena.riot.system.stream.StreamManager;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,6 +34,10 @@ import eu.xfsc.fc.core.util.ClaimValidator;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class LoireTypeResolutionTest {
+
+  /** All roles enabled — passed to {@link eu.xfsc.fc.core.util.ClaimValidator#resolveSubjectRole}
+   *  so existing tests are unaffected by the new mandatory predicate parameter. */
+  private static final BiPredicate<String, String> ALL_ENABLED = (b, r) -> true;
 
   private static final String PROFILE_ID = "gaia-x-2511";
   private static final String NAMESPACE = "https://w3id.org/gaia-x/2511#";
@@ -86,7 +91,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://w3id.org/gaia-x/2511#LegalPerson");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
     assertEquals(new ResolvedRole(PROFILE_ID, "Participant"), result,
         "gx:LegalPerson → gx:Participant → gx:GaiaXEntity; should resolve to Participant");
@@ -98,7 +103,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://w3id.org/gaia-x/2511#DigitalServiceOffering");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
     assertEquals(new ResolvedRole(PROFILE_ID, "ServiceOffering"), result,
         "gx:DigitalServiceOffering is a sibling of gx:ServiceOffering; resolves via additionalRoots");
@@ -110,7 +115,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://w3id.org/gaia-x/2511#DataProduct");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
     assertEquals(new ResolvedRole(PROFILE_ID, "ServiceOffering"), result,
         "gx:DataProduct rdfs:subClassOf gx:DigitalServiceOffering; traversal from DSO root reaches DataProduct");
@@ -122,7 +127,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://w3id.org/gaia-x/2511#VirtualResource");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
     assertEquals(new ResolvedRole(PROFILE_ID, "Resource"), result,
         "gx:VirtualResource rdfs:subClassOf gx:Resource; should resolve to Resource");
@@ -134,7 +139,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://example.com/SomeOtherType");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, loireRegistry, null, ALL_ENABLED);
 
     assertFalse(result.isResolved(), "Type not in the 2511 hierarchy should return UNKNOWN");
   }
@@ -147,7 +152,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://w3id.org/gaia-x/2511#LegalPerson");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, legacyRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, legacyRegistry, null, ALL_ENABLED);
 
     assertFalse(result.isResolved(),
         "gx:2511#LegalPerson is not a subclass of gax-core:Participant; "
@@ -172,7 +177,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://example.com/CustomParticipant");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, rootsOnlyRegistry, compositeOntology);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, rootsOnlyRegistry, compositeOntology, ALL_ENABLED);
 
     assertEquals(new ResolvedRole(PROFILE_ID, "Participant"), result,
         "Custom subclass absent from boot index should resolve via composite ontology");
@@ -185,7 +190,7 @@ class LoireTypeResolutionTest {
     String credential = buildCredential("https://example.com/CustomParticipant");
 
     ResolvedRole result =
-        ClaimValidator.resolveSubjectRole(streamManager, credential, rootsOnlyRegistry, null);
+        ClaimValidator.resolveSubjectRole(streamManager, credential, rootsOnlyRegistry, null, ALL_ENABLED);
 
     assertFalse(result.isResolved(),
         "Custom subclass absent from boot index with no ontology fallback should return UNKNOWN");

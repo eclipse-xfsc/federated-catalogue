@@ -548,7 +548,8 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
   private ResolvedRole resolveRole(VerifiableCredential credential, CredentialFormat format) {
     ResolvedRole result = ClaimValidator.resolveSubjectRole(
         getStreamManager(), credential.toJson(), trustFrameworkRegistry,
-        schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY));
+        schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY),
+        trustFrameworkService::isRoleEnabled);
     log.debug("resolveRole; format: {}, got role: {}", format, result);
     return result;
   }

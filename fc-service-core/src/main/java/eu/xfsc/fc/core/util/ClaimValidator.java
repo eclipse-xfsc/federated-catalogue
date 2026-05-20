@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,6 +33,7 @@ import org.apache.jena.riot.system.stream.StreamManager;
 import org.apache.jena.shared.impl.JenaParameters;
 import org.apache.jena.vocabulary.RDF;
 
+import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.RdfClaim;
@@ -45,6 +47,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ClaimValidator {
+
+  /**
+   * Message template for role-toggle rejection. Used in {@link ClientException} when a resolved
+   * role is explicitly disabled.
+   * Arguments (in order): {@code frameworkProfileId}, {@code role}.
+   */
+  static final String ROLE_DISABLED_MSG = "Trust framework role '%s/%s' is disabled";
+
     // Stored to temporarily deviate from the standard Jena behavior of parsing
     // literals
 	// don't see how it can work in multithreaded scenario!
@@ -184,10 +194,15 @@ public class ClaimValidator {
    * @param subject           JSON-LD credential string whose {@code credentialSubject} type is inspected
    * @param registry          the active trust-framework registry
    * @param compositeOntology union ontology to use as fallback; may be {@code null}
+   * @param isRoleEnabled     predicate {@code (bundleId, roleName) -> enabled}; when it returns
+   *                          {@code false} for the matched role a {@link ClientException} is thrown
    * @return the first resolved role, or {@link ResolvedRole#UNKNOWN} when no framework claims the type
+   * @throws ClientException when the matched role is disabled according to {@code isRoleEnabled}
    */
   public static ResolvedRole resolveSubjectRole(StreamManager sm, String subject,
-                                                TrustFrameworkRegistry registry, ContentAccessor compositeOntology) {
+                                                TrustFrameworkRegistry registry,
+                                                ContentAccessor compositeOntology,
+                                                BiPredicate<String, String> isRoleEnabled) {
         try {
           Model data = ModelFactory.createDefaultModel();
           RDFParser.create()
@@ -207,14 +222,20 @@ public class ClaimValidator {
               String typeUri = rdfNode.asResource().getURI();
               ResolvedRole role = registry.resolveRole(typeUri);
               if (role.isResolved()) {
+                if (!isRoleEnabled.test(role.frameworkProfileId(), role.role())) {
+                  throw new ClientException(
+                      ROLE_DISABLED_MSG.formatted(role.frameworkProfileId(), role.role()));
+                }
                 return role;
               }
               unresolved.add(typeUri);
             }
           }
           if (compositeOntology != null && !unresolved.isEmpty()) {
-            return resolveViaOntology(unresolved, registry, compositeOntology);
+            return resolveViaOntology(unresolved, registry, compositeOntology, isRoleEnabled);
           }
+        } catch (ClientException ce) {
+          throw ce;
         } catch (Exception e) {
           log.debug("resolveSubjectRole.error: {}", e.getMessage());
         }
@@ -222,7 +243,9 @@ public class ClaimValidator {
   }
 
   private static ResolvedRole resolveViaOntology(List<String> typeUris,
-                                                 TrustFrameworkRegistry registry, ContentAccessor compositeOntology) {
+                                                 TrustFrameworkRegistry registry,
+                                                 ContentAccessor compositeOntology,
+                                                 BiPredicate<String, String> isRoleEnabled) {
     OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         model.read(new StringReader(compositeOntology.getContentAsString()), null, Lang.TURTLE.getName());
     for (TrustFrameworkBundle bundle : registry.getActiveBundles()) {
@@ -239,6 +262,10 @@ public class ClaimValidator {
         for (String typeUri : typeUris) {
           for (String rootUri : rootUris) {
             if (isSubclassOf(typeUri, rootUri, model)) {
+              if (!isRoleEnabled.test(resolved.frameworkProfileId(), resolved.role())) {
+                throw new ClientException(
+                    ROLE_DISABLED_MSG.formatted(resolved.frameworkProfileId(), resolved.role()));
+              }
               return resolved;
             }
           }
