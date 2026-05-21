@@ -700,6 +700,14 @@ components:
           additionalProperties:
             type: boolean
           description: Per-role enabled state for this bundle, keyed by role name.
+    TrustFrameworkEnabledRequest:
+      type: object
+      required:
+        - enabled
+      properties:
+        enabled:
+          type: boolean
+          description: Desired enabled state of the trust framework family.
     TrustFrameworkConfigUpdate:
       type: object
       properties:
@@ -1339,14 +1347,17 @@ paths:
           required: true
           schema:
             type: string
-        - name: enabled
-          in: query
-          required: true
-          schema:
-            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrustFrameworkEnabledRequest'
       responses:
         '200':
           description: Framework enabled state updated
+        '400':
+          $ref: '#/components/responses/ClientError'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

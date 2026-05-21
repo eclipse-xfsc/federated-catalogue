@@ -94,8 +94,10 @@ $(document).ready(function() {
       var enabled = $toggle.is(':checked');
 
       $.ajax({
-        url: '/admin/trust-frameworks/' + encodeURIComponent(id) + '/enabled?enabled=' + enabled,
+        url: '/admin/trust-frameworks/' + encodeURIComponent(id) + '/enabled',
         type: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({enabled: enabled}),
         error: function() {
           $toggle.prop('checked', !enabled);
           alert('Failed to update trust framework status.');

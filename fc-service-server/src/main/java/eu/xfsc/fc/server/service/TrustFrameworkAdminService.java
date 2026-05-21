@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkEnabledRequest;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
@@ -74,8 +75,9 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   }
 
   @Override
-  public ResponseEntity<Void> setTrustFrameworkEnabled(String id, Boolean enabled) {
-    trustFrameworkService.setEnabled(id, enabled);
+  public ResponseEntity<Void> setTrustFrameworkEnabled(String id,
+      TrustFrameworkEnabledRequest request) {
+    trustFrameworkService.setEnabled(id, request.getEnabled());
     return ResponseEntity.ok().build();
   }
 

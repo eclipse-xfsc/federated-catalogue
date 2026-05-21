@@ -69,7 +69,8 @@ public class TrustFrameworkAdminControllerTest {
   @WithMockUser
   void setTrustFrameworkEnabled_withoutAdminRole_returns403() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x/enabled")
-            .param("enabled", "true")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":true}")
             .with(csrf()))
         .andExpect(status().isForbidden());
   }
@@ -77,7 +78,8 @@ public class TrustFrameworkAdminControllerTest {
   @Test
   void setTrustFrameworkEnabled_unauthenticated_returns401() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x/enabled")
-            .param("enabled", "true")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":true}")
             .with(csrf()))
         .andExpect(status().isUnauthorized());
   }
@@ -107,27 +109,37 @@ public class TrustFrameworkAdminControllerTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void setTrustFrameworkEnabled_validId_returns200() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x/enabled")
-            .param("enabled", "true")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":true}")
             .with(csrf()))
         .andExpect(status().isOk());
 
-    // Verify it was enabled
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$[0].enabled").value(true));
 
-    // Reset
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x/enabled")
-            .param("enabled", "false")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":false}")
             .with(csrf()))
         .andExpect(status().isOk());
   }
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
+  void setTrustFrameworkEnabled_missingBody_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x/enabled")
+            .contentType(MediaType.APPLICATION_JSON)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
   void setTrustFrameworkEnabled_invalidId_returns404() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/nonexistent/enabled")
-            .param("enabled", "true")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":true}")
             .with(csrf()))
         .andExpect(status().isNotFound());
   }
