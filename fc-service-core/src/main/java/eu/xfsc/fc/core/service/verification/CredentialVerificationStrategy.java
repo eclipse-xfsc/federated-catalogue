@@ -139,7 +139,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
     if (verifySchema) {
       if (!schemaModuleConfigService.isModuleEnabled(SchemaModuleType.SHACL)) {
         throw new ClientException(
-            "Schema validation module '" + SchemaModuleType.SHACL + "' is disabled");
+            SchemaModuleConfigService.MODULE_DISABLED_PREFIX + SchemaModuleType.SHACL);
       }
       validateSchema(filtered.claims());
     }
@@ -544,11 +544,26 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
    * Resolves the trust-framework role of a credential. Uses the registry index as the fast path;
    * falls back to the composite schema ontology for subclasses introduced via dynamically
    * uploaded schemas.
+   *
+   * <p>The OWL composite ontology is only consulted when the {@code OWL} schema module is
+   * administratively enabled (admin toggle on the schema-validation page). When OWL is
+   * disabled, this method passes {@code null} to {@link ClaimValidator#resolveSubjectRole}:
+   * the registry-index fast path still runs (so framework-direct types like Participant,
+   * ServiceOffering, Resource keep resolving), but the slow {@code rdfs:subClassOf+} walk
+   * over uploaded ontologies is skipped — custom subclass-only types resolve to
+   * {@link ResolvedRole#UNKNOWN}.</p>
+   *
+   * <p>The toggle does not ride on the caller's {@code verifySchema} or
+   * {@code verifySemantics} flags: type dispatch is a configuration of the catalogue's
+   * type system, not a per-request validation step.</p>
    */
   private ResolvedRole resolveRole(VerifiableCredential credential, CredentialFormat format) {
+    ContentAccessor compositeOntology =
+        schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)
+            ? schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY)
+            : null;
     ResolvedRole result = ClaimValidator.resolveSubjectRole(
-        getStreamManager(), credential.toJson(), trustFrameworkRegistry,
-        schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY));
+        getStreamManager(), credential.toJson(), trustFrameworkRegistry, compositeOntology);
     log.debug("resolveRole; format: {}, got role: {}", format, result);
     return result;
   }

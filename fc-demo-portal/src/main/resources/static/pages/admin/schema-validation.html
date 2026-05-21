@@ -1,17 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><title>Schema Validation</title></head>
+<head><title>Schema Modules</title></head>
 <body>
 <div class="container-fluid mt-2">
     <div id="admin-content" style="display:none">
 
-        <div class="mb-3">
+        <h6 class="text-muted text-uppercase fw-semibold mb-2 admin-section-header">
+            <i class="bi bi-shield-check me-1"></i>Validators
+        </h6>
+        <p class="text-muted small mb-3">
+            Gate whether the catalogue runs that validator. SHACL validates
+            RDF credentials; JSON Schema and XML Schema validate non-RDF
+            assets. Schema storage is toggle-independent.
+        </p>
+        <div class="mb-2">
             <span class="badge bg-info" style="font-size: 0.9rem;">
-                Total Schemas: <span id="totalSchemaCount">-</span>
+                Schemas: <span id="validatorSchemaCount">-</span>
             </span>
         </div>
-
-        <table class="table table-bordered table-light cell-border" id="svTable" style="width:100%">
+        <table class="table table-bordered table-light cell-border" id="svValidatorTable" style="width:100%">
             <thead>
             <tr>
                 <th>Module</th>
@@ -21,6 +28,55 @@
             </tr>
             </thead>
         </table>
+
+        <h6 class="text-muted text-uppercase fw-semibold mb-2 admin-section-header mt-4">
+            <i class="bi bi-diagram-3 me-1"></i>Ontologies
+        </h6>
+        <p class="text-muted small mb-2">
+            Controls whether uploaded ontologies extend the catalogue's recognised
+            type vocabulary.
+        </p>
+        <ul class="text-muted small mb-3 ps-3">
+            <li><strong>On:</strong> custom credential types defined via
+                <code>rdfs:subClassOf</code> resolve to a role.</li>
+            <li><strong>Off:</strong> only types built into the trust framework
+                resolve; uploads using custom subclasses are rejected.</li>
+        </ul>
+        <div class="mb-2">
+            <span class="badge bg-info" style="font-size: 0.9rem;">
+                Ontologies: <span id="ontologySchemaCount">-</span>
+            </span>
+        </div>
+        <table class="table table-bordered table-light cell-border" id="svOwlTable" style="width:100%">
+            <thead>
+            <tr>
+                <th>Module</th>
+                <th>Description</th>
+                <th>Schemas</th>
+                <th>Active</th>
+            </tr>
+            </thead>
+        </table>
+
+        <div id="owlOntologyPanel" class="card mt-2">
+            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <i class="bi bi-diagram-3 me-1"></i>Uploaded ontologies consulted when OWL is on
+                </span>
+                <small id="owlOntologyPanelHint" class="text-muted"></small>
+            </div>
+            <div class="card-body p-2">
+                <table class="table table-sm table-borderless mb-0" id="owlOntologyTable" style="width:100%">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Uploaded</th>
+                        <th>Contributions</th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
 
     </div>
 </div>
