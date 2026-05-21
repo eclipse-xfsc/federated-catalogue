@@ -22,6 +22,7 @@ import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkEnabledRequest;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.client.AdminClient;
 import lombok.RequiredArgsConstructor;
@@ -80,9 +81,9 @@ public class AdminController {
   @PutMapping("/trust-frameworks/{id}/enabled")
   public void setTrustFrameworkEnabled(
       @PathVariable("id") String id,
-      @RequestParam("enabled") boolean enabled,
+      @RequestBody TrustFrameworkEnabledRequest request,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    adminClient.setTrustFrameworkEnabled(id, enabled, authorizedClient);
+    adminClient.setTrustFrameworkEnabled(id, request, authorizedClient);
   }
 
   /** Update a trust framework's configuration. */

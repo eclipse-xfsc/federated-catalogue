@@ -15,6 +15,7 @@ import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkEnabledRequest;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 
 /**
@@ -55,10 +56,10 @@ public class AdminClient extends ServiceClient {
     }
 
     /** Toggles a trust framework's enabled state. */
-    public void setTrustFrameworkEnabled(String id, boolean enabled,
+    public void setTrustFrameworkEnabled(String id, TrustFrameworkEnabledRequest request,
         OAuth2AuthorizedClient authorizedClient) {
-        doPut("/admin/trust-frameworks/{id}/enabled", "",
-            Map.of("id", id), Map.of("enabled", enabled), Void.class, authorizedClient);
+        doPut("/admin/trust-frameworks/{id}/enabled", request,
+            Map.of("id", id), Map.of(), Void.class, authorizedClient);
     }
 
     /** Updates a trust framework's configuration. */
