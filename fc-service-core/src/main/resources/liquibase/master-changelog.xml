@@ -21,4 +21,5 @@
     <include file="changesets/015-validation-result-outdated.xml" relativeToChangelogFile="true" />
     <include file="changesets/016-content-kind.xml" relativeToChangelogFile="true" />
     <include file="changesets/017-trust-framework-role-states.xml" relativeToChangelogFile="true" />
+    <include file="changesets/018-mock-trust-framework-seed.xml" relativeToChangelogFile="true" />
 </databaseChangeLog>

@@ -1,6 +1,7 @@
 package eu.xfsc.fc.server.controller;
 
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.notNullValue;
@@ -43,11 +44,11 @@ public class TrustFrameworkAdminControllerTest {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$", hasSize(1)))
-        .andExpect(jsonPath("$[0].id").value("gaia-x"))
-        .andExpect(jsonPath("$[0].name").value("Gaia-X Trust Framework"))
-        .andExpect(jsonPath("$[0].enabled").value(false))
-        .andExpect(jsonPath("$[0].connected").value(isA(Boolean.class)));
+        .andExpect(jsonPath("$", hasSize(2)))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].name").value(hasItem("Gaia-X Trust Framework")))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].enabled").value(hasItem(false)))
+        .andExpect(jsonPath("$[?(@.id == 'mock')].name").value(hasItem("Mock Trust Framework")))
+        .andExpect(jsonPath("$[?(@.id == 'mock')].enabled").value(hasItem(false)));
   }
 
   @Test
@@ -116,7 +117,7 @@ public class TrustFrameworkAdminControllerTest {
 
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$[0].enabled").value(true));
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].enabled").value(hasItem(true)));
 
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x/enabled")
             .contentType(MediaType.APPLICATION_JSON)
@@ -159,9 +160,9 @@ public class TrustFrameworkAdminControllerTest {
     // Verify update
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$[0].serviceUrl").value("https://new.example.com"))
-        .andExpect(jsonPath("$[0].apiVersion").value("v2"))
-        .andExpect(jsonPath("$[0].timeoutSeconds").value(60));
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].serviceUrl").value(hasItem("https://new.example.com")))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].apiVersion").value(hasItem("v2")))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].timeoutSeconds").value(hasItem(60)));
   }
 
   // --- AC-3: role-toggle endpoint ---
@@ -239,10 +240,38 @@ public class TrustFrameworkAdminControllerTest {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].bundles", hasSize(1)))
-        .andExpect(jsonPath("$[0].bundles[0].id").value("gaia-x-2511"))
-        .andExpect(jsonPath("$[0].bundles[0].roles.Participant").value(true))
-        .andExpect(jsonPath("$[0].bundles[0].roles.ServiceOffering").value(true))
-        .andExpect(jsonPath("$[0].bundles[0].roles.Resource").value(true));
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].id").value(hasItem("gaia-x-2511")))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].roles.Participant").value(hasItem(true)))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].roles.ServiceOffering").value(hasItem(true)))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].roles.Resource").value(hasItem(true)));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void getTrustFrameworks_mockFamily_includesMock2026Bundle() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].id").value(hasItem("mock-2026")));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void setTrustFrameworkEnabled_mockFamily_activatesAndReflectsInGet() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/mock/enabled")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":true}")
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$[?(@.id == 'mock')].enabled").value(hasItem(true)));
+
+    mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/mock/enabled")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"enabled\":false}")
+            .with(csrf()))
+        .andExpect(status().isOk());
   }
 }
