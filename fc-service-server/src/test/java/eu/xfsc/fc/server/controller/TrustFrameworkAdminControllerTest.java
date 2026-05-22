@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static wiremock.org.hamcrest.Matchers.hasItem;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -160,6 +161,9 @@ public class TrustFrameworkAdminControllerTest {
     // Verify update
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$[0].serviceUrl").value("https://new.example.com"))
+        .andExpect(jsonPath("$[0].apiVersion").value("v2"))
+        .andExpect(jsonPath("$[0].timeoutSeconds").value(60))
         .andExpect(jsonPath("$[?(@.id == 'gaia-x')].serviceUrl").value(hasItem("https://new.example.com")))
         .andExpect(jsonPath("$[?(@.id == 'gaia-x')].apiVersion").value(hasItem("v2")))
         .andExpect(jsonPath("$[?(@.id == 'gaia-x')].timeoutSeconds").value(hasItem(60)));
