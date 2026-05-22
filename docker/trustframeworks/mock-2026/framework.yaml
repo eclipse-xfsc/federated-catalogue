@@ -1,0 +1,13 @@
+# Filesystem overlay for the classpath mock-2026 bundle.
+# Mounted at /app/trustframeworks-override by docker-compose.strict.yml.
+#
+# Purpose: mock-2026 — exercises the catalogue's "call a GXDCH compliance service"
+# code path against a WireMock stub instead of a real GXDCH operator.
+# mock-2026 stays as the permanent local-dev / BDD compliance-stub path
+# (driven by @uses.compliance-mock scenarios in cat-integration-tests).
+#
+# Redirects service_url from the classpath placeholder ("http://localhost")
+# to the compliance-mock WireMock container on the gaia-x Docker network.
+id: mock-2026
+properties:
+  service_url: "http://compliance-mock:8080"

@@ -167,6 +167,11 @@ federated-catalogue:
   # Env: FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS=gaia-x
   # Per-framework verification config (e.g. trust anchor URL) lives in the bundle, not here.
   enabled-trust-frameworks: ""
+  trust-frameworks:
+    # Path to a directory of filesystem bundle subdirectories that override (by id) or extend the classpath bundles.
+    # Filesystem bundles with a matching id replace the classpath bundle; new ids are appended.
+    # Env: FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH=/path/to/trustframeworks
+    override-path: "${FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH:}"
   verification:
     http-timeout: 3000
 
