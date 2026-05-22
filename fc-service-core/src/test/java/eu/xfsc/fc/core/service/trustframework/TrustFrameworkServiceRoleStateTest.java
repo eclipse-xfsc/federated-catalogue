@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.trustframework;
 
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_PARTICIPANT;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_RESOURCE;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_SERVICE_OFFERING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -158,6 +159,20 @@ class TrustFrameworkServiceRoleStateTest {
 
     assertThat(states).containsEntry(TFW_ROLE_PARTICIPANT, false);
     assertThat(states).containsEntry(TFW_ROLE_SERVICE_OFFERING, true);
+  }
+
+  @Test
+  void getRoleStates_preservesYamlDeclarationOrder() {
+    // gaia-x-2511 framework.yaml declares roles in the order:
+    //   Participant, ServiceOffering, Resource
+    // The returned LinkedHashMap must iterate in that exact order so the UI can render
+    // role-toggle rows deterministically.
+    Map<String, Boolean> states = service.getRoleStates(BUNDLE_GAIA_X_2511);
+
+    assertThat(states).containsExactly(
+        Map.entry(TFW_ROLE_PARTICIPANT, true),
+        Map.entry(TFW_ROLE_SERVICE_OFFERING, true),
+        Map.entry(TFW_ROLE_RESOURCE, true));
   }
 
   @Test

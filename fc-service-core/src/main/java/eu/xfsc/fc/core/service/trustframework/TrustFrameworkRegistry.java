@@ -7,6 +7,7 @@ import java.io.StringReader;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,7 @@ public class TrustFrameworkRegistry {
    * @param bundles the list of bundles to register
    */
   public TrustFrameworkRegistry(List<TrustFrameworkBundle> bundles) {
-    this.bundleIndex = new HashMap<>();
+    this.bundleIndex = new LinkedHashMap<>();
     this.typeIndex = new HashMap<>();
     var active = new java.util.HashSet<String>();
     for (TrustFrameworkBundle bundle : bundles) {
@@ -140,9 +141,12 @@ public class TrustFrameworkRegistry {
 
   /**
    * Returns every bundle that was registered at construction time, whether active or deferred.
+   * The iteration order matches the order in which bundles were registered (i.e. the order of
+   * the {@code bundles} list passed to the constructor); duplicate IDs are skipped on first
+   * occurrence.
    * Modifications to the returned collection will not affect the registry's internal state.
    *
-   * @return immutable collection of all registered bundles; never null
+   * @return immutable collection of all registered bundles in registration order; never null
    */
   public Collection<TrustFrameworkBundle> getAllBundles() {
     return List.copyOf(bundleIndex.values());

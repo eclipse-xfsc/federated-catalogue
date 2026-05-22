@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -150,6 +151,22 @@ class TrustFrameworkRegistryTest {
   }
 
   @Test
+  void getAllBundles_preservesRegistrationOrder() {
+    // Three bundles with profile IDs intentionally not in lexicographic order, so a HashMap-backed
+    // index would shuffle them. Iteration must follow input list order.
+    var bundleZ = shaclBundle("z-framework", "https://example.org/z/",
+        Map.of("Participant", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+    var bundleA = shaclBundle("a-framework", "https://example.org/a/",
+        Map.of("Participant", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+    var bundleM = shaclBundle("m-framework", "https://example.org/m/",
+        Map.of("Participant", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+
+    var registry = new TrustFrameworkRegistry(List.of(bundleZ, bundleA, bundleM));
+
+    assertThat(registry.getAllBundles()).containsExactly(bundleZ, bundleA, bundleM);
+  }
+
+  @Test
   void getActiveBundles_returnsImmutableSnapshot() {
     var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
@@ -205,6 +222,20 @@ class TrustFrameworkRegistryTest {
     var registry = new TrustFrameworkRegistry(List.of());
 
     assertThat(registry.getEffectiveRoles("no-such-framework")).isEmpty();
+  }
+
+  @Test
+  void getEffectiveRoles_preservesDeclarationOrder() {
+    // LinkedHashMap fixes the input declaration order; Map.of() would scramble it.
+    var roles = new LinkedHashMap<String, RoleConfig>();
+    roles.put("Resource", new RoleConfig(List.of(), List.of()));
+    roles.put("Participant", new RoleConfig(List.of(), List.of()));
+    roles.put("ServiceOffering", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, MINIMAL_ONTOLOGY);
+    var registry = new TrustFrameworkRegistry(List.of(bundle));
+
+    assertThat(registry.getEffectiveRoles("gaia-x-2511"))
+        .containsExactly("Resource", "Participant", "ServiceOffering");
   }
 
   @Test
