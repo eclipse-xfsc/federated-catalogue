@@ -5,10 +5,13 @@ import eu.xfsc.fc.core.service.trustframework.compliance.TrustFrameworkProfileCo
 
 import java.io.StringReader;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -215,16 +218,19 @@ public class TrustFrameworkRegistry {
   }
 
   /**
-   * Returns the set of effective role names declared in the bundle associated with the given profile ID.
+   * Returns an ordered, unmodifiable set of effective role names declared in the bundle associated with the given profile ID.
+   * The returned set preserves the declaration order from the bundle YAML configuration.
    * If no bundle is registered under the profile ID, returns an empty set.
    *
    * @param profileId the ID of the profile to look up
-   * @return a set of role names declared in the bundle, or an empty set if no bundle is registered under the profile ID
+   * @return an ordered unmodifiable set of role names declared in the bundle, or an empty set if no bundle is registered under the profile ID
    */
-  public Set<String> getEffectiveRoles(String profileId) {
-    return bundleIndex.containsKey(profileId)
-        ? Set.copyOf(bundleIndex.get(profileId).config().roles().keySet())
-        : Set.of();
+  public SequencedSet<String> getEffectiveRoles(String profileId) {
+    if (!bundleIndex.containsKey(profileId)) {
+      return Collections.unmodifiableSequencedSet(new LinkedHashSet<>());
+    }
+    return Collections.unmodifiableSequencedSet(
+        new LinkedHashSet<>(bundleIndex.get(profileId).config().roles().keySet()));
   }
 
   /**
