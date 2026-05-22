@@ -81,6 +81,10 @@ class TrustFrameworkServiceRoleStateTest {
 
   @Test
   void isRoleEnabled_noRowPersisted_returnsTrue() {
+    // Family must be enabled, otherwise bundle-off dominance short-circuits to true
+    // and the role-state lookup path is never exercised.
+    service.setEnabled(FAMILY_GAIA_X, true);
+
     // No explicit state row → absence means enabled by default
     assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
   }
@@ -105,6 +109,9 @@ class TrustFrameworkServiceRoleStateTest {
 
   @Test
   void setRoleEnabled_oneRole_doesNotAffectOtherRole() {
+    // Family must be enabled, otherwise bundle-off dominance short-circuits to true
+    // and the role-state lookup path is never exercised.
+    service.setEnabled(FAMILY_GAIA_X, true);
     service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
 
     // ServiceOffering was not touched — must still read as default true
