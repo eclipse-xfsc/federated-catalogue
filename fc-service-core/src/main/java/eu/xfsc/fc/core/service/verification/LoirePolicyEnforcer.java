@@ -57,13 +57,6 @@ public class LoirePolicyEnforcer {
    */
   private static final String PROFILE_ID = "gaia-x-2511";
 
-  /**
-   * Property key inside the bundle's {@code properties} map carrying the trust anchor
-   * registry URL. Read from the framework bundle at runtime so the value lives with the
-   * rest of the bundle's configuration rather than in application-level properties.
-   */
-  private static final String PROPERTY_TRUST_ANCHOR_URL = "trust_anchor_url";
-
   private final TrustFrameworkRegistry trustFrameworkRegistry;
   private final TrustFrameworkService trustFrameworkService;
   private final ObjectMapper objectMapper;
@@ -119,7 +112,7 @@ public class LoirePolicyEnforcer {
    */
   private Optional<String> trustAnchorUrl() {
     return trustFrameworkRegistry.getBundle(PROFILE_ID)
-        .map(b -> b.config().properties().get(PROPERTY_TRUST_ANCHOR_URL))
+        .map(b -> b.config().properties().get(TrustFrameworkRegistry.TRUST_ANCHOR_URL))
         .filter(s -> !s.isBlank());
   }
 

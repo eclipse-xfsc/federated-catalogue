@@ -62,8 +62,10 @@ public class TrustFrameworkRegistry {
   // Property keys for deriving TrustFrameworkProfileConfig from bundle properties
   public static final String CLIENT_TYPE = "client_type";
   public static final String SERVICE_URL = "service_url";
+  public static final String COMPLIANCE_PATH = "compliance_path";
   public static final String API_VERSION = "api_version";
   public static final String TIMEOUT_SECONDS = "timeout_seconds";
+  public static final String TRUST_ANCHOR_URL = "trust_anchor_url";
 
   private final Map<String, ResolvedRole> typeIndex;
   private final Map<String, TrustFrameworkBundle> bundleIndex;
@@ -134,6 +136,16 @@ public class TrustFrameworkRegistry {
   }
 
   /**
+   * Returns every bundle that was registered at construction time, whether active or deferred.
+   * Modifications to the returned collection will not affect the registry's internal state.
+   *
+   * @return immutable collection of all registered bundles; never null
+   */
+  public Collection<TrustFrameworkBundle> getAllBundles() {
+    return List.copyOf(bundleIndex.values());
+  }
+
+  /**
    * Returns only the bundles that are currently active (i.e. their validation engine is wired and
    * their types participate in role resolution).
    * Modifications to the returned collection will not affect the registry's internal state.
@@ -163,11 +175,17 @@ public class TrustFrameworkRegistry {
    * Derives a {@link TrustFrameworkProfileConfig} from the bundle registered under the given
    * profile ID. Returns empty when no bundle is registered for that ID.
    *
-   * <p>Fields absent from the bundle configuration fall back to safe defaults:
+   * <p>{@code compliance_path} is required in every bundle that exposes a compliance endpoint:
+   * the trust-framework client family for a given client type is wire-shape-opinionated but
+   * path-agnostic, so each framework declares its own endpoint path. A blank or missing value
+   * causes this method to throw with an {@link IllegalStateException}.
+   *
+   * <p>Other absent fields fall back to safe defaults:
    * {@code apiVersion} defaults to {@code DEFAULT_API_VERSION}, {@code timeoutSeconds} to {@code DEFAULT_TIMEOUT_SECONDS}.
    *
    * @param profileId the ID of the profile to look up
    * @return an Optional containing the derived config, or empty if no bundle is registered
+   * @throws IllegalStateException when the registered bundle is missing {@code compliance_path}
    */
   public Optional<TrustFrameworkProfileConfig> getProfileConfig(String profileId) {
     return getBundle(profileId).map(bundle -> {
@@ -175,6 +193,11 @@ public class TrustFrameworkRegistry {
       Map<String, String> props = cfg.properties();
       String clientType = props.get(CLIENT_TYPE);
       String serviceUrl = props.get(SERVICE_URL);
+      String compliancePath = props.get(COMPLIANCE_PATH);
+      if (compliancePath == null || compliancePath.isBlank()) {
+        throw new IllegalStateException(
+            "Bundle '" + cfg.id() + "' is missing required property '" + COMPLIANCE_PATH + "'");
+      }
       String rawApiVersion = props.get(API_VERSION);
       String apiVersion = rawApiVersion != null ? rawApiVersion : DEFAULT_API_VERSION;
       String rawTimeout = props.get(TIMEOUT_SECONDS);
@@ -184,6 +207,7 @@ public class TrustFrameworkRegistry {
           cfg.family(),
           clientType,
           serviceUrl,
+          compliancePath,
           apiVersion,
           timeoutSeconds
       );

@@ -96,6 +96,11 @@ NOTES:
   - full/strict/full-original always rebuild images (--build) to avoid stale containers
   - The 'watch' command requires Docker Compose v2.22.0+
   - Build artifacts are cached; use 'mvn clean' if needed
+  - Under the 'strict' profile, the Gaia-X compliance overlay redirects trust-
+    anchor resolution to the local did-server mock. service_url stays at the
+    classpath bundle value (live GXDCH at https://compliance.gaia-x.eu/v2). For
+    local compliance-stub work, use the mock-2026 family overlay; do not switch
+    the Gaia-X service URL.
 
 For more information, see the README.md file.
 EOF
