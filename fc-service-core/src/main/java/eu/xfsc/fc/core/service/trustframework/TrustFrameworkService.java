@@ -156,8 +156,11 @@ public class TrustFrameworkService {
     }
     var id = new TrustFrameworkRoleStateId(frameworkId, roleName);
     var state = roleStateRepository.findById(id)
+        .map(existing -> {
+          existing.setEnabled(enabled);
+          return existing;
+        })
         .orElseGet(() -> new TrustFrameworkRoleState(frameworkId, roleName, enabled));
-    state.setEnabled(enabled);
     roleStateRepository.save(state);
   }
 
