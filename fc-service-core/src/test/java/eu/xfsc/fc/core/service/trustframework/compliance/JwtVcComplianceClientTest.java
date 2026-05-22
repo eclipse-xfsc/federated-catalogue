@@ -23,15 +23,18 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
 /**
- * Unit tests for {@link GxdchComplianceClient} against a local HTTP stub.
+ * Unit tests for {@link JwtVcComplianceClient} against a local HTTP stub.
  * No Spring context required.
  */
-class GxdchComplianceClientTest {
+class JwtVcComplianceClientTest {
+
+  private static final String CLIENT_TYPE = "jwt-vc-compliance";
+  private static final String COMPLIANCE_PATH = "/api/credential-offers/standard-compliance";
 
   // JWT with payload {"id":"https://example.com/asset-001"} — sent as VP body
   private static final String TEST_VP_JWT =
       "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"
-      + ".eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5jb20vYXNzZXQtMDAxIn0.";
+          + ".eyJpZCI6Imh0dHBzOi8vZXhhbXBsZS5jb20vYXNzZXQtMDAxIn0.";
 
   // JWT with payload {} — no id claim
   private static final String VP_JWT_NO_ID =
@@ -40,10 +43,10 @@ class GxdchComplianceClientTest {
   // Compliance credential JWT with iss=did:web:compliance.example, exp=1767223999
   private static final String CANNED_CC_JWT =
       "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"
-      + ".eyJpc3MiOiJkaWQ6d2ViOmNvbXBsaWFuY2UuZXhhbXBsZSIsImV4cCI6MTc2NzIyMzk5OX0.";
+          + ".eyJpc3MiOiJkaWQ6d2ViOmNvbXBsaWFuY2UuZXhhbXBsZSIsImV4cCI6MTc2NzIyMzk5OX0.";
 
   private MockWebServer server;
-  private GxdchComplianceClient client;
+  private JwtVcComplianceClient client;
   private TrustFrameworkProfileConfig config;
 
   @BeforeEach
@@ -51,13 +54,14 @@ class GxdchComplianceClientTest {
     server = new MockWebServer();
     server.start();
 
-    client = new GxdchComplianceClient();
+    client = new JwtVcComplianceClient();
 
     config = new TrustFrameworkProfileConfig(
         "mock-2026",
         "mock",
-        "gxdch-loire",
+        CLIENT_TYPE,
         server.url("").toString(),
+        COMPLIANCE_PATH,
         "loire",
         30
     );
@@ -69,8 +73,8 @@ class GxdchComplianceClientTest {
   }
 
   @Test
-  void clientType_returns_gxdchLoire() {
-    assertEquals("gxdch-loire", client.clientType());
+  void clientType_returns_jwtVcCompliance() {
+    assertEquals(CLIENT_TYPE, client.clientType());
   }
 
   @Test
@@ -92,8 +96,8 @@ class GxdchComplianceClientTest {
 
     RecordedRequest req = server.takeRequest();
     String expectedVcid = URLEncoder.encode("https://example.com/asset-001", StandardCharsets.UTF_8);
-    assertTrue(req.getPath().contains("/api/credential-offers/standard-compliance"),
-        "Path must include Loire compliance endpoint");
+    assertTrue(req.getPath().contains(COMPLIANCE_PATH),
+        "Path must include the configured compliance endpoint");
     assertTrue(req.getPath().contains("vcid=" + expectedVcid),
         "vcid query param must be single-percent-encoded");
     assertEquals(TEST_VP_JWT, req.getBody().readUtf8());
@@ -144,8 +148,8 @@ class GxdchComplianceClientTest {
         .setBody(CANNED_CC_JWT));
 
     var shortTimeoutConfig = new TrustFrameworkProfileConfig(
-        "mock-2026", "mock", "gxdch-loire",
-        server.url("").toString(), "loire", 1
+        "mock-2026", "mock", CLIENT_TYPE,
+        server.url("").toString(), COMPLIANCE_PATH, "loire", 1
     );
     var credential = new ContentAccessorDirect(TEST_VP_JWT);
 
@@ -173,8 +177,8 @@ class GxdchComplianceClientTest {
         .addHeader("Content-Type", "text/plain"));
 
     var trailingSlashConfig = new TrustFrameworkProfileConfig(
-        "mock-2026", "mock", "gxdch-loire",
-        server.url("") + "/", "loire", 30
+        "mock-2026", "mock", CLIENT_TYPE,
+        server.url("") + "/", COMPLIANCE_PATH, "loire", 30
     );
     var credential = new ContentAccessorDirect(TEST_VP_JWT);
 
@@ -183,7 +187,7 @@ class GxdchComplianceClientTest {
 
     RecordedRequest req = server.takeRequest(1, TimeUnit.SECONDS);
     assertNotNull(req, "Expected an HTTP request to be recorded");
-    assertTrue(req.getPath().startsWith("/api/credential-offers/standard-compliance"),
+    assertTrue(req.getPath().startsWith(COMPLIANCE_PATH),
         "Path must not have double slash from trailing serviceUrl");
   }
 

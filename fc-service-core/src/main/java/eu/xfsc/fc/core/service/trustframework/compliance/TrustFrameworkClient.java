@@ -5,8 +5,9 @@ import eu.xfsc.fc.core.pojo.ContentAccessor;
 /**
  * SPI for trust-framework compliance check implementations.
  *
- * <p>Each implementation handles one client type (e.g. {@code "gaiax-ipfs"},
- * {@code "train"}). Implementations are registered via {@link TrustFrameworkClientRegistry}.
+ * <p>Each implementation handles one client type (e.g. {@code "jwt-vc-compliance"} for REST + JWT-VC
+ * compliance services, or future shapes such as {@code "train"} for DNS/DNSSEC-anchored trust lists).
+ * Implementations are registered via {@link TrustFrameworkClientRegistry}.
  */
 public interface TrustFrameworkClient {
 

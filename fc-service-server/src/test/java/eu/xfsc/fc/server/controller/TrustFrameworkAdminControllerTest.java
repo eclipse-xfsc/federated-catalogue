@@ -84,7 +84,7 @@ public class TrustFrameworkAdminControllerTest {
   @Test
   @WithMockUser
   void updateTrustFrameworkConfig_withoutAdminRole_returns403() throws Exception {
-    String body = "{\"serviceUrl\":\"https://example.com\",\"apiVersion\":\"23.11\",\"timeoutSeconds\":30}";
+    String body = "{\"serviceUrl\":\"https://example.com\",\"apiVersion\":\"v2\",\"timeoutSeconds\":30}";
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x")
             .contentType(MediaType.APPLICATION_JSON)
             .content(body)
@@ -94,7 +94,7 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   void updateTrustFrameworkConfig_unauthenticated_returns401() throws Exception {
-    String body = "{\"serviceUrl\":\"https://example.com\",\"apiVersion\":\"23.11\",\"timeoutSeconds\":30}";
+    String body = "{\"serviceUrl\":\"https://example.com\",\"apiVersion\":\"v2\",\"timeoutSeconds\":30}";
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x")
             .contentType(MediaType.APPLICATION_JSON)
             .content(body)
@@ -135,7 +135,7 @@ public class TrustFrameworkAdminControllerTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void updateTrustFrameworkConfig_validPayload_returns200() throws Exception {
     String body = "{\"serviceUrl\":\"https://new.example.com\","
-        + "\"apiVersion\":\"23.11\",\"timeoutSeconds\":60}";
+        + "\"apiVersion\":\"v2\",\"timeoutSeconds\":60}";
 
     mockMvc.perform(MockMvcRequestBuilders.put("/admin/trust-frameworks/gaia-x")
             .contentType(MediaType.APPLICATION_JSON)
@@ -147,7 +147,7 @@ public class TrustFrameworkAdminControllerTest {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$[0].serviceUrl").value("https://new.example.com"))
-        .andExpect(jsonPath("$[0].apiVersion").value("23.11"))
+        .andExpect(jsonPath("$[0].apiVersion").value("v2"))
         .andExpect(jsonPath("$[0].timeoutSeconds").value(60));
   }
 }

@@ -8,6 +8,8 @@ package eu.xfsc.fc.core.service.trustframework.compliance;
  * @param familyId           family identifier grouping related profiles
  * @param clientType         key selecting the {@link TrustFrameworkClient} implementation
  * @param serviceUrl         base URL of the compliance service endpoint
+ * @param compliancePath     path appended to {@code serviceUrl} when calling the compliance
+ *                           endpoint; must be non-blank
  * @param apiVersion         API version string sent to the compliance service
  * @param timeoutSeconds     per-request timeout in seconds
  */
@@ -16,6 +18,7 @@ public record TrustFrameworkProfileConfig(
     String familyId,
     String clientType,
     String serviceUrl,
+    String compliancePath,
     String apiVersion,
     int timeoutSeconds
 ) {

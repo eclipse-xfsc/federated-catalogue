@@ -15,6 +15,9 @@ roles:
     types: [ ]
 
 properties:
-  client_type: gxdch-loire
-  api_version: loire
+  # Reuses the generic REST + JWT-VC compliance client against a WireMock stub that mimics the
+  # GXDCH wire shape.
+  client_type: jwt-vc-compliance
+  api_version: "v2"
   service_url: "http://localhost"
+  compliance_path: "/api/credential-offers/standard-compliance"
