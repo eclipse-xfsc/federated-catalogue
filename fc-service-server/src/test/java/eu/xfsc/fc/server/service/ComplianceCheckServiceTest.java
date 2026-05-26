@@ -203,7 +203,7 @@ class ComplianceCheckServiceTest {
   }
 
   private static TrustFrameworkConfig tfConfig(String id, String name, boolean enabled) {
-    return new TrustFrameworkConfig(id, name, null, "1.0", 30, enabled, null, null);
+    return new TrustFrameworkConfig(id, name, enabled, null, null);
   }
 
   private static TrustFrameworkBundle bundle(String profileId, String familyId) {

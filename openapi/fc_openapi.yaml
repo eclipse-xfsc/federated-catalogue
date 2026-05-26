@@ -669,18 +669,6 @@ components:
         name:
           type: string
           description: Display name
-        serviceUrl:
-          type: string
-          description: Trust framework service URL
-        apiVersion:
-          type: string
-          description: API version
-        timeoutSeconds:
-          type: integer
-          description: Connection timeout in seconds
-        connected:
-          type: boolean
-          description: Whether the service is currently reachable
         enabled:
           type: boolean
           description: Whether this framework is active
@@ -712,17 +700,6 @@ components:
         enabled:
           type: boolean
           description: Desired enabled state of the trust framework family.
-        serviceUrl:
-          type: string
-          description: New compliance service URL.
-        apiVersion:
-          type: string
-          description: New API version string.
-        timeoutSeconds:
-          type: integer
-          description: Connection timeout in seconds.
-          minimum: 1
-          maximum: 300
     SchemaModulePatch:
       type: object
       description: >-

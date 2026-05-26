@@ -1,6 +1,5 @@
 package eu.xfsc.fc.server.service;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,27 +18,22 @@ import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
-import eu.xfsc.fc.server.config.AdminDashboardConfig;
 import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * HTTP delegate for the trust framework admin endpoints. Delegates persistence operations
- * to {@link TrustFrameworkService}; only HTTP-shape concerns (status codes, DTO mapping,
- * connectivity probing) live here.
+ * to {@link TrustFrameworkService}; only HTTP-shape concerns (status codes, DTO mapping)
+ * live here.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegate {
 
-  private static final Duration CONNECTIVITY_TIMEOUT = Duration.ofSeconds(5);
-  private static final int DEFAULT_TIMEOUT_SECONDS = 30;
-
   private final TrustFrameworkService trustFrameworkService;
   private final TrustFrameworkRegistry trustFrameworkRegistry;
-  private final AdminDashboardConfig adminDashboardConfig;
 
   @Value("${federated-catalogue.enabled-trust-frameworks:}")
   private List<String> enabledTrustFrameworkFamilies;
@@ -76,8 +70,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
 
   /**
    * Applies a merge-patch to the identified trust framework family. Supports toggling the
-   * enabled state and updating configuration fields independently or in combination.
-   * Returns 404 if the family identifier is not registered.
+   * enabled state. Returns 404 if the family identifier is not registered.
    *
    * @param id    trust framework family identifier
    * @param patch fields to update; only non-null fields are applied
@@ -85,23 +78,10 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
    */
   @Override
   public ResponseEntity<Void> patchTrustFramework(String id, TrustFrameworkPatch patch) {
-    boolean touchesConfig = patch.getServiceUrl() != null
-        || patch.getApiVersion() != null
-        || patch.getTimeoutSeconds() != null;
-    if (patch.getEnabled() == null && !touchesConfig) {
+    if (patch.getEnabled() == null) {
       throw new ClientException("Patch body must contain at least one field");
     }
-    if (patch.getEnabled() != null) {
-      trustFrameworkService.setEnabled(id, patch.getEnabled());
-    }
-    if (touchesConfig) {
-      int timeoutSeconds = patch.getTimeoutSeconds() != null
-          ? patch.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
-      if (trustFrameworkService.updateConfig(id, patch.getServiceUrl(),
-          patch.getApiVersion(), timeoutSeconds).isEmpty()) {
-        throw new NotFoundException("Trust framework not found: " + id);
-      }
-    }
+    trustFrameworkService.setEnabled(id, patch.getEnabled());
     return ResponseEntity.ok().build();
   }
 
@@ -119,11 +99,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     TrustFrameworkEntry entry = new TrustFrameworkEntry();
     entry.setId(config.id());
     entry.setName(config.name());
-    entry.setServiceUrl(config.serviceUrl());
-    entry.setApiVersion(config.apiVersion());
-    entry.setTimeoutSeconds(config.timeoutSeconds());
     entry.setEnabled(config.enabled());
-    entry.setConnected(checkConnectivity(config));
     entry.setBundles(buildBundleEntries(config.id()));
     return entry;
   }
@@ -150,21 +126,4 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     return result;
   }
 
-  private boolean checkConnectivity(TrustFrameworkConfig config) {
-    if (config.serviceUrl() == null || config.serviceUrl().isBlank()) {
-      return false;
-    }
-    try {
-      adminDashboardConfig.getWebClient().get().uri(config.serviceUrl())
-          .retrieve().toBodilessEntity()
-          .timeout(Duration.ofSeconds(config.timeoutSeconds() > 0
-              ? Math.min(config.timeoutSeconds(), CONNECTIVITY_TIMEOUT.getSeconds())
-              : CONNECTIVITY_TIMEOUT.getSeconds()))
-          .block();
-      return true;
-    } catch (Exception e) {
-      log.warn("Trust framework connectivity check failed for {}", config.id(), e);
-      return false;
-    }
-  }
 }

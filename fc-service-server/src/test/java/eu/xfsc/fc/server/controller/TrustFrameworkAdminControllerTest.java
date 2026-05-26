@@ -124,63 +124,6 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFramework_configFields_updatesConfig() throws Exception {
-    String body = """
-        {
-          "serviceUrl":"https://new.example.com",
-          "apiVersion":"v2",
-          "timeoutSeconds":60
-        }
-        """;
-
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON_VALUE)
-            .content(body)
-            .with(csrf()))
-        .andExpect(status().isOk());
-
-    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
-            .accept(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].serviceUrl").value(hasItem("https://new.example.com")))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].apiVersion").value(hasItem("v2")))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].timeoutSeconds").value(hasItem(60)));
-  }
-
-  @Test
-  @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFramework_enabledAndConfigFields_appliesBoth() throws Exception {
-    String body = """
-        {
-          "enabled":true,
-          "serviceUrl":"https://combined.example.com",
-          "apiVersion":"v3",
-          "timeoutSeconds":45
-        }
-        """;
-
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON_VALUE)
-            .content(body)
-            .with(csrf()))
-        .andExpect(status().isOk());
-
-    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
-            .accept(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].enabled").value(hasItem(true)))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].serviceUrl").value(hasItem("https://combined.example.com")))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].apiVersion").value(hasItem("v3")))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].timeoutSeconds").value(hasItem(45)));
-
-    // Reset
-    mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON_VALUE)
-            .content(ENABLED_FALSE)
-            .with(csrf()))
-        .andExpect(status().isOk());
-  }
-
-  @Test
-  @WithMockUser(roles = {ADMIN_ALL})
   void patchTrustFrameworkRole_knownBundleAndRole_returns200() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")

@@ -139,7 +139,7 @@ public class ComplianceCheckControllerTest {
   @WithMockUser
   void getTrustFrameworksPublic_noEnabledFrameworks_returnsEmptyArray() throws Exception {
     when(trustFrameworkService.findAll()).thenReturn(List.of(
-        new TrustFrameworkConfig("gaia-x", "Gaia-X Trust Framework", null, "22.10", 30, false, null, null)));
+        new TrustFrameworkConfig("gaia-x", "Gaia-X Trust Framework", false, null, null)));
     when(registry.getActiveBundles()).thenReturn(List.of());
 
     mockMvc.perform(MockMvcRequestBuilders.get("/trust-frameworks")
@@ -153,7 +153,7 @@ public class ComplianceCheckControllerTest {
   @WithMockUser
   void getTrustFrameworksPublic_enabledFramework_returnsEntryWithIdAndName() throws Exception {
     when(trustFrameworkService.findAll()).thenReturn(List.of(
-        new TrustFrameworkConfig("gaia-x", "Gaia-X Trust Framework", null, "22.10", 30, true, null, null)));
+        new TrustFrameworkConfig("gaia-x", "Gaia-X Trust Framework", true, null, null)));
     when(registry.getActiveBundles()).thenReturn(List.of());
 
     mockMvc.perform(MockMvcRequestBuilders.get("/trust-frameworks")
@@ -169,7 +169,7 @@ public class ComplianceCheckControllerTest {
   @WithMockUser
   void getTrustFrameworksPublic_enabledFrameworkWithActiveProfile_returnsProfileInEntry() throws Exception {
     when(trustFrameworkService.findAll()).thenReturn(List.of(
-        new TrustFrameworkConfig("gaia-x", "Gaia-X Trust Framework", null, "22.10", 30, true, null, null)));
+        new TrustFrameworkConfig("gaia-x", "Gaia-X Trust Framework", true, null, null)));
     var bundleCfg = new FrameworkBundleConfig("gaia-x-2511", "gaia-x",
         "https://compliance.gaia-x.eu/", ValidationType.SHACL, Map.of(), Map.of());
     when(registry.getActiveBundles()).thenReturn(List.of(new TrustFrameworkBundle(bundleCfg, null, null)));
