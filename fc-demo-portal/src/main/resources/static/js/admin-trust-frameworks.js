@@ -1,7 +1,8 @@
 $(document).ready(function() {
 
-  var ADMIN_ME_URL = '/admin/me';
-  var TF_API_BASE  = '/admin/trust-frameworks';
+  var ADMIN_ME_URL    = '/admin/me';
+  var TF_API_BASE     = '/admin/trust-frameworks';
+  var MERGE_PATCH_JSON = 'application/merge-patch+json';
 
   $.ajax({
     url: ADMIN_ME_URL,
@@ -72,11 +73,21 @@ $(document).ready(function() {
               + 'data-id="' + row.id + '" ' + checked + '>'
               + '</div>';
           }
+        },
+        {
+          data: null,
+          orderable: false,
+          render: function(data) {
+            return $('<button>', { class: 'btn btn-sm btn-outline-secondary tf-roles' })
+              .attr('data-id',      data.id)
+              .attr('data-enabled', data.enabled ? 'true' : 'false')
+              .attr('data-bundles', JSON.stringify(data.bundles || []))
+              .append('<i class="bi bi-gear"></i>')
+              .prop('outerHTML');
+          }
         }
       ]
     });
-
-    var MERGE_PATCH_JSON = 'application/merge-patch+json';
 
     $('#tfTable').on('change', '.tf-toggle', function() {
       var $toggle = $(this);
@@ -94,6 +105,94 @@ $(document).ready(function() {
         }
       });
     });
+
+    $('#tfTable').on('click', '.tf-roles', function() {
+      var $btn = $(this);
+      var familyEnabled = $btn.data('enabled') === 'true' || $btn.data('enabled') === true;
+      var bundles = $btn.data('bundles') || [];
+      if (typeof bundles === 'string') {
+        try { bundles = JSON.parse(bundles); } catch (e) { bundles = []; }
+      }
+
+      var $container = $('#tfRolesContainer').empty();
+      $('#tfRoleErrorBanner').hide();
+      var multiBundle = bundles.length > 1;
+      bundles.forEach(function(bundle) {
+        var roles = bundle.roles || {};
+        Object.keys(roles).forEach(function(roleName) {
+          var roleEnabled = roles[roleName];
+          var inputId = 'role-' + bundle.id + '-' + roleName;
+          var $check = $('<div class="form-check">').append(
+            $('<input>', {
+              type: 'checkbox',
+              class: 'form-check-input tf-role-toggle',
+              id: inputId,
+              'data-bundle': bundle.id,
+              'data-role': roleName
+            })
+              .prop('checked', roleEnabled)
+              .prop('disabled', !familyEnabled),
+            $('<label>', {
+              class: 'form-check-label' + (!familyEnabled ? ' text-muted' : ''),
+              for: inputId,
+              title: 'When disabled, this role and all its OWL subclasses reject credentials with HTTP 400.',
+              'data-bs-toggle': 'tooltip'
+            }).append(
+              document.createTextNode(roleName + ' '),
+              multiBundle
+                ? $('<small class="text-muted">').text('(' + bundle.id + ')')
+                : $()
+            )
+          );
+          $container.append($check);
+        });
+      });
+
+      $container.find('[data-bs-toggle="tooltip"]').each(function() {
+        new bootstrap.Tooltip(this);
+      });
+
+      $('#tfConfigModal').data('familyEnabled', familyEnabled);
+      recomputeAllDisabledWarning(familyEnabled);
+      new bootstrap.Modal('#tfConfigModal').show();
+    });
+
+    $('#tfConfigModal').on('change', '.tf-role-toggle', function() {
+      var $cb = $(this);
+      var bundleId = $cb.data('bundle');
+      var roleName = $cb.data('role');
+      var enabled = $cb.is(':checked');
+
+      $.ajax({
+        url: TF_API_BASE + '/' + encodeURIComponent(bundleId)
+          + '/roles/' + encodeURIComponent(roleName),
+        type: 'PATCH',
+        contentType: MERGE_PATCH_JSON,
+        data: JSON.stringify({enabled: enabled}),
+        success: function() {
+          $('#tfRoleErrorBanner').hide();
+          recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
+        },
+        error: function() {
+          $cb.prop('checked', !enabled);
+          recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
+          var $banner = $('#tfRoleErrorBanner');
+          $banner.text('Failed to update role "' + roleName + '". Please try again.').show();
+          clearTimeout($banner.data('hideTimer'));
+          $banner.data('hideTimer', setTimeout(function() { $banner.hide(); }, 5000));
+        }
+      });
+    });
+
+    function recomputeAllDisabledWarning(familyEnabled) {
+      if (!familyEnabled) {
+        $('#tfRolesAllDisabledWarning').hide();
+        return;
+      }
+      var allUnchecked = $('#tfRolesContainer .tf-role-toggle:checked').length === 0
+        && $('#tfRolesContainer .tf-role-toggle').length > 0;
+      $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
+    }
   }
 
 });

@@ -2,7 +2,7 @@ $(document).ready(function() {
 
   var IFRAME_LOAD_TIMEOUT_MS = 5000;
 
-  // AC-3: check admin access before loading content
+  // check admin access before loading content
   $.ajax({
     url: '/admin/me',
     type: 'GET',
