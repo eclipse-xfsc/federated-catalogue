@@ -10,7 +10,7 @@ package eu.xfsc.fc.core.service.trustframework;
  * <p>Visibility is public for all constants to avoid unnecessary adjustments when scope changes.
  */
 public class TestTrustFrameworkConstants {
-  
+
   /**
    * Profile ID of the built-in Gaia-X Loire 2511 bundle.
    */
