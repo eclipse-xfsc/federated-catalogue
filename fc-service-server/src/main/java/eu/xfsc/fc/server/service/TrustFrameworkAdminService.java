@@ -106,12 +106,6 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   }
 
   @Override
-  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
-    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
-    return ResponseEntity.ok().build();
-  }
-
-  @Override
   public ResponseEntity<Void> patchTrustFrameworkRole(String bundleId, String roleName,
                                                       TrustFrameworkRolePatch patch) {
     if (patch.getEnabled() == null) {
