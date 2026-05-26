@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.SequencedSet;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -149,15 +149,18 @@ public class TrustFrameworkService {
     if (trustFrameworkRegistry.getBundle(frameworkId).isEmpty()) {
       throw new NotFoundException("Trust framework bundle not found in registry: " + frameworkId);
     }
-    Set<String> knownRoles = trustFrameworkRegistry.getEffectiveRoles(frameworkId);
+    SequencedSet<String> knownRoles = trustFrameworkRegistry.getEffectiveRoles(frameworkId);
     if (!knownRoles.contains(roleName)) {
       throw new NotFoundException(
           "Role '%s' not declared in bundle '%s'".formatted(roleName, frameworkId));
     }
     var id = new TrustFrameworkRoleStateId(frameworkId, roleName);
     var state = roleStateRepository.findById(id)
+        .map(existing -> {
+          existing.setEnabled(enabled);
+          return existing;
+        })
         .orElseGet(() -> new TrustFrameworkRoleState(frameworkId, roleName, enabled));
-    state.setEnabled(enabled);
     roleStateRepository.save(state);
   }
 
@@ -174,7 +177,7 @@ public class TrustFrameworkService {
     if (trustFrameworkRegistry.getBundle(frameworkId).isEmpty()) {
       throw new NotFoundException("Trust framework bundle not found in registry: " + frameworkId);
     }
-    Set<String> knownRoles = trustFrameworkRegistry.getEffectiveRoles(frameworkId);
+    SequencedSet<String> knownRoles = trustFrameworkRegistry.getEffectiveRoles(frameworkId);
     // Index persisted overrides by role name for O(1) lookup
     Map<String, Boolean> persisted = roleStateRepository.findByFrameworkId(frameworkId).stream()
         .collect(Collectors.toMap(

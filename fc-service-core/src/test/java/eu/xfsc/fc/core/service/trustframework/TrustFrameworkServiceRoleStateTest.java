@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.trustframework;
 
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_PARTICIPANT;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_RESOURCE;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_SERVICE_OFFERING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -81,6 +82,10 @@ class TrustFrameworkServiceRoleStateTest {
 
   @Test
   void isRoleEnabled_noRowPersisted_returnsTrue() {
+    // Family must be enabled, otherwise bundle-off dominance short-circuits to true
+    // and the role-state lookup path is never exercised.
+    service.setEnabled(FAMILY_GAIA_X, true);
+
     // No explicit state row → absence means enabled by default
     assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
   }
@@ -105,6 +110,9 @@ class TrustFrameworkServiceRoleStateTest {
 
   @Test
   void setRoleEnabled_oneRole_doesNotAffectOtherRole() {
+    // Family must be enabled, otherwise bundle-off dominance short-circuits to true
+    // and the role-state lookup path is never exercised.
+    service.setEnabled(FAMILY_GAIA_X, true);
     service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
 
     // ServiceOffering was not touched — must still read as default true
@@ -151,6 +159,20 @@ class TrustFrameworkServiceRoleStateTest {
 
     assertThat(states).containsEntry(TFW_ROLE_PARTICIPANT, false);
     assertThat(states).containsEntry(TFW_ROLE_SERVICE_OFFERING, true);
+  }
+
+  @Test
+  void getRoleStates_preservesYamlDeclarationOrder() {
+    // gaia-x-2511 framework.yaml declares roles in the order:
+    //   Participant, ServiceOffering, Resource
+    // The returned LinkedHashMap must iterate in that exact order so the UI can render
+    // role-toggle rows deterministically.
+    Map<String, Boolean> states = service.getRoleStates(BUNDLE_GAIA_X_2511);
+
+    assertThat(states).containsExactly(
+        Map.entry(TFW_ROLE_PARTICIPANT, true),
+        Map.entry(TFW_ROLE_SERVICE_OFFERING, true),
+        Map.entry(TFW_ROLE_RESOURCE, true));
   }
 
   @Test
