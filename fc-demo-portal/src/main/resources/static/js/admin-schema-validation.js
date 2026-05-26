@@ -266,6 +266,8 @@ $(document).ready(function() {
       $('#admin-content').html($alert.prop('outerHTML'));
     });
 
+    var MERGE_PATCH_JSON = 'application/merge-patch+json';
+
     // Module toggle handler — bound on both tables; the closest enclosing
     // table is resolved per click so the right DataTable instance is invalidated.
     $('#svValidatorTable, #svOwlTable').on('change', '.sv-toggle', function() {
@@ -275,9 +277,10 @@ $(document).ready(function() {
       var $table = $toggle.closest('table');
 
       $.ajax({
-        url: '/admin/schema-validation/modules/' + encodeURIComponent(type)
-          + '?enabled=' + enabled,
-        type: 'PUT',
+        url: '/admin/schema-validation/modules/' + encodeURIComponent(type),
+        type: 'PATCH',
+        contentType: MERGE_PATCH_JSON,
+        data: JSON.stringify({enabled: enabled}),
         success: function() {
           // Re-render the row so renderSchemaCount picks up the new enabled state
           // and the badge styling reflects whether stored schemas are consulted.

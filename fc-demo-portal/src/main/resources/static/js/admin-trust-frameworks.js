@@ -76,15 +76,17 @@ $(document).ready(function() {
       ]
     });
 
+    var MERGE_PATCH_JSON = 'application/merge-patch+json';
+
     $('#tfTable').on('change', '.tf-toggle', function() {
       var $toggle = $(this);
       var id = $toggle.data('id');
       var enabled = $toggle.is(':checked');
 
       $.ajax({
-        url: TF_API_BASE + '/' + encodeURIComponent(id) + '/enabled',
-        type: 'PUT',
-        contentType: 'application/json',
+        url: TF_API_BASE + '/' + encodeURIComponent(id),
+        type: 'PATCH',
+        contentType: MERGE_PATCH_JSON,
         data: JSON.stringify({enabled: enabled}),
         error: function() {
           $toggle.prop('checked', !enabled);

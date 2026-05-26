@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
+import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationModule;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.core.dao.adminconfig.AdminConfigEntry;
@@ -94,18 +95,28 @@ public class SchemaValidationAdminService implements SchemaValidationAdminApiDel
     return ResponseEntity.ok(status);
   }
 
+  /**
+   * Applies a merge-patch to the identified schema validation module. Only non-null patch fields
+   * are applied. Returns 400 if the module type is not one of the four valid values.
+   *
+   * @param type  module type (SHACL, JSON_SCHEMA, XML_SCHEMA, OWL)
+   * @param patch fields to update
+   * @return 200 on success
+   */
   @Override
   @CacheEvict(value = SchemaModuleConfigService.CACHE_NAME, allEntries = true)
-  public ResponseEntity<Void> setSchemaModuleEnabled(String type, Boolean enabled) {
+  public ResponseEntity<Void> patchSchemaModule(String type, SchemaModulePatch patch) {
     if (!VALID_MODULE_TYPES.contains(type)) {
       throw new ClientException("Invalid module type: " + type
           + ". Valid types: " + String.join(", ", VALID_MODULE_TYPES));
     }
-    String key = CONFIG_PREFIX + type + CONFIG_SUFFIX;
-    AdminConfigEntry entry = adminConfigRepository.findById(key)
-        .orElse(new AdminConfigEntry(key, null, null));
-    entry.setConfigValue(String.valueOf(enabled));
-    adminConfigRepository.save(entry);
+    if (patch.getEnabled() != null) {
+      String key = CONFIG_PREFIX + type + CONFIG_SUFFIX;
+      AdminConfigEntry entry = adminConfigRepository.findById(key)
+          .orElse(new AdminConfigEntry(key, null, null));
+      entry.setConfigValue(String.valueOf(patch.getEnabled()));
+      adminConfigRepository.save(entry);
+    }
     return ResponseEntity.ok().build();
   }
 

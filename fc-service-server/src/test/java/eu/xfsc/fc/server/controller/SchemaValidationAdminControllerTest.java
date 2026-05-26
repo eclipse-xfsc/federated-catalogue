@@ -66,53 +66,69 @@ public class SchemaValidationAdminControllerTest {
         .andExpect(status().isUnauthorized());
   }
 
+  private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
+
   @Test
   @WithMockUser
-  void setModuleEnabled_withoutAdminRole_returns403() throws Exception {
+  void patchSchemaModule_withoutAdminRole_returns403() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "false")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON)
+            .content("""
+                {"enabled":false}
+                """)
             .with(csrf()))
         .andExpect(status().isForbidden());
   }
 
   @Test
-  void setModuleEnabled_unauthenticated_returns401() throws Exception {
+  void patchSchemaModule_unauthenticated_returns401() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "false")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON)
+            .content("""
+                {"enabled":false}
+                """)
             .with(csrf()))
         .andExpect(status().isUnauthorized());
   }
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void setModuleEnabled_validType_returns200() throws Exception {
+  void patchSchemaModule_enabledField_togglesState() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "false")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON)
+            .content("""
+                {"enabled":false}
+                """)
             .with(csrf()))
         .andExpect(status().isOk());
 
-    // Verify toggle took effect
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/schema-validation")
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.modules[?(@.type=='SHACL')].enabled").value(false));
 
     // Reset
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "true")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON)
+            .content("""
+                {"enabled":true}
+                """)
             .with(csrf()))
         .andExpect(status().isOk());
   }
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void setModuleEnabled_invalidType_returns400() throws Exception {
+  void patchSchemaModule_invalidType_returns400() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/INVALID")
-            .param("enabled", "true")
+            .patch("/admin/schema-validation/modules/INVALID")
+            .contentType(MERGE_PATCH_JSON)
+            .content("""
+                {"enabled":true}
+                """)
             .with(csrf()))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.message").value(containsString("SHACL")))
