@@ -13,10 +13,10 @@ import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphDatabaseSwitchResult;
 import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
+import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkEnabledRequest;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
 
 /**
  * Client for Admin API endpoints.
@@ -55,34 +55,40 @@ public class AdminClient extends ServiceClient {
             authorizedClient);
     }
 
-    /** Toggles a trust framework's enabled state. */
-    public void setTrustFrameworkEnabled(String id, TrustFrameworkEnabledRequest request,
+  /**
+   * Applies a merge-patch to the identified trust framework. Only fields present in the patch
+   * are modified; absent fields are left unchanged.
+   *
+   * @param id               trust framework family identifier
+   * @param patch            fields to update
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void patchTrustFramework(String id, TrustFrameworkPatch patch,
         OAuth2AuthorizedClient authorizedClient) {
-        doPut("/admin/trust-frameworks/{id}/enabled", request,
-            Map.of("id", id), Map.of(), Void.class, authorizedClient);
-    }
+        doPatch("/admin/trust-frameworks/{id}", patch, Map.of("id", id), Void.class, authorizedClient);
+  }
 
-    /** Updates a trust framework's configuration. */
-    public void updateTrustFrameworkConfig(String id, TrustFrameworkConfigUpdate config,
-        OAuth2AuthorizedClient authorizedClient) {
-        doPut("/admin/trust-frameworks/{id}", config,
-            Map.of("id", id), null, Void.class, authorizedClient);
-    }
-
-    /** Gets schema validation module status. */
+  /** Gets schema validation module status. */
     public SchemaValidationStatus getSchemaValidation(OAuth2AuthorizedClient authorizedClient) {
         return doGet("/admin/schema-validation", Map.of(), null,
             SchemaValidationStatus.class, authorizedClient);
     }
 
-    /** Toggles a schema validation module. */
-    public void setSchemaModuleEnabled(String type, boolean enabled,
-        OAuth2AuthorizedClient authorizedClient) {
-        doPut("/admin/schema-validation/modules/{type}", "",
-            Map.of("type", type), Map.of("enabled", enabled), Void.class, authorizedClient);
+    /**
+     * Applies a merge-patch to the identified schema validation module. Only fields present in
+     * the patch are modified; absent fields are left unchanged.
+     *
+     * @param type             module type (SHACL, JSON_SCHEMA, XML_SCHEMA, OWL)
+     * @param patch            fields to update
+     * @param authorizedClient OAuth2 client for bearer token
+     */
+    public void patchSchemaModule(String type, SchemaModulePatch patch,
+                                  OAuth2AuthorizedClient authorizedClient) {
+        doPatch("/admin/schema-validation/modules/{type}", patch,
+            Map.of("type", type), Void.class, authorizedClient);
     }
 
-    /** Lists uploaded ontologies and their per-role subclass contributions. */
+  /** Lists uploaded ontologies and their per-role subclass contributions. */
     public OntologyImpactList getOntologyImpact(OAuth2AuthorizedClient authorizedClient) {
         return doGet("/admin/schema-validation/ontologies", Map.of(), null,
             OntologyImpactList.class, authorizedClient);

@@ -6,24 +6,23 @@ import java.util.Map;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import eu.xfsc.fc.api.generated.model.AdminHealthStatus;
+import eu.xfsc.fc.api.generated.model.AdminStats;
 import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphDatabaseSwitchResult;
-import eu.xfsc.fc.api.generated.model.AdminStats;
 import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
+import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkEnabledRequest;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
 import eu.xfsc.fc.client.AdminClient;
 import lombok.RequiredArgsConstructor;
 
@@ -77,22 +76,15 @@ public class AdminController {
     return adminClient.getTrustFrameworks(authorizedClient);
   }
 
-  /** Toggle a trust framework's enabled state. */
-  @PutMapping("/trust-frameworks/{id}/enabled")
-  public void setTrustFrameworkEnabled(
+  /**
+   * Partially update a trust framework.
+   */
+  @PatchMapping("/trust-frameworks/{id}")
+  public void patchTrustFramework(
       @PathVariable("id") String id,
-      @RequestBody TrustFrameworkEnabledRequest request,
+      @RequestBody TrustFrameworkPatch patch,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    adminClient.setTrustFrameworkEnabled(id, request, authorizedClient);
-  }
-
-  /** Update a trust framework's configuration. */
-  @PutMapping("/trust-frameworks/{id}")
-  public void updateTrustFrameworkConfig(
-      @PathVariable("id") String id,
-      @RequestBody TrustFrameworkConfigUpdate config,
-      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    adminClient.updateTrustFrameworkConfig(id, config, authorizedClient);
+    adminClient.patchTrustFramework(id, patch, authorizedClient);
   }
 
   // --- Schema Validation ---
@@ -104,13 +96,15 @@ public class AdminController {
     return adminClient.getSchemaValidation(authorizedClient);
   }
 
-  /** Toggle a schema validation module. */
-  @PutMapping("/schema-validation/modules/{type}")
-  public void setSchemaModuleEnabled(
+  /**
+   * Partially update a schema validation module.
+   */
+  @PatchMapping("/schema-validation/modules/{type}")
+  public void patchSchemaModule(
       @PathVariable("type") String type,
-      @RequestParam("enabled") boolean enabled,
+      @RequestBody SchemaModulePatch patch,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    adminClient.setSchemaModuleEnabled(type, enabled, authorizedClient);
+    adminClient.patchSchemaModule(type, patch, authorizedClient);
   }
 
   /** List uploaded ontologies and their per-role subclass contributions. */

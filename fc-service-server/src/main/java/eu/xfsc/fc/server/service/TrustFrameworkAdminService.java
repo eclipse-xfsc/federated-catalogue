@@ -3,7 +3,6 @@ package eu.xfsc.fc.server.service;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,9 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkEnabledRequest;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
@@ -74,33 +74,50 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     return ResponseEntity.ok(entries);
   }
 
+  /**
+   * Applies a merge-patch to the identified trust framework family. Supports toggling the
+   * enabled state and updating configuration fields independently or in combination.
+   * Returns 404 if the family identifier is not registered.
+   *
+   * @param id    trust framework family identifier
+   * @param patch fields to update; only non-null fields are applied
+   * @return 200 on success, 404 if unknown id
+   */
   @Override
-  public ResponseEntity<Void> setTrustFrameworkEnabled(String id,
-      TrustFrameworkEnabledRequest request) {
-    trustFrameworkService.setEnabled(id, request.getEnabled());
-    return ResponseEntity.ok().build();
-  }
-
-  @Override
-  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
-    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
-    return ResponseEntity.ok().build();
-  }
-
-  @Override
-  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
-    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
-    return ResponseEntity.ok().build();
-  }
-
-  @Override
-  public ResponseEntity<Void> updateTrustFrameworkConfig(String id,
-      TrustFrameworkConfigUpdate config) {
-    int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
-    if (trustFrameworkService.updateConfig(id, config.getServiceUrl(), config.getApiVersion(), timeoutSeconds)
-        .isEmpty()) {
-      throw new NotFoundException("Trust framework not found: " + id);
+  public ResponseEntity<Void> patchTrustFramework(String id, TrustFrameworkPatch patch) {
+    boolean touchesConfig = patch.getServiceUrl() != null
+        || patch.getApiVersion() != null
+        || patch.getTimeoutSeconds() != null;
+    if (patch.getEnabled() == null && !touchesConfig) {
+      throw new ClientException("Patch body must contain at least one field");
     }
+    if (patch.getEnabled() != null) {
+      trustFrameworkService.setEnabled(id, patch.getEnabled());
+    }
+    if (touchesConfig) {
+      int timeoutSeconds = patch.getTimeoutSeconds() != null
+          ? patch.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
+      if (trustFrameworkService.updateConfig(id, patch.getServiceUrl(),
+          patch.getApiVersion(), timeoutSeconds).isEmpty()) {
+        throw new NotFoundException("Trust framework not found: " + id);
+      }
+    }
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
+  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
+    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
+  public ResponseEntity<Void> patchTrustFrameworkRole(String bundleId, String roleName,
+                                                      TrustFrameworkRolePatch patch) {
+    if (patch.getEnabled() == null) {
+      throw new ClientException("Patch body must contain at least one field");
+    }
+    trustFrameworkService.setRoleEnabled(bundleId, roleName, patch.getEnabled());
     return ResponseEntity.ok().build();
   }
 
@@ -119,7 +136,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
 
   /**
    * Builds a list of {@link TrustFrameworkBundleEntry} for each bundle belonging to the given
-   * family, carrying the per-bundle role enabled states so the UI can address role-toggle PUTs
+   * family, carrying the per-bundle role enabled states so the UI can address role-toggle requests
    * by the correct bundle profile ID.
    *
    * @param familyId trust framework family identifier (e.g. {@code gaia-x})

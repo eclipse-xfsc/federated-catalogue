@@ -12,10 +12,31 @@
                 <th>Family ID</th>
                 <th>Profiles</th>
                 <th>Active</th>
+                <th>Roles</th>
             </tr>
             </thead>
         </table>
 
+        <div class="modal" id="tfConfigModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Trust Framework Roles</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="tfRoleErrorBanner" class="alert alert-danger" style="display:none"></div>
+                        <div id="tfRolesAllDisabledWarning" class="alert alert-warning" style="display:none">
+                            All roles are disabled — this bundle is enabled but cannot resolve any credentials.
+                        </div>
+                        <div id="tfRolesContainer"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script src="js/admin-trust-frameworks.js"></script>
