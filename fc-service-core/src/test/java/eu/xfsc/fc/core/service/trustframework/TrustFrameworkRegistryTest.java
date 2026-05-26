@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,52 +15,52 @@ import org.junit.jupiter.api.Test;
 
 class TrustFrameworkRegistryTest {
 
-  // Minimal ontology: Participant as a root class, no subclasses declared.
+  // Minimal ontology: RoleA as a root class, no subclasses declared.
   private static final String MINIMAL_ONTOLOGY = """
-      @prefix gx: <https://w3id.org/gaia-x/> .
+      @prefix ex: <https://example.org/test/> .
       @prefix owl: <http://www.w3.org/2002/07/owl#> .
-      gx:Participant a owl:Class .
+      ex:RoleA a owl:Class .
       """;
 
-  // Ontology with declared subclass: LegalPerson rdfs:subClassOf Participant.
+  // Ontology with declared subclass: RoleASub rdfs:subClassOf RoleA.
   private static final String SUBCLASS_ONTOLOGY = """
-      @prefix gx: <https://w3id.org/gaia-x/> .
+      @prefix ex: <https://example.org/test/> .
       @prefix owl: <http://www.w3.org/2002/07/owl#> .
       @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-      gx:Participant a owl:Class .
-      gx:LegalPerson a owl:Class ; rdfs:subClassOf gx:Participant .
+      ex:RoleA a owl:Class .
+      ex:RoleASub a owl:Class ; rdfs:subClassOf ex:RoleA .
       """;
 
-  // Ontology where DigitalServiceOffering is NOT a subclass of ServiceOffering (gx-2511 reality).
-  private static final String DSO_ONTOLOGY = """
-      @prefix gx: <https://w3id.org/gaia-x/> .
+  // Ontology where RoleBAlt is NOT a subclass of RoleB (framework reality in Gaia-x Loire 2511 ontology).
+  private static final String SIBLING_ROLE_ONTOLOGY = """
+      @prefix ex: <https://example.org/test/> .
       @prefix owl: <http://www.w3.org/2002/07/owl#> .
-      gx:ServiceOffering a owl:Class .
-      gx:DigitalServiceOffering a owl:Class .
+      ex:RoleB a owl:Class .
+      ex:RoleBAlt a owl:Class .
       """;
 
-  // Ontology with 2-hop subclass chain: PrivateLegalPerson → LegalPerson → Participant.
+  // Ontology with 2-hop subclass chain: RoleASubSub → RoleASub → RoleA.
   private static final String TWO_HOP_ONTOLOGY = """
-      @prefix gx: <https://w3id.org/gaia-x/> .
+      @prefix ex: <https://example.org/test/> .
       @prefix owl: <http://www.w3.org/2002/07/owl#> .
       @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-      gx:Participant a owl:Class .
-      gx:LegalPerson a owl:Class ; rdfs:subClassOf gx:Participant .
-      gx:PrivateLegalPerson a owl:Class ; rdfs:subClassOf gx:LegalPerson .
+      ex:RoleA a owl:Class .
+      ex:RoleASub a owl:Class ; rdfs:subClassOf ex:RoleA .
+      ex:RoleASubSub a owl:Class ; rdfs:subClassOf ex:RoleASub .
       """;
 
-  // Ontology that includes an anonymous (blank-node) subclass of Participant.
+  // Ontology that includes an anonymous (blank-node) subclass of RoleA.
   private static final String BLANK_NODE_ONTOLOGY = """
-      @prefix gx: <https://w3id.org/gaia-x/> .
+      @prefix ex: <https://example.org/test/> .
       @prefix owl: <http://www.w3.org/2002/07/owl#> .
       @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-      gx:Participant a owl:Class .
-      [] rdfs:subClassOf gx:Participant .
+      ex:RoleA a owl:Class .
+      [] rdfs:subClassOf ex:RoleA .
       """;
 
   private static TrustFrameworkBundle shaclBundle(String profileId, String namespace,
                                                   Map<String, RoleConfig> roles, String ontologyTtl) {
-    var config = new FrameworkBundleConfig(profileId, "gaia-x", namespace, ValidationType.SHACL, roles, Map.of());
+    var config = new FrameworkBundleConfig(profileId, "test-family", namespace, ValidationType.SHACL, roles, Map.of());
     var ontology = new eu.xfsc.fc.core.pojo.ContentAccessorDirect(ontologyTtl);
     return new TrustFrameworkBundle(config, ontology, null);
   }
@@ -79,79 +80,95 @@ class TrustFrameworkRegistryTest {
 
   @Test
   void resolveRole_rootUri_returnsResolvedRole() {
-    var roles = Map.of("Participant", new RoleConfig(List.of(), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, MINIMAL_ONTOLOGY);
+    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://w3id.org/gaia-x/Participant"))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "Participant"));
+    assertThat(registry.resolveRole("https://example.org/test/RoleA"))
+        .isEqualTo(new ResolvedRole("test-framework", "RoleA"));
   }
 
   @Test
   void resolveRole_subclassOfRoot_returnsResolvedRole() {
-    var roles = Map.of("Participant", new RoleConfig(List.of(), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, SUBCLASS_ONTOLOGY);
+    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, SUBCLASS_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    // gx:LegalPerson rdfs:subClassOf gx:Participant — must resolve to Participant
-    assertThat(registry.resolveRole("https://w3id.org/gaia-x/LegalPerson"))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "Participant"));
+    // ex:RoleASub rdfs:subClassOf ex:RoleA — must resolve to RoleA
+    assertThat(registry.resolveRole("https://example.org/test/RoleASub"))
+        .isEqualTo(new ResolvedRole("test-framework", "RoleA"));
   }
 
-  // additionalRoots: DigitalServiceOffering is NOT a subclass of ServiceOffering in OWL
-  // but is covered via additionalRoots in RoleConfig (gx-2511 workaround)
+  // additionalRoots: RoleBAlt is NOT a subclass of RoleB in OWL
+  // but is covered via additionalRoots in RoleConfig (framework workaround)
   @Test
   void resolveRole_additionalRoot_returnsResolvedRole() {
-    var roles = Map.of("ServiceOffering", new RoleConfig(
-        List.of("https://w3id.org/gaia-x/DigitalServiceOffering"), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, DSO_ONTOLOGY);
+    var roles = Map.of("RoleB", new RoleConfig(
+        List.of("https://example.org/test/RoleBAlt"), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, SIBLING_ROLE_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://w3id.org/gaia-x/DigitalServiceOffering"))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "ServiceOffering"));
+    assertThat(registry.resolveRole("https://example.org/test/RoleBAlt"))
+        .isEqualTo(new ResolvedRole("test-framework", "RoleB"));
   }
 
   @Test
   void resolveRole_2hopSubclassOfRoot_returnsResolvedRole() {
-    // gx:PrivateLegalPerson rdfs:subClassOf gx:LegalPerson rdfs:subClassOf gx:Participant
+    // ex:RoleASubSub rdfs:subClassOf ex:RoleASub rdfs:subClassOf ex:RoleA
     // OWL_MEM_MICRO_RULE_INF infers the transitive closure — both hops must be covered
-    var roles = Map.of("Participant", new RoleConfig(List.of(), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, TWO_HOP_ONTOLOGY);
+    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, TWO_HOP_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://w3id.org/gaia-x/PrivateLegalPerson"))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "Participant"));
+    assertThat(registry.resolveRole("https://example.org/test/RoleASubSub"))
+        .isEqualTo(new ResolvedRole("test-framework", "RoleA"));
   }
 
   @Test
   void resolveRole_firstBundleWinsOnRootUriConflict() {
     // Same root URI claimed by two bundles — first registration must win (putIfAbsent semantics)
-    var roles = Map.of("Participant", new RoleConfig(List.of(), List.of()));
-    var bundle1 = shaclBundle("framework-a", "https://w3id.org/gaia-x/", roles, MINIMAL_ONTOLOGY);
-    var bundle2 = shaclBundle("framework-b", "https://w3id.org/gaia-x/", roles, MINIMAL_ONTOLOGY);
+    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var bundle1 = shaclBundle("framework-a", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
+    var bundle2 = shaclBundle("framework-b", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle1, bundle2));
 
-    assertThat(registry.resolveRole("https://w3id.org/gaia-x/Participant"))
-        .isEqualTo(new ResolvedRole("framework-a", "Participant"));
+    assertThat(registry.resolveRole("https://example.org/test/RoleA"))
+        .isEqualTo(new ResolvedRole("framework-a", "RoleA"));
   }
 
   // bundle index methods
   @Test
   void getActiveBundles_returnsAllLoadedBundles() {
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
     assertThat(registry.getActiveBundles()).containsExactly(bundle);
   }
 
   @Test
+  void getAllBundles_preservesRegistrationOrder() {
+    // Three bundles with profile IDs intentionally not in lexicographic order, so a HashMap-backed
+    // index would shuffle them. Iteration must follow input list order.
+    var bundleZ = shaclBundle("z-framework", "https://example.org/z/",
+        Map.of("RoleA", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+    var bundleA = shaclBundle("a-framework", "https://example.org/a/",
+        Map.of("RoleA", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+    var bundleM = shaclBundle("m-framework", "https://example.org/m/",
+        Map.of("RoleA", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+
+    var registry = new TrustFrameworkRegistry(List.of(bundleZ, bundleA, bundleM));
+
+    assertThat(registry.getAllBundles()).containsExactly(bundleZ, bundleA, bundleM);
+  }
+
+  @Test
   void getActiveBundles_returnsImmutableSnapshot() {
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
     assertThatThrownBy(() -> registry.getActiveBundles().clear())
@@ -160,10 +177,10 @@ class TrustFrameworkRegistryTest {
 
   @Test
   void getBundle_knownProfileId_returnsBundle() {
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.getBundle("gaia-x-2511")).contains(bundle);
+    assertThat(registry.getBundle("test-framework")).contains(bundle);
   }
 
   @Test
@@ -175,10 +192,10 @@ class TrustFrameworkRegistryTest {
 
   @Test
   void isFrameworkEnabled_knownBundle_returnsTrue() {
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", Map.of(), MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.isFrameworkEnabled("gaia-x-2511")).isTrue();
+    assertThat(registry.isFrameworkEnabled("test-framework")).isTrue();
   }
 
   @Test
@@ -191,13 +208,13 @@ class TrustFrameworkRegistryTest {
   @Test
   void getEffectiveRoles_knownBundle_returnsRoleNames() {
     var roles = Map.of(
-        "Participant", new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(List.of(), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, MINIMAL_ONTOLOGY);
+        "RoleA", new RoleConfig(List.of(), List.of()),
+        "RoleB", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.getEffectiveRoles("gaia-x-2511"))
-        .containsExactlyInAnyOrder("Participant", "ServiceOffering");
+    assertThat(registry.getEffectiveRoles("test-framework"))
+        .containsExactlyInAnyOrder("RoleA", "RoleB");
   }
 
   @Test
@@ -208,12 +225,34 @@ class TrustFrameworkRegistryTest {
   }
 
   @Test
-  void getEffectiveRoles_returnsImmutableSnapshot() {
-    var roles = Map.of("Participant", new RoleConfig(List.of(), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, MINIMAL_ONTOLOGY);
+  void getEffectiveRoles_preservesDeclarationOrder() {
+    // LinkedHashMap fixes the input declaration order; Map.of() would scramble it.
+    // Generic role names — the registry must not assume any framework-specific vocabulary.
+    var roles = new LinkedHashMap<String, RoleConfig>();
+    roles.put("RoleC", new RoleConfig(List.of(), List.of()));
+    roles.put("RoleA", new RoleConfig(List.of(), List.of()));
+    roles.put("RoleB", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles,
+        """
+            @prefix ex: <https://example.org/test/> .
+            @prefix owl: <http://www.w3.org/2002/07/owl#> .
+            ex:RoleA a owl:Class .
+            ex:RoleB a owl:Class .
+            ex:RoleC a owl:Class .
+            """);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThatThrownBy(() -> registry.getEffectiveRoles("gaia-x-2511").add("fake"))
+    assertThat(registry.getEffectiveRoles("test-framework"))
+        .containsExactly("RoleC", "RoleA", "RoleB");
+  }
+
+  @Test
+  void getEffectiveRoles_returnsImmutableSnapshot() {
+    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
+    var registry = new TrustFrameworkRegistry(List.of(bundle));
+
+    assertThatThrownBy(() -> registry.getEffectiveRoles("test-framework").add("fake"))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -249,12 +288,12 @@ class TrustFrameworkRegistryTest {
   @Test
   void constructor_duplicateBundleId_keepsFirstBundle() {
     // Two bundles with the same ID — first registration wins; second is ignored
-    var bundle1 = shaclBundle("gaia-x-2511", "https://namespace-a.org/", Map.of(), MINIMAL_ONTOLOGY);
-    var bundle2 = shaclBundle("gaia-x-2511", "https://namespace-b.org/", Map.of(), MINIMAL_ONTOLOGY);
+    var bundle1 = shaclBundle("test-framework", "https://namespace-a.org/", Map.of(), MINIMAL_ONTOLOGY);
+    var bundle2 = shaclBundle("test-framework", "https://namespace-b.org/", Map.of(), MINIMAL_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle1, bundle2));
 
-    assertThat(registry.getBundle("gaia-x-2511").get().config().namespace())
+    assertThat(registry.getBundle("test-framework").get().config().namespace())
         .isEqualTo("https://namespace-a.org/");
   }
 
@@ -262,10 +301,10 @@ class TrustFrameworkRegistryTest {
   void constructor_nullAdditionalRoot_doesNotThrow() {
     // A null entry in additionalRoots (e.g. from malformed YAML) must be skipped, not NPE
     var rolesWithNull = new HashMap<String, RoleConfig>();
-    rolesWithNull.put("Participant", new RoleConfig(
-        new ArrayList<>(Arrays.asList(null, "https://w3id.org/gaia-x/Participant")),
+    rolesWithNull.put("RoleA", new RoleConfig(
+        new ArrayList<>(Arrays.asList(null, "https://example.org/test/RoleA")),
         List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", rolesWithNull, MINIMAL_ONTOLOGY);
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", rolesWithNull, MINIMAL_ONTOLOGY);
 
     assertThatCode(() -> new TrustFrameworkRegistry(List.of(bundle)))
         .doesNotThrowAnyException();
@@ -274,8 +313,8 @@ class TrustFrameworkRegistryTest {
   @Test
   void constructor_blankNodeSubclass_doesNotThrow() {
     // An anonymous (blank-node) subclass in the ontology must be skipped, not NPE
-    var roles = Map.of("Participant", new RoleConfig(List.of(), List.of()));
-    var bundle = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", roles, BLANK_NODE_ONTOLOGY);
+    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, BLANK_NODE_ONTOLOGY);
 
     assertThatCode(() -> new TrustFrameworkRegistry(List.of(bundle)))
         .doesNotThrowAnyException();
@@ -308,9 +347,9 @@ class TrustFrameworkRegistryTest {
   @Test
   void constructor_uriWithInjectionCharacter_doesNotThrow() {
     // A URI containing '>' in additionalRoots must not break SPARQL query construction
-    var roles = Map.of("ServiceOffering", new RoleConfig(
+    var roles = Map.of("RoleB", new RoleConfig(
         List.of("https://example.org/bad>uri"), List.of()));
-    var bundle = shaclBundle("test", "https://example.org/", roles, DSO_ONTOLOGY);
+    var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, SIBLING_ROLE_ONTOLOGY);
 
     assertThatCode(() -> new TrustFrameworkRegistry(List.of(bundle)))
         .doesNotThrowAnyException();
@@ -319,7 +358,7 @@ class TrustFrameworkRegistryTest {
   @Test
   void getActiveBundles_excludesDeferredBundles() {
     // SHACL bundle is active; JSON_SCHEMA bundle is deferred — getActiveBundles() must exclude deferred
-    var active = shaclBundle("gaia-x-2511", "https://w3id.org/gaia-x/", Map.of(), MINIMAL_ONTOLOGY);
+    var active = shaclBundle("test-framework", "https://example.org/test/", Map.of(), MINIMAL_ONTOLOGY);
     var deferred = jsonSchemaBundle("untp-v1");
     var registry = new TrustFrameworkRegistry(List.of(active, deferred));
 

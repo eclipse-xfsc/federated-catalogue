@@ -40,6 +40,13 @@
                             <label for="tfTimeout" class="form-label">Timeout (seconds)</label>
                             <input type="number" class="form-control" id="tfTimeout" min="1" max="300" value="30">
                         </div>
+                        <hr>
+                        <h6>Roles</h6>
+                        <div id="tfRoleErrorBanner" class="alert alert-danger" style="display:none"></div>
+                        <div id="tfRolesAllDisabledWarning" class="alert alert-warning" style="display:none">
+                            All roles are disabled — this bundle is enabled but cannot resolve any credentials.
+                        </div>
+                        <div id="tfRolesContainer"></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

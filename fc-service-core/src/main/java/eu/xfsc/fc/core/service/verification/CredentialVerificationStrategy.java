@@ -563,7 +563,8 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
             ? schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY)
             : null;
     ResolvedRole result = ClaimValidator.resolveSubjectRole(
-        getStreamManager(), credential.toJson(), trustFrameworkRegistry, compositeOntology);
+        getStreamManager(), credential.toJson(), trustFrameworkRegistry, compositeOntology,
+        trustFrameworkService::isRoleEnabled);
     log.debug("resolveRole; format: {}, got role: {}", format, result);
     return result;
   }
