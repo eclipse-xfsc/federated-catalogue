@@ -1,5 +1,6 @@
 package eu.xfsc.fc.server.controller;
 
+import static eu.xfsc.fc.api.FcMediaTypes.MERGE_PATCH_JSON_VALUE;
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -66,14 +67,13 @@ public class SchemaValidationAdminControllerTest {
         .andExpect(status().isUnauthorized());
   }
 
-  private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
 
   @Test
   @WithMockUser
   void patchSchemaModule_withoutAdminRole_returns403() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/schema-validation/modules/SHACL")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content("""
                 {"enabled":false}
                 """)
@@ -85,7 +85,7 @@ public class SchemaValidationAdminControllerTest {
   void patchSchemaModule_unauthenticated_returns401() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/schema-validation/modules/SHACL")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content("""
                 {"enabled":false}
                 """)
@@ -98,7 +98,7 @@ public class SchemaValidationAdminControllerTest {
   void patchSchemaModule_enabledField_togglesState() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/schema-validation/modules/SHACL")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content("""
                 {"enabled":false}
                 """)
@@ -112,7 +112,7 @@ public class SchemaValidationAdminControllerTest {
     // Reset
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/schema-validation/modules/SHACL")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content("""
                 {"enabled":true}
                 """)
@@ -125,7 +125,7 @@ public class SchemaValidationAdminControllerTest {
   void patchSchemaModule_invalidType_returns400() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/schema-validation/modules/INVALID")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content("""
                 {"enabled":true}
                 """)

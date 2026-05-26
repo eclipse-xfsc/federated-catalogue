@@ -1,5 +1,6 @@
 package eu.xfsc.fc.server.controller;
 
+import static eu.xfsc.fc.api.FcMediaTypes.MERGE_PATCH_JSON_VALUE;
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -71,13 +72,12 @@ public class TrustFrameworkAdminControllerTest {
         .andExpect(status().isUnauthorized());
   }
 
-  private static final String MERGE_PATCH_JSON = "application/merge-patch+json";
 
   @Test
   @WithMockUser
   void patchTrustFramework_withoutAdminRole_returns403() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isForbidden());
@@ -86,7 +86,7 @@ public class TrustFrameworkAdminControllerTest {
   @Test
   void patchTrustFramework_unauthenticated_returns401() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isUnauthorized());
@@ -96,7 +96,7 @@ public class TrustFrameworkAdminControllerTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void patchTrustFramework_enabledField_togglesState() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -106,7 +106,7 @@ public class TrustFrameworkAdminControllerTest {
         .andExpect(jsonPath("$[?(@.id == 'gaia-x')].enabled").value(hasItem(true)));
 
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -116,7 +116,7 @@ public class TrustFrameworkAdminControllerTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void patchTrustFramework_unknownId_returns404() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/nonexistent")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isNotFound());
@@ -134,7 +134,7 @@ public class TrustFrameworkAdminControllerTest {
         """;
 
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(body)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -159,7 +159,7 @@ public class TrustFrameworkAdminControllerTest {
         """;
 
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(body)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -173,7 +173,7 @@ public class TrustFrameworkAdminControllerTest {
 
     // Reset
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/gaia-x")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -184,14 +184,14 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_knownBundleAndRole_returns200() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());
 
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -202,7 +202,7 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_unknownBundle_returns404() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/nonexistent-bundle/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isNotFound())
@@ -214,7 +214,7 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_unknownRole_returns404() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/UnknownRole")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isNotFound())
@@ -226,7 +226,7 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_missingBody_returns400() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             // missing body
             .with(csrf()))
         .andExpect(status().isBadRequest());
@@ -237,7 +237,7 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_emptyBody_returns400() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content("{}")
             .with(csrf()))
         .andExpect(status().isBadRequest());
@@ -247,7 +247,7 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_unauthenticated_returns401() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isUnauthorized());
@@ -258,7 +258,7 @@ public class TrustFrameworkAdminControllerTest {
   void patchTrustFrameworkRole_wrongRole_returns403() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
             .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isForbidden());
@@ -289,7 +289,7 @@ public class TrustFrameworkAdminControllerTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void patchTrustFramework_mockFamily_activatesAndReflectsInGet() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/mock")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isOk());
@@ -299,7 +299,7 @@ public class TrustFrameworkAdminControllerTest {
         .andExpect(jsonPath("$[?(@.id == 'mock')].enabled").value(hasItem(true)));
 
     mockMvc.perform(MockMvcRequestBuilders.patch("/admin/trust-frameworks/mock")
-            .contentType(MERGE_PATCH_JSON)
+            .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());

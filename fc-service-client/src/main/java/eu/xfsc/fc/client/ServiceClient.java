@@ -17,6 +17,8 @@ import org.springframework.web.util.UriBuilder;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.xfsc.fc.api.FcMediaTypes;
+
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import java.net.URI;
@@ -202,7 +204,7 @@ public abstract class ServiceClient {
     return client
         .patch()
         .uri(uriBuilder -> buildUri(uriBuilder, path, pathParams, null))
-        .contentType(MediaType.valueOf("application/merge-patch+json"))
+        .contentType(FcMediaTypes.MERGE_PATCH_JSON)
         .bodyValue(body)
         .retrieve()
         .bodyToMono(reType)
@@ -225,7 +227,7 @@ public abstract class ServiceClient {
     return client
         .patch()
         .uri(uriBuilder -> buildUri(uriBuilder, path, pathParams, null))
-        .contentType(MediaType.valueOf("application/merge-patch+json"))
+        .contentType(FcMediaTypes.MERGE_PATCH_JSON)
         .bodyValue(body)
         .attributes(oauth2AuthorizedClient(authorizedClient))
             .retrieve()
