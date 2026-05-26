@@ -110,13 +110,14 @@ public class SchemaValidationAdminService implements SchemaValidationAdminApiDel
       throw new ClientException("Invalid module type: " + type
           + ". Valid types: " + String.join(", ", VALID_MODULE_TYPES));
     }
-    if (patch.getEnabled() != null) {
-      String key = CONFIG_PREFIX + type + CONFIG_SUFFIX;
-      AdminConfigEntry entry = adminConfigRepository.findById(key)
-          .orElse(new AdminConfigEntry(key, null, null));
-      entry.setConfigValue(String.valueOf(patch.getEnabled()));
-      adminConfigRepository.save(entry);
+    if (patch.getEnabled() == null) {
+      throw new ClientException("Patch body must contain at least one field");
     }
+    String key = CONFIG_PREFIX + type + CONFIG_SUFFIX;
+    AdminConfigEntry entry = adminConfigRepository.findById(key)
+        .orElse(new AdminConfigEntry(key, null, null));
+    entry.setConfigValue(String.valueOf(patch.getEnabled()));
+    adminConfigRepository.save(entry);
     return ResponseEntity.ok().build();
   }
 

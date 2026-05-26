@@ -3,7 +3,6 @@ package eu.xfsc.fc.server.service;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +13,7 @@ import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
@@ -85,11 +85,16 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
    */
   @Override
   public ResponseEntity<Void> patchTrustFramework(String id, TrustFrameworkPatch patch) {
+    boolean touchesConfig = patch.getServiceUrl() != null
+        || patch.getApiVersion() != null
+        || patch.getTimeoutSeconds() != null;
+    if (patch.getEnabled() == null && !touchesConfig) {
+      throw new ClientException("Patch body must contain at least one field");
+    }
     if (patch.getEnabled() != null) {
       trustFrameworkService.setEnabled(id, patch.getEnabled());
     }
-    if (patch.getServiceUrl() != null || patch.getApiVersion() != null
-        || patch.getTimeoutSeconds() != null) {
+    if (touchesConfig) {
       int timeoutSeconds = patch.getTimeoutSeconds() != null
           ? patch.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
       if (trustFrameworkService.updateConfig(id, patch.getServiceUrl(),
@@ -103,9 +108,10 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   @Override
   public ResponseEntity<Void> patchTrustFrameworkRole(String bundleId, String roleName,
                                                       TrustFrameworkRolePatch patch) {
-    if (patch.getEnabled() != null) {
-      trustFrameworkService.setRoleEnabled(bundleId, roleName, patch.getEnabled());
+    if (patch.getEnabled() == null) {
+      throw new ClientException("Patch body must contain at least one field");
     }
+    trustFrameworkService.setRoleEnabled(bundleId, roleName, patch.getEnabled());
     return ResponseEntity.ok().build();
   }
 
