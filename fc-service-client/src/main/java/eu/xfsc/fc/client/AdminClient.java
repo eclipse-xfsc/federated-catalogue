@@ -17,6 +17,7 @@ import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
 
 /**
  * Client for Admin API endpoints.
@@ -66,6 +67,21 @@ public class AdminClient extends ServiceClient {
   public void patchTrustFramework(String id, TrustFrameworkPatch patch,
         OAuth2AuthorizedClient authorizedClient) {
         doPatch("/admin/trust-frameworks/{id}", patch, Map.of("id", id), Void.class, authorizedClient);
+  }
+
+  /**
+   * Applies a merge-patch to a role within the identified bundle. Only fields present in the
+   * patch are modified; absent fields are left unchanged.
+   *
+   * @param bundleId         trust framework bundle identifier
+   * @param roleName         role name within the bundle
+   * @param patch            fields to update
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void patchTrustFrameworkRole(String bundleId, String roleName,
+                                      TrustFrameworkRolePatch patch, OAuth2AuthorizedClient authorizedClient) {
+    doPatch("/admin/trust-frameworks/{bundleId}/roles/{roleName}", patch,
+        Map.of("bundleId", bundleId, "roleName", roleName), Void.class, authorizedClient);
   }
 
   /** Gets schema validation module status. */
