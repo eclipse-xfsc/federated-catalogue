@@ -278,4 +278,84 @@ public class TrustFrameworkAdminControllerTest {
             .with(csrf()))
         .andExpect(status().isOk());
   }
+  
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void setTrustFrameworkRoleEnabled_knownBundleAndRole_returns200() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/gaia-x-2511/roles/Participant/enabled")
+            .param("enabled", "false")
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    // Reset to default
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/gaia-x-2511/roles/Participant/enabled")
+            .param("enabled", "true")
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void setTrustFrameworkRoleEnabled_unknownBundle_returns404() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/nonexistent-bundle/roles/Participant/enabled")
+            .param("enabled", "true")
+            .with(csrf()))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", notNullValue()));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void setTrustFrameworkRoleEnabled_unknownRole_returns404() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/gaia-x-2511/roles/UnknownRole/enabled")
+            .param("enabled", "true")
+            .with(csrf()))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", notNullValue()));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void setTrustFrameworkRoleEnabled_missingEnabledParam_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/gaia-x-2511/roles/Participant/enabled")
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void setTrustFrameworkRoleEnabled_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/gaia-x-2511/roles/Participant/enabled")
+            .param("enabled", "true")
+            .with(csrf()))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockUser
+  void setTrustFrameworkRoleEnabled_wrongRole_returns403() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .put("/admin/trust-frameworks/gaia-x-2511/roles/Participant/enabled")
+            .param("enabled", "true")
+            .with(csrf()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void getTrustFrameworks_includesBundlesField() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].bundles", hasSize(1)))
+        .andExpect(jsonPath("$[0].bundles[0].id").value("gaia-x-2511"))
+        .andExpect(jsonPath("$[0].bundles[0].roles.Participant").value(true))
+        .andExpect(jsonPath("$[0].bundles[0].roles.ServiceOffering").value(true))
+        .andExpect(jsonPath("$[0].bundles[0].roles.Resource").value(true));
+  }
 }

@@ -88,6 +88,12 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   }
 
   @Override
+  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
+    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
   public ResponseEntity<Void> updateTrustFrameworkConfig(String id,
       TrustFrameworkConfigUpdate config) {
     int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
