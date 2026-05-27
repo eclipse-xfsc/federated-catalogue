@@ -103,6 +103,9 @@
         <netty.version>4.1.133.Final</netty.version>
         <postgresql.version>42.7.11</postgresql.version>
         <libthrift.version>0.23.0</libthrift.version>
+        <!-- plexus-utils (test-scope, transitive via spring-cloud-contract-wiremock -> maven-resolver):
+             pin to 3.6.1 to close CVE-2025-67030 (9.8, Expand.extractFile directory traversal). -->
+        <plexus-utils.version>3.6.1</plexus-utils.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <plugin.jacoco.version>0.8.14</plugin.jacoco.version>
@@ -391,6 +394,12 @@
                 <groupId>org.apache.thrift</groupId>
                 <artifactId>libthrift</artifactId>
                 <version>${libthrift.version}</version>
+            </dependency>
+            <!-- Override plexus-utils (test-scope transitive) to close CVE-2025-67030 (9.8). -->
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>${plexus-utils.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
