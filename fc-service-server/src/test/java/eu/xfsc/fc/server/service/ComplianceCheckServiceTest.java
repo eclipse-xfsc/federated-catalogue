@@ -28,6 +28,7 @@ import eu.xfsc.fc.core.dao.validation.ValidatorType;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.trustframework.ValidationType;
@@ -55,6 +56,8 @@ class ComplianceCheckServiceTest {
   private TrustFrameworkService trustFrameworkService;
   @Mock
   private TrustFrameworkRegistry registry;
+  @Mock
+  private TrustFrameworkProfileResolver profileResolver;
 
   @InjectMocks
   private ComplianceCheckService service;
@@ -63,7 +66,7 @@ class ComplianceCheckServiceTest {
   void runComplianceCheck_issuedAttestation_returnsConformsTrueAndCredential() {
     var outcome = new IssuedAttestation(CANNED_VC_JWT, null);
     when(orchestrator.check(ASSET_ID, PROFILE_ID, CREDENTIAL)).thenReturn(outcome);
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.empty());
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.empty());
 
     var response = service.runComplianceCheck(ASSET_ID, request(PROFILE_ID, CREDENTIAL));
 
@@ -77,7 +80,7 @@ class ComplianceCheckServiceTest {
   void runComplianceCheck_unverifiableAttestation_returnsConformsFalseAndFailureCategory() {
     var outcome = new UnverifiableAttestation(FailureCategory.UNVERIFIABLE_ATTESTATION, "raw", "bad sig");
     when(orchestrator.check(ASSET_ID, PROFILE_ID, CREDENTIAL)).thenReturn(outcome);
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.empty());
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.empty());
 
     var response = service.runComplianceCheck(ASSET_ID, request(PROFILE_ID, CREDENTIAL));
 
@@ -93,7 +96,7 @@ class ComplianceCheckServiceTest {
         PROFILE_ID, FAMILY_ID, "jwt-vc-compliance", null, "/api/credential-offers/standard-compliance", "1.0", 30);
     var outcome = new IssuedAttestation(CANNED_VC_JWT, null);
     when(orchestrator.check(any(), any(), any())).thenReturn(outcome);
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(profileConfig));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(profileConfig));
 
     service.runComplianceCheck(ASSET_ID, request(PROFILE_ID, CREDENTIAL));
 
@@ -104,7 +107,7 @@ class ComplianceCheckServiceTest {
   void runComplianceCheck_profileConfigAbsent_storeReceivesProfileIdAsFamilyId() {
     var outcome = new IssuedAttestation(CANNED_VC_JWT, null);
     when(orchestrator.check(any(), any(), any())).thenReturn(outcome);
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.empty());
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.empty());
 
     service.runComplianceCheck(ASSET_ID, request(PROFILE_ID, CREDENTIAL));
 

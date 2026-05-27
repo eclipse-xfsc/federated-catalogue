@@ -4,6 +4,14 @@ $(document).ready(function() {
   var TF_API_BASE     = '/admin/trust-frameworks';
   var MERGE_PATCH_JSON = 'application/merge-patch+json';
 
+  // Bundle override property keys — must match server-recognised merge-patch+json fields
+  var KEY_CLIENT_TYPE      = 'clientType';
+  var KEY_SERVICE_URL      = 'serviceUrl';
+  var KEY_COMPLIANCE_PATH  = 'compliancePath';
+  var KEY_API_VERSION      = 'apiVersion';
+  var KEY_TIMEOUT_SECONDS  = 'timeoutSeconds';
+  var KEY_TRUST_ANCHOR_URL = 'trustAnchorUrl';
+
   $.ajax({
     url: ADMIN_ME_URL,
     type: 'GET',
@@ -84,6 +92,23 @@ $(document).ready(function() {
               .attr('data-bundles', JSON.stringify(data.bundles || []))
               .append('<i class="bi bi-gear"></i>')
               .prop('outerHTML');
+          }
+        },
+        {
+          data: null,
+          orderable: false,
+          render: function(data) {
+            var bundles = data.bundles || [];
+            if (bundles.length === 0) {
+              return '';
+            }
+            return bundles.map(function(bundle) {
+              return $('<button>', { class: 'btn btn-sm btn-outline-primary tf-bundle-configure me-1' })
+                .attr('data-bundle-id', bundle.id)
+                .append('<i class="bi bi-pencil"></i> ')
+                .append($('<small>').text(bundle.id))
+                .prop('outerHTML');
+            }).join('');
           }
         }
       ]
@@ -193,6 +218,141 @@ $(document).ready(function() {
         && $('#tfRolesContainer .tf-role-toggle').length > 0;
       $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
     }
+
+    // ── Bundle client-config modal ──────────────────────────────────────────
+
+    // Set of field IDs that have been explicitly marked "clear" (→ null in PATCH body).
+    var tfBundleClearedFields = {};
+
+    $('#tfTable').on('click', '.tf-bundle-configure', function() {
+      var bundleId = $(this).data('bundle-id');
+      $('#tfBundleConfigModalBundleId').text(bundleId);
+      $('#tfBundleConfigModal').data('bundleId', bundleId);
+
+      // Reset all fields and cleared-field state
+      tfBundleClearedFields = {};
+      $('.tf-bundle-field').val('').removeClass('tf-field-cleared');
+      $('.tf-bundle-clear').removeClass('btn-danger').addClass('btn-outline-secondary');
+      $('#tfBundleConfigErrorBanner').hide();
+
+      new bootstrap.Modal('#tfBundleConfigModal').show();
+    });
+
+    // ✕ button: mark field as "explicitly clear" (will send null)
+    $('#tfBundleConfigModal').on('click', '.tf-bundle-clear', function() {
+      var targetId = $(this).data('target');
+      var $field = $('#' + targetId);
+      var key = $field.data('key');
+
+      tfBundleClearedFields[key] = true;
+      $field.val('').addClass('tf-field-cleared').prop('disabled', true);
+      $(this).removeClass('btn-outline-secondary').addClass('btn-danger');
+    });
+
+    // Typing into a field removes the "cleared" state
+    $('#tfBundleConfigModal').on('input', '.tf-bundle-field', function() {
+      var $field = $(this);
+      var key = $field.data('key');
+      if (tfBundleClearedFields[key]) {
+        delete tfBundleClearedFields[key];
+        $field.removeClass('tf-field-cleared').prop('disabled', false);
+        var $clearBtn = $('[data-target="' + $field.attr('id') + '"]');
+        $clearBtn.removeClass('btn-danger').addClass('btn-outline-secondary');
+      }
+    });
+
+    // Re-enable cleared field when modal is closed so it resets cleanly next open
+    $('#tfBundleConfigModal').on('hidden.bs.modal', function() {
+      tfBundleClearedFields = {};
+      $('.tf-bundle-field').prop('disabled', false).val('').removeClass('tf-field-cleared');
+      $('.tf-bundle-clear').removeClass('btn-danger').addClass('btn-outline-secondary');
+    });
+
+    $('#tfBundleConfigSave').on('click', function() {
+      var bundleId = $('#tfBundleConfigModal').data('bundleId');
+      if (!bundleId) { return; }
+
+      var payload = {};
+
+      // Fields explicitly cleared → null
+      var clearKeys = [
+        KEY_CLIENT_TYPE, KEY_SERVICE_URL, KEY_COMPLIANCE_PATH,
+        KEY_API_VERSION, KEY_TIMEOUT_SECONDS, KEY_TRUST_ANCHOR_URL
+      ];
+      clearKeys.forEach(function(k) {
+        if (tfBundleClearedFields[k]) {
+          payload[k] = null;
+        }
+      });
+
+      // Fields with a value → include value (with type coercion for integer)
+      $('.tf-bundle-field').each(function() {
+        var $f = $(this);
+        var key = $f.data('key');
+        if (tfBundleClearedFields[key]) { return; } // already handled as null
+        var raw = $.trim($f.val());
+        if (raw === '') { return; } // blank → omit (no-op)
+        payload[key] = (key === KEY_TIMEOUT_SECONDS) ? parseInt(raw, 10) : raw;
+      });
+
+      if (Object.keys(payload).length === 0) {
+        $('#tfBundleConfigErrorBanner').text('Nothing to save — fill in at least one field or mark one for clearing.').show();
+        return;
+      }
+
+      $('#tfBundleConfigErrorBanner').hide();
+      $('#tfBundleConfigSave').prop('disabled', true);
+
+      fetch(TF_API_BASE + '/bundles/' + encodeURIComponent(bundleId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': MERGE_PATCH_JSON },
+        body: JSON.stringify(payload)
+      })
+        .then(function(resp) {
+          if (resp.ok) {
+            bootstrap.Modal.getInstance('#tfBundleConfigModal').hide();
+          } else {
+            return resp.json().then(function(err) {
+              var msg = (err && err.message) ? err.message : ('Server error ' + resp.status);
+              $('#tfBundleConfigErrorBanner').text(msg).show();
+            });
+          }
+        })
+        .catch(function() {
+          $('#tfBundleConfigErrorBanner').text('Network error — please try again.').show();
+        })
+        .finally(function() {
+          $('#tfBundleConfigSave').prop('disabled', false);
+        });
+    });
+
+    $('#tfBundleConfigRevertAll').on('click', function() {
+      var bundleId = $('#tfBundleConfigModal').data('bundleId');
+      if (!bundleId) { return; }
+
+      $('#tfBundleConfigErrorBanner').hide();
+      $('#tfBundleConfigRevertAll').prop('disabled', true);
+
+      fetch(TF_API_BASE + '/bundles/' + encodeURIComponent(bundleId), {
+        method: 'DELETE'
+      })
+        .then(function(resp) {
+          if (resp.ok) {
+            bootstrap.Modal.getInstance('#tfBundleConfigModal').hide();
+          } else {
+            return resp.json().then(function(err) {
+              var msg = (err && err.message) ? err.message : ('Server error ' + resp.status);
+              $('#tfBundleConfigErrorBanner').text(msg).show();
+            });
+          }
+        })
+        .catch(function() {
+          $('#tfBundleConfigErrorBanner').text('Network error — please try again.').show();
+        })
+        .finally(function() {
+          $('#tfBundleConfigRevertAll').prop('disabled', false);
+        });
+    });
   }
 
 });

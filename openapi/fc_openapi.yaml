@@ -1375,6 +1375,86 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /admin/trust-frameworks/bundles/{bundleId}:
+    patch:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Merge-patch external client identifiers of a trust-framework bundle
+      description: >-
+        Merge-patch semantics (RFC 7396): only fields present in the body are modified.
+        Overrides the per-bundle compliance endpoint URL, API version, timeout,
+        client implementation key, and trust-anchor list URL. The bundle YAML remains
+        the baseline; absent override fields fall back to the YAML value. The change
+        takes effect on the next compliance call against the bundle — no restart is
+        required. At least one field must be present (minProperties: 1).
+      operationId: patchTrustFrameworkBundleConfig
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: bundleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: true
+              description: >-
+                Free-form merge-patch object. Recognised keys are clientType,
+                serviceUrl, compliancePath, apiVersion, timeoutSeconds, trustAnchorUrl.
+                Setting a key's value to a non-null primitive overrides the bundle
+                YAML for that field. Setting a key's value to JSON null clears the
+                override for that field (the YAML value is used again). Omitting a
+                key leaves any existing override or YAML value unchanged. At least
+                one key must be present.
+      responses:
+        '200':
+          description: Bundle configuration updated
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Clear all external-identifier overrides for a trust-framework bundle
+      description: >-
+        Removes any persisted overrides for the given bundle, restoring the bundle YAML
+        as the sole source of compliance configuration. Idempotent — a bundle without
+        an override row still returns 200. Use when an operator wants to revert all
+        runtime adjustments at once; for partial reverts, PATCH with the desired
+        fields instead.
+      operationId: deleteTrustFrameworkBundleConfig
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: bundleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bundle overrides cleared (or already absent)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /admin/trust-frameworks/{bundleId}/roles/{roleName}:
     patch:
       tags:

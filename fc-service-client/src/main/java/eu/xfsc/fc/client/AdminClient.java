@@ -84,6 +84,35 @@ public class AdminClient extends ServiceClient {
         Map.of("bundleId", bundleId, "roleName", roleName), Void.class, authorizedClient);
   }
 
+  /**
+   * Applies a merge-patch to the external client identifiers of a bundle using RFC 7396
+   * merge-patch semantics. Only fields present in the map are modified; setting a field to
+   * {@code null} clears the stored override for that field; absent fields are left unchanged.
+   *
+   * @param bundleId         trust framework bundle identifier
+   * @param patch            free-form merge-patch map; must contain at least one entry
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void patchTrustFrameworkBundleConfig(String bundleId,
+                                              Map<String, Object> patch, OAuth2AuthorizedClient authorizedClient) {
+    doPatch("/admin/trust-frameworks/bundles/{bundleId}", patch,
+        Map.of("bundleId", bundleId), Void.class, authorizedClient);
+  }
+
+  /**
+   * Removes all persisted overrides for the given bundle, restoring the bundle YAML as the sole
+   * source of compliance configuration. Idempotent — a bundle without an override row still
+   * returns without error.
+   *
+   * @param bundleId         trust framework bundle identifier
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void deleteTrustFrameworkBundleConfig(String bundleId,
+                                               OAuth2AuthorizedClient authorizedClient) {
+    doDelete("/admin/trust-frameworks/bundles/{bundleId}",
+        Map.of("bundleId", bundleId), null, Void.class, authorizedClient);
+  }
+
   /** Gets schema validation module status. */
     public SchemaValidationStatus getSchemaValidation(OAuth2AuthorizedClient authorizedClient) {
         return doGet("/admin/schema-validation", Map.of(), null,

@@ -41,6 +41,28 @@ public class TrustFrameworkAdminControllerTest {
   public static final String ENABLED_TRUE = """
       {"enabled":true}
       """;
+  public static final String BUNDLE_CONFIG_SERVICE_URL_OVERRIDE = """
+      {"serviceUrl":"https://mock.test/v2"}
+      """;
+  public static final String BUNDLE_CONFIG_SERVICE_URL_NULL = """
+      {"serviceUrl":null}
+      """;
+  public static final String BUNDLE_CONFIG_UNKNOWN_PROPERTY = """
+      {"unknownProperty":"x"}
+      """;
+  public static final String BUNDLE_CONFIG_WRONG_TYPE = """
+      {"timeoutSeconds":"not-a-number"}
+      """;
+  public static final String BUNDLE_CONFIG_FULL_OVERRIDE = """
+      {
+        "clientType":"jwt-vc-compliance",
+        "serviceUrl":"https://mock.test/v2",
+        "compliancePath":"/api/credential-offers/standard-compliance",
+        "apiVersion":"v2",
+        "timeoutSeconds":15,
+        "trustAnchorUrl":"https://registry.test/v1/trust-anchors"
+      }
+      """;
   @Autowired
   private MockMvc mockMvc;
 
@@ -226,6 +248,179 @@ public class TrustFrameworkAdminControllerTest {
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].id").value(hasItem("mock-2026")));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_serviceUrlField_returns200() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_allFields_returns200() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_FULL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_unknownBundle_returns404() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/nonexistent-bundle")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", notNullValue()));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_emptyBody_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content("{}")
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_missingBody_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            // missing body
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void patchTrustFrameworkBundleConfig_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockUser
+  void patchTrustFrameworkBundleConfig_wrongRole_returns403() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_explicitNull_clearsOverride() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_NULL)
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_unknownProperty_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_UNKNOWN_PROPERTY)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_wrongType_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_WRONG_TYPE)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void deleteTrustFrameworkBundleConfig_existingOverride_returns200() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void deleteTrustFrameworkBundleConfig_noOverrideRow_isIdempotent() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void deleteTrustFrameworkBundleConfig_unknownBundle_returns404() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/nonexistent-bundle")
+            .with(csrf()))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void deleteTrustFrameworkBundleConfig_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .with(csrf()))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockUser
+  void deleteTrustFrameworkBundleConfig_wrongRole_returns403() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .with(csrf()))
+        .andExpect(status().isForbidden());
   }
 
   @Test

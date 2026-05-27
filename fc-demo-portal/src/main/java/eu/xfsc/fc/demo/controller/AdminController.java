@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -86,6 +87,29 @@ public class AdminController {
       @RequestBody TrustFrameworkPatch patch,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
     adminClient.patchTrustFramework(id, patch, authorizedClient);
+  }
+
+  /**
+   * Partially update the external client configuration of a trust framework bundle using
+   * RFC 7396 merge-patch semantics.
+   */
+  @PatchMapping("/trust-frameworks/bundles/{bundleId}")
+  public void patchTrustFrameworkBundleConfig(
+      @PathVariable("bundleId") String bundleId,
+      @RequestBody Map<String, Object> patch,
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    adminClient.patchTrustFrameworkBundleConfig(bundleId, patch, authorizedClient);
+  }
+
+  /**
+   * Remove all persisted overrides for a trust framework bundle, restoring the bundle YAML
+   * as the sole source of compliance configuration.
+   */
+  @DeleteMapping("/trust-frameworks/bundles/{bundleId}")
+  public void deleteTrustFrameworkBundleConfig(
+      @PathVariable("bundleId") String bundleId,
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    adminClient.deleteTrustFrameworkBundleConfig(bundleId, authorizedClient);
   }
 
   /**

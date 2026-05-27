@@ -1,7 +1,10 @@
 package eu.xfsc.fc.server.service;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +19,9 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService.Field;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService.Overrides;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
@@ -34,6 +40,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
 
   private final TrustFrameworkService trustFrameworkService;
   private final TrustFrameworkRegistry trustFrameworkRegistry;
+  private final TrustFrameworkBundleConfigService bundleConfigService;
 
   @Value("${federated-catalogue.enabled-trust-frameworks:}")
   private List<String> enabledTrustFrameworkFamilies;
@@ -82,6 +89,88 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
       throw new ClientException("Patch body must contain at least one field");
     }
     trustFrameworkService.setEnabled(id, patch.getEnabled());
+    return ResponseEntity.ok().build();
+  }
+
+  /**
+   * Applies a merge-patch (RFC 7396) to the external client identifiers of a single
+   * bundle.
+   * <ul>
+   *   <li>A property with a non-null value overrides the YAML for that field.</li>
+   *   <li>A property explicitly set to JSON null clears the override and lets the YAML
+   *       value flow through again.</li>
+   *   <li>An omitted property leaves the existing state unchanged.</li>
+   * </ul>
+   * The change takes effect on the next compliance call — no restart required.
+   *
+   * @param bundleId registry bundle profile ID
+   * @param body     decoded merge-patch object (set of property → value)
+   * @return 200 on success, 400 if the body is empty or contains unknown / mistyped
+   * properties, 404 if the bundle is not registered
+   */
+  @Override
+  public ResponseEntity<Void> patchTrustFrameworkBundleConfig(
+      String bundleId, Map<String, Object> patch) {
+    if (patch == null || patch.isEmpty()) {
+      throw new ClientException("Patch body must contain at least one field");
+    }
+
+    Overrides overrides = Overrides.empty();
+    Set<Field> fieldsToClear = EnumSet.noneOf(Field.class);
+    for (Map.Entry<String, Object> entry : patch.entrySet()) {
+      Field field = parseField(entry.getKey());
+      Object value = entry.getValue();
+      if (value == null) {
+        fieldsToClear.add(field);
+      } else {
+        overrides.put(field, coerce(field, value));
+      }
+    }
+
+    bundleConfigService.applyPatch(bundleId, overrides, fieldsToClear);
+    return ResponseEntity.ok().build();
+  }
+
+  private static Field parseField(String jsonName) {
+    try {
+      return Field.fromJsonName(jsonName);
+    } catch (IllegalArgumentException e) {
+      throw new ClientException("Unknown bundle config property: " + jsonName);
+    }
+  }
+
+  private static Object coerce(Field field, Object value) {
+    return switch (field) {
+      case TIMEOUT_SECONDS -> {
+        if (value instanceof Integer i) {
+          yield i;
+        }
+        if (value instanceof Number n) {
+          yield n.intValue();
+        }
+        throw new ClientException("Property '" + field.jsonName()
+            + "' must be a JSON integer");
+      }
+      case CLIENT_TYPE, SERVICE_URL, COMPLIANCE_PATH, API_VERSION, TRUST_ANCHOR_URL -> {
+        if (value instanceof String s) {
+          yield s;
+        }
+        throw new ClientException("Property '" + field.jsonName()
+            + "' must be a JSON string");
+      }
+    };
+  }
+
+  /**
+   * Clears every persisted override for the given bundle, reverting the runtime
+   * configuration to the YAML baseline. Idempotent.
+   *
+   * @param bundleId registry bundle profile ID
+   * @return 200 on success, 404 if the bundle is not registered
+   */
+  @Override
+  public ResponseEntity<Void> deleteTrustFrameworkBundleConfig(String bundleId) {
+    bundleConfigService.clear(bundleId);
     return ResponseEntity.ok().build();
   }
 

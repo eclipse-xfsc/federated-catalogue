@@ -6,7 +6,7 @@ import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class ComplianceCheckOrchestrator {
   private static final String MDC_ASSET_ID = "assetId";
   private static final String MDC_PROFILE_ID = "frameworkProfileId";
 
-  private final TrustFrameworkRegistry registry;
+  private final TrustFrameworkProfileResolver profileResolver;
   private final TrustFrameworkService tfService;
   private final TrustFrameworkClientRegistry clientRegistry;
 
@@ -95,7 +95,7 @@ public class ComplianceCheckOrchestrator {
   }
 
   private ComplianceCheckOutcome doCheck(String frameworkProfileId, String assetPayload) {
-    TrustFrameworkProfileConfig config = registry.getProfileConfig(frameworkProfileId)
+    TrustFrameworkProfileConfig config = profileResolver.getProfileConfig(frameworkProfileId)
         .orElseThrow(() -> new ClientException("Unknown trust-framework profile: " + frameworkProfileId));
 
     if (!tfService.isEnabled(config.familyId())) {
