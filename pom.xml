@@ -452,10 +452,6 @@
                              requires an NVD API key (NVD_API_KEY / -Dnvd.api.key) and would otherwise fail
                              on NVD rate-limiting (HTTP 429) when no key is available. -->
                         <failBuildOnCVSS>${dependency-check.failBuildOnCVSS}</failBuildOnCVSS>
-                        <suppressionFiles>
-                            <suppressionFile>${maven.multiModuleProjectDirectory}/owasp-suppressions.xml
-                            </suppressionFile>
-                        </suppressionFiles>
                         <nvdApiKey>${nvd.api.key}</nvdApiKey>
                     </configuration>
                 </plugin>
