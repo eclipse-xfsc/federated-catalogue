@@ -1,8 +1,11 @@
 $(document).ready(function() {
 
-  // Admin access check
+  var ADMIN_ME_URL    = '/admin/me';
+  var TF_API_BASE     = '/admin/trust-frameworks';
+  var MERGE_PATCH_JSON = 'application/merge-patch+json';
+
   $.ajax({
-    url: '/admin/me',
+    url: ADMIN_ME_URL,
     type: 'GET',
     success: function() {
       $('#admin-content').show();
@@ -14,13 +17,13 @@ $(document).ready(function() {
   });
 
   function loadTrustFrameworks() {
-    var table = $('#tfTable').DataTable({
+    $('#tfTable').DataTable({
       ajax: {
-        url: '/admin/trust-frameworks',
+        url: TF_API_BASE,
         dataSrc: function(json) {
           return json || [];
         },
-        error: function(xhr) {
+        error: function() {
           $('#admin-content').html(
             '<div class="alert alert-danger">Failed to load trust frameworks.</div>');
         }
@@ -49,14 +52,16 @@ $(document).ready(function() {
             return '<code>' + $('<span>').text(data).html() + '</code>';
           }
         },
-        { data: 'serviceUrl', render: $.fn.dataTable.render.text() },
         {
-          data: 'connected',
+          data: 'bundles',
+          orderable: false,
           render: function(data) {
-            if (data) {
-              return '<span class="badge bg-success">Connected</span>';
+            if (!data || data.length === 0) {
+              return '';
             }
-            return '<span class="badge bg-danger">Disconnected</span>';
+            return data.map(function(bundle) {
+              return '<code>' + $('<span>').text(bundle.id).html() + '</code>';
+            }).join(', ');
           }
         },
         {
@@ -73,11 +78,8 @@ $(document).ready(function() {
           data: null,
           orderable: false,
           render: function(data) {
-            return $('<button>', { class: 'btn btn-sm btn-outline-secondary tf-config' })
+            return $('<button>', { class: 'btn btn-sm btn-outline-secondary tf-roles' })
               .attr('data-id',      data.id)
-              .attr('data-url',     data.serviceUrl || '')
-              .attr('data-version', data.apiVersion || '')
-              .attr('data-timeout', data.timeoutSeconds || 30)
               .attr('data-enabled', data.enabled ? 'true' : 'false')
               .attr('data-bundles', JSON.stringify(data.bundles || []))
               .append('<i class="bi bi-gear"></i>')
@@ -87,15 +89,16 @@ $(document).ready(function() {
       ]
     });
 
-    // Toggle handler
     $('#tfTable').on('change', '.tf-toggle', function() {
       var $toggle = $(this);
       var id = $toggle.data('id');
       var enabled = $toggle.is(':checked');
 
       $.ajax({
-        url: '/admin/trust-frameworks/' + encodeURIComponent(id) + '/enabled?enabled=' + enabled,
-        type: 'PUT',
+        url: TF_API_BASE + '/' + encodeURIComponent(id),
+        type: 'PATCH',
+        contentType: MERGE_PATCH_JSON,
+        data: JSON.stringify({enabled: enabled}),
         error: function() {
           $toggle.prop('checked', !enabled);
           alert('Failed to update trust framework status.');
@@ -103,21 +106,14 @@ $(document).ready(function() {
       });
     });
 
-    // Config button handler
-    $('#tfTable').on('click', '.tf-config', function() {
+    $('#tfTable').on('click', '.tf-roles', function() {
       var $btn = $(this);
       var familyEnabled = $btn.data('enabled') === 'true' || $btn.data('enabled') === true;
       var bundles = $btn.data('bundles') || [];
       if (typeof bundles === 'string') {
-        try { bundles = JSON.parse(bundles); } catch(e) { bundles = []; }
+        try { bundles = JSON.parse(bundles); } catch (e) { bundles = []; }
       }
 
-      $('#tfConfigId').val($btn.data('id'));
-      $('#tfServiceUrl').val($btn.data('url'));
-      $('#tfApiVersion').val($btn.data('version'));
-      $('#tfTimeout').val($btn.data('timeout'));
-
-      // Render role checkboxes
       var $container = $('#tfRolesContainer').empty();
       $('#tfRoleErrorBanner').hide();
       var multiBundle = bundles.length > 1;
@@ -152,7 +148,6 @@ $(document).ready(function() {
         });
       });
 
-      // Initialize Bootstrap tooltips for the newly rendered labels
       $container.find('[data-bs-toggle="tooltip"]').each(function() {
         new bootstrap.Tooltip(this);
       });
@@ -162,7 +157,6 @@ $(document).ready(function() {
       new bootstrap.Modal('#tfConfigModal').show();
     });
 
-    // Role toggle change handler
     $('#tfConfigModal').on('change', '.tf-role-toggle', function() {
       var $cb = $(this);
       var bundleId = $cb.data('bundle');
@@ -170,20 +164,17 @@ $(document).ready(function() {
       var enabled = $cb.is(':checked');
 
       $.ajax({
-        url: '/admin/trust-frameworks/' + encodeURIComponent(bundleId)
-          + '/roles/' + encodeURIComponent(roleName)
-          + '/enabled?enabled=' + enabled,
-        type: 'PUT',
+        url: TF_API_BASE + '/' + encodeURIComponent(bundleId)
+          + '/roles/' + encodeURIComponent(roleName),
+        type: 'PATCH',
+        contentType: MERGE_PATCH_JSON,
+        data: JSON.stringify({enabled: enabled}),
         success: function() {
           $('#tfRoleErrorBanner').hide();
           recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
         },
         error: function() {
           $cb.prop('checked', !enabled);
-          // Recompute the all-disabled warning after the checkbox revert so it
-          // reflects the current (reverted) state rather than the failed toggle.
-          // Reproduction: disable the last enabled role → server returns 5xx →
-          // checkbox reverts to checked but warning remained visible (stale state).
           recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
           var $banner = $('#tfRoleErrorBanner');
           $banner.text('Failed to update role "' + roleName + '". Please try again.').show();
@@ -202,45 +193,6 @@ $(document).ready(function() {
         && $('#tfRolesContainer .tf-role-toggle').length > 0;
       $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
     }
-
-    // Config save handler
-    $('#tfConfigSave').on('click', function() {
-      var id = $('#tfConfigId').val();
-      var serviceUrl = $('#tfServiceUrl').val().trim();
-
-      if (serviceUrl) {
-        try {
-          var parsed = new URL(serviceUrl);
-          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-            alert('Service URL must use http or https protocol.');
-            return;
-          }
-        } catch (e) {
-          alert('Service URL is not a valid URI.');
-          return;
-        }
-      }
-
-      var config = {
-        serviceUrl: serviceUrl,
-        apiVersion: $('#tfApiVersion').val(),
-        timeoutSeconds: parseInt($('#tfTimeout').val()) || 30
-      };
-
-      $.ajax({
-        url: '/admin/trust-frameworks/' + encodeURIComponent(id),
-        type: 'PUT',
-        contentType: 'application/json',
-        data: JSON.stringify(config),
-        success: function() {
-          bootstrap.Modal.getInstance(document.getElementById('tfConfigModal')).hide();
-          table.ajax.reload();
-        },
-        error: function() {
-          alert('Failed to save trust framework configuration.');
-        }
-      });
-    });
   }
 
 });

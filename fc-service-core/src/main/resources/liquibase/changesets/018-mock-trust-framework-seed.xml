@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="nowak" id="2026-05-21-mock-trust-framework-seed">
+        <comment>
+            Seeds the mock trust-framework family row. Starts disabled so operators can
+            activate it explicitly via the admin toggle endpoint. The mock-2026 bundle
+            carries its own service_url via the YAML bundle config.
+        </comment>
+
+        <insert tableName="trust_frameworks">
+            <column name="id" value="mock"/>
+            <column name="name" value="Mock Trust Framework"/>
+            <column name="enabled" valueBoolean="false"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>

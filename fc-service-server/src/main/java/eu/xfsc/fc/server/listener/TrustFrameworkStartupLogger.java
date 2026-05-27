@@ -27,7 +27,7 @@ public class TrustFrameworkStartupLogger implements ApplicationListener<Applicat
 
   private static final String DISABLED_FAMILY_MSG =
       "trust-framework '{}' registered (profiles: {}) — disabled."
-          + " Enable via PUT /admin/trust-frameworks/{}/enabled?enabled=true"
+          + " Enable via PATCH /admin/trust-frameworks/{} with body {\"enabled\":true}"
           + " or env FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS={}";
 
   private final TrustFrameworkRegistry trustFrameworkRegistry;

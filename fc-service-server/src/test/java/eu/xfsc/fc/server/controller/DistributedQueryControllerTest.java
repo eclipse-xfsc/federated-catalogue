@@ -231,7 +231,6 @@ public class DistributedQueryControllerTest {
 
   private void initialiseAllDataBaseWithManuallyAddingCredentialFromRepository() throws Exception {
 
-	  log.debug("INIT-DATA.START");
 	  try {
     //adding 1st credential
     ContentAccessorDirect contentAccessor =
@@ -242,7 +241,7 @@ public class DistributedQueryControllerTest {
             verificationResult.getIssuer(), verificationResult.getValidators(), contentAccessor);
     assetStorePublisher.storeCredential(assetMetadata, verificationResult);
 
-    //adding second credential
+        //adding 2nd credential
     ContentAccessorDirect contentAccessor2
             = new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("default-credential-service-offering.json"));
         CredentialVerificationResult verificationResult2
@@ -251,7 +250,7 @@ public class DistributedQueryControllerTest {
             verificationResult2.getIssuer(), verificationResult2.getValidators(), contentAccessor2);
     assetStorePublisher.storeCredential(assetMetadata2, verificationResult2);
 
-    //adding third credential
+        //adding 3rd credential
    ContentAccessorDirect contentAccessorDirect3 =
         new ContentAccessorDirect(FileReaderHelper.getMockFileDataAsString("unique-participant.json"));
         CredentialVerificationResult verificationResult3
@@ -261,10 +260,8 @@ public class DistributedQueryControllerTest {
     assetStorePublisher.storeCredential(assetMetadata3, verificationResult3);
     
 	  } catch (Exception ex) {
-		  log.error("INIT-DATA.ERROR", ex);
-		  throw ex;
+        log.error("Error while adding credential to database: {}", ex.getMessage(), ex);
+        throw ex;
 	  }
-	  log.debug("INIT-DATA.FINISH");
   }
-
 }

@@ -370,7 +370,7 @@ public class VerificationServiceTest {
 
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
 
-      // AC-3: ext:CustomParticipant is not in any active bundle (gaia-x disabled, no ontology loaded)
+      // ext:CustomParticipant is not in any active bundle (gaia-x disabled, no ontology loaded)
       // → resolveSubjectRole returns UNKNOWN → ClientException.
       ContentAccessor customExtContent = getAccessor("VerificationService/syntax/customExtParticipant.jsonld");
       assertThrowsExactly(ClientException.class,
@@ -405,7 +405,7 @@ public class VerificationServiceTest {
 
   @Test
   void validComplexCredentialPartType() {
-    // AC-3: VCs whose outer "type" array has only "VerifiableCredential" (no domain type) are rejected.
+    // VCs whose outer "type" array has only "VerifiableCredential" (no domain type) are rejected.
     // complexCredentialPartType.jsonld's VCs all have type=["VerifiableCredential"], so role=null → 400.
     schemaStore.initializeDefaultSchemas();
     String path = "VerificationService/syntax/complexCredentialPartType.jsonld";
@@ -685,7 +685,7 @@ public class VerificationServiceTest {
 
   @Test
   void extractClaims_allFcmetaClaimsFiltered_returnsEmptyList() {
-    // AC-3: credentialSubject has no @type → UNKNOWN → ClientException.
+    // credentialSubject has no @type → UNKNOWN → ClientException.
     // The fcmeta-only fixture's credentialSubject carries only protected-namespace predicates and no type,
     // so role resolution fails before claims are returned.
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential-only-fcmeta.jsonld");
@@ -696,7 +696,7 @@ public class VerificationServiceTest {
   // --- T5: JWT signature verification smoke tests ---
 
   /**
-   * AC 1 / AC 3 (guard removed): JWT credential with verifyVCSignatures=true no longer throws
+   * JWT credential with verifyVCSignatures=true no longer throws
    * UnsupportedOperationException; JwtSignatureVerifier is invoked and returns a Validator.
    */
   @Test
@@ -717,7 +717,7 @@ public class VerificationServiceTest {
   }
 
   /**
-   * AC 9: LD credential with verifyVCSignatures=true is rejected — LD proof verification
+   * LD credential with verifyVCSignatures=true is rejected - LD proof verification
    * was removed. JwtSignatureVerifier is NOT invoked.
    */
   @Test
@@ -731,10 +731,6 @@ public class VerificationServiceTest {
     verify(jwtVerifierMock, never()).verify(any());
   }
 
-  /**
-   * AC 7 (VP JWT iss ≠ holder): VP JWT where iss does not match holder must throw
-   * VerificationException when verifySemantics=true.
-   */
   @Test
   void verifyCredential_vpJwtIssNotEqualHolder_throwsVerificationException() {
     ContentAccessor vpJwt = new ContentAccessorDirect(
@@ -752,10 +748,6 @@ public class VerificationServiceTest {
     assertTrue(ex.getMessage().contains("holder"), "Error must mention holder: " + ex.getMessage());
   }
 
-  /**
-   * AC 2 (VP JWT happy path): VP JWT with iss == holder and verifyVPSignatures=true succeeds
-   * and result contains validators.
-   */
   @Test
   void verifyCredential_vpJwtIssEqualsHolder_returnsValidators() {
     ContentAccessor vpJwt = new ContentAccessorDirect(
@@ -763,7 +755,7 @@ public class VerificationServiceTest {
 
     Validator testValidator = new Validator("did:test:key-1", "{\"kty\":\"EC\"}", null);
     when(jwtVerifierMock.verify(any())).thenReturn(testValidator);
-    // input.vp.jsonld causes PROTECTED_TERM_REDEFINITION during role resolution (AC-3 would reject it).
+    // input.vp.jsonld causes PROTECTED_TERM_REDEFINITION during role resolution
     // Use legalParticipant.jsonld instead — a proper Gaia-X VP whose type resolves to Participant.
     ContentAccessor vpJsonLd = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
     doReturn(vpJsonLd).when(jwtPreprocessorSpy).unwrap(any());
@@ -777,9 +769,6 @@ public class VerificationServiceTest {
     assertFalse(result.getValidators().isEmpty());
   }
 
-  /**
-   * AC 3 (skip path): JWT credential with both signature flags=false must not invoke JwtSignatureVerifier.
-   */
   @Test
   void verifyCredential_jwtWithBothSigFlagsFalse_jwtVerifierNotInvoked() {
     String vcJson = getAccessor("Claims-Tests/participantVC2.jsonld").getContentAsString();
@@ -974,7 +963,7 @@ public class VerificationServiceTest {
   // --- VC 2.0 non-Gaia-X RDF asset tests ---
 
   /**
-   * AC-3: VC 2.0 credential without any recognised trust-framework type must be rejected
+   * VC 2.0 credential without any recognised trust-framework type must be rejected
    * regardless of whether the Gaia-X bundle is enabled or not. Type resolution returns
    * UNKNOWN → 400 ClientException.
    */
@@ -1011,7 +1000,7 @@ public class VerificationServiceTest {
   void verifyCredential_evcWrapper_innerVcJwtUnwrappedAndProcessed() {
     // EVC per ICAM 24.07: outer JSON-LD wrapper with data: URI carrying a Loire VC JWT.
     // The wrapper is stripped; inner JWT routes through Loire path. fakeLoireJwt has no domain type
-    // → AC-3 throws ClientException after unwrap. The spy call still happens before the exception.
+    // → throws ClientException after unwrap. The spy call still happens before the exception.
     String innerJwt = TestUtil.fakeLoireJwt("did:example:issuer");
     String evcBody = "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
         + "\"type\":\"EnvelopedVerifiableCredential\","
@@ -1027,7 +1016,7 @@ public class VerificationServiceTest {
   void verifyCredential_evpWrapper_innerVpJwtUnwrappedAndProcessed() {
     // EVP per ICAM 24.07: outer JSON-LD wrapper with data: URI carrying a Loire VP JWT.
     // The wrapper is stripped; inner JWT routes through Loire path. fakeLoireVpJwt has no domain type
-    // → AC-3 throws ClientException after unwrap. The spy call still happens before the exception.
+    // → throws ClientException after unwrap. The spy call still happens before the exception.
     String innerJwt = fakeLoireVpJwt("did:example:issuer");
     String evpBody = "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
         + "\"type\":\"EnvelopedVerifiablePresentation\","
