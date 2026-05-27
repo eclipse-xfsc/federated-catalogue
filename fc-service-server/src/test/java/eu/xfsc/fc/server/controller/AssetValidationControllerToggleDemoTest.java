@@ -1,5 +1,6 @@
 package eu.xfsc.fc.server.controller;
 
+import static eu.xfsc.fc.api.FcMediaTypes.MERGE_PATCH_JSON_VALUE;
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -25,7 +26,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 
 /**
- * Demonstration of the AU-01 acceptance criterion "the toggle takes effect": the SHACL
+ * Demonstration the validation toggles taking effect. The SHACL
  * module toggle, flipped via the admin endpoint, observably changes the
  * {@code POST /assets/validate} response body for a subsequent request.
  *
@@ -59,11 +60,19 @@ public class AssetValidationControllerToggleDemoTest {
   @Autowired
   private MockMvc mockMvc;
 
+  private static final String ENABLED_TRUE = """
+      {"enabled":true}
+      """;
+  private static final String ENABLED_FALSE = """
+      {"enabled":false}
+      """;
+
   @AfterEach
   void resetShaclToEnabled() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "true")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(ENABLED_TRUE)
             .with(csrf())
             .with(adminUser()))
         .andExpect(status().isOk());
@@ -83,8 +92,9 @@ public class AssetValidationControllerToggleDemoTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void validateAssets_shaclModuleDisabled_returns400ModuleDisabled() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "false")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());
 
@@ -101,8 +111,9 @@ public class AssetValidationControllerToggleDemoTest {
   @WithMockUser(roles = {ADMIN_ALL})
   void validateAssets_shaclModuleEnabled_doesNotReturnModuleDisabled() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .put("/admin/schema-validation/modules/SHACL")
-            .param("enabled", "true")
+            .patch("/admin/schema-validation/modules/SHACL")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(ENABLED_TRUE)
             .with(csrf()))
         .andExpect(status().isOk());
 

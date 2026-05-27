@@ -155,7 +155,6 @@ class JwtSignatureVerifierTest {
     VerificationException ex = assertThrows(VerificationException.class,
         () -> verifier.verify(compact));
 
-    // AC 10: error message contains attempted kid and available method IDs
     assertTrue(ex.getMessage().contains(KID), "message should contain attempted kid: " + ex.getMessage());
     assertTrue(ex.getMessage().contains(KID_B), "message should list available ids: " + ex.getMessage());
   }

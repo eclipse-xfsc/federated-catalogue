@@ -132,6 +132,7 @@ public class SecurityConfig {
 
           // Trust Framework Admin APIs
           .requestMatchers(HttpMethod.GET, "/admin/trust-frameworks").hasRole(ADMIN_ALL)
+          .requestMatchers(HttpMethod.PATCH, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
           .requestMatchers(HttpMethod.PUT, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
 
           // Schema Validation Admin APIs
@@ -140,7 +141,7 @@ public class SecurityConfig {
           // ever be broader, add a more specific matcher ABOVE this line — anyRequest()
           // .authenticated() further down does NOT enforce roles, only login status.
           .requestMatchers(HttpMethod.GET, "/admin/schema-validation", "/admin/schema-validation/**").hasRole(ADMIN_ALL)
-          .requestMatchers(HttpMethod.PUT, "/admin/schema-validation/**").hasRole(ADMIN_ALL)
+          .requestMatchers(HttpMethod.PATCH, "/admin/schema-validation/**").hasRole(ADMIN_ALL)
 
           // Graph Database Admin APIs
           .requestMatchers(HttpMethod.GET, "/admin/graph-database").hasRole(ADMIN_ALL)

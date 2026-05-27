@@ -17,6 +17,8 @@ import org.springframework.web.util.UriBuilder;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.xfsc.fc.api.FcMediaTypes;
+
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import java.net.URI;
@@ -194,6 +196,50 @@ public abstract class ServiceClient {
             .uri(uriBuilder -> buildUri(uriBuilder, path, pathParams, queryParams))
             .bodyValue(body)
             .attributes(oauth2AuthorizedClient(authorizedClient))
+            .retrieve()
+            .bodyToMono(reType)
+            .block();
+    }
+
+  /**
+   * Sends a PATCH request with the given body using {@code application/merge-patch+json}.
+   *
+   * @param path       URI template (supports Spring-style path variables)
+   * @param body       request payload; serialised to JSON
+   * @param pathParams path variable substitutions
+   * @param reType     expected response body type
+   * @return deserialized response body, or {@code null} for {@code Void}
+   */
+  protected <T> T doPatch(String path, Object body, Map<String, Object> pathParams, Class<T> reType) {
+    return client
+        .patch()
+        .uri(uriBuilder -> buildUri(uriBuilder, path, pathParams, null))
+        .contentType(FcMediaTypes.MERGE_PATCH_JSON)
+        .bodyValue(body)
+        .retrieve()
+        .bodyToMono(reType)
+        .block();
+  }
+
+  /**
+   * Sends a PATCH request with the given body using {@code application/merge-patch+json},
+   * attaching the supplied OAuth2 authorized client for token propagation.
+   *
+   * @param path             URI template (supports Spring-style path variables)
+   * @param body             request payload; serialised to JSON
+   * @param pathParams       path variable substitutions
+   * @param reType           expected response body type
+   * @param authorizedClient OAuth2 client used to obtain the bearer token
+   * @return deserialized response body, or {@code null} for {@code Void}
+   */
+  protected <T> T doPatch(String path, Object body, Map<String, Object> pathParams, Class<T> reType,
+                          OAuth2AuthorizedClient authorizedClient) {
+    return client
+        .patch()
+        .uri(uriBuilder -> buildUri(uriBuilder, path, pathParams, null))
+        .contentType(FcMediaTypes.MERGE_PATCH_JSON)
+        .bodyValue(body)
+        .attributes(oauth2AuthorizedClient(authorizedClient))
             .retrieve()
             .bodyToMono(reType)
             .block();

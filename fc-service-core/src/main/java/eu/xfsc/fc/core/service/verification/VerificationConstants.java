@@ -31,6 +31,9 @@ public final class VerificationConstants {
    */
   public static final String GAIAX_CLAIMS_GRAPH_URI = "https://w3id.org/gaia-x/2511#claimsGraphUri";
 
+  // TODO: media types below are API/wire concerns, not verification-domain vocabulary.
+  // Move to eu.xfsc.fc.api.FcMediaTypes (alongside MERGE_PATCH_JSON).
+
   // W3C VC-JOSE-COSE media types (IANA-registered)
   public static final String MEDIA_TYPE_VC_JWT = "application/vc+jwt";
   public static final String MEDIA_TYPE_VP_JWT = "application/vp+jwt";
