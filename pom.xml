@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version>
+        <version>3.5.14</version>
         <relativePath/>
     </parent>
     
@@ -67,9 +67,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
-        <spring.version>6.2.12</spring.version>
-        <spring-boot.version>3.5.7</spring-boot.version>
-        <spring.security.version>6.5.6</spring.security.version>
+        <spring.version>6.2.18</spring.version>
+        <spring-boot.version>3.5.14</spring-boot.version>
+        <spring.security.version>6.5.10</spring.security.version>
         <springdoc.version>2.8.14</springdoc.version>
         <keycloak.version>26.0.3</keycloak.version>
         <liquibase.version>4.33.0</liquibase.version>
@@ -83,9 +83,9 @@
         <uni-resolver.version>0.51.0</uni-resolver.version>
         <titanium.version>1.7.0</titanium.version>
         <caffeine.version>3.2.3</caffeine.version>
-        <bcpkix-jdk18on.version>1.82</bcpkix-jdk18on.version>
+        <bcpkix-jdk18on.version>1.84</bcpkix-jdk18on.version>
         <jnats.version>2.23.0</jnats.version>
-        <jackson-bom.version>2.20.1</jackson-bom.version>
+        <jackson-bom.version>2.21.2</jackson-bom.version>
         <json-schema-validator.version>2.0.1</json-schema-validator.version>
         <!-- test libs -->
         <junit-platform.version>1.14.1</junit-platform.version>
@@ -98,9 +98,13 @@
         <nimbus-jose-jwt.version>10.9</nimbus-jose-jwt.version>
         <tink.version>1.20.0</tink.version>
         <okhttp.version>5.3.0</okhttp.version>
+        <!-- CVE overrides beyond Spring Boot 3.5.14 BOM: newer patches close High/Critical CVEs. -->
+        <tomcat.version>10.1.55</tomcat.version>
+        <netty.version>4.1.133.Final</netty.version>
+        <postgresql.version>42.7.11</postgresql.version>
+        <libthrift.version>0.23.0</libthrift.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-       <!-- <maven.compiler.proc>full</maven.compiler.proc>-->
         <plugin.jacoco.version>0.8.14</plugin.jacoco.version>
         <plugin.git-commit.version>4.9.10</plugin.git-commit.version>
         <plugin.openapi-generator.version>7.12.0</plugin.openapi-generator.version>
@@ -108,7 +112,11 @@
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
         <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
         <plugin.checkstyle.puppycrawl.version>10.3.1</plugin.checkstyle.puppycrawl.version>
-        <!-- repoositiry path -->
+        <plugin.dependency-check.version>12.2.2</plugin.dependency-check.version>
+        <!-- OWASP scan: CVSS threshold and NVD API key (supply via -Dnvd.api.key=... or NVD_API_KEY env in CI) -->
+        <dependency-check.failBuildOnCVSS>7</dependency-check.failBuildOnCVSS>
+        <nvd.api.key></nvd.api.key>
+        <!-- repository path -->
         <repository.path>eclipse/xfsc/cat/fc-service</repository.path>
         <!--jib-->
         <ci-registry>${env.HARBOR_HOST}/${env.HARBOR_PROJECT}</ci-registry>
@@ -382,11 +390,18 @@
                  TODO: drop this pin once Zonky is bumped — embedded-postgres 2.2.x already
                  declares commons-io 2.21.0 / commons-compress 1.28.0. Bump
                  embedded-postgres + embedded-database-spring-test together
-                 (latest are 2.2.2 and 2.7.1/2.8.0 respectively) in May 2026. -->
+                 (latest are 2.2.2 and 2.7.1/2.8.0 respectively). -->
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>2.19.0</version>
+            </dependency>
+            <!-- Override libthrift (transitive via Apache Jena 5.5.0) to close CVE-2026-43869
+                 (CVSS 7.3, TLS host-mismatch). Not managed by the Spring Boot BOM. -->
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>${libthrift.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -432,6 +447,19 @@
                 <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
+                    <version>${plugin.dependency-check.version}</version>
+                    <configuration>
+                        <!-- Gate threshold for explicit manual runs (`mvn dependency-check:check`).
+                             NOT bound to the build lifecycle: the scan must never block CI, because it
+                             requires an NVD API key (NVD_API_KEY / -Dnvd.api.key) and would otherwise fail
+                             on NVD rate-limiting (HTTP 429) when no key is available. -->
+                        <failBuildOnCVSS>${dependency-check.failBuildOnCVSS}</failBuildOnCVSS>
+                        <suppressionFiles>
+                            <suppressionFile>${maven.multiModuleProjectDirectory}/owasp-suppressions.xml
+                            </suppressionFile>
+                        </suppressionFiles>
+                        <nvdApiKey>${nvd.api.key}</nvdApiKey>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.openapitools</groupId>
@@ -497,8 +525,6 @@
                     <emptyLineAfterHeader>true</emptyLineAfterHeader>
                     <outputDirectory>.</outputDirectory>
                     <thirdPartyFilename>THIRD-PARTY.txt</thirdPartyFilename>
-                    <!--fileTemplate>templates/third-party.ftl</fileTemplate-->
-                    <!--excludedArtifacts>dgc-lib</excludedArtifacts-->
                 </configuration>
             </plugin>
         </plugins>
