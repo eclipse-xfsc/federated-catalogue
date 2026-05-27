@@ -8,6 +8,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
@@ -67,18 +68,19 @@ public class GraphStoreStartupChecker implements ApplicationListener<Application
 
     AssetFilter filter = new AssetFilter();
     filter.setStatuses(List.of(AssetStatus.ACTIVE));
+    filter.setContentKinds(List.of(ContentKind.RDF));
     filter.setLimit(0);
     filter.setOffset(0);
-    long activeAssetCount = assetStore.getByFilter(filter, false, false).getTotalCount();
+    long rdfAssetCount = assetStore.getByFilter(filter, false, false).getTotalCount();
 
-    if (claimCount == 0 && activeAssetCount > 0) {
-      log.warn("Graph store is empty but {} active assets exist in storage", activeAssetCount);
+    if (claimCount == 0 && rdfAssetCount > 0) {
+      log.warn("Graph store has no claims but {} RDF assets exist in storage", rdfAssetCount);
       if (autoRebuildOnEmpty) {
         log.info("Auto-rebuild is enabled, triggering graph rebuild");
         graphRebuildService.triggerRebuild(1, 0, rebuildThreads, rebuildBatchSize);
       }
     } else {
-      log.info("Graph store state: {} claims, {} active assets", claimCount, activeAssetCount);
+      log.info("Graph store state: {} claims, {} RDF assets", claimCount, rdfAssetCount);
     }
   }
 }

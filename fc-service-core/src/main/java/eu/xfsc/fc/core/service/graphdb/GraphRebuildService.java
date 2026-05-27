@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.graphdb;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.AssetFilter;
@@ -65,6 +66,11 @@ public class GraphRebuildService {
         try {
           AssetFilter filter = new AssetFilter();
           filter.setStatuses(List.of(AssetStatus.ACTIVE));
+          // The rebuilder only adds claims for RDF-content assets; non-RDF assets are
+          // skipped inside addAssetToGraph. Counting RDF only here keeps `total` in
+          // sync with the work actually performed and with the rdfAssetCount field
+          // returned by GET /admin/graph-database.
+          filter.setContentKinds(List.of(ContentKind.RDF));
           filter.setLimit(0);
           filter.setOffset(0);
           long total = assetStore.getByFilter(filter, false, false).getTotalCount();

@@ -23,7 +23,7 @@ import java.util.List;
 
 @Slf4j
 @Configuration
-@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('test') && '${graphstore.impl}'.equals('neo4j')")
+@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('test')")
 //@EnableAutoConfiguration
 public class EmbeddedNeo4JConfig {
 

@@ -40,17 +40,27 @@ public abstract class ServiceClient {
                 configurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(mapper, MediaType.APPLICATION_JSON));
             })
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .filter(ExchangeFilterFunction.ofResponseProcessor(response -> {
-            	if (response.statusCode().isError()) {
-            		return response.bodyToMono(Map.class)
-            				.flatMap(map -> Mono.error(new ExternalServiceException(response.statusCode(), map)));
-            	}
-            	return Mono.just(response);
-            }));
-        if (jwt != null) {
-            builder = builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwt);
-        }
-        this.client = builder.build();
+            .filter(errorPropagationFilter());
+      if (jwt != null) {
+        builder = builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwt);
+      }
+      this.client = builder.build();
+    }
+
+  /**
+   * Exchange filter that converts any 4xx/5xx response into an
+   * {@link ExternalServiceException} carrying the parsed response body. Exposed so
+   * test {@code WebClient}s can wire the same body-preserving error handling that the
+   * production constructor uses.
+   */
+  public static ExchangeFilterFunction errorPropagationFilter() {
+    return ExchangeFilterFunction.ofResponseProcessor(response -> {
+      if (response.statusCode().isError()) {
+        return response.bodyToMono(Map.class)
+            .flatMap(map -> Mono.error(new ExternalServiceException(response.statusCode(), map)));
+      }
+      return Mono.just(response);
+    });
     }
 
     public ServiceClient(String baseUrl, WebClient client) {
