@@ -684,6 +684,22 @@ components:
         enabled:
           type: boolean
           description: Whether this framework is active
+        bundles:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustFrameworkBundleEntry'
+          description: Per-bundle role states for this trust framework family.
+    TrustFrameworkBundleEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Bundle profile ID (e.g. gaia-x-2511)
+        roles:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Per-role enabled state for this bundle, keyed by role name.
     TrustFrameworkConfigUpdate:
       type: object
       properties:
@@ -1331,6 +1347,43 @@ paths:
       responses:
         '200':
           description: Framework enabled state updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /admin/trust-frameworks/{bundleId}/roles/{roleName}/enabled:
+    put:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Toggle a single role's enabled state within a trust-framework bundle
+      operationId: setTrustFrameworkRoleEnabled
+      security:
+        - jwt: []
+      parameters:
+        - name: bundleId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: roleName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: enabled
+          in: query
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Role enabled state updated
+        '400':
+          $ref: '#/components/responses/ClientError'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

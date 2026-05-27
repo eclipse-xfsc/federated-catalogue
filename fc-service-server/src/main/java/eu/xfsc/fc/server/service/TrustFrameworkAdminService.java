@@ -1,17 +1,22 @@
 package eu.xfsc.fc.server.service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkConfigUpdate;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.server.config.AdminDashboardConfig;
 import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
@@ -32,6 +37,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
   private final TrustFrameworkService trustFrameworkService;
+  private final TrustFrameworkRegistry trustFrameworkRegistry;
   private final AdminDashboardConfig adminDashboardConfig;
 
   @Value("${federated-catalogue.enabled-trust-frameworks:}")
@@ -74,6 +80,12 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   }
 
   @Override
+  public ResponseEntity<Void> setTrustFrameworkRoleEnabled(String bundleId, String roleName, Boolean enabled) {
+    trustFrameworkService.setRoleEnabled(bundleId, roleName, enabled);
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
   public ResponseEntity<Void> updateTrustFrameworkConfig(String id,
       TrustFrameworkConfigUpdate config) {
     int timeoutSeconds = config.getTimeoutSeconds() != null ? config.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
@@ -93,7 +105,30 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     entry.setTimeoutSeconds(config.timeoutSeconds());
     entry.setEnabled(config.enabled());
     entry.setConnected(checkConnectivity(config));
+    entry.setBundles(buildBundleEntries(config.id()));
     return entry;
+  }
+
+  /**
+   * Builds a list of {@link TrustFrameworkBundleEntry} for each bundle belonging to the given
+   * family, carrying the per-bundle role enabled states so the UI can address role-toggle PUTs
+   * by the correct bundle profile ID.
+   *
+   * @param familyId trust framework family identifier (e.g. {@code gaia-x})
+   * @return list of bundle entries in registry order; empty if no bundles belong to the family
+   */
+  private List<TrustFrameworkBundleEntry> buildBundleEntries(String familyId) {
+    List<TrustFrameworkBundleEntry> result = new ArrayList<>();
+    for (TrustFrameworkBundle bundle : trustFrameworkRegistry.getAllBundles()) {
+      if (!familyId.equals(bundle.config().family())) {
+        continue;
+      }
+      TrustFrameworkBundleEntry bundleEntry = new TrustFrameworkBundleEntry();
+      bundleEntry.setId(bundle.config().id());
+      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundle.config().id()));
+      result.add(bundleEntry);
+    }
+    return result;
   }
 
   private boolean checkConnectivity(TrustFrameworkConfig config) {
