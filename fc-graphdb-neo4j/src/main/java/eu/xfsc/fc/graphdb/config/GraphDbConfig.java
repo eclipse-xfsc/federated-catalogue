@@ -5,48 +5,35 @@ import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Logging;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
-@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('runtime') && '${graphstore.impl}'.equals('neo4j')")
+@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('runtime')")
 public class GraphDbConfig {
 
-    @Value("${graphstore.uri}")
+  @Value("${graphstore.neo4j.uri:${graphstore.uri}}")
     private String uri;
     @Value("${graphstore.user}")
     private String user;
     @Value("${graphstore.password}")
     private String password;
 
+  // @Lazy + no eager session.run() — the Neo4j driver does not open a TCP connection at
+  // construction; it only connects on first session(). n10s schema bootstrap was moved
+  // out of this factory into Neo4jGraphStore.ensureInitialized() so that an unreachable
+  // Neo4j container at boot does not crash the JVM in routing mode.
     @Bean(destroyMethod = "close")
+    @Lazy
     public Driver driver() {
         Config config = Config.builder().withLogging(Logging.slf4j()).build();
-        Driver driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
-        Session session = driver.session();
-        Result result = session.run("CALL gds.graph.exists('neo4j');");
-        if (result.hasNext()) {
-            org.neo4j.driver.Record record = result.next();
-            org.neo4j.driver.Value value = record.get("exists");
-            if (value != null && value.asBoolean()) {
-                log.info("Graph already loaded");
-                return driver;
-            }
-            if (!session.run("CALL n10s.graphconfig.show();").hasNext()) {
-                session.run("CALL n10s.graphconfig.init({handleVocabUris:'MAP',handleMultival:'ARRAY',multivalPropList:['https://w3id.org/gaia-x/2511#claimsGraphUri']});");
-                session.run("CREATE CONSTRAINT n10s_unique_uri IF NOT EXISTS FOR (r:Resource) REQUIRE r.uri IS UNIQUE");
-                log.info("n10s.graphconfig.init() not called second time.");
-            }
-        }
-        log.info("n10 procedure and Constraints are loaded successfully");
-        return driver;
+      return GraphDatabase.driver(uri, AuthTokens.basic(user, password), config);
     }
 
 }

@@ -23,7 +23,6 @@ import org.neo4j.driver.internal.InternalNode;
 import org.neo4j.driver.internal.InternalRelationship;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@Transactional // not sure it is correct annotation 
-@ConditionalOnProperty(value = "graphstore.impl", havingValue = "neo4j")
+@Transactional // not sure it is correct annotation
 public class Neo4jGraphStore implements GraphStore {
 
     private static final String queryInsert = "CALL n10s.rdf.import.inline($payload, \"N-Triples\");"; 
@@ -49,10 +47,15 @@ public class Neo4jGraphStore implements GraphStore {
                                               "DETACH DELETE n;";
     private static final String queryUpdate = "MATCH (n) WHERE $uri IN n.claimsGraphUri\n" +
                                               "SET n.claimsGraphUri = [g IN n.claimsGraphUri WHERE g <> $uri];";
-    
-    @Autowired
+
+  // required = false so the adapter can be wired in test contexts that do not
+  // import an embedded Neo4j (Driver bean absent). Calls into this adapter when
+  // driver is null will fail at runtime; the routing layer is expected to keep
+  // a Neo4j-less deployment from selecting NEO4J as active.
+  @Autowired(required = false)
     private Driver driver;
     private final ClaimValidator claimValidator;
+  private volatile boolean schemaInitialized;
 
     @Value("${graphstore.timeout-marker:timeout}")
     private String timeoutMarker;
@@ -66,6 +69,38 @@ public class Neo4jGraphStore implements GraphStore {
         super();
         this.claimValidator = new ClaimValidator();
     }
+
+  /**
+   * Ensures the n10s graphconfig and uniqueness constraint exist on the target Neo4j
+   * instance. Runs at most once per JVM (guarded by a double-checked volatile flag) and
+   * is invoked from every read/write entry point so an unreachable Neo4j at boot does
+   * not crash the JVM in routing mode — the schema bootstrap happens on first real use.
+   */
+  private void ensureInitialized() {
+    if (schemaInitialized) {
+      return;
+    }
+    synchronized (this) {
+      if (schemaInitialized) {
+        return;
+      }
+      try (Session session = driver.session()) {
+        Result result = session.run("CALL n10s.graphconfig.show();");
+        if (result.hasNext()) {
+          log.info("Graph already configured (n10s graphconfig present)");
+        } else {
+          // multivalPropList lists both Gaia-X namespaces — Tagus (service#) and Loire (2511#) —
+          // so a Loire credential's claimsGraphUri is treated as multi-valued regardless of which
+          // namespace the issuer used.
+          session.run(
+              "CALL n10s.graphconfig.init({handleVocabUris:'MAP',handleMultival:'ARRAY',multivalPropList:['http://w3id.org/gaia-x/service#claimsGraphUri','https://w3id.org/gaia-x/2511#claimsGraphUri']});");
+          session.run("CREATE CONSTRAINT n10s_unique_uri IF NOT EXISTS FOR (r:Resource) REQUIRE r.uri IS UNIQUE");
+          log.info("n10s graphconfig initialized and constraints created");
+        }
+      }
+      schemaInitialized = true;
+    }
+  }
 
     /** {@inheritDoc} */
     @Override
@@ -82,9 +117,13 @@ public class Neo4jGraphStore implements GraphStore {
     /** {@inheritDoc} */
     @Override
     public boolean isHealthy() {
-        try {
+        if (driver == null) {
+          return false;
+        }
+      try {
             driver.verifyConnectivity();
-            return true;
+        ensureInitialized();
+        return true;
         } catch (Exception e) {
             log.warn("Neo4j connectivity check failed", e);
             return false;
@@ -94,7 +133,8 @@ public class Neo4jGraphStore implements GraphStore {
     /** {@inheritDoc} */
     @Override
     public long getClaimCount() {
-        try (Session session = driver.session()) {
+        ensureInitialized();
+      try (Session session = driver.session()) {
             Result result = session.run(
                 "MATCH (n) WHERE n.claimsGraphUri IS NOT NULL RETURN count(n) AS cnt");
             return result.single().get("cnt").asLong();
@@ -107,7 +147,8 @@ public class Neo4jGraphStore implements GraphStore {
     /** {@inheritDoc} */
     @Override
     public long getRDFAssetCountInGraph() {
-        try (Session session = driver.session()) {
+        ensureInitialized();
+      try (Session session = driver.session()) {
             Result result = session.run(
                 "MATCH (n) WHERE n.claimsGraphUri IS NOT NULL "
                 + "UNWIND n.claimsGraphUri AS uri RETURN count(DISTINCT uri) AS cnt");
@@ -124,7 +165,8 @@ public class Neo4jGraphStore implements GraphStore {
     @Override
     public void addClaims(List<RdfClaim> claimList, String credentialSubject) {
         if (!claimList.isEmpty()) {
-            try (Session session = driver.session()) {
+          ensureInitialized();
+          try (Session session = driver.session()) {
                 Pair<String, Set<String>> props = claimValidator.resolveClaims(claimList, credentialSubject);
                 if (!props.getRight().isEmpty()) {
                     updateGraphConfig(session, props.getRight());
@@ -140,7 +182,8 @@ public class Neo4jGraphStore implements GraphStore {
      */
     @Override
     public void deleteClaims(String credentialSubject) {
-        Map<String, Object> params = Map.of("uri", credentialSubject);
+        ensureInitialized();
+      Map<String, Object> params = Map.of("uri", credentialSubject);
         try (Session session = driver.session()) {
             Result rsDelete = session.run(queryDelete, params);
             log.debug("deleteClaims; deleted: {}", rsDelete.consume());
@@ -157,7 +200,8 @@ public class Neo4jGraphStore implements GraphStore {
    */
     @Override
     public void deleteValidationResultClaims(String resultIri) {
-        try (Session session = driver.session()) {
+        ensureInitialized();
+      try (Session session = driver.session()) {
             Result rs = session.run("MATCH (n {uri: $uri}) DETACH DELETE n", Map.of("uri", resultIri));
             log.debug("deleteValidationResultClaims; deleted: {}", rs.consume());
         }
@@ -174,7 +218,8 @@ public class Neo4jGraphStore implements GraphStore {
             throw new UnsupportedOperationException(query.getQueryLanguage() + " query language is not supported yet");
         }
 
-        TransactionConfig transactionConfig = TransactionConfig.builder()
+        ensureInitialized();
+      TransactionConfig transactionConfig = TransactionConfig.builder()
                 .withTimeout(Duration.ofSeconds(query.getTimeout()))
                 .build();
 

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import eu.xfsc.fc.api.generated.model.QueryLanguage;
@@ -16,7 +15,6 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 
 //@Slf4j
 @Component
-@ConditionalOnProperty(value = "graphstore.impl", havingValue = "none", matchIfMissing = true)
 public class DummyGraphStore implements GraphStore {
 
     @Override

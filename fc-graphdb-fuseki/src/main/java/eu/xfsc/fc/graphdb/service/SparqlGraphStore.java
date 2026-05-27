@@ -27,7 +27,6 @@ import org.apache.jena.rdfconnection.RDFConnection;
 import org.apache.jena.sparql.core.ResultBinding;
 import org.apache.jena.system.Txn;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +43,6 @@ import java.util.regex.Pattern;
 @Slf4j
 @Component
 @Transactional
-@ConditionalOnProperty(value = "graphstore.impl", havingValue = "fuseki")
 public class SparqlGraphStore implements GraphStore {
 
     private static final String PROP_CREDENTIAL_SUBJECT = "https://www.w3.org/2018/credentials#credentialSubject";
@@ -60,7 +58,11 @@ public class SparqlGraphStore implements GraphStore {
 
     private final ClaimValidator claimValidator;
 
-    @Autowired
+  // required = false so the adapter can be wired in test contexts that do not
+  // import an embedded Fuseki (RDFConnection bean absent). Calls into this
+  // adapter when rdfConnection is null will fail at runtime; the routing layer
+  // is expected to keep a Fuseki-less deployment from selecting FUSEKI as active.
+  @Autowired(required = false)
     private RDFConnection rdfConnection;
 
     public SparqlGraphStore() {
@@ -83,6 +85,9 @@ public class SparqlGraphStore implements GraphStore {
     /** {@inheritDoc} */
     @Override
     public boolean isHealthy() {
+      if (rdfConnection == null) {
+        return false;
+      }
         try {
             Txn.calculateRead(rdfConnection, () -> {
                 try (QueryExecution qe = rdfConnection.newQuery()

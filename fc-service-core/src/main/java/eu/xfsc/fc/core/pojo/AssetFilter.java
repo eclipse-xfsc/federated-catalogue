@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.pojo;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import java.time.Instant;
 import java.util.List;
 
@@ -68,6 +69,12 @@ public class AssetFilter {
    */
   @lombok.Setter
   private List<String> hashes;
+
+  /**
+   * Filter for the content kind of the asset (RDF or NON_RDF).
+   */
+  @lombok.Setter
+  private List<ContentKind> contentKinds;
 
   /**
    * The offset to start returning results when applying this filter.

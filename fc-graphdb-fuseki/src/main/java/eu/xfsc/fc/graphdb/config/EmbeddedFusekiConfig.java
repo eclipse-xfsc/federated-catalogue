@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
-@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('test') && '${graphstore.impl}'.equals('fuseki')")
+@ConditionalOnExpression("'${federated-catalogue.scope}'.equals('test')")
 public class EmbeddedFusekiConfig {
 
     @Bean(destroyMethod = "stop")
