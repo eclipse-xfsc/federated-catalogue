@@ -101,26 +101,29 @@ services:
       - "gaia-x"
 
 
-# Optional: Fuseki SPARQL-star backend. Uncomment when using GRAPH_STORE_IMPL=fuseki (e.g. dev-fuseki.env).
-# Not needed for neo4j or none backends.
-#  fuseki:
-#    container_name: "fuseki"
-#    image: docker.io/stain/jena-fuseki
-#    environment:
-#      ADMIN_PASSWORD: "${GRAPH_STORE_PASSWORD}"
-#      FUSEKI_DATASET_1: "ds"
-#      JVM_ARGS: "-Xmx1g"
-#    ports:
-#      - "3330:3030"
-#    networks:
-#      - "gaia-x"
-#    restart: unless-stopped
-#    healthcheck:
-#      test: wget --no-verbose --tries=1 --spider http://localhost:3030/ds || exit 1
-#      interval: 20s
-#      timeout: 5s
-#      retries: 5
-#      start_period: 30s
+  # Fuseki SPARQL-star backend. Always present so the admin "Switch Backend" action
+  # can pre-flight either backend regardless of which one is currently active. Cost:
+  # ~1 GB JVM heap idle.
+  fuseki:
+    container_name: "fuseki"
+    image: docker.io/secoresearch/fuseki:5.5.0
+    environment:
+      ADMIN_PASSWORD: "${GRAPH_STORE_FUSEKI_PASSWORD:-admin}"
+      FUSEKI_DATASET_1: "ds"
+      JVM_ARGS: "-Xmx1g"
+      ENABLE_UPDATE: "true"
+      ENABLE_DATA_WRITE: "true"
+    ports:
+      - "3330:3030"
+    networks:
+      - "gaia-x"
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3030/ds || exit 1
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Local trust environment for signature verification. Serves three roles:
   #   1. DID resolution:    /.well-known/did.json        (did:web:did-server → public key JWK)
@@ -151,14 +154,25 @@ services:
       KEYCLOAK_CREDENTIALS_SECRET: "${FC_CLIENT_SECRET}"
       KEYCLOAK_ADMIN_CONSOLE_URL: "${KEYCLOAK_ADMIN_CONSOLE_URL}"
       SPRING_DATASOURCE_URL: "${DB_URL}"
-      GRAPHSTORE_URI: "${GRAPH_STORE_URI}"
-      GRAPHSTORE_USER: "${GRAPH_STORE_USER}"
-      GRAPHSTORE_PASSWORD: "${GRAPH_STORE_PASSWORD}"
-      GRAPHSTORE_IMPL: "${GRAPH_STORE_IMPL}"
-      # Spring Data Neo4j autoconfiguration
-      SPRING_NEO4J_URI: "${GRAPH_STORE_URI}"
-      SPRING_NEO4J_AUTHENTICATION_USERNAME: "${GRAPH_STORE_USER}"
-      SPRING_NEO4J_AUTHENTICATION_PASSWORD: "${GRAPH_STORE_PASSWORD}"
+      # Cold-boot fallback only. After the first admin "Switch Backend" action,
+      # admin_config[graphstore.preferred.backend] takes precedence — this env
+      # var only seeds the first boot before any persisted preference exists.
+      GRAPHSTORE_IMPL: "${GRAPH_STORE_IMPL:-fuseki}"
+      # Per-backend URIs — both are read at runtime so the pre-flight probe in
+      # GraphDatabaseAdminService can verify the target before the operator persists
+      # a switch. The Neo4j URI also seeds Spring Data Neo4j autoconfig below.
+      GRAPHSTORE_NEO4J_URI: "${NEO4J_URI:-bolt://neo4j:7687}"
+      GRAPHSTORE_FUSEKI_URI: "${GRAPH_STORE_FUSEKI_URI:-http://fuseki:3030/ds}"
+      # Neo4j credentials — single source of truth, also read by the neo4j service
+      # above for NEO4J_AUTH. The fc-graphdb-neo4j adapter reads these via the
+      # graphstore.user / graphstore.password properties.
+      GRAPHSTORE_USER: "${NEO4J_USER:-neo4j}"
+      GRAPHSTORE_PASSWORD: "${NEO4J_PASSWORD:-neo12345}"
+      # Spring Data Neo4j autoconfiguration — independent of which graph backend is
+      # active so Neo4j-specific autoconfig stays consistent.
+      SPRING_NEO4J_URI: "${NEO4J_URI:-bolt://neo4j:7687}"
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: "${NEO4J_USER:-neo4j}"
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: "${NEO4J_PASSWORD:-neo12345}"
       PUBLISHER_IMPL: nats
       PUBLISHER_URL: ${NATS_URL}
       SUBSCRIBER_IMPL: none
@@ -197,8 +211,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      neo4j:
-        condition: service_healthy
+      # Graph backends are started in parallel but not gated — fc-server tolerates a
+      # temporarily-unavailable graph store at boot (logs a warning and starts). The
+      # pre-flight probe in GraphDatabaseAdminService is the real gate, before the
+      # operator persists a switch.
       nats:
         condition: service_healthy
       did-server:

@@ -1,9 +1,5 @@
 management:
   endpoint:
-    configprops:
-      show-values: ALWAYS
-    env:
-      show-values: ALWAYS
     health:
       show-details: when_authorized
   endpoints:
@@ -91,9 +87,22 @@ admin:
     file-store-path: ${datastore.file-path}
 
 graphstore:
-  impl: neo4j #fuseki, none
+  # Cold-boot fallback only. The active backend is resolved at startup by
+  # RoutingGraphStore: admin_config[graphstore.preferred.backend] first, this value
+  # second, NONE last. The admin "Switch Backend" action performs a live in-process
+  # switch and updates the persisted preference for subsequent boots.
+  impl: fuseki #neo4j, none
   auto-rebuild-on-empty: false
-  uri: bolt://localhost:7687
+  # Per-backend URIs. Both are read at runtime; only the URI for the active backend
+  # opens a driver. The pre-flight probe in GraphDatabaseAdminService reads the other
+  # backend's URI to verify reachability before persisting a switch.
+  neo4j:
+    uri: bolt://localhost:7687
+  fuseki:
+    uri: http://localhost:3030/ds
+  # Deprecated single URI — kept as a fallback for either adapter. New deployments
+  # should set the per-backend URIs above.
+  uri: ${graphstore.fuseki.uri}
   user: neo4j
   password: neo12345
   timeout-marker: The transaction has not completed within the timeout specified

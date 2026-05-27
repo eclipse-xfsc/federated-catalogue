@@ -76,14 +76,18 @@ public class GraphRebuilder {
     AtomicInteger pendingTasks = new AtomicInteger(0);
     ExecutorService executorService = ProcessorUtils.createProcessors(threads, taskQueue, hash -> {
       Exception caught = null;
+      boolean processed = false;
       try {
-        addAssetToGraph(hash);
+        processed = addAssetToGraph(hash);
       } catch (Exception e) {
         log.error("Failed to add asset {} to graph", hash, e);
         caught = e;
       } finally {
         pendingTasks.decrementAndGet();
-        if (progressCallback != null) {
+        // Skip the progress tick for non-RDF assets that early-returned without
+        // doing any work — they are not counted in `total` either, so ticking
+        // here would push processed > total.
+        if (progressCallback != null && (processed || caught != null)) {
           progressCallback.accept(1, caught);
         }
       }
@@ -157,14 +161,20 @@ public class GraphRebuilder {
     }
   }
 
-    private void addAssetToGraph(String hash) throws Exception {
+    /**
+     * Processes one asset hash. Returns true when claims were extracted and pushed to
+     * the graph store, false when the asset was skipped (non-RDF — null contentAccessor).
+     * The caller uses the return value to decide whether to tick the progress counter.
+     */
+    private boolean addAssetToGraph(String hash) throws Exception {
     AssetMetadata assetMetaData = assetStore.getByHash(hash);
     if (assetMetaData.getContentAccessor() == null) {
-      return;
+      return false;
     }
         List<RdfClaim> claims = extractClaims(assetMetaData);
     claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
     graphStore.addClaims(claims, assetMetaData.getId());
+    return true;
   }
 
     private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) throws Exception {
