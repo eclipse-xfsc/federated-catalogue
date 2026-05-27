@@ -12,7 +12,6 @@
                 <th>Family ID</th>
                 <th>Profiles</th>
                 <th>Active</th>
-                <th>Roles</th>
                 <th>Config</th>
             </tr>
             </thead>
@@ -112,25 +111,14 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-danger" id="tfBundleConfigRevertAll">Revert all
-                        </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" id="tfBundleConfigSave">Save</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="modal" id="tfConfigModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Trust Framework Roles</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
+                        <hr class="my-4">
+
+                        <h6 class="mb-1">Roles</h6>
+                        <p class="text-muted small mb-3">
+                            Role toggles save immediately. The configuration fields above commit only when you press
+                            <strong>Save configuration</strong>.
+                        </p>
                         <div id="tfRoleErrorBanner" class="alert alert-danger" style="display:none"></div>
                         <div id="tfRolesAllDisabledWarning" class="alert alert-warning" style="display:none">
                             All roles are disabled — this bundle is enabled but cannot resolve any credentials.
@@ -138,7 +126,11 @@
                         <div id="tfRolesContainer"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-outline-danger" id="tfBundleConfigRevertAll">Revert all
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="tfBundleConfigSave">Save configuration
+                        </button>
                     </div>
                 </div>
             </div>

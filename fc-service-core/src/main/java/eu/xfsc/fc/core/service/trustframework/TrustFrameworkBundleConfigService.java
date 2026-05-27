@@ -1,7 +1,12 @@
 package eu.xfsc.fc.core.service.trustframework;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+// Function used for typed accessors of TrustFrameworkBundleConfig fields.
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,31 +100,72 @@ public class TrustFrameworkBundleConfigService {
    * {@link TrustFrameworkBundleConfig}.
    */
   public enum Field {
-    CLIENT_TYPE("clientType",
+    CLIENT_TYPE("clientType", "client_type",
+        TrustFrameworkBundleConfig::getClientType,
+        s -> s,
         (row, value) -> row.setClientType((String) value)),
-    SERVICE_URL("serviceUrl",
+    SERVICE_URL("serviceUrl", "service_url",
+        TrustFrameworkBundleConfig::getServiceUrl,
+        s -> s,
         (row, value) -> row.setServiceUrl((String) value)),
-    COMPLIANCE_PATH("compliancePath",
+    COMPLIANCE_PATH("compliancePath", "compliance_path",
+        TrustFrameworkBundleConfig::getCompliancePath,
+        s -> s,
         (row, value) -> row.setCompliancePath((String) value)),
-    API_VERSION("apiVersion",
+    API_VERSION("apiVersion", "api_version",
+        TrustFrameworkBundleConfig::getApiVersion,
+        s -> s,
         (row, value) -> row.setApiVersion((String) value)),
-    TIMEOUT_SECONDS("timeoutSeconds",
+    TIMEOUT_SECONDS("timeoutSeconds", "timeout_seconds",
+        TrustFrameworkBundleConfig::getTimeoutSeconds,
+        Integer::parseInt,
         (row, value) -> row.setTimeoutSeconds((Integer) value)),
-    TRUST_ANCHOR_URL("trustAnchorUrl",
+    TRUST_ANCHOR_URL("trustAnchorUrl", "trust_anchor_url",
+        TrustFrameworkBundleConfig::getTrustAnchorUrl,
+        s -> s,
         (row, value) -> row.setTrustAnchorUrl((String) value));
 
     private final String jsonName;
+    private final String yamlKey;
+    private final Function<TrustFrameworkBundleConfig, Object> overrideReader;
+    private final Function<String, Object> yamlParser;
     private final BiConsumer<TrustFrameworkBundleConfig, Object> writer;
     private final BiConsumer<TrustFrameworkBundleConfig, Object> clearer;
 
-    Field(String jsonName, BiConsumer<TrustFrameworkBundleConfig, Object> writer) {
+    Field(String jsonName, String yamlKey,
+          Function<TrustFrameworkBundleConfig, Object> overrideReader,
+          Function<String, Object> yamlParser,
+          BiConsumer<TrustFrameworkBundleConfig, Object> writer) {
       this.jsonName = jsonName;
+      this.yamlKey = yamlKey;
+      this.overrideReader = overrideReader;
+      this.yamlParser = yamlParser;
       this.writer = writer;
       this.clearer = writer;
     }
 
     public String jsonName() {
       return jsonName;
+    }
+
+    public String yamlKey() {
+      return yamlKey;
+    }
+
+    /**
+     * Reads the persisted override value for this field, returning {@code null} when
+     * the row's column is NULL (i.e. no override is active for this field).
+     */
+    public Object readOverride(TrustFrameworkBundleConfig row) {
+      return overrideReader.apply(row);
+    }
+
+    /**
+     * Coerces a raw YAML string value into the column type ({@code String} for most
+     * fields, {@code Integer} for {@code timeoutSeconds}).
+     */
+    public Object parseYamlValue(String raw) {
+      return raw == null ? null : yamlParser.apply(raw);
     }
 
     public static Field fromJsonName(String jsonName) {
@@ -130,6 +176,50 @@ public class TrustFrameworkBundleConfigService {
       }
       throw new IllegalArgumentException("Unknown bundle config field: " + jsonName);
     }
+  }
+
+  /**
+   * Effective configuration of a bundle after merging persisted overrides over the YAML
+   * baseline. Values are the typed payload (Strings for text fields, Integer for
+   * {@code timeoutSeconds}).
+   *
+   * @param values           effective value per field; null when neither override nor YAML supplied one
+   * @param overriddenFields fields whose effective value comes from the override row
+   */
+  public record EffectiveBundleConfig(
+      Map<Field, Object> values,
+      Set<Field> overriddenFields) {
+  }
+
+  /**
+   * Resolves the effective configuration for a registered bundle by combining the
+   * persisted override row (if any) with the YAML baseline read from
+   * {@link TrustFrameworkBundle#config()}.
+   *
+   * @param bundleId registry bundle profile ID
+   * @return effective configuration; {@link Optional#empty()} when the bundle is not registered
+   */
+  public Optional<EffectiveBundleConfig> getEffectiveConfig(String bundleId) {
+    return registry.getBundle(bundleId).map(bundle -> {
+      Map<String, String> yamlProps = bundle.config().properties();
+      Optional<TrustFrameworkBundleConfig> override = repository.findById(bundleId);
+
+      Map<Field, Object> values = new LinkedHashMap<>();
+      Set<Field> overridden = java.util.EnumSet.noneOf(Field.class);
+      for (Field field : Field.values()) {
+        Object overrideValue = override.map(field::readOverride).orElse(null);
+        if (overrideValue != null) {
+          values.put(field, overrideValue);
+          overridden.add(field);
+        } else {
+          String yamlRaw = yamlProps.get(field.yamlKey());
+          if (yamlRaw != null) {
+            values.put(field, field.parseYamlValue(yamlRaw));
+          }
+        }
+      }
+      return new EffectiveBundleConfig(values, overridden);
+    });
   }
 
   /**

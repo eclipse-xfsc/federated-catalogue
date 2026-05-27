@@ -231,6 +231,44 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
+  void getTrustFrameworks_bundleEntry_includesYamlEffectiveConfigBeforeAnyOverride() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].effectiveConfig.serviceUrl")
+            .value(hasItem(notNullValue())))
+        .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].effectiveConfig.compliancePath")
+            .value(hasItem(notNullValue())))
+        .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].overriddenFields")
+            .value(hasItem(hasSize(0))));
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void getTrustFrameworks_bundleEntry_reflectsPatchedOverrideInEffectiveConfig() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/mock-2026")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_SERVICE_URL_OVERRIDE)
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].effectiveConfig.serviceUrl")
+            .value(hasItem("https://mock.test/v2")))
+        .andExpect(jsonPath("$[?(@.id == 'mock')].bundles[0].overriddenFields")
+            .value(hasItem(hasItem("serviceUrl"))));
+
+    mockMvc.perform(MockMvcRequestBuilders
+            .delete("/admin/trust-frameworks/bundles/mock-2026")
+            .with(csrf()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
   void getTrustFrameworks_includesBundlesField() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.get("/admin/trust-frameworks")
             .accept(MediaType.APPLICATION_JSON))

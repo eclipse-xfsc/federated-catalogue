@@ -688,6 +688,35 @@ components:
           additionalProperties:
             type: boolean
           description: Per-role enabled state for this bundle, keyed by role name.
+        effectiveConfig:
+          $ref: '#/components/schemas/TrustFrameworkBundleEffectiveConfig'
+        overriddenFields:
+          type: array
+          description: >-
+            Names of effective-config fields whose value currently comes from a
+            persisted override (DB row) rather than the bundle YAML. Allows the
+            UI to distinguish operator-set values from YAML defaults.
+          items:
+            type: string
+    TrustFrameworkBundleEffectiveConfig:
+      type: object
+      description: >-
+        Effective compliance configuration of a bundle after applying any per-bundle
+        overrides on top of the YAML baseline. Resolved by the catalogue server at
+        request time; read-only.
+      properties:
+        clientType:
+          type: string
+        serviceUrl:
+          type: string
+        compliancePath:
+          type: string
+        apiVersion:
+          type: string
+        timeoutSeconds:
+          type: integer
+        trustAnchorUrl:
+          type: string
     TrustFrameworkPatch:
       type: object
       description: >-

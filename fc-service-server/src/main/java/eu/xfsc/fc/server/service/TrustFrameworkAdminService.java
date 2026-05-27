@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEffectiveConfig;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
@@ -207,12 +208,36 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
       if (!familyId.equals(bundle.config().family())) {
         continue;
       }
+      String bundleId = bundle.config().id();
       TrustFrameworkBundleEntry bundleEntry = new TrustFrameworkBundleEntry();
-      bundleEntry.setId(bundle.config().id());
-      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundle.config().id()));
+      bundleEntry.setId(bundleId);
+      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundleId));
+      bundleConfigService.getEffectiveConfig(bundleId).ifPresent(eff -> {
+        bundleEntry.setEffectiveConfig(toEffectiveConfigDto(eff));
+        bundleEntry.setOverriddenFields(eff.overriddenFields().stream()
+            .map(Field::jsonName)
+            .sorted()
+            .toList());
+      });
       result.add(bundleEntry);
     }
     return result;
+  }
+
+  private static TrustFrameworkBundleEffectiveConfig toEffectiveConfigDto(
+      TrustFrameworkBundleConfigService.EffectiveBundleConfig effective) {
+    TrustFrameworkBundleEffectiveConfig dto = new TrustFrameworkBundleEffectiveConfig();
+    Map<Field, Object> values = effective.values();
+    dto.setClientType((String) values.get(Field.CLIENT_TYPE));
+    dto.setServiceUrl((String) values.get(Field.SERVICE_URL));
+    dto.setCompliancePath((String) values.get(Field.COMPLIANCE_PATH));
+    dto.setApiVersion((String) values.get(Field.API_VERSION));
+    Object timeout = values.get(Field.TIMEOUT_SECONDS);
+    if (timeout instanceof Integer i) {
+      dto.setTimeoutSeconds(i);
+    }
+    dto.setTrustAnchorUrl((String) values.get(Field.TRUST_ANCHOR_URL));
+    return dto;
   }
 
 }
