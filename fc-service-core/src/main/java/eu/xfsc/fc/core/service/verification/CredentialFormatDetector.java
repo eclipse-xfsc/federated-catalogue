@@ -58,6 +58,27 @@ public class CredentialFormatDetector {
         return format;
     }
 
+    /**
+     * Decodes JWT-secured credential content to JSON-LD without verifying signatures or
+     * enforcing trust-framework policy.
+     *
+     * <p>Detects the format and delegates to the matching processor's
+     * {@link CredentialFormatProcessor#unwrapNested(ContentAccessor)} — a pure decode.
+     * Content that is not JWT-secured, or whose format is not recognised, is returned
+     * unchanged.
+     *
+     * @param content the incoming credential content
+     * @return the JSON-LD payload, or {@code content} unchanged when no decode applies
+     */
+    public ContentAccessor unwrapToJsonLd(ContentAccessor content) {
+        CredentialFormat format = detect(content);
+        return processors.stream()
+            .filter(p -> p.getFormat() == format)
+            .findFirst()
+            .map(p -> p.unwrapNested(content))
+            .orElse(content);
+    }
+
     private DetectionContext buildContext(String body) {
         if (!body.startsWith(JWT_PREFIX)) {
             return new DetectionContext(body, null, parseJson(body));
