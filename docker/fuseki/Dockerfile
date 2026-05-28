@@ -40,11 +40,6 @@ ARG JAR_URL=${REPO}/org/apache/jena/jena-fuseki-server/${JENA_VERSION}/${FUSEKI_
 RUN [ "${JENA_VERSION}" != "" ] || { echo -e '\n**** Set JENA_VERSION ****\n' ; exit 1 ; }
 RUN echo && echo "==== Docker build for Apache Jena Fuseki ${JENA_VERSION} ====" && echo
 
-# Optional extra CA certs (e.g. corporate TLS-interception roots). The directory
-# is always present (committed .gitkeep); .crt files in it are gitignored and
-# imported only if found, so CI builds without them succeed unchanged.
-COPY extra-ca-certs/ /tmp/extra-ca-certs/
-RUN sh -c 'set -e; for f in /tmp/extra-ca-certs/*.crt; do [ -e "$f" ] || continue; cat "$f" >> /etc/ssl/certs/ca-certificates.crt; done'
 
 # Alpine: For objcopy used in jlink
 RUN apk add --no-cache curl binutils
