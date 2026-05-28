@@ -381,11 +381,10 @@ did:
 fuseki:
   fullnameOverride: fc-fuseki
   image:
-    repository: docker.io/secoresearch/fuseki
+    repository: ghcr.io/eclipse-xfsc/federated-catalogue/fc-fuseki
     tag: "5.5.0"
   dataset: ds
-  adminPassword: admin
-  jvmArgs: "-Xmx1g"
+  javaOptions: "-Xmx1g"
   persistence:
     size: 10Gi
   resources:

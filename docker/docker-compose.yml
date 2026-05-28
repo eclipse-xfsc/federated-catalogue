@@ -106,13 +106,11 @@ services:
   # ~1 GB JVM heap idle.
   fuseki:
     container_name: "fuseki"
-    image: docker.io/secoresearch/fuseki:5.5.0
+    build:
+      context: ./fuseki
     environment:
-      ADMIN_PASSWORD: "${GRAPH_STORE_FUSEKI_PASSWORD:-admin}"
-      FUSEKI_DATASET_1: "ds"
-      JVM_ARGS: "-Xmx1g"
-      ENABLE_UPDATE: "true"
-      ENABLE_DATA_WRITE: "true"
+      JAVA_OPTIONS: "-Xmx1g"
+    command: ["--tdb2", "--loc=/fuseki/databases/ds", "--update", "/ds"]
     ports:
       - "3330:3030"
     networks:

@@ -29,10 +29,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: fc-service-server
-            name: FC Service Server
-          - target: fc-demo-portal
-            name: FC Demo Portal
+          - name: FC Service Server
+            context: .
+            dockerfile: Dockerfile
+            target: fc-service-server
+            image_suffix: fc-service-server
+          - name: FC Demo Portal
+            context: .
+            dockerfile: Dockerfile
+            target: fc-demo-portal
+            image_suffix: fc-demo-portal
+          - name: Fuseki SPARQL Store
+            context: docker/fuseki
+            dockerfile: Dockerfile
+            target: ""
+            image_suffix: fc-fuseki
 
     steps:
       - name: Checkout repository
@@ -55,7 +66,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.target }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image_suffix }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -68,10 +79,11 @@ jobs:
       - name: Build and push ${{ matrix.name }} image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ matrix.target }}
-          cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.target }}
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ matrix.image_suffix }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.image_suffix }}
