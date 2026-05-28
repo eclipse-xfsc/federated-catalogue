@@ -11,6 +11,7 @@ import eu.xfsc.fc.api.generated.model.ComplianceCheckRequest;
 import eu.xfsc.fc.api.generated.model.ComplianceCheckResult;
 import eu.xfsc.fc.api.generated.model.StoredValidationResult;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPublicEntry;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOrchestrator;
@@ -36,6 +37,7 @@ public class ComplianceCheckService implements ComplianceApiDelegate {
   private final ComplianceResultStore resultStore;
   private final TrustFrameworkService trustFrameworkService;
   private final TrustFrameworkRegistry registry;
+  private final TrustFrameworkProfileResolver profileResolver;
 
   @Override
   public ResponseEntity<ComplianceCheckResult> runComplianceCheck(String assetId,
@@ -46,7 +48,7 @@ public class ComplianceCheckService implements ComplianceApiDelegate {
     ComplianceCheckOutcome outcome = orchestrator.check(assetId, request.getFrameworkProfileId(),
         request.getCredential());
 
-    String familyId = registry.getProfileConfig(request.getFrameworkProfileId())
+    String familyId = profileResolver.getProfileConfig(request.getFrameworkProfileId())
         .map(TrustFrameworkProfileConfig::familyId)
         .orElse(request.getFrameworkProfileId());
 

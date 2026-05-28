@@ -16,9 +16,6 @@ public final class TrustFrameworkMapper {
     return new TrustFrameworkConfig(
         entity.getId(),
         entity.getName(),
-        entity.getServiceUrl(),
-        entity.getApiVersion(),
-        entity.getTimeoutSeconds(),
         entity.isEnabled(),
         entity.getCreatedAt() != null ? entity.getCreatedAt().toInstant(ZoneOffset.UTC) : null,
         entity.getUpdatedAt() != null ? entity.getUpdatedAt().toInstant(ZoneOffset.UTC) : null

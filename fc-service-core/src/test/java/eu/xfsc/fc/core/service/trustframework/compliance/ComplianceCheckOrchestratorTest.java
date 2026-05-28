@@ -17,7 +17,7 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 
 /**
@@ -45,7 +45,7 @@ class ComplianceCheckOrchestratorTest {
       "/api/credential-offers/standard-compliance", "loire", 30);
 
   @Mock
-  private TrustFrameworkRegistry registry;
+  private TrustFrameworkProfileResolver profileResolver;
 
   @Mock
   private TrustFrameworkService tfService;
@@ -60,7 +60,7 @@ class ComplianceCheckOrchestratorTest {
 
   @BeforeEach
   void setUp() {
-    orchestrator = new ComplianceCheckOrchestrator(registry, tfService, clientRegistry);
+    orchestrator = new ComplianceCheckOrchestrator(profileResolver, tfService, clientRegistry);
   }
 
   @Test
@@ -77,7 +77,7 @@ class ComplianceCheckOrchestratorTest {
 
   @Test
   void check_unknownProfileId_throwsClientException() {
-    when(registry.getProfileConfig("unknown-id")).thenReturn(Optional.empty());
+    when(profileResolver.getProfileConfig("unknown-id")).thenReturn(Optional.empty());
 
     assertThrows(ClientException.class,
         () -> orchestrator.check(ASSET_ID, "unknown-id", ASSET_PAYLOAD));
@@ -85,7 +85,7 @@ class ComplianceCheckOrchestratorTest {
 
   @Test
   void check_familyDisabled_throwsConflictException() {
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(false);
 
     assertThrows(ConflictException.class,
@@ -94,7 +94,7 @@ class ComplianceCheckOrchestratorTest {
 
   @Test
   void check_clientRegistryThrowsIllegalArgument_throwsClientException() {
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenThrow(new IllegalArgumentException("unknown clientType"));
 
@@ -105,7 +105,7 @@ class ComplianceCheckOrchestratorTest {
   @Test
   void check_familyEnabled_delegatesToClientAndReturnsOutcome() {
     var expected = new IssuedAttestation("some-jwt", null);
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
     when(mockClient.check(any(), any())).thenReturn(expected);
@@ -117,7 +117,7 @@ class ComplianceCheckOrchestratorTest {
 
   @Test
   void check_clientThrowsTimeoutException_propagates() {
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
     when(mockClient.check(any(), any())).thenThrow(new TimeoutException("timed out"));
@@ -128,7 +128,7 @@ class ComplianceCheckOrchestratorTest {
 
   @Test
   void check_clientThrowsServiceUnavailableException_propagates() {
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
     when(mockClient.check(any(), any())).thenThrow(new ServiceUnavailableException("unreachable"));
@@ -139,7 +139,7 @@ class ComplianceCheckOrchestratorTest {
 
   @Test
   void check_clientReturnsNull_throwsServiceUnavailableException() {
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
     when(mockClient.check(any(), any())).thenReturn(null);
@@ -158,7 +158,7 @@ class ComplianceCheckOrchestratorTest {
   @Test
   void check_vpIdMatches_delegatesToClient() {
     var expected = new IssuedAttestation("cred-jwt", null);
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
     when(mockClient.check(any(), any())).thenReturn(expected);
@@ -171,7 +171,7 @@ class ComplianceCheckOrchestratorTest {
   @Test
   void check_clientThrowsClientException_propagates() {
     var cause = new ClientException("business error from compliance service");
-    when(registry.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
     when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
     when(mockClient.check(any(), any())).thenThrow(cause);

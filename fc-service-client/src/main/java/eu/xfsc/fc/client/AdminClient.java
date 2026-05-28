@@ -15,11 +15,12 @@ import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphDatabaseSwitchResult;
 import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
-import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.RebuildStatus;
+import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
 
 /**
  * Client for Admin API endpoints.
@@ -54,7 +55,8 @@ public class AdminClient extends ServiceClient {
     /** Lists all registered trust frameworks. */
     public List<TrustFrameworkEntry> getTrustFrameworks(OAuth2AuthorizedClient authorizedClient) {
         return doGet("/admin/trust-frameworks", Map.of(), null,
-            new ParameterizedTypeReference<List<TrustFrameworkEntry>>(){},
+            new ParameterizedTypeReference<>() {
+            },
             authorizedClient);
     }
 
@@ -69,6 +71,50 @@ public class AdminClient extends ServiceClient {
   public void patchTrustFramework(String id, TrustFrameworkPatch patch,
         OAuth2AuthorizedClient authorizedClient) {
         doPatch("/admin/trust-frameworks/{id}", patch, Map.of("id", id), Void.class, authorizedClient);
+  }
+
+  /**
+   * Applies a merge-patch to a role within the identified bundle. Only fields present in the
+   * patch are modified; absent fields are left unchanged.
+   *
+   * @param bundleId         trust framework bundle identifier
+   * @param roleName         role name within the bundle
+   * @param patch            fields to update
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void patchTrustFrameworkRole(String bundleId, String roleName,
+                                      TrustFrameworkRolePatch patch, OAuth2AuthorizedClient authorizedClient) {
+    doPatch("/admin/trust-frameworks/{bundleId}/roles/{roleName}", patch,
+        Map.of("bundleId", bundleId, "roleName", roleName), Void.class, authorizedClient);
+  }
+
+  /**
+   * Applies a merge-patch to the external client identifiers of a bundle using RFC 7396
+   * merge-patch semantics. Only fields present in the map are modified; setting a field to
+   * {@code null} clears the stored override for that field; absent fields are left unchanged.
+   *
+   * @param bundleId         trust framework bundle identifier
+   * @param patch            free-form merge-patch map; must contain at least one entry
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void patchTrustFrameworkBundleConfig(String bundleId,
+                                              Map<String, Object> patch, OAuth2AuthorizedClient authorizedClient) {
+    doPatch("/admin/trust-frameworks/bundles/{bundleId}", patch,
+        Map.of("bundleId", bundleId), Void.class, authorizedClient);
+  }
+
+  /**
+   * Removes all persisted overrides for the given bundle, restoring the bundle YAML as the sole
+   * source of compliance configuration. Idempotent — a bundle without an override row still
+   * returns without error.
+   *
+   * @param bundleId         trust framework bundle identifier
+   * @param authorizedClient OAuth2 client for bearer token
+   */
+  public void deleteTrustFrameworkBundleConfig(String bundleId,
+                                               OAuth2AuthorizedClient authorizedClient) {
+    doDelete("/admin/trust-frameworks/bundles/{bundleId}",
+        Map.of("bundleId", bundleId), null, Void.class, authorizedClient);
   }
 
   /** Gets schema validation module status. */
@@ -135,11 +181,13 @@ public class AdminClient extends ServiceClient {
       }
       throw ex;
     }
-    }
+  }
 
-    /** Polls graph rebuild progress. */
-    public RebuildStatus getGraphRebuildStatus(OAuth2AuthorizedClient authorizedClient) {
-        return doGet("/admin/graph/rebuild/status", Map.of(), null,
-            RebuildStatus.class, authorizedClient);
-    }
+  /**
+   * Polls graph rebuild progress.
+   */
+  public RebuildStatus getGraphRebuildStatus(OAuth2AuthorizedClient authorizedClient) {
+    return doGet("/admin/graph/rebuild/status", Map.of(), null,
+        RebuildStatus.class, authorizedClient);
+  }
 }
