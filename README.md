@@ -1,144 +1,51 @@
 # Federated Catalogue
 
-## Description
-The Federated Catalogue Service makes assets (metadata descriptions of Providers, their Service Offerings and Resources) available to Consumers.
+The Federated Catalogue is an Eclipse XFSC service that makes assets — metadata descriptions of Providers, their Service
+Offerings, and Resources — available to Consumers. It supports verifiable-credential-based onboarding and pluggable
+trust-framework validation (Gaia-X Loire and standard JWT-VC formats). The service's role within the Gaia-X / XFSC
+ecosystem (system scope and context, building-block view) is described in
+the [Architecture Document](https://github.com/eclipse-xfsc/docs/tree/main/federated-catalogue).
 
-> **Note:** This project was originally developed for Gaia-X, where assets were called "Self-Descriptions" (SDs). As part of the CAT-NFR-01 naming refactoring, "Self-Description" has been replaced with two terms:
-> - **Asset** — at the API and storage layer (e.g., `POST /assets`, `AssetStore`, `AssetMetadata`). Covers any uploaded item: RDF credentials, PDFs, templates, binary files.
-> - **Credential** — inside the verification pipeline (e.g., `verifyCredential()`, `storeCredential()`, `CredentialVerificationResult`). Applies only when the uploaded asset is a Verifiable Credential/Presentation (JSON-LD).
->
-> See the [naming refactoring (CAT-NFR-01)](https://github.com/eclipse-xfsc/docs/blob/f3c6e6b6fbcc87732a1dfe83f060fa58a9a97873/federated-catalogue/src/docs/CAT%20Enhancement/CAT_Enhancement_Specifications%20v1.0.pdf) for details.
+This project originated as the Reference Implementation
+of [Gaia-X Federation Services Lot 5 — Federated Catalogue / Core Catalogue Features](https://www.gxfs.eu/core-catalogue-features/).
 
-This project was initiated as a Reference Implementation of Gaia-X Federation Services Lot 5 [Federated Catalogue / Core Catalogue Features](https://www.gxfs.eu/core-catalogue-features/).
+## Installation & Setup
+
+The supported way to build and run the Federated Catalogue locally is via the bundled Docker Compose
+stack: [Steps to build FC](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docker/README.md).
 
 ## Documentation
-All service documentation, installation instructions and other materials can be found in [our wiki](https://github.com/eclipse-xfsc/federated-catalogue/wiki).
 
-## Support
-To get support you can open an issue in the project [Issues](https://github.com/eclipse-xfsc/federated-catalogue/issues) section.
+| Topic                                                       | Location                                                                                                       |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| Architecture, requirements, deployment, ADRs (canonical)    | [Architecture Document](https://github.com/eclipse-xfsc/docs/tree/main/federated-catalogue)                    |
+| API reference                                               | [docs/api-docs.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/api-docs.md)             |
+| Operator guide (trust framework, Loire, credential formats) | [docs/operator-guide.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/operator-guide.md) |
+| CI / CD workflows                                           | [docs/ci-cd.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/ci-cd.md)                   |
+| Operator notes (non-canonical)                              | [Wiki](https://github.com/eclipse-xfsc/federated-catalogue/wiki)                                               |
+| Issues & support                                            | [GitHub Issues](https://github.com/eclipse-xfsc/federated-catalogue/issues)                                    |
+| Releases                                                    | [GitHub Releases](https://github.com/eclipse-xfsc/federated-catalogue/releases)                                |
 
-## Getting Started
-To start with FC project please follow the instructions: [Steps to build FC](./docker/README.md).
+## Credential support
 
-## Trust Framework Configuration
+The catalogue accepts Gaia-X Loire (VC 2.0 JWT) and standard JWT-VC; see
+the [Operator Guide](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/operator-guide.md#supported-credential-formats)
+for the full matrix and the asset/credential terminology note (CAT-NFR-01).
 
-The Federated Catalogue can be operated with or without Gaia-X Trust Framework validation. By default, Gaia-X compliance validation is **disabled**, allowing the catalogue to be used in other ecosystems and use cases.
+## Contributing & Contact
 
-### Configuration Options
+Contributions are welcome. Please
+read [CONTRIBUTING.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/CONTRIBUTING.md)
+and [CODE_OF_CONDUCT.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/CODE_OF_CONDUCT.md) before
+opening a pull request. As an Eclipse Foundation project, contributors must sign
+the [Eclipse Contributor Agreement (ECA)](https://www.eclipse.org/legal/ECA.php).
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `federated-catalogue.verification.trust-framework.gaiax.enabled` | `false` | Enable/disable Gaia-X Trust Framework validation |
-| `federated-catalogue.verification.trust-framework.gaiax.trust-anchor-url` | (Gaia-X registry URL) | URL for Gaia-X Trust Anchor Registry (only used when enabled) |
-
-### Behavior
-
-**When `gaiax.enabled: false` (default):**
-- Credentials can be uploaded without Gaia-X compliance validation
-- No calls are made to the Gaia-X Digital Clearing House or Trust Anchor Registry
-- Signature verification still works but does not require Gaia-X trust anchors
-- Any valid Verifiable Credential/Presentation can be stored
-
-**When `gaiax.enabled: true`:**
-- Full Gaia-X Trust Framework validation is enforced
-- Credentials must have valid trust anchor chains registered with Gaia-X
-- Calls are made to the Gaia-X Trust Anchor Registry for validation
-
-### Example Configuration (application.yml)
-
-```yaml
-federated-catalogue:
-  verification:
-    trust-framework:
-      gaiax:
-        enabled: false  # Set to true for Gaia-X compliance
-        trust-anchor-url: "https://registry.lab.gaia-x.eu/v1/api/trustAnchor/chain/file"
-```
-
-## Supported Credential Formats
-
-The Federated Catalogue accepts the following Verifiable Credential formats for submission:
-
-| Format | Encoding | Description |
-|--------|----------|-------------|
-| **Gaia-X Loire JWT** | VC 2.0 JWT (`typ: vc+ld+json+jwt`) | ICAM 24.07. Requires Gaia-X trust chain when `gaiax.enabled: true`. |
-| **Standard JWT-VC** | VCDM 1.1 or 2.0 JWT with `vc`/`vp` wrapper claims | Compatible with Catena-X, EBSI (VCDM 1.1), and IDSA/DCP trust frameworks. |
-
-**Not accepted:** VC 1.1 JSON-LD with Linked Data Proof (Gaia-X Tagus / Elbe, ICAM 22.10 and earlier). These credentials use `https://www.w3.org/2018/credentials/v1` as context with an embedded `proof` block instead of a JWT envelope. Submitting a credential in this format returns a `400` error.
-
-## Gaia-X Loire Compatibility (2511 Ontology)
-
-The Federated Catalogue supports the current Loire (Gaia-X 2511) credential format.
-
-### Bundled Ontology and SHACL Shapes
-
-| File | Source | Purpose |
-|------|--------|---------|
-| `fc-service-core/src/main/resources/defaultschema/ontology/gx-2511.ttl` | Stripped from Gaia-X 2511 OWL | Class hierarchy for Loire type resolution (`rdfs:subClassOf` only) |
-| `fc-service-core/src/main/resources/defaultschema/shacl/gx-2511-shapes.ttl` | [Gaia-X Trust Shape Registry](https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#) | SHACL validation shapes for Loire credentials |
-
-New submissions in Tagus credential format (VC 1.1 JSON-LD with Linked Data Proof) are not accepted and return a `400` error at format detection.
-
-### Namespace
-
-| Namespace | URI | Usage |
-|-----------|-----|-------|
-| Loire (2511) | `https://w3id.org/gaia-x/2511#` | Credential types (`gx:LegalPerson`, `gx:ServiceOffering`, etc.) |
-
-Configure type resolution and document loader in `application.yml`:
-
-```yaml
-federated-catalogue:
-  verification:
-    participant:
-      type: "https://w3id.org/gaia-x/2511#Participant"
-    resource:
-      type: "https://w3id.org/gaia-x/2511#Resource"
-    service-offering:
-      type: "https://w3id.org/gaia-x/2511#ServiceOffering"
-    doc-loader:
-      additional-context:
-        '[https://w3id.org/gaia-x/2511#]': https://registry.lab.gaia-x.eu/development/context/2511
-```
-
-To update to a future 2511 release: replace `gx-2511.ttl` (run `fc-tools/extract-ontology-hierarchy.py` against the new OWL file) and `gx-2511-shapes.ttl` (download from the registry), then update the `doc-loader.additional-context` mapping.
-
-## Roadmap
-The project v1.0.0 was released in February 2023.
-
-## Contributing
-If you want to contribute to the project, please see [the Eclipse XFSC contribution guidelines](https://github.com/eclipse-xfsc/federated-catalogue#contributing-ov-file).
-
-## Authors and acknowledgment
-
-The initial version of this project was implemented by the following team:
-- [Denis Sukhoroslov](https://gitlab.eclipse.org/dsukhoroslov)
-- [Peter Benko](https://gitlab.com/pebenko)
-- [Ladislav Jurcisin](https://gitlab.com/ladislav.jurcisin)
-- [Shyam Thorat](https://gitlab.com/shyamthorat)
-- [Natallia Smoliak](https://gitlab.com/nsmoliak)
-
-In the scope of the [GXFS (Gaia-X Federation Services) project](https://gxfs.eu/), the following colleagues …
-
-- [Christoph Lange](https://gitlab.eclipse.org/langec), Fraunhofer FIT
-- [Paul Moosmann](https://gitlab.eclipse.org/moosmannp), Fraunhofer FIT
-
-… are in charge of:
-- aligning the roadmap of this project with the requirements of further funded projects in the Gaia-X community, [including these in Germany](https://gaia-x-hub.de/gaia-x-foerdervorhaben/), and
-- providing support to this community, especially in events such as the [GXFS Tech Workshops](https://www.gxfs.eu/events/).
-
-The project implementation wouldn't have been possible without a great help of our partners from these Fraunhofer Institutes:
-- Christoph Lange (see above)
-- [Hylke van der Schaaf](https://gitlab.com/hylkevds), Fraunhofer IOSB
-- [Jürgen Reuter](https://gitlab.com/j_reuter), Fraunhofer IOSB
-- [Nikhil Acharya](https://gitlab.com/nik77612), Fraunhofer IAIS
-- [Sebastian Duda](https://gitlab.com/sebastian.duda), Fraunhofer FIT
-- [Patrick Westphal](https://gitlab.com/patrick_westphal), Fraunhofer IAIS
-- [Ahmad Hemid](https://gitlab.com/ahmad.hemid), Fraunhofer FIT
-- [Diego Collarana](https://gitlab.com/collaran), Fraunhofer IAIS
-- Paul Moosmann (see above)
-- [Philipp Hertweck](https://gitlab.com/phertweck), Fraunhofer IOSB
-- [Khalil Baydoun](https://gitlab.com/baydounkhalil), Fraunhofer FIT
+Project page: [projects.eclipse.org/projects/technology.xfsc](https://projects.eclipse.org/projects/technology.xfsc).
+For technical questions and bug reports, open
+an [issue](https://github.com/eclipse-xfsc/federated-catalogue/issues). The full list of contributors is maintained
+in [CONTRIBUTORS.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/CONTRIBUTORS.md) and the
+GitHub [contributor graph](https://github.com/eclipse-xfsc/federated-catalogue/graphs/contributors).
 
 ## License
-The XFSC Federated Catalogue Service is Open Source software released under the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).
+
+Apache License 2.0 — see [LICENSE](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/LICENSE).
