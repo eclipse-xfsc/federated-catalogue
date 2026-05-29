@@ -17,6 +17,13 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
+      initContainers:
+      - name: init-tdb-dir
+        image: {{ .Values.fuseki.image.repository }}:{{ .Values.fuseki.image.tag }}
+        command: ["sh", "-c", "mkdir -p /fuseki/databases/{{ .Values.fuseki.dataset }}"]
+        volumeMounts:
+        - name: fuseki-data
+          mountPath: /fuseki/databases
       containers:
       - name: fuseki
         image: {{ .Values.fuseki.image.repository }}:{{ .Values.fuseki.image.tag }}
@@ -29,13 +36,12 @@ spec:
           value: {{ .Values.fuseki.javaOptions | quote }}
         args:
         - "--tdb2"
-        - "--loc"
-        - "/fuseki/databases/{{ .Values.fuseki.dataset }}"
-        - "/{{ .Values.fuseki.dataset }}"
+        - "--loc=/fuseki/databases/{{ .Values.fuseki.dataset }}"
         - "--update"
+        - "/{{ .Values.fuseki.dataset }}"
         volumeMounts:
         - name: fuseki-data
-          mountPath: /fuseki
+          mountPath: /fuseki/databases
         resources:
           {{- toYaml .Values.fuseki.resources | nindent 10 }}
   volumeClaimTemplates:
