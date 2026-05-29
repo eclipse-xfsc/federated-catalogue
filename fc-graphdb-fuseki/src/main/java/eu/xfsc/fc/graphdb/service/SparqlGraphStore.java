@@ -58,11 +58,11 @@ public class SparqlGraphStore implements GraphStore {
 
     private final ClaimValidator claimValidator;
 
-    // required = false so the adapter can be wired in test contexts that do not
-    // import an embedded Fuseki (RDFConnection bean absent). Calls into this
-    // adapter when rdfConnection is null will fail at runtime; the routing layer
-    // is expected to keep a Fuseki-less deployment from selecting FUSEKI as active.
-    @Autowired(required = false)
+  // required = false so the adapter can be wired in test contexts that do not
+  // import an embedded Fuseki (RDFConnection bean absent). Calls into this
+  // adapter when rdfConnection is null will fail at runtime; the routing layer
+  // is expected to keep a Fuseki-less deployment from selecting FUSEKI as active.
+  @Autowired(required = false)
     private RDFConnection rdfConnection;
 
     public SparqlGraphStore() {
@@ -85,9 +85,9 @@ public class SparqlGraphStore implements GraphStore {
     /** {@inheritDoc} */
     @Override
     public boolean isHealthy() {
-        if (rdfConnection == null) {
-            return false;
-        }
+      if (rdfConnection == null) {
+        return false;
+      }
         try {
             Txn.calculateRead(rdfConnection, () -> {
                 try (QueryExecution qe = rdfConnection.newQuery()

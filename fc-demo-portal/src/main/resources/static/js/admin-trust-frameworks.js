@@ -4,6 +4,14 @@ $(document).ready(function() {
   var TF_API_BASE     = '/admin/trust-frameworks';
   var MERGE_PATCH_JSON = 'application/merge-patch+json';
 
+  // Bundle override property keys — must match server-recognised merge-patch+json fields
+  var KEY_CLIENT_TYPE      = 'clientType';
+  var KEY_SERVICE_URL      = 'serviceUrl';
+  var KEY_COMPLIANCE_PATH  = 'compliancePath';
+  var KEY_API_VERSION      = 'apiVersion';
+  var KEY_TIMEOUT_SECONDS  = 'timeoutSeconds';
+  var KEY_TRUST_ANCHOR_URL = 'trustAnchorUrl';
+
   $.ajax({
     url: ADMIN_ME_URL,
     type: 'GET',
@@ -78,12 +86,22 @@ $(document).ready(function() {
           data: null,
           orderable: false,
           render: function(data) {
-            return $('<button>', { class: 'btn btn-sm btn-outline-secondary tf-roles' })
-              .attr('data-id',      data.id)
-              .attr('data-enabled', data.enabled ? 'true' : 'false')
-              .attr('data-bundles', JSON.stringify(data.bundles || []))
-              .append('<i class="bi bi-gear"></i>')
-              .prop('outerHTML');
+            var bundles = data.bundles || [];
+            if (bundles.length === 0) {
+              return '';
+            }
+            var familyEnabled = data.enabled ? 'true' : 'false';
+            return bundles.map(function(bundle) {
+              return $('<button>', { class: 'btn btn-sm btn-outline-secondary tf-bundle-configure me-1' })
+                .attr('data-bundle-id',         bundle.id)
+                .attr('data-family-enabled',    familyEnabled)
+                .attr('data-roles',             JSON.stringify(bundle.roles || {}))
+                .attr('data-effective-config', JSON.stringify(bundle.effectiveConfig || {}))
+                .attr('data-overridden',        JSON.stringify(bundle.overriddenFields || []))
+                .append('<i class="bi bi-gear"></i> ')
+                .append($('<small>').text(bundle.id))
+                .prop('outerHTML');
+            }).join('');
           }
         }
       ]
@@ -106,58 +124,49 @@ $(document).ready(function() {
       });
     });
 
-    $('#tfTable').on('click', '.tf-roles', function() {
-      var $btn = $(this);
-      var familyEnabled = $btn.data('enabled') === 'true' || $btn.data('enabled') === true;
-      var bundles = $btn.data('bundles') || [];
-      if (typeof bundles === 'string') {
-        try { bundles = JSON.parse(bundles); } catch (e) { bundles = []; }
+    function recomputeAllDisabledWarning(familyEnabled) {
+      if (!familyEnabled) {
+        $('#tfRolesAllDisabledWarning').hide();
+        return;
       }
+      var allUnchecked = $('#tfRolesContainer .tf-role-toggle:checked').length === 0
+        && $('#tfRolesContainer .tf-role-toggle').length > 0;
+      $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
+    }
 
+    function renderBundleRoles(bundleId, familyEnabled, roles) {
       var $container = $('#tfRolesContainer').empty();
       $('#tfRoleErrorBanner').hide();
-      var multiBundle = bundles.length > 1;
-      bundles.forEach(function(bundle) {
-        var roles = bundle.roles || {};
-        Object.keys(roles).forEach(function(roleName) {
-          var roleEnabled = roles[roleName];
-          var inputId = 'role-' + bundle.id + '-' + roleName;
-          var $check = $('<div class="form-check">').append(
-            $('<input>', {
-              type: 'checkbox',
-              class: 'form-check-input tf-role-toggle',
-              id: inputId,
-              'data-bundle': bundle.id,
-              'data-role': roleName
-            })
-              .prop('checked', roleEnabled)
-              .prop('disabled', !familyEnabled),
-            $('<label>', {
-              class: 'form-check-label' + (!familyEnabled ? ' text-muted' : ''),
-              for: inputId,
-              title: 'When disabled, this role and all its OWL subclasses reject credentials with HTTP 400.',
-              'data-bs-toggle': 'tooltip'
-            }).append(
-              document.createTextNode(roleName + ' '),
-              multiBundle
-                ? $('<small class="text-muted">').text('(' + bundle.id + ')')
-                : $()
-            )
-          );
-          $container.append($check);
-        });
+      Object.keys(roles).forEach(function(roleName) {
+        var roleEnabled = roles[roleName];
+        var inputId = 'role-' + bundleId + '-' + roleName;
+        var $check = $('<div class="form-check">').append(
+          $('<input>', {
+            type: 'checkbox',
+            class: 'form-check-input tf-role-toggle',
+            id: inputId,
+            'data-bundle': bundleId,
+            'data-role': roleName
+          })
+            .prop('checked', roleEnabled)
+            .prop('disabled', !familyEnabled),
+          $('<label>', {
+            class: 'form-check-label' + (!familyEnabled ? ' text-muted' : ''),
+            for: inputId,
+            title: 'When disabled, this role and all its OWL subclasses reject credentials with HTTP 400.',
+            'data-bs-toggle': 'tooltip'
+          }).append(document.createTextNode(roleName)),
+          $('<span class="badge bg-success ms-2 tf-role-saved-badge" style="display:none">')
+            .text('✓ saved')
+        );
+        $container.append($check);
       });
-
       $container.find('[data-bs-toggle="tooltip"]').each(function() {
         new bootstrap.Tooltip(this);
       });
+    }
 
-      $('#tfConfigModal').data('familyEnabled', familyEnabled);
-      recomputeAllDisabledWarning(familyEnabled);
-      new bootstrap.Modal('#tfConfigModal').show();
-    });
-
-    $('#tfConfigModal').on('change', '.tf-role-toggle', function() {
+    $('#tfBundleConfigModal').on('change', '.tf-role-toggle', function() {
       var $cb = $(this);
       var bundleId = $cb.data('bundle');
       var roleName = $cb.data('role');
@@ -171,11 +180,19 @@ $(document).ready(function() {
         data: JSON.stringify({enabled: enabled}),
         success: function() {
           $('#tfRoleErrorBanner').hide();
-          recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
+          recomputeAllDisabledWarning($('#tfBundleConfigModal').data('familyEnabled'));
+          // Flash a "✓ saved" badge next to this row so the operator sees the change
+          // committed (mirrors the deferred-Save affordance of the config fields above).
+          var $badge = $cb.closest('.form-check').find('.tf-role-saved-badge');
+          clearTimeout($badge.data('hideTimer'));
+          $badge.stop(true, true).show().css('opacity', 1);
+          $badge.data('hideTimer', setTimeout(function() {
+            $badge.fadeOut(400);
+          }, 1500));
         },
         error: function() {
           $cb.prop('checked', !enabled);
-          recomputeAllDisabledWarning($('#tfConfigModal').data('familyEnabled'));
+          recomputeAllDisabledWarning($('#tfBundleConfigModal').data('familyEnabled'));
           var $banner = $('#tfRoleErrorBanner');
           $banner.text('Failed to update role "' + roleName + '". Please try again.').show();
           clearTimeout($banner.data('hideTimer'));
@@ -184,15 +201,199 @@ $(document).ready(function() {
       });
     });
 
-    function recomputeAllDisabledWarning(familyEnabled) {
-      if (!familyEnabled) {
-        $('#tfRolesAllDisabledWarning').hide();
+    // ── Bundle client-config modal ──────────────────────────────────────────
+
+    // Set of field IDs that have been explicitly marked "clear" (→ null in PATCH body).
+    var tfBundleClearedFields = {};
+
+    function parseJsonAttr(value, fallback) {
+      if (typeof value !== 'string') {
+        return value == null ? fallback : value;
+      }
+      try { return JSON.parse(value); } catch (e) { return fallback; }
+    }
+
+    function renderBundleEffectiveConfig(effective, overridden) {
+      // Show effective values; mark fields whose value comes from a persisted override.
+      $('.tf-bundle-field').each(function() {
+        var $field = $(this);
+        var key = $field.data('key');
+        var value = effective[key];
+        if (value === undefined || value === null) {
+          $field.val('').attr('placeholder', '');
+        } else {
+          $field.val(value).attr('placeholder', '');
+        }
+      });
+      $('.tf-bundle-field').removeClass('border-primary');
+      $('.tf-bundle-clear').removeClass('btn-warning');
+      (overridden || []).forEach(function(key) {
+        var $field = $('.tf-bundle-field[data-key="' + key + '"]');
+        $field.addClass('border-primary');
+        var $btn = $('.tf-bundle-clear[data-target="' + $field.attr('id') + '"]');
+        $btn.addClass('btn-warning').removeClass('btn-outline-secondary');
+      });
+    }
+
+    // Snapshot of the effective values shown when the modal was opened, used to
+    // detect which fields the operator actually changed so a no-op Save does not
+    // accidentally promote YAML defaults to persisted overrides.
+    var tfBundleInitialValues = {};
+
+    $('#tfTable').on('click', '.tf-bundle-configure', function() {
+      var $btn = $(this);
+      var bundleId = $btn.data('bundle-id');
+      var familyEnabled = $btn.data('family-enabled') === 'true' || $btn.data('family-enabled') === true;
+      var roles = parseJsonAttr($btn.data('roles'), {});
+      var effective = parseJsonAttr($btn.data('effective-config'), {});
+      var overridden = parseJsonAttr($btn.data('overridden'), []);
+
+      $('#tfBundleConfigModalBundleId').text(bundleId);
+      $('#tfBundleConfigModal').data('bundleId', bundleId);
+      $('#tfBundleConfigModal').data('familyEnabled', familyEnabled);
+
+      // Reset cleared-field state, then populate from the row's effective config.
+      tfBundleClearedFields = {};
+      tfBundleInitialValues = {};
+      $('.tf-bundle-field').removeClass('tf-field-cleared').prop('disabled', false);
+      $('.tf-bundle-clear').removeClass('btn-danger').addClass('btn-outline-secondary');
+      $('#tfBundleConfigErrorBanner').hide();
+      renderBundleEffectiveConfig(effective, overridden);
+      // Snapshot the values shown so Save can detect what changed.
+      // Stored as strings so the Save comparison is type-safe across all input types.
+      $('.tf-bundle-field').each(function() {
+        var $f = $(this);
+        var v = $f.val();
+        tfBundleInitialValues[$f.data('key')] = $.trim(String(v == null ? '' : v));
+      });
+
+      // Populate the roles section
+      renderBundleRoles(bundleId, familyEnabled, roles);
+      recomputeAllDisabledWarning(familyEnabled);
+
+      new bootstrap.Modal('#tfBundleConfigModal').show();
+    });
+
+    // ✕ button: toggle "explicitly clear" (Save will send null for this field).
+    // Click again to un-mark — restores the field for editing without re-opening the modal.
+    $('#tfBundleConfigModal').on('click', '.tf-bundle-clear', function() {
+      var $btn = $(this);
+      var targetId = $btn.data('target');
+      var $field = $('#' + targetId);
+      var key = $field.data('key');
+
+      if (tfBundleClearedFields[key]) {
+        // Un-clear: restore initial value and editability.
+        delete tfBundleClearedFields[key];
+        $field
+          .removeClass('tf-field-cleared')
+          .prop('disabled', false)
+          .val(tfBundleInitialValues[key] || '');
+        $btn.removeClass('btn-danger').addClass('btn-outline-secondary');
+      } else {
+        tfBundleClearedFields[key] = true;
+        $field.val('').addClass('tf-field-cleared').prop('disabled', true);
+        $btn.removeClass('btn-outline-secondary btn-warning').addClass('btn-danger');
+      }
+    });
+
+    // Re-enable cleared field when modal is closed so it resets cleanly next open
+    $('#tfBundleConfigModal').on('hidden.bs.modal', function() {
+      tfBundleClearedFields = {};
+      $('.tf-bundle-field').prop('disabled', false).val('').removeClass('tf-field-cleared');
+      $('.tf-bundle-clear').removeClass('btn-danger').addClass('btn-outline-secondary');
+    });
+
+    $('#tfBundleConfigSave').on('click', function() {
+      var bundleId = $('#tfBundleConfigModal').data('bundleId');
+      if (!bundleId) { return; }
+
+      var payload = {};
+
+      // Fields explicitly cleared → null
+      var clearKeys = [
+        KEY_CLIENT_TYPE, KEY_SERVICE_URL, KEY_COMPLIANCE_PATH,
+        KEY_API_VERSION, KEY_TIMEOUT_SECONDS, KEY_TRUST_ANCHOR_URL
+      ];
+      clearKeys.forEach(function(k) {
+        if (tfBundleClearedFields[k]) {
+          payload[k] = null;
+        }
+      });
+
+      // Fields with a value → include only when the operator actually changed them
+      // (otherwise we would re-promote YAML defaults to overrides on every Save).
+      $('.tf-bundle-field').each(function() {
+        var $f = $(this);
+        var key = $f.data('key');
+        if (tfBundleClearedFields[key]) { return; } // already handled as null
+        var raw = $.trim(String($f.val() == null ? '' : $f.val()));
+        if (raw === '') { return; } // blank → omit (no-op)
+        var initial = String(tfBundleInitialValues[key] == null ? '' : tfBundleInitialValues[key]);
+        if (raw === initial) { return; } // unchanged → omit
+        payload[key] = (key === KEY_TIMEOUT_SECONDS) ? parseInt(raw, 10) : raw;
+      });
+
+      if (Object.keys(payload).length === 0) {
+        $('#tfBundleConfigErrorBanner').text('Nothing to save — fill in at least one field or mark one for clearing.').show();
         return;
       }
-      var allUnchecked = $('#tfRolesContainer .tf-role-toggle:checked').length === 0
-        && $('#tfRolesContainer .tf-role-toggle').length > 0;
-      $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
-    }
+
+      $('#tfBundleConfigErrorBanner').hide();
+      $('#tfBundleConfigSave').prop('disabled', true);
+
+      fetch(TF_API_BASE + '/bundles/' + encodeURIComponent(bundleId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': MERGE_PATCH_JSON },
+        body: JSON.stringify(payload)
+      })
+        .then(function(resp) {
+          if (resp.ok) {
+            $('#tfTable').DataTable().ajax.reload(null, false);
+            bootstrap.Modal.getInstance('#tfBundleConfigModal').hide();
+          } else {
+            return resp.json().then(function(err) {
+              var msg = (err && err.message) ? err.message : ('Server error ' + resp.status);
+              $('#tfBundleConfigErrorBanner').text(msg).show();
+            });
+          }
+        })
+        .catch(function() {
+          $('#tfBundleConfigErrorBanner').text('Network error — please try again.').show();
+        })
+        .finally(function() {
+          $('#tfBundleConfigSave').prop('disabled', false);
+        });
+    });
+
+    $('#tfBundleConfigRevertAll').on('click', function() {
+      var bundleId = $('#tfBundleConfigModal').data('bundleId');
+      if (!bundleId) { return; }
+
+      $('#tfBundleConfigErrorBanner').hide();
+      $('#tfBundleConfigRevertAll').prop('disabled', true);
+
+      fetch(TF_API_BASE + '/bundles/' + encodeURIComponent(bundleId), {
+        method: 'DELETE'
+      })
+        .then(function(resp) {
+          if (resp.ok) {
+            $('#tfTable').DataTable().ajax.reload(null, false);
+            bootstrap.Modal.getInstance('#tfBundleConfigModal').hide();
+          } else {
+            return resp.json().then(function(err) {
+              var msg = (err && err.message) ? err.message : ('Server error ' + resp.status);
+              $('#tfBundleConfigErrorBanner').text(msg).show();
+            });
+          }
+        })
+        .catch(function() {
+          $('#tfBundleConfigErrorBanner').text('Network error — please try again.').show();
+        })
+        .finally(function() {
+          $('#tfBundleConfigRevertAll').prop('disabled', false);
+        });
+    });
   }
 
 });

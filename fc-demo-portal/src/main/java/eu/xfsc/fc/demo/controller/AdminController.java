@@ -3,9 +3,9 @@ package eu.xfsc.fc.demo.controller;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,10 +21,10 @@ import eu.xfsc.fc.api.generated.model.GraphDatabaseSwitchResult;
 import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
 import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
-import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
 import eu.xfsc.fc.client.AdminClient;
 import lombok.RequiredArgsConstructor;
 
@@ -89,6 +89,41 @@ public class AdminController {
     adminClient.patchTrustFramework(id, patch, authorizedClient);
   }
 
+  /**
+   * Partially update the external client configuration of a trust framework bundle using
+   * RFC 7396 merge-patch semantics.
+   */
+  @PatchMapping("/trust-frameworks/bundles/{bundleId}")
+  public void patchTrustFrameworkBundleConfig(
+      @PathVariable("bundleId") String bundleId,
+      @RequestBody Map<String, Object> patch,
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    adminClient.patchTrustFrameworkBundleConfig(bundleId, patch, authorizedClient);
+  }
+
+  /**
+   * Remove all persisted overrides for a trust framework bundle, restoring the bundle YAML
+   * as the sole source of compliance configuration.
+   */
+  @DeleteMapping("/trust-frameworks/bundles/{bundleId}")
+  public void deleteTrustFrameworkBundleConfig(
+      @PathVariable("bundleId") String bundleId,
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    adminClient.deleteTrustFrameworkBundleConfig(bundleId, authorizedClient);
+  }
+
+  /**
+   * Partially update a role within a trust framework bundle.
+   */
+  @PatchMapping("/trust-frameworks/{bundleId}/roles/{roleName}")
+  public void patchTrustFrameworkRole(
+      @PathVariable("bundleId") String bundleId,
+      @PathVariable("roleName") String roleName,
+      @RequestBody TrustFrameworkRolePatch patch,
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    adminClient.patchTrustFrameworkRole(bundleId, roleName, patch, authorizedClient);
+  }
+
   // --- Schema Validation ---
 
   /** Get schema validation module status. */
@@ -131,19 +166,5 @@ public class AdminController {
       @RequestBody Map<String, String> body,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
     return adminClient.switchGraphDatabase(body.get("backend"), authorizedClient);
-  }
-
-  /** Trigger a graph rebuild over the current backend. */
-  @PostMapping("/graph/rebuild")
-  public ResponseEntity<RebuildStatus> triggerGraphRebuild(
-      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    return adminClient.triggerGraphRebuild(authorizedClient);
-  }
-
-  /** Poll graph rebuild progress. */
-  @GetMapping("/graph/rebuild/status")
-  public RebuildStatus getGraphRebuildStatus(
-      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    return adminClient.getGraphRebuildStatus(authorizedClient);
   }
 }

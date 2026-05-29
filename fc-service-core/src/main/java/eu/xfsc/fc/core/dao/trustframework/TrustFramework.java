@@ -31,15 +31,6 @@ public class TrustFramework {
   @Column(name = "name", length = 255, nullable = false)
   private String name;
 
-  @Column(name = "service_url", length = 1024)
-  private String serviceUrl;
-
-  @Column(name = "api_version", length = 50)
-  private String apiVersion;
-
-  @Column(name = "timeout_seconds")
-  private int timeoutSeconds;
-
   @Column(name = "enabled")
   private boolean enabled;
 

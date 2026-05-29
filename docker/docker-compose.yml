@@ -32,7 +32,7 @@ services:
     container_name: "neo4j"
     image: neo4j:5.18.0
     environment:
-      NEO4J_AUTH: "${GRAPH_STORE_USER}/${GRAPH_STORE_PASSWORD}"
+      NEO4J_AUTH: "${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo12345}"
       NEO4J_server_http_listen__address: :7474
       NEO4J_server_bolt_listen__address: :7687
       NEO4J_PLUGINS: '["apoc", "graph-data-science", "n10s"]'
@@ -143,6 +143,20 @@ services:
           - did-server
     restart: unless-stopped
 
+  # Mock GXDCH compliance service (WireMock) backing the mock-2026 trust-framework bundle.
+  # The mock-2026 filesystem override (mounted on server) points service_url here, so
+  # @uses.compliance-mock BDD scenarios drive compliance checks against a stub instead of a
+  # live GXDCH operator. Idle unless a compliance check runs.
+  compliance-mock:
+    container_name: "compliance-mock"
+    image: wiremock/wiremock:3.13.2
+    networks:
+      - "gaia-x"
+    ports:
+      # 8089 on host to avoid conflict with Keycloak (8080).
+      # BDD tests reach WireMock admin API at http://localhost:8089.
+      - "8089:8080"
+
   server:
     container_name: "fc-server"
 #    image: node-654e3bca7fbeeed18f81d7c7.ps-xaas.io/catalogue/fc-service-server:2.0.0
@@ -189,14 +203,16 @@ services:
       # Multiple families: comma-separated, e.g. "gaia-x,untp".
       FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS: "${ENABLED_TRUST_FRAMEWORKS:-}"
       FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "${VERIFY_SCHEMA:-false}"
-      # Per-framework verification config (e.g. trust anchor URL) is owned by the bundle's
-      # framework.yaml. To override the Loire trust anchor for test environments, mount a
-      # custom bundle directory at /app/trustframeworks/gaia-x-2511/.
+      # Filesystem bundle overrides (by id). The mock-2026 bundle here redirects its
+      # service_url to the compliance-mock container; gaia-x-2511 can override the trust anchor.
+      FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH: /app/trustframeworks-override
       JAVA_TOOL_OPTIONS: >-
         -Djavax.net.ssl.trustStore=/opt/certs/custom-cacerts
         -Djavax.net.ssl.trustStorePassword=changeit
     volumes:
       - ./certs/custom-cacerts:/opt/certs/custom-cacerts:ro
+      # Filesystem trust-framework bundle overrides (mock-2026 → compliance-mock, etc.).
+      - ./trustframeworks:/app/trustframeworks-override:ro
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1
       interval: 30s
@@ -218,6 +234,8 @@ services:
       nats:
         condition: service_healthy
       did-server:
+        condition: service_started
+      compliance-mock:
         condition: service_started
   portal:
     container_name: "demo-portal"

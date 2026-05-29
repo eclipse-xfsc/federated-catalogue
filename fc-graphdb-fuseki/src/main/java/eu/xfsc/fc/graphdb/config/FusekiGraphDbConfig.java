@@ -16,12 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnExpression("'${federated-catalogue.scope}'.equals('runtime')")
 public class FusekiGraphDbConfig {
 
-    @Value("${graphstore.fuseki.uri:${graphstore.uri}}")
+  @Value("${graphstore.fuseki.uri:${graphstore.uri}}")
     private String uri;
 
-    // RDFConnectionFuseki does not open a socket at construction; the first request
-    // touches the HTTP endpoint. No connect-on-build means an unreachable Fuseki at
-    // boot does not crash the JVM in routing mode.
+  // RDFConnectionFuseki does not open a socket at construction; the first request
+  // touches the HTTP endpoint. No connect-on-build means an unreachable Fuseki at
+  // boot does not crash the JVM in routing mode.
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
     public RDFConnection rdfConnection() {

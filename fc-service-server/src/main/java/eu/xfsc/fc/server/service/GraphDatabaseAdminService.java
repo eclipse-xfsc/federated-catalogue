@@ -81,7 +81,7 @@ public class GraphDatabaseAdminService implements GraphDatabaseAdminApiDelegate 
     if (!probe.reachable()) {
       throw new ClientException(
           "Target backend " + target.name() + " is not reachable: " + probe.message()
-          + ". Verify the backend container is up and the URI configuration is correct.");
+              + ". Verify the backend container is up and the URI configuration is correct.");
     }
 
     // Swap the live adapter first; persist the preference only after a successful swap.
@@ -116,7 +116,7 @@ public class GraphDatabaseAdminService implements GraphDatabaseAdminApiDelegate 
   }
 
   private boolean computeRebuildNeeded(GraphBackendType backendType, long claimCount,
-      long rdfAssetCount) {
+                                       long rdfAssetCount) {
     if (backendType == GraphBackendType.NONE || claimCount != 0L) {
       return false;
     }
