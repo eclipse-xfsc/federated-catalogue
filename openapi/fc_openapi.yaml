@@ -883,9 +883,6 @@ components:
     GraphDatabaseSwitchResult:
       type: object
       properties:
-        restartRequired:
-          type: boolean
-          description: Whether a restart is needed for the switch to take effect
         message:
           type: string
           description: Human-readable status message
