@@ -669,18 +669,6 @@ components:
         name:
           type: string
           description: Display name
-        serviceUrl:
-          type: string
-          description: Trust framework service URL
-        apiVersion:
-          type: string
-          description: API version
-        timeoutSeconds:
-          type: integer
-          description: Connection timeout in seconds
-        connected:
-          type: boolean
-          description: Whether the service is currently reachable
         enabled:
           type: boolean
           description: Whether this framework is active
@@ -700,6 +688,35 @@ components:
           additionalProperties:
             type: boolean
           description: Per-role enabled state for this bundle, keyed by role name.
+        effectiveConfig:
+          $ref: '#/components/schemas/TrustFrameworkBundleEffectiveConfig'
+        overriddenFields:
+          type: array
+          description: >-
+            Names of effective-config fields whose value currently comes from a
+            persisted override (DB row) rather than the bundle YAML. Allows the
+            UI to distinguish operator-set values from YAML defaults.
+          items:
+            type: string
+    TrustFrameworkBundleEffectiveConfig:
+      type: object
+      description: >-
+        Effective compliance configuration of a bundle after applying any per-bundle
+        overrides on top of the YAML baseline. Resolved by the catalogue server at
+        request time; read-only.
+      properties:
+        clientType:
+          type: string
+        serviceUrl:
+          type: string
+        compliancePath:
+          type: string
+        apiVersion:
+          type: string
+        timeoutSeconds:
+          type: integer
+        trustAnchorUrl:
+          type: string
     TrustFrameworkPatch:
       type: object
       description: >-
@@ -712,17 +729,6 @@ components:
         enabled:
           type: boolean
           description: Desired enabled state of the trust framework family.
-        serviceUrl:
-          type: string
-          description: New compliance service URL.
-        apiVersion:
-          type: string
-          description: New API version string.
-        timeoutSeconds:
-          type: integer
-          description: Connection timeout in seconds.
-          minimum: 1
-          maximum: 300
     SchemaModulePatch:
       type: object
       description: >-
@@ -877,9 +883,12 @@ components:
     GraphDatabaseSwitchResult:
       type: object
       properties:
+        restartRequired:
+          type: boolean
+          description: Whether a restart is needed for the switch to take effect
         message:
           type: string
-          description: Human-readable status message describing the live switch result
+          description: Human-readable status message
 
     StoredValidationResult:
       type: object
@@ -1410,6 +1419,86 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /admin/trust-frameworks/bundles/{bundleId}:
+    patch:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Merge-patch external client identifiers of a trust-framework bundle
+      description: >-
+        Merge-patch semantics (RFC 7396): only fields present in the body are modified.
+        Overrides the per-bundle compliance endpoint URL, API version, timeout,
+        client implementation key, and trust-anchor list URL. The bundle YAML remains
+        the baseline; absent override fields fall back to the YAML value. The change
+        takes effect on the next compliance call against the bundle — no restart is
+        required. At least one field must be present (minProperties: 1).
+      operationId: patchTrustFrameworkBundleConfig
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: bundleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: true
+              description: >-
+                Free-form merge-patch object. Recognised keys are clientType,
+                serviceUrl, compliancePath, apiVersion, timeoutSeconds, trustAnchorUrl.
+                Setting a key's value to a non-null primitive overrides the bundle
+                YAML for that field. Setting a key's value to JSON null clears the
+                override for that field (the YAML value is used again). Omitting a
+                key leaves any existing override or YAML value unchanged. At least
+                one key must be present.
+      responses:
+        '200':
+          description: Bundle configuration updated
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - TrustFrameworkAdmin
+      summary: Clear all external-identifier overrides for a trust-framework bundle
+      description: >-
+        Removes any persisted overrides for the given bundle, restoring the bundle YAML
+        as the sole source of compliance configuration. Idempotent — a bundle without
+        an override row still returns 200. Use when an operator wants to revert all
+        runtime adjustments at once; for partial reverts, PATCH with the desired
+        fields instead.
+      operationId: deleteTrustFrameworkBundleConfig
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: bundleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bundle overrides cleared (or already absent)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /admin/trust-frameworks/{bundleId}/roles/{roleName}:
     patch:
       tags:
@@ -1568,17 +1657,7 @@ paths:
     post:
       tags:
         - GraphDatabaseAdmin
-      summary: Switch the graph database backend
-      description: |
-        Performs a live in-process swap to the target backend and persists the
-        choice to `admin_config[graphstore.preferred.backend]` so the same backend
-        is reactivated on the next cold boot.
-
-        The target backend is pre-flighted before either the swap or the persist:
-        if the configured URI for that backend is unreachable, the request is
-        rejected with `400 Bad Request` and a message describing what to fix. The
-        active adapter and the persisted preference are both left untouched on
-        rejection.
+      summary: Switch the graph database backend (requires restart)
       operationId: switchGraphDatabase
       security:
         - jwt: []
@@ -1602,15 +1681,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GraphDatabaseSwitchResult'
         '400':
-          description: |
-            Invalid backend value, or target backend is unreachable. The response
-            body's `message` field carries the specific reason (probe failure
-            message for unreachable targets, list of valid values for invalid
-            input).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

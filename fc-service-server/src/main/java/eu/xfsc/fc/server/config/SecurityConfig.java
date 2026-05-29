@@ -134,6 +134,7 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.GET, "/admin/trust-frameworks").hasRole(ADMIN_ALL)
           .requestMatchers(HttpMethod.PATCH, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
           .requestMatchers(HttpMethod.PUT, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
+          .requestMatchers(HttpMethod.DELETE, "/admin/trust-frameworks/**").hasRole(ADMIN_ALL)
 
           // Schema Validation Admin APIs
           // Both GET wildcards are load-bearing: any future GET /admin/schema-validation/<x>

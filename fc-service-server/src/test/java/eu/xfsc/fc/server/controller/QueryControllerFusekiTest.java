@@ -45,7 +45,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
-@TestPropertySource(properties = {"graphstore.impl=fuseki"})
+// The embedded Fuseki dataset is a singleton in any Spring context the test framework caches
+// across `graphstore.impl=fuseki` tests. The "test.fuseki.isolate" marker below makes this class's
+// context cache key unique, so the dataset is dedicated to this test and only contains the two
+// claims seeded in @BeforeAll — no leakage from neighbouring fuseki tests.
+@TestPropertySource(properties = {"graphstore.impl=fuseki", "test.fuseki.isolate=QueryControllerFusekiTest"})
 @WithMockUser(roles = {QUERY_EXECUTE})
 public class QueryControllerFusekiTest {
 

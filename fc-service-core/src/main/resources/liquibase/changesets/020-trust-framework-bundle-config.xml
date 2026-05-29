@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="Eric Nowak" id="2026-05-27-trust-framework-bundle-config">
+        <comment>
+            Per-bundle runtime overrides for external client identifiers. The bundle YAML
+            remains the deployment-time baseline; rows in this table override individual
+            fields at runtime. Absence of a row, or a NULL field on an existing row, means
+            "fall back to YAML". Primary key is the registry bundle profile ID (e.g.
+            gaia-x-2511).
+        </comment>
+
+        <createTable tableName="trust_framework_bundle_config">
+            <column name="bundle_id" type="varchar(255)">
+                <constraints primaryKey="true" primaryKeyName="pk_tf_bundle_config" nullable="false"/>
+            </column>
+            <column name="client_type" type="varchar(255)"/>
+            <column name="service_url" type="varchar(1024)"/>
+            <column name="compliance_path" type="varchar(1024)"/>
+            <column name="api_version" type="varchar(64)"/>
+            <column name="timeout_seconds" type="integer"/>
+            <column name="trust_anchor_url" type="varchar(1024)"/>
+            <column name="created_at" type="timestamp with time zone"/>
+            <column name="updated_at" type="timestamp with time zone"/>
+        </createTable>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -8,9 +8,6 @@ import java.time.Instant;
 public record TrustFrameworkConfig(
     String id,
     String name,
-    String serviceUrl,
-    String apiVersion,
-    int timeoutSeconds,
     boolean enabled,
     Instant createdAt,
     Instant updatedAt) {}

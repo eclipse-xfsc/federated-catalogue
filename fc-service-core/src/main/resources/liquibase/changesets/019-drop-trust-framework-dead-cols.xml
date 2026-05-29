@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="Eric Nowak" id="2026-05-26-drop-trust-framework-dead-cols">
+        <comment>
+            Drops the service_url, api_version, and timeout_seconds columns from trust_frameworks.
+            These columns were never read at runtime — the compliance client reads endpoint
+            configuration from per-bundle YAML via TrustFrameworkRegistry, not from the DB row.
+        </comment>
+
+        <dropColumn tableName="trust_frameworks" columnName="service_url"/>
+        <dropColumn tableName="trust_frameworks" columnName="api_version"/>
+        <dropColumn tableName="trust_frameworks" columnName="timeout_seconds"/>
+
+    </changeSet>
+
+</databaseChangeLog>

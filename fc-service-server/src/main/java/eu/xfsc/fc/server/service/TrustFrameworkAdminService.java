@@ -1,14 +1,17 @@
 package eu.xfsc.fc.server.service;
 
-import java.time.Duration;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEffectiveConfig;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
@@ -17,29 +20,28 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService.Field;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService.Overrides;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
-import eu.xfsc.fc.server.config.AdminDashboardConfig;
 import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * HTTP delegate for the trust framework admin endpoints. Delegates persistence operations
- * to {@link TrustFrameworkService}; only HTTP-shape concerns (status codes, DTO mapping,
- * connectivity probing) live here.
+ * to {@link TrustFrameworkService}; only HTTP-shape concerns (status codes, DTO mapping)
+ * live here.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegate {
 
-  private static final Duration CONNECTIVITY_TIMEOUT = Duration.ofSeconds(5);
-  private static final int DEFAULT_TIMEOUT_SECONDS = 30;
-
   private final TrustFrameworkService trustFrameworkService;
   private final TrustFrameworkRegistry trustFrameworkRegistry;
-  private final AdminDashboardConfig adminDashboardConfig;
+  private final TrustFrameworkBundleConfigService bundleConfigService;
 
   @Value("${federated-catalogue.enabled-trust-frameworks:}")
   private List<String> enabledTrustFrameworkFamilies;
@@ -76,8 +78,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
 
   /**
    * Applies a merge-patch to the identified trust framework family. Supports toggling the
-   * enabled state and updating configuration fields independently or in combination.
-   * Returns 404 if the family identifier is not registered.
+   * enabled state. Returns 404 if the family identifier is not registered.
    *
    * @param id    trust framework family identifier
    * @param patch fields to update; only non-null fields are applied
@@ -85,23 +86,92 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
    */
   @Override
   public ResponseEntity<Void> patchTrustFramework(String id, TrustFrameworkPatch patch) {
-    boolean touchesConfig = patch.getServiceUrl() != null
-        || patch.getApiVersion() != null
-        || patch.getTimeoutSeconds() != null;
-    if (patch.getEnabled() == null && !touchesConfig) {
+    if (patch.getEnabled() == null) {
       throw new ClientException("Patch body must contain at least one field");
     }
-    if (patch.getEnabled() != null) {
-      trustFrameworkService.setEnabled(id, patch.getEnabled());
+    trustFrameworkService.setEnabled(id, patch.getEnabled());
+    return ResponseEntity.ok().build();
+  }
+
+  /**
+   * Applies a merge-patch (RFC 7396) to the external client identifiers of a single
+   * bundle.
+   * <ul>
+   *   <li>A property with a non-null value overrides the YAML for that field.</li>
+   *   <li>A property explicitly set to JSON null clears the override and lets the YAML
+   *       value flow through again.</li>
+   *   <li>An omitted property leaves the existing state unchanged.</li>
+   * </ul>
+   * The change takes effect on the next compliance call — no restart required.
+   *
+   * @param bundleId registry bundle profile ID
+   * @param body     decoded merge-patch object (set of property → value)
+   * @return 200 on success, 400 if the body is empty or contains unknown / mistyped
+   * properties, 404 if the bundle is not registered
+   */
+  @Override
+  public ResponseEntity<Void> patchTrustFrameworkBundleConfig(
+      String bundleId, Map<String, Object> patch) {
+    if (patch == null || patch.isEmpty()) {
+      throw new ClientException("Patch body must contain at least one field");
     }
-    if (touchesConfig) {
-      int timeoutSeconds = patch.getTimeoutSeconds() != null
-          ? patch.getTimeoutSeconds() : DEFAULT_TIMEOUT_SECONDS;
-      if (trustFrameworkService.updateConfig(id, patch.getServiceUrl(),
-          patch.getApiVersion(), timeoutSeconds).isEmpty()) {
-        throw new NotFoundException("Trust framework not found: " + id);
+
+    Overrides overrides = Overrides.empty();
+    Set<Field> fieldsToClear = EnumSet.noneOf(Field.class);
+    for (Map.Entry<String, Object> entry : patch.entrySet()) {
+      Field field = parseField(entry.getKey());
+      Object value = entry.getValue();
+      if (value == null) {
+        fieldsToClear.add(field);
+      } else {
+        overrides.put(field, coerce(field, value));
       }
     }
+
+    bundleConfigService.applyPatch(bundleId, overrides, fieldsToClear);
+    return ResponseEntity.ok().build();
+  }
+
+  private static Field parseField(String jsonName) {
+    try {
+      return Field.fromJsonName(jsonName);
+    } catch (IllegalArgumentException e) {
+      throw new ClientException("Unknown bundle config property: " + jsonName);
+    }
+  }
+
+  private static Object coerce(Field field, Object value) {
+    return switch (field) {
+      case TIMEOUT_SECONDS -> {
+        if (value instanceof Integer i) {
+          yield i;
+        }
+        if (value instanceof Number n) {
+          yield n.intValue();
+        }
+        throw new ClientException("Property '" + field.jsonName()
+            + "' must be a JSON integer");
+      }
+      case CLIENT_TYPE, SERVICE_URL, COMPLIANCE_PATH, API_VERSION, TRUST_ANCHOR_URL -> {
+        if (value instanceof String s) {
+          yield s;
+        }
+        throw new ClientException("Property '" + field.jsonName()
+            + "' must be a JSON string");
+      }
+    };
+  }
+
+  /**
+   * Clears every persisted override for the given bundle, reverting the runtime
+   * configuration to the YAML baseline. Idempotent.
+   *
+   * @param bundleId registry bundle profile ID
+   * @return 200 on success, 404 if the bundle is not registered
+   */
+  @Override
+  public ResponseEntity<Void> deleteTrustFrameworkBundleConfig(String bundleId) {
+    bundleConfigService.clear(bundleId);
     return ResponseEntity.ok().build();
   }
 
@@ -119,11 +189,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
     TrustFrameworkEntry entry = new TrustFrameworkEntry();
     entry.setId(config.id());
     entry.setName(config.name());
-    entry.setServiceUrl(config.serviceUrl());
-    entry.setApiVersion(config.apiVersion());
-    entry.setTimeoutSeconds(config.timeoutSeconds());
     entry.setEnabled(config.enabled());
-    entry.setConnected(checkConnectivity(config));
     entry.setBundles(buildBundleEntries(config.id()));
     return entry;
   }
@@ -142,29 +208,36 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
       if (!familyId.equals(bundle.config().family())) {
         continue;
       }
+      String bundleId = bundle.config().id();
       TrustFrameworkBundleEntry bundleEntry = new TrustFrameworkBundleEntry();
-      bundleEntry.setId(bundle.config().id());
-      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundle.config().id()));
+      bundleEntry.setId(bundleId);
+      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundleId));
+      bundleConfigService.getEffectiveConfig(bundleId).ifPresent(eff -> {
+        bundleEntry.setEffectiveConfig(toEffectiveConfigDto(eff));
+        bundleEntry.setOverriddenFields(eff.overriddenFields().stream()
+            .map(Field::jsonName)
+            .sorted()
+            .toList());
+      });
       result.add(bundleEntry);
     }
     return result;
   }
 
-  private boolean checkConnectivity(TrustFrameworkConfig config) {
-    if (config.serviceUrl() == null || config.serviceUrl().isBlank()) {
-      return false;
+  private static TrustFrameworkBundleEffectiveConfig toEffectiveConfigDto(
+      TrustFrameworkBundleConfigService.EffectiveBundleConfig effective) {
+    TrustFrameworkBundleEffectiveConfig dto = new TrustFrameworkBundleEffectiveConfig();
+    Map<Field, Object> values = effective.values();
+    dto.setClientType((String) values.get(Field.CLIENT_TYPE));
+    dto.setServiceUrl((String) values.get(Field.SERVICE_URL));
+    dto.setCompliancePath((String) values.get(Field.COMPLIANCE_PATH));
+    dto.setApiVersion((String) values.get(Field.API_VERSION));
+    Object timeout = values.get(Field.TIMEOUT_SECONDS);
+    if (timeout instanceof Integer i) {
+      dto.setTimeoutSeconds(i);
     }
-    try {
-      adminDashboardConfig.getWebClient().get().uri(config.serviceUrl())
-          .retrieve().toBodilessEntity()
-          .timeout(Duration.ofSeconds(config.timeoutSeconds() > 0
-              ? Math.min(config.timeoutSeconds(), CONNECTIVITY_TIMEOUT.getSeconds())
-              : CONNECTIVITY_TIMEOUT.getSeconds()))
-          .block();
-      return true;
-    } catch (Exception e) {
-      log.warn("Trust framework connectivity check failed for {}", config.id(), e);
-      return false;
-    }
+    dto.setTrustAnchorUrl((String) values.get(Field.TRUST_ANCHOR_URL));
+    return dto;
   }
+
 }

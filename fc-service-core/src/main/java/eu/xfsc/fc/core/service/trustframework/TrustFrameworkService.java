@@ -83,22 +83,6 @@ public class TrustFrameworkService {
   }
 
   /**
-   * Replaces the service URL, API version, and timeout for the trust framework identified
-   * by the given family ID. Returns the updated config, or empty when no record exists.
-   */
-  @Transactional
-  public Optional<TrustFrameworkConfig> updateConfig(String family, String serviceUrl, String apiVersion,
-                                                     int timeoutSeconds) {
-    return trustFrameworkRepository.findById(family).map(entity -> {
-      entity.setServiceUrl(serviceUrl);
-      entity.setApiVersion(apiVersion);
-      entity.setTimeoutSeconds(timeoutSeconds);
-      trustFrameworkRepository.save(entity);
-      return TrustFrameworkMapper.toConfig(entity);
-    });
-  }
-
-  /**
    * Returns true if the named role in the given bundle profile is enabled.
    * Absence of a persisted state row means the role is enabled by default.
    *

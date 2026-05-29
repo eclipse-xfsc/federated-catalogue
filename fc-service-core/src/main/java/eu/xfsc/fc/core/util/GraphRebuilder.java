@@ -166,23 +166,23 @@ public class GraphRebuilder {
     }
   }
 
-    /**
-     * Processes one asset hash. Returns true when claims were extracted and pushed to
-     * the graph store, false when the asset was skipped (non-RDF — null contentAccessor).
-     * The caller uses the return value to decide whether to tick the progress counter.
-     */
-    private boolean addAssetToGraph(String hash) throws Exception {
+  /**
+   * Processes one asset hash. Returns true when claims were extracted and pushed to
+   * the graph store, false when the asset was skipped (non-RDF — null contentAccessor).
+   * The caller uses the return value to decide whether to tick the progress counter.
+   */
+  private boolean addAssetToGraph(String hash) throws Exception {
     AssetMetadata assetMetaData = assetStore.getByHash(hash);
     if (assetMetaData.getContentAccessor() == null) {
       return false;
     }
-        List<RdfClaim> claims = extractClaims(assetMetaData);
+    List<RdfClaim> claims = extractClaims(assetMetaData);
     claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
     graphStore.addClaims(claims, assetMetaData.getId());
     return true;
   }
 
-    private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) throws Exception {
+  private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) throws Exception {
         String contentType = assetMetaData.getContentType();
         if (VerificationConstants.MEDIA_TYPE_NTRIPLES.equals(contentType)
                 || VerificationConstants.MEDIA_TYPE_TURTLE.equals(contentType)
