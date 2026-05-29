@@ -9,7 +9,7 @@ family: mock
 namespace: "https://example.com/mock/2026#"
 validation_type: shacl
 
-roles:
+base_classes:
   MockParticipant:
     additional_roots: [ ]
     types: [ ]

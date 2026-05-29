@@ -46,10 +46,10 @@ class GaiaXBundleBootTest {
   void registry_allLegacyUris_resolve() throws IOException {
     var registry = new TrustFrameworkRegistry(loadBundles());
 
-    assertThat(registry.resolveRole(GX_PARTICIPANT)).isNotEqualTo(ResolvedRole.UNKNOWN);
-    assertThat(registry.resolveRole(GX_SERVICE_OFFERING)).isNotEqualTo(ResolvedRole.UNKNOWN);
-    assertThat(registry.resolveRole(GX_DIGITAL_SERVICE_OFFERING)).isNotEqualTo(ResolvedRole.UNKNOWN);
-    assertThat(registry.resolveRole(GX_RESOURCE)).isNotEqualTo(ResolvedRole.UNKNOWN);
+    assertThat(registry.resolveBaseClass(GX_PARTICIPANT)).isNotEqualTo(ResolvedBaseClass.UNKNOWN);
+    assertThat(registry.resolveBaseClass(GX_SERVICE_OFFERING)).isNotEqualTo(ResolvedBaseClass.UNKNOWN);
+    assertThat(registry.resolveBaseClass(GX_DIGITAL_SERVICE_OFFERING)).isNotEqualTo(ResolvedBaseClass.UNKNOWN);
+    assertThat(registry.resolveBaseClass(GX_RESOURCE)).isNotEqualTo(ResolvedBaseClass.UNKNOWN);
   }
 
   @Test
@@ -57,22 +57,22 @@ class GaiaXBundleBootTest {
     var registry = new TrustFrameworkRegistry(loadBundles());
 
     // gx:LegalPerson rdfs:subClassOf gx:Participant — was NOT in legacy hardcoded list
-    assertThat(registry.resolveRole(GX_LEGAL_PERSON))
+    assertThat(registry.resolveBaseClass(GX_LEGAL_PERSON))
         .as("gx:LegalPerson must resolve as Participant via OWL subclass walk (was missing in legacy)")
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "Participant"));
+        .isEqualTo(new ResolvedBaseClass("gaia-x-2511", "Participant"));
   }
 
   @Test
   void registry_legacyUris_resolveToCorrectRoles() throws IOException {
     var registry = new TrustFrameworkRegistry(loadBundles());
 
-    assertThat(registry.resolveRole(GX_PARTICIPANT))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "Participant"));
-    assertThat(registry.resolveRole(GX_SERVICE_OFFERING))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "ServiceOffering"));
-    assertThat(registry.resolveRole(GX_DIGITAL_SERVICE_OFFERING))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "ServiceOffering"));
-    assertThat(registry.resolveRole(GX_RESOURCE))
-        .isEqualTo(new ResolvedRole("gaia-x-2511", "Resource"));
+    assertThat(registry.resolveBaseClass(GX_PARTICIPANT))
+        .isEqualTo(new ResolvedBaseClass("gaia-x-2511", "Participant"));
+    assertThat(registry.resolveBaseClass(GX_SERVICE_OFFERING))
+        .isEqualTo(new ResolvedBaseClass("gaia-x-2511", "ServiceOffering"));
+    assertThat(registry.resolveBaseClass(GX_DIGITAL_SERVICE_OFFERING))
+        .isEqualTo(new ResolvedBaseClass("gaia-x-2511", "ServiceOffering"));
+    assertThat(registry.resolveBaseClass(GX_RESOURCE))
+        .isEqualTo(new ResolvedBaseClass("gaia-x-2511", "Resource"));
   }
 }

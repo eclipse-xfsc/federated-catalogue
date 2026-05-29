@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet author="nowak" id="2026-05-28-rename-trust-framework-role-to-base-class">
+        <comment>
+            Rename trust-framework "role" terminology to "base class" to disambiguate from
+            Spring Security / Keycloak authentication roles. Forward-only — no production
+            deployments exist. Renames the per-state table and its role_name column to the
+            new BaseClass vocabulary.
+        </comment>
+
+        <renameTable oldTableName="trust_framework_role_states"
+                     newTableName="trust_framework_base_class_states"/>
+        <renameColumn tableName="trust_framework_base_class_states"
+                      oldColumnName="role_name"
+                      newColumnName="base_class_name"
+                      columnDataType="varchar(255)"/>
+    </changeSet>
+
+</databaseChangeLog>

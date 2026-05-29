@@ -13,7 +13,7 @@ class FoundationRecordsTest {
       family: gaia-x
       namespace: https://w3id.org/gaia-x/
       validation_type: shacl
-      roles:
+      base_classes:
         Participant:
           additional_roots:
             - https://w3id.org/gaia-x/LegalPerson
@@ -36,19 +36,19 @@ class FoundationRecordsTest {
 
   @Test
   void resolvedRole_withNonEmptyFields_isResolved() {
-    var role = new ResolvedRole("gaia-x-2511", "Participant");
+    var role = new ResolvedBaseClass("gaia-x-2511", "Participant");
 
     assertThat(role.isResolved()).isTrue();
   }
 
   @Test
   void resolvedRole_unknown_isNotResolved() {
-    assertThat(ResolvedRole.UNKNOWN.isResolved()).isFalse();
+    assertThat(ResolvedBaseClass.UNKNOWN.isResolved()).isFalse();
   }
 
   @Test
   void resolvedRole_unknown_equalsNewEmptyInstance() {
-    assertThat(ResolvedRole.UNKNOWN).isEqualTo(new ResolvedRole("", ""));
+    assertThat(ResolvedBaseClass.UNKNOWN).isEqualTo(new ResolvedBaseClass("", ""));
   }
 
   @Test
@@ -61,10 +61,10 @@ class FoundationRecordsTest {
     assertThat(config.family()).isEqualTo("gaia-x");
     assertThat(config.namespace()).isEqualTo("https://w3id.org/gaia-x/");
     assertThat(config.validationType()).isEqualTo(ValidationType.SHACL);
-    assertThat(config.roles()).containsKeys("Participant", "ServiceOffering");
-    assertThat(config.roles().get("Participant").additionalRoots())
+    assertThat(config.baseClasses()).containsKeys("Participant", "ServiceOffering");
+    assertThat(config.baseClasses().get("Participant").additionalRoots())
         .containsExactly("https://w3id.org/gaia-x/LegalPerson");
-    assertThat(config.roles().get("ServiceOffering").additionalRoots())
+    assertThat(config.baseClasses().get("ServiceOffering").additionalRoots())
         .containsExactly("https://w3id.org/gaia-x/DigitalServiceOffering");
     assertThat(config.properties()).containsEntry("version", "2511");
   }
@@ -84,7 +84,7 @@ class FoundationRecordsTest {
 
     var config = mapper.readValue(MINIMAL_YAML, FrameworkBundleConfig.class);
 
-    assertThat(config.roles()).isNotNull().isEmpty();
+    assertThat(config.baseClasses()).isNotNull().isEmpty();
   }
 
   @Test
@@ -96,14 +96,14 @@ class FoundationRecordsTest {
         family: x
         namespace: https://x/
         validation_type: shacl
-        roles:
-          TestRole: {}
+        base_classes:
+          TestBaseClass: {}
         """;
 
     var config = mapper.readValue(yaml, FrameworkBundleConfig.class);
-    var roleConfig = config.roles().get("TestRole");
+    var baseClassConfig = config.baseClasses().get("TestBaseClass");
 
-    assertThat(roleConfig.additionalRoots()).isNotNull().isEmpty();
-    assertThat(roleConfig.types()).isNotNull().isEmpty();
+    assertThat(baseClassConfig.additionalRoots()).isNotNull().isEmpty();
+    assertThat(baseClassConfig.types()).isNotNull().isEmpty();
   }
 }

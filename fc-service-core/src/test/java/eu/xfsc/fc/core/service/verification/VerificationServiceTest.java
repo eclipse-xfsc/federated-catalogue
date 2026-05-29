@@ -186,7 +186,7 @@ public class VerificationServiceTest {
 
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
     assertNotNull(vr);
-    assertEquals("Participant", vr.getRole());
+    assertEquals("Participant", vr.getBaseClass());
     assertEquals("did:web:example.com", vr.getIssuer());
     assertEquals(vr.getName(), vr.getIssuer());
   }
@@ -228,7 +228,7 @@ public class VerificationServiceTest {
   @Test
   void validVPUnknownType() {
     // input.vp.jsonld's credentialSubject type fails JSON-LD parsing (PROTECTED_TERM_REDEFINITION)
-    // → resolveSubjectRole returns UNKNOWN → ClientException.
+    // → resolveSubjectBaseClass returns UNKNOWN → ClientException.
     String path = "VerificationService/jsonld/input.vp.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     assertThrowsExactly(ClientException.class,
@@ -242,7 +242,7 @@ public class VerificationServiceTest {
     // verifyVCSigs=false: JWS in fixture was computed over original data; cannot re-sign (external GXDCH key)
     CredentialVerificationResult vr = verificationService.verifyCredential(getAccessor(path), true, false, false, false);
     assertNotNull(vr);
-    assertEquals("Participant", vr.getRole());
+    assertEquals("Participant", vr.getBaseClass());
     assertEquals("http://example.org/test-issuer", vr.getId());
     assertEquals("https://www.handelsregister.de/", vr.getIssuer());
     assertEquals(Instant.parse("2010-01-01T19:37:24Z"), vr.getIssuedDateTime());
@@ -257,7 +257,7 @@ public class VerificationServiceTest {
     ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering2.jsonld");
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
     assertNotNull(vr);
-    assertEquals("ServiceOffering", vr.getRole());
+    assertEquals("ServiceOffering", vr.getBaseClass());
     assertEquals("https://www.example.org/mySoftwareOffering", vr.getId());
     assertEquals("http://gaiax.de", vr.getIssuer());
     assertNotNull(vr.getGraphClaims());
@@ -274,7 +274,7 @@ public class VerificationServiceTest {
     ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
     assertNotNull(vr);
-    assertEquals("Participant", vr.getRole());
+    assertEquals("Participant", vr.getBaseClass());
     assertEquals("http://gaiax.de", vr.getId());
     assertEquals("http://gaiax.de", vr.getIssuer());
     assertEquals("http://gaiax.de", vr.getName());
@@ -301,7 +301,7 @@ public class VerificationServiceTest {
 
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
     assertNotNull(vr);
-    assertEquals("Resource", vr.getRole());
+    assertEquals("Resource", vr.getBaseClass());
     assertEquals("did:web:example.com", vr.getIssuer());
     assertNotNull(vr.getGraphClaims());
     assertTrue(vr.getValidators().isEmpty());
@@ -326,7 +326,7 @@ public class VerificationServiceTest {
 
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
     assertNotNull(vr);
-    assertEquals("Participant", vr.getRole());
+    assertEquals("Participant", vr.getBaseClass());
 
     schemaStore.deleteSchema("https://example.org/ext");
 
@@ -355,7 +355,7 @@ public class VerificationServiceTest {
       CredentialVerificationResult vrBefore = verificationService.verifyCredential(
           legalParticipantContent, true, false, false, false);
       assertNotNull(vrBefore);
-      assertEquals("Participant", vrBefore.getRole());
+      assertEquals("Participant", vrBefore.getBaseClass());
 
       // The schema store is empty (no gaia-x 2511 schema uploaded) — this proves the registry
       // fast path is independent of the schema store.
@@ -365,13 +365,13 @@ public class VerificationServiceTest {
       CredentialVerificationResult vrAfterDelete = verificationService.verifyCredential(
           legalParticipantContent, true, false, false, false);
       assertNotNull(vrAfterDelete);
-      assertEquals("Participant", vrAfterDelete.getRole(),
+      assertEquals("Participant", vrAfterDelete.getBaseClass(),
           "Bundle type must still resolve after schema store deletion");
 
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
 
       // ext:CustomParticipant is not in any active bundle (gaia-x disabled, no ontology loaded)
-      // → resolveSubjectRole returns UNKNOWN → ClientException.
+      // → resolveSubjectBaseClass returns UNKNOWN → ClientException.
       ContentAccessor customExtContent = getAccessor("VerificationService/syntax/customExtParticipant.jsonld");
       assertThrowsExactly(ClientException.class,
           () -> verificationService.verifyCredential(customExtContent, true, false, false, false));
@@ -419,8 +419,8 @@ public class VerificationServiceTest {
     String path = "VerificationService/syntax/complexCredential2Types.jsonld";
     Exception ex = assertThrowsExactly(VerificationException.class, () -> verificationService.verifyCredential(getAccessor(path), true, true, false, false));
     assertEquals("Semantic error: credential has several types: ["
-        + "ResolvedRole[frameworkProfileId=gaia-x-2511, role=Participant], "
-        + "ResolvedRole[frameworkProfileId=gaia-x-2511, role=ServiceOffering]]", ex.getMessage());
+        + "ResolvedBaseClass[frameworkProfileId=gaia-x-2511, baseClass=Participant], "
+        + "ResolvedBaseClass[frameworkProfileId=gaia-x-2511, baseClass=ServiceOffering]]", ex.getMessage());
   }
 
   @Test
@@ -892,7 +892,7 @@ public class VerificationServiceTest {
     CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
 
     assertNotNull(vr);
-    assertEquals("Participant", vr.getRole(), "VC 2.0 with 2511#LegalPerson type must be recognized as Participant");
+    assertEquals("Participant", vr.getBaseClass(), "VC 2.0 with 2511#LegalPerson type must be recognized as Participant");
     assertNotNull(vr.getIssuedDateTime(), "issuedDateTime must be non-null for VC 2.0 validFrom");
     assertEquals(Instant.parse("2026-01-30T00:00:00Z"), vr.getIssuedDateTime());
   }

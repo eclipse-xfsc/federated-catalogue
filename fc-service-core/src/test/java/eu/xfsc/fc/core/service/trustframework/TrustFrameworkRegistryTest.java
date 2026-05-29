@@ -59,7 +59,7 @@ class TrustFrameworkRegistryTest {
       """;
 
   private static TrustFrameworkBundle shaclBundle(String profileId, String namespace,
-                                                  Map<String, RoleConfig> roles, String ontologyTtl) {
+                                                  Map<String, BaseClassConfig> roles, String ontologyTtl) {
     var config = new FrameworkBundleConfig(profileId, "test-family", namespace, ValidationType.SHACL, roles, Map.of());
     var ontology = new eu.xfsc.fc.core.pojo.ContentAccessorDirect(ontologyTtl);
     return new TrustFrameworkBundle(config, ontology, null);
@@ -72,73 +72,73 @@ class TrustFrameworkRegistryTest {
   }
 
   @Test
-  void resolveRole_unknownType_returnsUnknown() {
+  void resolveBaseClass_unknownType_returnsUnknown() {
     var registry = new TrustFrameworkRegistry(List.of());
 
-    assertThat(registry.resolveRole("https://example.org/Unknown")).isEqualTo(ResolvedRole.UNKNOWN);
+    assertThat(registry.resolveBaseClass("https://example.org/Unknown")).isEqualTo(ResolvedBaseClass.UNKNOWN);
   }
 
   @Test
-  void resolveRole_rootUri_returnsResolvedRole() {
-    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+  void resolveBaseClass_rootUri_returnsResolvedBaseClass() {
+    var roles = Map.of("RoleA", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://example.org/test/RoleA"))
-        .isEqualTo(new ResolvedRole("test-framework", "RoleA"));
+    assertThat(registry.resolveBaseClass("https://example.org/test/RoleA"))
+        .isEqualTo(new ResolvedBaseClass("test-framework", "RoleA"));
   }
 
   @Test
-  void resolveRole_subclassOfRoot_returnsResolvedRole() {
-    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+  void resolveBaseClass_subclassOfRoot_returnsResolvedBaseClass() {
+    var roles = Map.of("RoleA", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, SUBCLASS_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
     // ex:RoleASub rdfs:subClassOf ex:RoleA — must resolve to RoleA
-    assertThat(registry.resolveRole("https://example.org/test/RoleASub"))
-        .isEqualTo(new ResolvedRole("test-framework", "RoleA"));
+    assertThat(registry.resolveBaseClass("https://example.org/test/RoleASub"))
+        .isEqualTo(new ResolvedBaseClass("test-framework", "RoleA"));
   }
 
   // additionalRoots: RoleBAlt is NOT a subclass of RoleB in OWL
-  // but is covered via additionalRoots in RoleConfig (framework workaround)
+  // but is covered via additionalRoots in BaseClassConfig (framework workaround)
   @Test
-  void resolveRole_additionalRoot_returnsResolvedRole() {
-    var roles = Map.of("RoleB", new RoleConfig(
+  void resolveBaseClass_additionalRoot_returnsResolvedBaseClass() {
+    var roles = Map.of("RoleB", new BaseClassConfig(
         List.of("https://example.org/test/RoleBAlt"), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, SIBLING_ROLE_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://example.org/test/RoleBAlt"))
-        .isEqualTo(new ResolvedRole("test-framework", "RoleB"));
+    assertThat(registry.resolveBaseClass("https://example.org/test/RoleBAlt"))
+        .isEqualTo(new ResolvedBaseClass("test-framework", "RoleB"));
   }
 
   @Test
-  void resolveRole_2hopSubclassOfRoot_returnsResolvedRole() {
+  void resolveBaseClass_2hopSubclassOfRoot_returnsResolvedBaseClass() {
     // ex:RoleASubSub rdfs:subClassOf ex:RoleASub rdfs:subClassOf ex:RoleA
     // OWL_MEM_MICRO_RULE_INF infers the transitive closure — both hops must be covered
-    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var roles = Map.of("RoleA", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, TWO_HOP_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://example.org/test/RoleASubSub"))
-        .isEqualTo(new ResolvedRole("test-framework", "RoleA"));
+    assertThat(registry.resolveBaseClass("https://example.org/test/RoleASubSub"))
+        .isEqualTo(new ResolvedBaseClass("test-framework", "RoleA"));
   }
 
   @Test
-  void resolveRole_firstBundleWinsOnRootUriConflict() {
+  void resolveBaseClass_firstBundleWinsOnRootUriConflict() {
     // Same root URI claimed by two bundles — first registration must win (putIfAbsent semantics)
-    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var roles = Map.of("RoleA", new BaseClassConfig(List.of(), List.of()));
     var bundle1 = shaclBundle("framework-a", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
     var bundle2 = shaclBundle("framework-b", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundle1, bundle2));
 
-    assertThat(registry.resolveRole("https://example.org/test/RoleA"))
-        .isEqualTo(new ResolvedRole("framework-a", "RoleA"));
+    assertThat(registry.resolveBaseClass("https://example.org/test/RoleA"))
+        .isEqualTo(new ResolvedBaseClass("framework-a", "RoleA"));
   }
 
   // bundle index methods
@@ -155,11 +155,11 @@ class TrustFrameworkRegistryTest {
     // Three bundles with profile IDs intentionally not in lexicographic order, so a HashMap-backed
     // index would shuffle them. Iteration must follow input list order.
     var bundleZ = shaclBundle("z-framework", "https://example.org/z/",
-        Map.of("RoleA", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+        Map.of("RoleA", new BaseClassConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
     var bundleA = shaclBundle("a-framework", "https://example.org/a/",
-        Map.of("RoleA", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+        Map.of("RoleA", new BaseClassConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
     var bundleM = shaclBundle("m-framework", "https://example.org/m/",
-        Map.of("RoleA", new RoleConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
+        Map.of("RoleA", new BaseClassConfig(List.of(), List.of())), MINIMAL_ONTOLOGY);
 
     var registry = new TrustFrameworkRegistry(List.of(bundleZ, bundleA, bundleM));
 
@@ -206,32 +206,32 @@ class TrustFrameworkRegistryTest {
   }
 
   @Test
-  void getEffectiveRoles_knownBundle_returnsRoleNames() {
+  void getEffectiveBaseClasses_knownBundle_returnsRoleNames() {
     var roles = Map.of(
-        "RoleA", new RoleConfig(List.of(), List.of()),
-        "RoleB", new RoleConfig(List.of(), List.of()));
+        "RoleA", new BaseClassConfig(List.of(), List.of()),
+        "RoleB", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.getEffectiveRoles("test-framework"))
+    assertThat(registry.getEffectiveBaseClasses("test-framework"))
         .containsExactlyInAnyOrder("RoleA", "RoleB");
   }
 
   @Test
-  void getEffectiveRoles_unknownBundle_returnsEmpty() {
+  void getEffectiveBaseClasses_unknownBundle_returnsEmpty() {
     var registry = new TrustFrameworkRegistry(List.of());
 
-    assertThat(registry.getEffectiveRoles("no-such-framework")).isEmpty();
+    assertThat(registry.getEffectiveBaseClasses("no-such-framework")).isEmpty();
   }
 
   @Test
-  void getEffectiveRoles_preservesDeclarationOrder() {
+  void getEffectiveBaseClasses_preservesDeclarationOrder() {
     // LinkedHashMap fixes the input declaration order; Map.of() would scramble it.
     // Generic role names — the registry must not assume any framework-specific vocabulary.
-    var roles = new LinkedHashMap<String, RoleConfig>();
-    roles.put("RoleC", new RoleConfig(List.of(), List.of()));
-    roles.put("RoleA", new RoleConfig(List.of(), List.of()));
-    roles.put("RoleB", new RoleConfig(List.of(), List.of()));
+    var roles = new LinkedHashMap<String, BaseClassConfig>();
+    roles.put("RoleC", new BaseClassConfig(List.of(), List.of()));
+    roles.put("RoleA", new BaseClassConfig(List.of(), List.of()));
+    roles.put("RoleB", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles,
         """
             @prefix ex: <https://example.org/test/> .
@@ -242,27 +242,27 @@ class TrustFrameworkRegistryTest {
             """);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.getEffectiveRoles("test-framework"))
+    assertThat(registry.getEffectiveBaseClasses("test-framework"))
         .containsExactly("RoleC", "RoleA", "RoleB");
   }
 
   @Test
-  void getEffectiveRoles_returnsImmutableSnapshot() {
-    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+  void getEffectiveBaseClasses_returnsImmutableSnapshot() {
+    var roles = Map.of("RoleA", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, MINIMAL_ONTOLOGY);
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThatThrownBy(() -> registry.getEffectiveRoles("test-framework").add("fake"))
+    assertThatThrownBy(() -> registry.getEffectiveBaseClasses("test-framework").add("fake"))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
   // json-schema bundle: accepted but excluded from type index and active resolution
   @Test
-  void resolveRole_jsonSchemaBundle_returnsUnknown() {
+  void resolveBaseClass_jsonSchemaBundle_returnsUnknown() {
     var bundle = jsonSchemaBundle("untp-v1");
     var registry = new TrustFrameworkRegistry(List.of(bundle));
 
-    assertThat(registry.resolveRole("https://example.org/SomeType")).isEqualTo(ResolvedRole.UNKNOWN);
+    assertThat(registry.resolveBaseClass("https://example.org/SomeType")).isEqualTo(ResolvedBaseClass.UNKNOWN);
   }
 
   @Test
@@ -300,8 +300,8 @@ class TrustFrameworkRegistryTest {
   @Test
   void constructor_nullAdditionalRoot_doesNotThrow() {
     // A null entry in additionalRoots (e.g. from malformed YAML) must be skipped, not NPE
-    var rolesWithNull = new HashMap<String, RoleConfig>();
-    rolesWithNull.put("RoleA", new RoleConfig(
+    var rolesWithNull = new HashMap<String, BaseClassConfig>();
+    rolesWithNull.put("RoleA", new BaseClassConfig(
         new ArrayList<>(Arrays.asList(null, "https://example.org/test/RoleA")),
         List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", rolesWithNull, MINIMAL_ONTOLOGY);
@@ -313,7 +313,7 @@ class TrustFrameworkRegistryTest {
   @Test
   void constructor_blankNodeSubclass_doesNotThrow() {
     // An anonymous (blank-node) subclass in the ontology must be skipped, not NPE
-    var roles = Map.of("RoleA", new RoleConfig(List.of(), List.of()));
+    var roles = Map.of("RoleA", new BaseClassConfig(List.of(), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, BLANK_NODE_ONTOLOGY);
 
     assertThatCode(() -> new TrustFrameworkRegistry(List.of(bundle)))
@@ -324,7 +324,7 @@ class TrustFrameworkRegistryTest {
   void constructor_nullNamespaceWithRoles_throwsIllegalArgument() {
     // A SHACL bundle with roles but null namespace cannot construct valid role URIs
     var config = new FrameworkBundleConfig("bad-bundle", "test", null, ValidationType.SHACL,
-        Map.of("Role", new RoleConfig(List.of(), List.of())), Map.of());
+        Map.of("Role", new BaseClassConfig(List.of(), List.of())), Map.of());
     var bundle = new TrustFrameworkBundle(config,
         new eu.xfsc.fc.core.pojo.ContentAccessorDirect(MINIMAL_ONTOLOGY), null);
 
@@ -336,7 +336,7 @@ class TrustFrameworkRegistryTest {
   void constructor_namespaceMissingTrailingSeparator_throwsIllegalArgument() {
     // Namespace without trailing '/' or '#' produces "https://example.orgRole" — invalid
     var config = new FrameworkBundleConfig("bad-bundle", "test", "https://example.org", ValidationType.SHACL,
-        Map.of("Role", new RoleConfig(List.of(), List.of())), Map.of());
+        Map.of("Role", new BaseClassConfig(List.of(), List.of())), Map.of());
     var bundle = new TrustFrameworkBundle(config,
         new eu.xfsc.fc.core.pojo.ContentAccessorDirect(MINIMAL_ONTOLOGY), null);
 
@@ -347,7 +347,7 @@ class TrustFrameworkRegistryTest {
   @Test
   void constructor_uriWithInjectionCharacter_doesNotThrow() {
     // A URI containing '>' in additionalRoots must not break SPARQL query construction
-    var roles = Map.of("RoleB", new RoleConfig(
+    var roles = Map.of("RoleB", new BaseClassConfig(
         List.of("https://example.org/bad>uri"), List.of()));
     var bundle = shaclBundle("test-framework", "https://example.org/test/", roles, SIBLING_ROLE_ONTOLOGY);
 

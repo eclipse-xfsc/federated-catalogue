@@ -1,8 +1,8 @@
 package eu.xfsc.fc.core.service.trustframework;
 
-import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_PARTICIPANT;
-import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_RESOURCE;
-import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_ROLE_SERVICE_OFFERING;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_BASE_CLASS_PARTICIPANT;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_BASE_CLASS_RESOURCE;
+import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_BASE_CLASS_SERVICE_OFFERING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -20,7 +20,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import eu.xfsc.fc.core.config.DatabaseConfig;
 import eu.xfsc.fc.core.config.TrustFrameworkRegistryConfig;
-import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkRoleStateRepository;
+import eu.xfsc.fc.core.dao.trustframework.TrustFrameworkBaseClassStateRepository;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -41,14 +41,14 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(classes = {
-    TrustFrameworkServiceRoleStateTest.TestConfig.class,
+    TrustFrameworkServiceBaseClassStateTest.TestConfig.class,
     DatabaseConfig.class,
     SecurityAuditorAware.class,
     TrustFrameworkRegistryConfig.class,
     TrustFrameworkService.class,
 })
 @AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
-class TrustFrameworkServiceRoleStateTest {
+class TrustFrameworkServiceBaseClassStateTest {
 
   @Configuration
   @EnableAutoConfiguration
@@ -68,186 +68,186 @@ class TrustFrameworkServiceRoleStateTest {
   private TrustFrameworkService service;
 
   @Autowired
-  private TrustFrameworkRoleStateRepository roleStateRepo;
+  private TrustFrameworkBaseClassStateRepository baseClassStateRepo;
 
   /** Family ID as stored in the {@code trust_frameworks} table (the DB row key). */
   private static final String FAMILY_GAIA_X = "gaia-x";
 
   @AfterEach
   void cleanUp() {
-    roleStateRepo.deleteAll();
+    baseClassStateRepo.deleteAll();
     // Restore the family to the Liquibase-seeded default (disabled) so tests are order-independent.
     service.setEnabled(FAMILY_GAIA_X, false);
   }
 
   @Test
-  void isRoleEnabled_noRowPersisted_returnsTrue() {
+  void isBaseClassEnabled_noRowPersisted_returnsTrue() {
     // Family must be enabled, otherwise bundle-off dominance short-circuits to true
     // and the role-state lookup path is never exercised.
     service.setEnabled(FAMILY_GAIA_X, true);
 
     // No explicit state row → absence means enabled by default
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT)).isTrue();
   }
 
   @Test
-  void isRoleEnabled_afterSetFalse_returnsFalse() {
+  void isBaseClassEnabled_afterSetFalse_returnsFalse() {
     // Role-toggle is only effective when the bundle family is enabled.
     service.setEnabled(FAMILY_GAIA_X, true);
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, false);
 
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isFalse();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT)).isFalse();
   }
 
   @Test
-  void isRoleEnabled_afterSetTrue_returnsTrue() {
+  void isBaseClassEnabled_afterSetTrue_returnsTrue() {
     service.setEnabled(FAMILY_GAIA_X, true);
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, true);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, false);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, true);
 
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT)).isTrue();
   }
 
   @Test
-  void setRoleEnabled_oneRole_doesNotAffectOtherRole() {
+  void setBaseClassEnabled_oneRole_doesNotAffectOtherRole() {
     // Family must be enabled, otherwise bundle-off dominance short-circuits to true
     // and the role-state lookup path is never exercised.
     service.setEnabled(FAMILY_GAIA_X, true);
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, false);
 
     // ServiceOffering was not touched — must still read as default true
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_SERVICE_OFFERING)).isTrue();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_SERVICE_OFFERING)).isTrue();
   }
 
   @Test
-  void setRoleEnabled_calledTwice_upserts() {
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, true);
+  void setBaseClassEnabled_calledTwice_upserts() {
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, false);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, true);
 
     // Exactly one row (upsert, not two inserts)
-    assertThat(roleStateRepo.findByFrameworkId(BUNDLE_GAIA_X_2511)).hasSize(1);
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
+    assertThat(baseClassStateRepo.findByFrameworkId(BUNDLE_GAIA_X_2511)).hasSize(1);
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT)).isTrue();
   }
 
   @Test
-  void setRoleEnabled_unknownBundle_throwsNotFoundException() {
-    assertThatThrownBy(() -> service.setRoleEnabled(UNKNOWN_BUNDLE, TFW_ROLE_PARTICIPANT, false))
+  void setBaseClassEnabled_unknownBundle_throwsNotFoundException() {
+    assertThatThrownBy(() -> service.setBaseClassEnabled(UNKNOWN_BUNDLE, TFW_BASE_CLASS_PARTICIPANT, false))
         .isInstanceOf(NotFoundException.class);
   }
 
   @Test
-  void setRoleEnabled_unknownRole_throwsNotFoundException() {
-    assertThatThrownBy(() -> service.setRoleEnabled(BUNDLE_GAIA_X_2511, "NoSuchRole", false))
+  void setBaseClassEnabled_unknownRole_throwsNotFoundException() {
+    assertThatThrownBy(() -> service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, "NoSuchRole", false))
         .isInstanceOf(NotFoundException.class);
   }
 
   @Test
-  void getRoleStates_noExplicitState_allRolesReturnedAsTrue() {
-    Map<String, Boolean> states = service.getRoleStates(BUNDLE_GAIA_X_2511);
+  void getBaseClassStates_noExplicitState_allRolesReturnedAsTrue() {
+    Map<String, Boolean> states = service.getBaseClassStates(BUNDLE_GAIA_X_2511);
 
     // All roles from the registry bundle must appear, all defaulting to true
     assertThat(states).isNotEmpty();
-    assertThat(states).containsKeys(TFW_ROLE_PARTICIPANT, TFW_ROLE_SERVICE_OFFERING);
+    assertThat(states).containsKeys(TFW_BASE_CLASS_PARTICIPANT, TFW_BASE_CLASS_SERVICE_OFFERING);
     assertThat(states).allSatisfy((role, enabled) -> assertThat(enabled).isTrue());
   }
 
   @Test
-  void getRoleStates_withOneRoleDisabled_reflectsOverride() {
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
+  void getBaseClassStates_withOneRoleDisabled_reflectsOverride() {
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, false);
 
-    Map<String, Boolean> states = service.getRoleStates(BUNDLE_GAIA_X_2511);
+    Map<String, Boolean> states = service.getBaseClassStates(BUNDLE_GAIA_X_2511);
 
-    assertThat(states).containsEntry(TFW_ROLE_PARTICIPANT, false);
-    assertThat(states).containsEntry(TFW_ROLE_SERVICE_OFFERING, true);
+    assertThat(states).containsEntry(TFW_BASE_CLASS_PARTICIPANT, false);
+    assertThat(states).containsEntry(TFW_BASE_CLASS_SERVICE_OFFERING, true);
   }
 
   @Test
-  void getRoleStates_preservesYamlDeclarationOrder() {
+  void getBaseClassStates_preservesYamlDeclarationOrder() {
     // gaia-x-2511 framework.yaml declares roles in the order:
     //   Participant, ServiceOffering, Resource
     // The returned LinkedHashMap must iterate in that exact order so the UI can render
     // role-toggle rows deterministically.
-    Map<String, Boolean> states = service.getRoleStates(BUNDLE_GAIA_X_2511);
+    Map<String, Boolean> states = service.getBaseClassStates(BUNDLE_GAIA_X_2511);
 
     assertThat(states).containsExactly(
-        Map.entry(TFW_ROLE_PARTICIPANT, true),
-        Map.entry(TFW_ROLE_SERVICE_OFFERING, true),
-        Map.entry(TFW_ROLE_RESOURCE, true));
+        Map.entry(TFW_BASE_CLASS_PARTICIPANT, true),
+        Map.entry(TFW_BASE_CLASS_SERVICE_OFFERING, true),
+        Map.entry(TFW_BASE_CLASS_RESOURCE, true));
   }
 
   @Test
-  void getRoleStates_unknownBundle_throwsNotFoundException() {
-    assertThatThrownBy(() -> service.getRoleStates(UNKNOWN_BUNDLE))
+  void getBaseClassStates_unknownBundle_throwsNotFoundException() {
+    assertThatThrownBy(() -> service.getBaseClassStates(UNKNOWN_BUNDLE))
         .isInstanceOf(NotFoundException.class);
   }
 
   @Test
-  void setRoleEnabled_persistsAcrossRepositoryRead() {
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT, false);
+  void setBaseClassEnabled_persistsAcrossRepositoryRead() {
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT, false);
 
     // Verify the row via repository (one row, correct field values)
-    var rows = roleStateRepo.findByFrameworkId(BUNDLE_GAIA_X_2511);
+    var rows = baseClassStateRepo.findByFrameworkId(BUNDLE_GAIA_X_2511);
     assertThat(rows).hasSize(1);
     assertThat(rows.getFirst().getFrameworkId()).isEqualTo(BUNDLE_GAIA_X_2511);
-    assertThat(rows.get(0).getRoleName()).isEqualTo(TFW_ROLE_PARTICIPANT);
+    assertThat(rows.get(0).getBaseClassName()).isEqualTo(TFW_BASE_CLASS_PARTICIPANT);
     assertThat(rows.get(0).isEnabled()).isFalse();
   }
 
   /**
    * When the family bundle is disabled AND the role is explicitly disabled,
-   * {@code isRoleEnabled} must return {@code true}: the role-toggle layer is bypassed
+   * {@code isBaseClassEnabled} must return {@code true}: the role-toggle layer is bypassed
    * because bundle-off already blocks all resolution through that bundle.
    * The caller (ClaimValidator) will receive a bundle-disabled rejection separately;
    * the role-toggle must not add a second rejection on top.
    */
   @Test
-  void isRoleEnabled_bundleDisabled_roleExplicitlyDisabled_returnsTrueBypassingRoleCheck() {
+  void isBaseClassEnabled_bundleDisabled_roleExplicitlyDisabled_returnsTrueBypassingRoleCheck() {
     // DB seed has gaia-x enabled=false (Liquibase default) — no need to call setEnabled here
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_SERVICE_OFFERING, false);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_SERVICE_OFFERING, false);
 
     // Bundle-off dominates: role-toggle check is bypassed → returns true
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_SERVICE_OFFERING)).isTrue();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_SERVICE_OFFERING)).isTrue();
   }
 
   /**
    * When the family bundle is disabled and no role row exists (default-true),
-   * {@code isRoleEnabled} must still return {@code true} (bundle-off dominates).
+   * {@code isBaseClassEnabled} must still return {@code true} (bundle-off dominates).
    */
   @Test
-  void isRoleEnabled_bundleDisabled_noRoleRow_returnsTrueBypassingRoleCheck() {
+  void isBaseClassEnabled_bundleDisabled_noRoleRow_returnsTrueBypassingRoleCheck() {
     // DB seed has gaia-x enabled=false — bundle is off, no role row set
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT)).isTrue();
   }
 
   /**
    * When the family bundle is enabled and the role is explicitly disabled,
-   * {@code isRoleEnabled} must return {@code false} — normal role-toggle behavior.
+   * {@code isBaseClassEnabled} must return {@code false} — normal role-toggle behavior.
    */
   @Test
-  void isRoleEnabled_bundleEnabled_roleDisabled_returnsFalse() {
+  void isBaseClassEnabled_bundleEnabled_roleDisabled_returnsFalse() {
     service.setEnabled(FAMILY_GAIA_X, true);
-    service.setRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_SERVICE_OFFERING, false);
+    service.setBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_SERVICE_OFFERING, false);
 
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_SERVICE_OFFERING)).isFalse();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_SERVICE_OFFERING)).isFalse();
   }
 
   /**
    * When the family bundle is enabled and no role row exists,
-   * {@code isRoleEnabled} must return {@code true} — default-true semantics apply.
+   * {@code isBaseClassEnabled} must return {@code true} — default-true semantics apply.
    */
   @Test
-  void isRoleEnabled_bundleEnabled_noRoleRow_returnsTrue() {
+  void isBaseClassEnabled_bundleEnabled_noRoleRow_returnsTrue() {
     service.setEnabled(FAMILY_GAIA_X, true);
 
-    assertThat(service.isRoleEnabled(BUNDLE_GAIA_X_2511, TFW_ROLE_PARTICIPANT)).isTrue();
+    assertThat(service.isBaseClassEnabled(BUNDLE_GAIA_X_2511, TFW_BASE_CLASS_PARTICIPANT)).isTrue();
   }
 
   /**
    * For a framework ID that is not known to the registry,
-   * {@code isRoleEnabled} must return {@code true} — preserve existing caller semantics.
+   * {@code isBaseClassEnabled} must return {@code true} — preserve existing caller semantics.
    */
   @Test
-  void isRoleEnabled_unknownFrameworkId_returnsTrue() {
-    assertThat(service.isRoleEnabled(UNKNOWN_BUNDLE, TFW_ROLE_PARTICIPANT)).isTrue();
+  void isBaseClassEnabled_unknownFrameworkId_returnsTrue() {
+    assertThat(service.isBaseClassEnabled(UNKNOWN_BUNDLE, TFW_BASE_CLASS_PARTICIPANT)).isTrue();
   }
 }

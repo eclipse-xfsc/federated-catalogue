@@ -29,7 +29,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
-import eu.xfsc.fc.core.service.trustframework.RoleConfig;
+import eu.xfsc.fc.core.service.trustframework.BaseClassConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.ValidationType;
@@ -192,11 +192,11 @@ class OntologyImpactServiceTest {
   }
 
   private Collection<TrustFrameworkBundle> buildGx2511Bundles() {
-    Map<String, RoleConfig> roles = Map.of(
-        "Participant", new RoleConfig(List.of(), List.of()),
-        "ServiceOffering", new RoleConfig(
+    Map<String, BaseClassConfig> roles = Map.of(
+        "Participant", new BaseClassConfig(List.of(), List.of()),
+        "ServiceOffering", new BaseClassConfig(
             List.of(NAMESPACE + "DigitalServiceOffering"), List.of()),
-        "Resource", new RoleConfig(List.of(), List.of())
+        "Resource", new BaseClassConfig(List.of(), List.of())
     );
     FrameworkBundleConfig config = new FrameworkBundleConfig(
         PROFILE_ID, "gaia-x", NAMESPACE, ValidationType.SHACL, roles, Map.of());

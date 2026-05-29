@@ -27,20 +27,20 @@ import org.apache.jena.riot.Lang;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * In-memory registry of trust framework bundles and their declared roles. Provides efficient
- * resolution of role URIs to the bundle and role name that declares them, including support for
- * subclass hierarchies in SHACL ontologies.
+ * In-memory registry of trust framework bundles and their declared base classes. Provides efficient
+ * resolution of credential subject type URIs to the bundle and base-class name that declares them,
+ * including support for subclass hierarchies in SHACL ontologies.
  * It is built at application startup from the static bundle definitions without any dynamic state.
  * It does not track enabled/disabled state or mediate access;
- * it is purely a data structure for role resolution and bundle lookup.
+ * it is purely a data structure for base-class resolution and bundle lookup.
  *
  * <p>
  * This is separate from the persistence layer {@link eu.xfsc.fc.core.dao.trustframework.TrustFrameworkRepository}
  * (which tracks enabled/disabled state) and the service layer {@link TrustFrameworkService}
  * (which mediates access to the registry and applies enabled/disabled logic).
  *
- * <p>Bundles with unsupported validation types are registered but not active — their roles are not
- * indexed for resolution, and they are excluded from the active bundles list. This allows the
+ * <p>Bundles with unsupported validation types are registered but not active — their base classes
+ * are not indexed for resolution, and they are excluded from the active bundles list. This allows the
  * registry to be pre-populated with all known bundles at startup, even if the validation engine
  * is not yet wired to handle some of them. Deferred bundles will become active once their
  * validation type is supported.
@@ -71,7 +71,7 @@ public class TrustFrameworkRegistry {
   public static final String TIMEOUT_SECONDS = "timeout_seconds";
   public static final String TRUST_ANCHOR_URL = "trust_anchor_url";
 
-  private final Map<String, ResolvedRole> typeIndex;
+  private final Map<String, ResolvedBaseClass> typeIndex;
   private final Map<String, TrustFrameworkBundle> bundleIndex;
   private final Set<String> activeProfileIds;
 
@@ -106,17 +106,17 @@ public class TrustFrameworkRegistry {
   }
 
   /**
-   * Validates that if roles are declared, the namespace is non-null and ends with '/' or '#'.
+   * Validates that if base classes are declared, the namespace is non-null and ends with '/' or '#'.
    * This is required for correct URI concatenation during type resolution.
    */
   private static void validateNamespace(FrameworkBundleConfig config) {
-    if (config.roles().isEmpty()) {
+    if (config.baseClasses().isEmpty()) {
       return;
     }
     String ns = config.namespace();
     if (ns == null) {
       throw new IllegalArgumentException(
-          "Bundle '" + config.id() + "' has roles but namespace is null");
+          "Bundle '" + config.id() + "' has base classes but namespace is null");
     }
     if (!ns.endsWith("/") && !ns.endsWith("#")) {
       throw new IllegalArgumentException(
@@ -129,14 +129,15 @@ public class TrustFrameworkRegistry {
   }
 
   /**
-   * Resolves a role URI to its corresponding ResolvedRole, which contains the bundle ID and role name.
-   * If the URI is not recognized, returns ResolvedRole.UNKNOWN.
+   * Resolves a credential subject type URI to its corresponding {@link ResolvedBaseClass}, which
+   * contains the bundle ID and base-class name. If the URI is not recognized, returns
+   * {@link ResolvedBaseClass#UNKNOWN}.
    *
-   * @param typeUri the role URI to resolve
-   * @return the ResolvedRole corresponding to the URI, or ResolvedRole.UNKNOWN if not recognized
+   * @param typeUri the type URI to resolve
+   * @return the {@link ResolvedBaseClass} corresponding to the URI, or {@link ResolvedBaseClass#UNKNOWN} if not recognized
    */
-  public ResolvedRole resolveRole(String typeUri) {
-    return typeIndex.getOrDefault(typeUri, ResolvedRole.UNKNOWN);
+  public ResolvedBaseClass resolveBaseClass(String typeUri) {
+    return typeIndex.getOrDefault(typeUri, ResolvedBaseClass.UNKNOWN);
   }
 
   /**
@@ -154,7 +155,7 @@ public class TrustFrameworkRegistry {
 
   /**
    * Returns only the bundles that are currently active (i.e. their validation engine is wired and
-   * their types participate in role resolution).
+   * their types participate in base-class resolution).
    * Modifications to the returned collection will not affect the registry's internal state.
    *
    * <p>Deferred bundles — those registered with an unsupported {@code validationType} — are
@@ -222,19 +223,20 @@ public class TrustFrameworkRegistry {
   }
 
   /**
-   * Returns an ordered, unmodifiable set of effective role names declared in the bundle associated with the given profile ID.
-   * The returned set preserves the declaration order from the bundle YAML configuration.
-   * If no bundle is registered under the profile ID, returns an empty set.
+   * Returns an ordered, unmodifiable set of effective base-class names declared in the bundle
+   * associated with the given profile ID. The returned set preserves the declaration order from
+   * the bundle YAML configuration. If no bundle is registered under the profile ID, returns an
+   * empty set.
    *
    * @param profileId the ID of the profile to look up
-   * @return an ordered unmodifiable set of role names declared in the bundle, or an empty set if no bundle is registered under the profile ID
+   * @return an ordered unmodifiable set of base-class names declared in the bundle, or an empty set if no bundle is registered under the profile ID
    */
-  public SequencedSet<String> getEffectiveRoles(String profileId) {
+  public SequencedSet<String> getEffectiveBaseClasses(String profileId) {
     if (!bundleIndex.containsKey(profileId)) {
       return Collections.unmodifiableSequencedSet(new LinkedHashSet<>());
     }
     return Collections.unmodifiableSequencedSet(
-        new LinkedHashSet<>(bundleIndex.get(profileId).config().roles().keySet()));
+        new LinkedHashSet<>(bundleIndex.get(profileId).config().baseClasses().keySet()));
   }
 
   /**
@@ -254,12 +256,12 @@ public class TrustFrameworkRegistry {
     }
     OntModel model = loadOntModel(bundle.ontology());
     var config = bundle.config();
-    config.roles().forEach((roleName, roleConfig) -> {
-      var resolved = new ResolvedRole(config.id(), roleName);
-      indexTypeAndSubclasses(config.namespace() + roleName, resolved, model);
-      for (String additionalRoot : roleConfig.additionalRoots()) {
+    config.baseClasses().forEach((baseClassName, baseClassConfig) -> {
+      var resolved = new ResolvedBaseClass(config.id(), baseClassName);
+      indexTypeAndSubclasses(config.namespace() + baseClassName, resolved, model);
+      for (String additionalRoot : baseClassConfig.additionalRoots()) {
         if (additionalRoot == null) {
-          log.warn("Bundle '{}' role '{}' has a null additionalRoot entry — skipped", config.id(), roleName);
+          log.warn("Bundle '{}' base class '{}' has a null additionalRoot entry — skipped", config.id(), baseClassName);
           continue;
         }
         indexTypeAndSubclasses(additionalRoot, resolved, model);
@@ -275,7 +277,7 @@ public class TrustFrameworkRegistry {
     return model;
   }
 
-  private void indexTypeAndSubclasses(String rootUri, ResolvedRole resolved, OntModel model) {
+  private void indexTypeAndSubclasses(String rootUri, ResolvedBaseClass resolved, OntModel model) {
     if (!isValidSparqlUri(rootUri)) {
       log.warn("Skipping URI '{}' — contains characters unsafe for SPARQL injection", rootUri);
       return;

@@ -95,7 +95,7 @@ $(document).ready(function() {
               return $('<button>', { class: 'btn btn-sm btn-outline-secondary tf-bundle-configure me-1' })
                 .attr('data-bundle-id',         bundle.id)
                 .attr('data-family-enabled',    familyEnabled)
-                .attr('data-roles',             JSON.stringify(bundle.roles || {}))
+                .attr('data-base-classes',      JSON.stringify(bundle.baseClasses || {}))
                 .attr('data-effective-config', JSON.stringify(bundle.effectiveConfig || {}))
                 .attr('data-overridden',        JSON.stringify(bundle.overriddenFields || []))
                 .append('<i class="bi bi-gear"></i> ')
@@ -126,37 +126,37 @@ $(document).ready(function() {
 
     function recomputeAllDisabledWarning(familyEnabled) {
       if (!familyEnabled) {
-        $('#tfRolesAllDisabledWarning').hide();
+        $('#tfBaseClassesAllDisabledWarning').hide();
         return;
       }
-      var allUnchecked = $('#tfRolesContainer .tf-role-toggle:checked').length === 0
-        && $('#tfRolesContainer .tf-role-toggle').length > 0;
-      $('#tfRolesAllDisabledWarning').toggle(allUnchecked);
+      var allUnchecked = $('#tfBaseClassesContainer .tf-base-class-toggle:checked').length === 0
+        && $('#tfBaseClassesContainer .tf-base-class-toggle').length > 0;
+      $('#tfBaseClassesAllDisabledWarning').toggle(allUnchecked);
     }
 
-    function renderBundleRoles(bundleId, familyEnabled, roles) {
-      var $container = $('#tfRolesContainer').empty();
-      $('#tfRoleErrorBanner').hide();
-      Object.keys(roles).forEach(function(roleName) {
-        var roleEnabled = roles[roleName];
-        var inputId = 'role-' + bundleId + '-' + roleName;
+    function renderBundleBaseClasses(bundleId, familyEnabled, baseClasses) {
+      var $container = $('#tfBaseClassesContainer').empty();
+      $('#tfBaseClassErrorBanner').hide();
+      Object.keys(baseClasses).forEach(function(baseClassName) {
+        var baseClassEnabled = baseClasses[baseClassName];
+        var inputId = 'base-class-' + bundleId + '-' + baseClassName;
         var $check = $('<div class="form-check">').append(
           $('<input>', {
             type: 'checkbox',
-            class: 'form-check-input tf-role-toggle',
+            class: 'form-check-input tf-base-class-toggle',
             id: inputId,
             'data-bundle': bundleId,
-            'data-role': roleName
+            'data-base-class': baseClassName
           })
-            .prop('checked', roleEnabled)
+            .prop('checked', baseClassEnabled)
             .prop('disabled', !familyEnabled),
           $('<label>', {
             class: 'form-check-label' + (!familyEnabled ? ' text-muted' : ''),
             for: inputId,
-            title: 'When disabled, this role and all its OWL subclasses reject credentials with HTTP 400.',
+            title: 'When disabled, this base class and all its OWL subclasses reject credentials with HTTP 400.',
             'data-bs-toggle': 'tooltip'
-          }).append(document.createTextNode(roleName)),
-          $('<span class="badge bg-success ms-2 tf-role-saved-badge" style="display:none">')
+          }).append(document.createTextNode(baseClassName)),
+          $('<span class="badge bg-success ms-2 tf-base-class-saved-badge" style="display:none">')
             .text('✓ saved')
         );
         $container.append($check);
@@ -166,24 +166,24 @@ $(document).ready(function() {
       });
     }
 
-    $('#tfBundleConfigModal').on('change', '.tf-role-toggle', function() {
+    $('#tfBundleConfigModal').on('change', '.tf-base-class-toggle', function() {
       var $cb = $(this);
       var bundleId = $cb.data('bundle');
-      var roleName = $cb.data('role');
+      var baseClassName = $cb.data('base-class');
       var enabled = $cb.is(':checked');
 
       $.ajax({
         url: TF_API_BASE + '/' + encodeURIComponent(bundleId)
-          + '/roles/' + encodeURIComponent(roleName),
+          + '/base-classes/' + encodeURIComponent(baseClassName),
         type: 'PATCH',
         contentType: MERGE_PATCH_JSON,
         data: JSON.stringify({enabled: enabled}),
         success: function() {
-          $('#tfRoleErrorBanner').hide();
+          $('#tfBaseClassErrorBanner').hide();
           recomputeAllDisabledWarning($('#tfBundleConfigModal').data('familyEnabled'));
           // Flash a "✓ saved" badge next to this row so the operator sees the change
           // committed (mirrors the deferred-Save affordance of the config fields above).
-          var $badge = $cb.closest('.form-check').find('.tf-role-saved-badge');
+          var $badge = $cb.closest('.form-check').find('.tf-base-class-saved-badge');
           clearTimeout($badge.data('hideTimer'));
           $badge.stop(true, true).show().css('opacity', 1);
           $badge.data('hideTimer', setTimeout(function() {
@@ -193,8 +193,8 @@ $(document).ready(function() {
         error: function() {
           $cb.prop('checked', !enabled);
           recomputeAllDisabledWarning($('#tfBundleConfigModal').data('familyEnabled'));
-          var $banner = $('#tfRoleErrorBanner');
-          $banner.text('Failed to update role "' + roleName + '". Please try again.').show();
+          var $banner = $('#tfBaseClassErrorBanner');
+          $banner.text('Failed to update base class "' + baseClassName + '". Please try again.').show();
           clearTimeout($banner.data('hideTimer'));
           $banner.data('hideTimer', setTimeout(function() { $banner.hide(); }, 5000));
         }
@@ -244,7 +244,7 @@ $(document).ready(function() {
       var $btn = $(this);
       var bundleId = $btn.data('bundle-id');
       var familyEnabled = $btn.data('family-enabled') === 'true' || $btn.data('family-enabled') === true;
-      var roles = parseJsonAttr($btn.data('roles'), {});
+      var baseClasses = parseJsonAttr($btn.data('base-classes'), {});
       var effective = parseJsonAttr($btn.data('effective-config'), {});
       var overridden = parseJsonAttr($btn.data('overridden'), []);
 
@@ -267,8 +267,8 @@ $(document).ready(function() {
         tfBundleInitialValues[$f.data('key')] = $.trim(String(v == null ? '' : v));
       });
 
-      // Populate the roles section
-      renderBundleRoles(bundleId, familyEnabled, roles);
+      // Populate the base-classes section
+      renderBundleBaseClasses(bundleId, familyEnabled, baseClasses);
       recomputeAllDisabledWarning(familyEnabled);
 
       new bootstrap.Modal('#tfBundleConfigModal').show();

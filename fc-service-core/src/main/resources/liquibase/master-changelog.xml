@@ -24,4 +24,5 @@
     <include file="changesets/018-mock-trust-framework-seed.xml" relativeToChangelogFile="true" />
     <include file="changesets/019-drop-trust-framework-dead-cols.xml" relativeToChangelogFile="true"/>
     <include file="changesets/020-trust-framework-bundle-config.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/021-rename-trust-framework-role-to-base-class.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

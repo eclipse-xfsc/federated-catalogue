@@ -94,7 +94,7 @@ class VerificationServiceImplTest {
   }
 
   @Test
-  void verifyCredential_nonJwtKnownFormat_strategyReturnsResolvedRole_returnsResult() {
+  void verifyCredential_nonJwtKnownFormat_strategyReturnsResolvedBaseClass_returnsResult() {
     ContentAccessor payload = mock(ContentAccessor.class);
     when(payload.getContentAsString()).thenReturn("{\"@context\": \"https://www.w3.org/ns/credentials/v2\"}");
     when(formatDetector.detect(payload)).thenReturn(CredentialFormat.GAIAX_V2_LOIRE);

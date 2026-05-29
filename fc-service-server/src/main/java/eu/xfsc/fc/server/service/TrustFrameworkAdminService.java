@@ -15,7 +15,7 @@ import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEffectiveConfig;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkBundleEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBaseClassPatch;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
@@ -176,12 +176,12 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
   }
 
   @Override
-  public ResponseEntity<Void> patchTrustFrameworkRole(String bundleId, String roleName,
-                                                      TrustFrameworkRolePatch patch) {
+  public ResponseEntity<Void> patchTrustFrameworkBaseClass(String bundleId, String baseClassName,
+                                                           TrustFrameworkBaseClassPatch patch) {
     if (patch.getEnabled() == null) {
       throw new ClientException("Patch body must contain at least one field");
     }
-    trustFrameworkService.setRoleEnabled(bundleId, roleName, patch.getEnabled());
+    trustFrameworkService.setBaseClassEnabled(bundleId, baseClassName, patch.getEnabled());
     return ResponseEntity.ok().build();
   }
 
@@ -196,8 +196,8 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
 
   /**
    * Builds a list of {@link TrustFrameworkBundleEntry} for each bundle belonging to the given
-   * family, carrying the per-bundle role enabled states so the UI can address role-toggle requests
-   * by the correct bundle profile ID.
+   * family, carrying the per-bundle base-class enabled states so the UI can address
+   * base-class-toggle requests by the correct bundle profile ID.
    *
    * @param familyId trust framework family identifier (e.g. {@code gaia-x})
    * @return list of bundle entries in registry order; empty if no bundles belong to the family
@@ -211,7 +211,7 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
       String bundleId = bundle.config().id();
       TrustFrameworkBundleEntry bundleEntry = new TrustFrameworkBundleEntry();
       bundleEntry.setId(bundleId);
-      bundleEntry.setRoles(trustFrameworkService.getRoleStates(bundleId));
+      bundleEntry.setBaseClasses(trustFrameworkService.getBaseClassStates(bundleId));
       bundleConfigService.getEffectiveConfig(bundleId).ifPresent(eff -> {
         bundleEntry.setEffectiveConfig(toEffectiveConfigDto(eff));
         bundleEntry.setOverriddenFields(eff.overriddenFields().stream()

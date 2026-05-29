@@ -85,7 +85,7 @@ public class CesAssetProcessor {
       return false;
 		}
 		String gxType = ceSub.getGxType();
-    if (!trustFrameworkRegistry.resolveRole(gxType).isResolved()) {
+    if (!trustFrameworkRegistry.resolveBaseClass(gxType).isResolved()) {
       log.debug("isProcessibleSubject; type '{}' not recognized by registry — subject skipped"
           + " (registry requires full URIs; CURIEs will not resolve)", gxType);
       return false;
