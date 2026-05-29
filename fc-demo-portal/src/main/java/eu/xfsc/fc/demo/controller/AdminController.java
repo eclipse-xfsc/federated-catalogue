@@ -24,7 +24,7 @@ import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBaseClassPatch;
 import eu.xfsc.fc.client.AdminClient;
 import lombok.RequiredArgsConstructor;
 
@@ -113,15 +113,15 @@ public class AdminController {
   }
 
   /**
-   * Partially update a role within a trust framework bundle.
+   * Partially update a base class within a trust framework bundle.
    */
-  @PatchMapping("/trust-frameworks/{bundleId}/roles/{roleName}")
-  public void patchTrustFrameworkRole(
+  @PatchMapping("/trust-frameworks/{bundleId}/base-classes/{baseClassName}")
+  public void patchTrustFrameworkBaseClass(
       @PathVariable("bundleId") String bundleId,
-      @PathVariable("roleName") String roleName,
-      @RequestBody TrustFrameworkRolePatch patch,
+      @PathVariable("baseClassName") String baseClassName,
+      @RequestBody TrustFrameworkBaseClassPatch patch,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
-    adminClient.patchTrustFrameworkRole(bundleId, roleName, patch, authorizedClient);
+    adminClient.patchTrustFrameworkBaseClass(bundleId, baseClassName, patch, authorizedClient);
   }
 
   // --- Schema Validation ---

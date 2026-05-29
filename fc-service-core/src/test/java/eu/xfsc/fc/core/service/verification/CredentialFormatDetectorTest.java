@@ -48,14 +48,14 @@ class CredentialFormatDetectorTest {
             mock(JwtContentPreprocessor.class),
             mock(JwtSignatureVerifier.class))
     ));
-    // Detector wired with real parsers so unwrapToJsonLd() actually decodes JWT → JSON-LD.
-    private final CredentialFormatDetector unwrappingDetector = new CredentialFormatDetector(OBJECT_MAPPER, List.of(
-        new LoireCredentialProcessor(
-            new LoireJwtParser(), mock(LoirePolicyEnforcer.class),
-            mock(JwtSignatureVerifier.class)),
-        new Vc2DanubeTechCredentialProcessor(
-            new JwtContentPreprocessor(),
-            mock(JwtSignatureVerifier.class))
+  // Detector wired with real parsers so unwrapToJsonLd() actually decodes JWT → JSON-LD.
+  private final CredentialFormatDetector unwrappingDetector = new CredentialFormatDetector(OBJECT_MAPPER, List.of(
+      new LoireCredentialProcessor(
+          new LoireJwtParser(), mock(LoirePolicyEnforcer.class),
+          mock(JwtSignatureVerifier.class)),
+      new Vc2DanubeTechCredentialProcessor(
+          new JwtContentPreprocessor(),
+          mock(JwtSignatureVerifier.class))
     ));
     private static JWSSigner signer;
 
@@ -283,118 +283,118 @@ class CredentialFormatDetectorTest {
     }
 
 
-    // --- unwrapToJsonLd: JWT-secured content is decoded to JSON-LD (no signature/policy) ---
+  // --- unwrapToJsonLd: JWT-secured content is decoded to JSON-LD (no signature/policy) ---
 
-    @Test
-    void unwrapToJsonLd_loireVcJwt_returnsTopLevelJsonLd() throws Exception {
-        ContentAccessor result = unwrappingDetector.unwrapToJsonLd(
-            new ContentAccessorDirect(buildLoireVcJwt()));
+  @Test
+  void unwrapToJsonLd_loireVcJwt_returnsTopLevelJsonLd() throws Exception {
+    ContentAccessor result = unwrappingDetector.unwrapToJsonLd(
+        new ContentAccessorDirect(buildLoireVcJwt()));
 
-        String json = result.getContentAsString();
-        assertFalse(json.startsWith(JWT_PREFIX), "payload must no longer be a compact JWT");
-        JsonNode payload = OBJECT_MAPPER.readTree(json);
-        assertTrue(payload.has("@context"), "Loire payload carries top-level @context");
-        assertTrue(payload.has("credentialSubject"), "VC payload carries credentialSubject");
-    }
+    String json = result.getContentAsString();
+    assertFalse(json.startsWith(JWT_PREFIX), "payload must no longer be a compact JWT");
+    JsonNode payload = OBJECT_MAPPER.readTree(json);
+    assertTrue(payload.has("@context"), "Loire payload carries top-level @context");
+    assertTrue(payload.has("credentialSubject"), "VC payload carries credentialSubject");
+  }
 
-    @Test
-    void unwrapToJsonLd_loireVpJwt_returnsTopLevelJsonLd() throws Exception {
-        ContentAccessor result = unwrappingDetector.unwrapToJsonLd(
-            new ContentAccessorDirect(buildLoireVpJwt()));
+  @Test
+  void unwrapToJsonLd_loireVpJwt_returnsTopLevelJsonLd() throws Exception {
+    ContentAccessor result = unwrappingDetector.unwrapToJsonLd(
+        new ContentAccessorDirect(buildLoireVpJwt()));
 
-        String json = result.getContentAsString();
-        assertFalse(json.startsWith(JWT_PREFIX), "payload must no longer be a compact JWT");
-        JsonNode payload = OBJECT_MAPPER.readTree(json);
-        assertEquals("VerifiablePresentation", payload.get("type").get(0).asText());
-    }
+    String json = result.getContentAsString();
+    assertFalse(json.startsWith(JWT_PREFIX), "payload must no longer be a compact JWT");
+    JsonNode payload = OBJECT_MAPPER.readTree(json);
+    assertEquals("VerifiablePresentation", payload.get("type").get(0).asText());
+  }
 
-    @Test
-    void unwrapToJsonLd_danubetechVcJwt_returnsJsonLd() throws Exception {
-        ContentAccessor result = unwrappingDetector.unwrapToJsonLd(
-            new ContentAccessorDirect(buildDanubetechVcJwt()));
+  @Test
+  void unwrapToJsonLd_danubetechVcJwt_returnsJsonLd() throws Exception {
+    ContentAccessor result = unwrappingDetector.unwrapToJsonLd(
+        new ContentAccessorDirect(buildDanubetechVcJwt()));
 
-        String json = result.getContentAsString();
-        assertFalse(json.startsWith(JWT_PREFIX), "payload must no longer be a compact JWT");
-        JsonNode payload = OBJECT_MAPPER.readTree(json);
-        assertTrue(payload.has("credentialSubject"), "unwrapped danubetech VC carries credentialSubject");
-    }
+    String json = result.getContentAsString();
+    assertFalse(json.startsWith(JWT_PREFIX), "payload must no longer be a compact JWT");
+    JsonNode payload = OBJECT_MAPPER.readTree(json);
+    assertTrue(payload.has("credentialSubject"), "unwrapped danubetech VC carries credentialSubject");
+  }
 
-    @Test
-    void unwrapToJsonLd_nonJwtVc2JsonLd_returnsUnchanged() {
-        ContentAccessor input = new ContentAccessorDirect("""
-            {
-              "@context": ["https://www.w3.org/ns/credentials/v2"],
-              "type": ["VerifiableCredential"]
-            }
-            """);
+  @Test
+  void unwrapToJsonLd_nonJwtVc2JsonLd_returnsUnchanged() {
+    ContentAccessor input = new ContentAccessorDirect("""
+        {
+          "@context": ["https://www.w3.org/ns/credentials/v2"],
+          "type": ["VerifiableCredential"]
+        }
+        """);
 
-        ContentAccessor result = unwrappingDetector.unwrapToJsonLd(input);
+    ContentAccessor result = unwrappingDetector.unwrapToJsonLd(input);
 
-        assertSame(input, result, "non-JWT JSON-LD must pass through unchanged");
-    }
+    assertSame(input, result, "non-JWT JSON-LD must pass through unchanged");
+  }
 
-    @Test
-    void unwrapToJsonLd_unknownContent_returnsUnchanged() {
-        ContentAccessor input = new ContentAccessorDirect("""
-            {
-              "@context": ["https://example.org/custom"],
-              "type": ["SomethingElse"]
-            }
-            """);
+  @Test
+  void unwrapToJsonLd_unknownContent_returnsUnchanged() {
+    ContentAccessor input = new ContentAccessorDirect("""
+        {
+          "@context": ["https://example.org/custom"],
+          "type": ["SomethingElse"]
+        }
+        """);
 
-        ContentAccessor result = unwrappingDetector.unwrapToJsonLd(input);
+    ContentAccessor result = unwrappingDetector.unwrapToJsonLd(input);
 
-        assertSame(input, result, "unrecognised format must pass through unchanged");
-    }
+    assertSame(input, result, "unrecognised format must pass through unchanged");
+  }
 
-    @Test
-    void unwrapToJsonLd_nonRdfText_returnsUnchanged() {
-        ContentAccessor input = new ContentAccessorDirect("not json at all");
+  @Test
+  void unwrapToJsonLd_nonRdfText_returnsUnchanged() {
+    ContentAccessor input = new ContentAccessorDirect("not json at all");
 
-        ContentAccessor result = unwrappingDetector.unwrapToJsonLd(input);
+    ContentAccessor result = unwrappingDetector.unwrapToJsonLd(input);
 
-        assertSame(input, result, "non-credential text must pass through unchanged");
-    }
+    assertSame(input, result, "non-credential text must pass through unchanged");
+  }
 
-    @Test
-    void unwrapToJsonLd_recognizedButInvalidJwt_throwsClientException() throws Exception {
-        // typ + top-level @context route this to the Loire parser, which then rejects the
-        // missing 'cty' header. The resulting ClientException is what the rebuild worker
-        // catches, logs with the asset hash, and counts as an error (batch continues).
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
-                .keyID("did:web:example.com#test-key")
-                .type(new JOSEObjectType("vc+ld+json+jwt"))
-                .build();
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer("did:web:example.com")
-                .claim("@context", List.of(VC_20_CONTEXT, GAIAX_2511_CONTEXT))
-                .claim("type", List.of("VerifiableCredential", "gx:LegalPerson"))
-                .claim("credentialSubject", Map.of("id", "did:web:example.com"))
-                .build();
-        SignedJWT signedJwt = new SignedJWT(header, claims);
-        signedJwt.sign(signer);
-        ContentAccessor content = new ContentAccessorDirect(signedJwt.serialize());
+  @Test
+  void unwrapToJsonLd_recognizedButInvalidJwt_throwsClientException() throws Exception {
+    // typ + top-level @context route this to the Loire parser, which then rejects the
+    // missing 'cty' header. The resulting ClientException is what the rebuild worker
+    // catches, logs with the asset hash, and counts as an error (batch continues).
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
+        .keyID("did:web:example.com#test-key")
+        .type(new JOSEObjectType("vc+ld+json+jwt"))
+        .build();
+    JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        .issuer("did:web:example.com")
+        .claim("@context", List.of(VC_20_CONTEXT, GAIAX_2511_CONTEXT))
+        .claim("type", List.of("VerifiableCredential", "gx:LegalPerson"))
+        .claim("credentialSubject", Map.of("id", "did:web:example.com"))
+        .build();
+    SignedJWT signedJwt = new SignedJWT(header, claims);
+    signedJwt.sign(signer);
+    ContentAccessor content = new ContentAccessorDirect(signedJwt.serialize());
 
-        assertThrows(ClientException.class, () -> unwrappingDetector.unwrapToJsonLd(content));
-    }
+    assertThrows(ClientException.class, () -> unwrappingDetector.unwrapToJsonLd(content));
+  }
 
-    private String buildDanubetechVcJwt() throws Exception {
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
-                .keyID("did:web:example.com#test-key")
-                .build();
-        JSONObject vcObj = new JSONObject();
-        vcObj.put("@context", List.of(VC_20_CONTEXT));
-        vcObj.put("type", List.of("VerifiableCredential"));
-        vcObj.put("credentialSubject", Map.of("id", "did:web:example.com"));
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                .issuer("did:web:example.com")
-                .subject("did:web:example.com")
-                .claim("vc", vcObj)
-                .build();
-        SignedJWT signedJwt = new SignedJWT(header, claims);
-        signedJwt.sign(signer);
-        return signedJwt.serialize();
-    }
+  private String buildDanubetechVcJwt() throws Exception {
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
+        .keyID("did:web:example.com#test-key")
+        .build();
+    JSONObject vcObj = new JSONObject();
+    vcObj.put("@context", List.of(VC_20_CONTEXT));
+    vcObj.put("type", List.of("VerifiableCredential"));
+    vcObj.put("credentialSubject", Map.of("id", "did:web:example.com"));
+    JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        .issuer("did:web:example.com")
+        .subject("did:web:example.com")
+        .claim("vc", vcObj)
+        .build();
+    SignedJWT signedJwt = new SignedJWT(header, claims);
+    signedJwt.sign(signer);
+    return signedJwt.serialize();
+  }
 
     private String buildLoireVcJwt() throws Exception {
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)

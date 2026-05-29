@@ -37,7 +37,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
  * <p>Companion to {@code CredentialVerificationStrategyOwlToggleTest} in fc-service-core,
  * which pins the same behaviour at the strategy layer (composite-schema spy assertions
  * plus role-resolution outcome assertions). This class adds the HTTP-status mapping
- * piece — that a {@code ResolvedRole.UNKNOWN} from the OWL-off path surfaces as
+ * piece — that a {@code ResolvedBaseClass.UNKNOWN} from the OWL-off path surfaces as
  * {@code 400 Bad Request} via {@code VerificationServiceImpl} +
  * {@code RestExceptionHandler}.
  *
@@ -70,7 +70,7 @@ class VerificationOwlToggleControllerTest {
   // Credential whose `credentialSubject.@type` is reachable only via the ontology above
   // (gx:LegalPerson is itself a subclass of gx:Participant in the gx-2511 bundle). With
   // OWL on this resolves to the Participant role; with OWL off it falls through to
-  // ResolvedRole.UNKNOWN and the verification entry point rejects it.
+  // ResolvedBaseClass.UNKNOWN and the verification entry point rejects it.
   private static final String CUSTOM_PARTICIPANT_VP = """
       {
         "@context": "https://www.w3.org/ns/credentials/v2",

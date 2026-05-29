@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBaseClassPatch;
 import eu.xfsc.fc.client.AdminClient;
 import eu.xfsc.fc.demo.config.SecurityConfig;
 
@@ -83,8 +83,8 @@ class AdminControllerTest {
   }
 
   @Test
-  void patchTrustFrameworkRole_unauthenticated_redirectsToLogin() throws Exception {
-    mockMvc.perform(patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+  void patchTrustFrameworkBaseClass_unauthenticated_redirectsToLogin() throws Exception {
+    mockMvc.perform(patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MediaType.APPLICATION_JSON)
             .content(ENABLED_TRUE))
         .andExpect(status().is3xxRedirection());
@@ -112,16 +112,16 @@ class AdminControllerTest {
   }
 
   @Test
-  void patchTrustFrameworkRole_authenticated_forwardsToAdminClient() throws Exception {
-    mockMvc.perform(patch("/admin/trust-frameworks/gaia-x-2511/roles/ServiceOffering")
+  void patchTrustFrameworkBaseClass_authenticated_forwardsToAdminClient() throws Exception {
+    mockMvc.perform(patch("/admin/trust-frameworks/gaia-x-2511/base-classes/ServiceOffering")
             .with(oauth2Login())
             .with(oauth2Client(REG_ID))
             .contentType(MediaType.APPLICATION_JSON)
             .content(ENABLED_TRUE))
         .andExpect(status().isOk());
 
-    verify(adminClient).patchTrustFrameworkRole(eq("gaia-x-2511"), eq("ServiceOffering"),
-        any(TrustFrameworkRolePatch.class), any(OAuth2AuthorizedClient.class));
+    verify(adminClient).patchTrustFrameworkBaseClass(eq("gaia-x-2511"), eq("ServiceOffering"),
+        any(TrustFrameworkBaseClassPatch.class), any(OAuth2AuthorizedClient.class));
   }
 
   @Test

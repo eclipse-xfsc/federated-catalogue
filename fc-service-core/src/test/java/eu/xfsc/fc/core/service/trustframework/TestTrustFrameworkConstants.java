@@ -47,12 +47,12 @@ public class TestTrustFrameworkConstants {
   public static final int TIMEOUT_SECONDS = 30;
 
   /**
-   * Roles known to be declared in the default gaia-x bundle (from framework.yaml).
+   * Base classes known to be declared in the default gaia-x bundle (from framework.yaml).
    */
-  public static final String TFW_ROLE_PARTICIPANT = "Participant";
-  public static final String TFW_ROLE_DIGITAL_SERVICE_OFFERING = "DigitalServiceOffering";
-  public static final String TFW_ROLE_SERVICE_OFFERING = "ServiceOffering";
-  public static final String TFW_ROLE_RESOURCE = "Resource";
+  public static final String TFW_BASE_CLASS_PARTICIPANT = "Participant";
+  public static final String TFW_BASE_CLASS_DIGITAL_SERVICE_OFFERING = "DigitalServiceOffering";
+  public static final String TFW_BASE_CLASS_SERVICE_OFFERING = "ServiceOffering";
+  public static final String TFW_BASE_CLASS_RESOURCE = "Resource";
 
   private TestTrustFrameworkConstants() {
   }

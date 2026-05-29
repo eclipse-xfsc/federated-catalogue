@@ -77,7 +77,8 @@ kubectl apply -f deployment/cert-manager/clusterissuer.yaml
 
 ### 5. Create namespace and out-of-band secrets
 
-The Keycloak OAuth2 client secret is not managed by Helm. Its value must match the `secret` field of the `federated-catalogue` client in `gaia-x-realm.json` (currently `**********`):
+The Keycloak OAuth2 client secret is not managed by Helm. Its value must match the `secret` field of the
+`federated-catalogue` client in `gaia-x-realm.json` (currently `**********`):
 
 ```bash
 kubectl create namespace federated-catalogue

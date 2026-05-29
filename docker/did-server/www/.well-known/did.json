@@ -26,7 +26,7 @@
         "kty": "OKP",
         "crv": "Ed25519",
         "kid": "did:web:did-server#jwt-key-1",
-        "x": "8pdnNUSGyY_2ATHUu7ogCXWsQYU5K2KJgY1qQT3QQeo",
+        "x": "TA1CerkuisjmIWYW61jOuzIQ02JqugkYIYa8st4jPwg",
         "use": "sig",
         "x5u": "https://did-server/certs/chain.pem"
       }

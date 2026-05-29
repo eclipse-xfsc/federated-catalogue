@@ -52,12 +52,12 @@ public class CredentialVerificationResult extends eu.xfsc.fc.api.generated.model
    * @param id                    credentialSubject identifier
    * @param graphClaims           RDF triples for graph-DB insertion
    * @param validators            validators that signed parts of the credential
-   * @param role                  resolved trust-framework role name
-   * @param frameworkProfileId    bundle profile identifier that resolved the role
+   * @param baseClass             resolved trust-framework base-class name
+   * @param frameworkProfileId    bundle profile identifier that resolved the base class
    */
   public CredentialVerificationResult(Instant verificationTimestamp, String lifecycleStatus, String issuer,
                                       Instant issuedDateTime, String id, List<RdfClaim> graphClaims,
-                                      List<Validator> validators, String role, String frameworkProfileId) {
+                                      List<Validator> validators, String baseClass, String frameworkProfileId) {
     super();
     setVerificationTimestamp(verificationTimestamp);
     setLifecycleStatus(lifecycleStatus);
@@ -67,7 +67,7 @@ public class CredentialVerificationResult extends eu.xfsc.fc.api.generated.model
     setWarnings(new java.util.ArrayList<>());
     this.id = id;
     this.graphClaims = graphClaims;
-    setRole(role);
+    setBaseClass(baseClass);
     setFrameworkProfileId(frameworkProfileId);
     setValidators(validators);
     if (graphClaims != null && !graphClaims.isEmpty()) {
@@ -111,7 +111,7 @@ public class CredentialVerificationResult extends eu.xfsc.fc.api.generated.model
     int graphClaimCount = graphClaims == null ? 0 : graphClaims.size();
     int validatorCount = validators == null ? 0 : validators.size();
     return "CredentialVerificationResult [id=" + id + ", issuer=" + getIssuer()
-        + ", role=" + getRole() + ", frameworkProfileId=" + getFrameworkProfileId()
+        + ", baseClass=" + getBaseClass() + ", frameworkProfileId=" + getFrameworkProfileId()
         + ", validatorDids=" + getValidatorDids()
         + ", issuedDateTime=" + getIssuedDateTime()
         + ", graphClaims=" + graphClaimCount + ", validators=" + validatorCount

@@ -86,9 +86,9 @@ public class VerificationServiceImpl implements VerificationService {
   }
 
   @Override
-  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean requireRole)
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean requireBaseClass)
       throws VerificationException {
-    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, requireRole);
+    return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, requireBaseClass);
   }
 
   @Override
@@ -98,10 +98,10 @@ public class VerificationServiceImpl implements VerificationService {
   }
 
   private CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
-		  boolean verifyVPSignatures, boolean verifyVCSignatures, boolean requireRole) throws VerificationException {
+		  boolean verifyVPSignatures, boolean verifyVCSignatures, boolean requireBaseClass) throws VerificationException {
     CredentialVerificationResult result = resolveStrategy(payload).ingest(payload,
         verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
-    if (requireRole && !(result instanceof NonCredentialVerificationResult) && result.getRole() == null) {
+    if (requireBaseClass && !(result instanceof NonCredentialVerificationResult) && result.getBaseClass() == null) {
       String bundleInfo = getActiveTrustFrameworkBundleInfos();
       throw new ClientException(
           "Credential type is not resolvable in any active trust-framework bundle."
@@ -112,7 +112,7 @@ public class VerificationServiceImpl implements VerificationService {
 
   private String getActiveTrustFrameworkBundleInfos() {
     return trustFrameworkRegistry.getActiveBundles().stream()
-        .map(b -> b.config().id() + "=" + b.config().roles().keySet())
+        .map(b -> b.config().id() + "=" + b.config().baseClasses().keySet())
         .collect(Collectors.joining(", "));
   }
 }

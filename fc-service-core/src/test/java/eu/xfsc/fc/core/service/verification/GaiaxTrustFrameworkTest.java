@@ -171,7 +171,7 @@ public class GaiaxTrustFrameworkTest {
         getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
     assertNotNull(result, "Should return result");
-    assertEquals("Participant", result.getRole(), "Should have Participant role");
+    assertEquals("Participant", result.getBaseClass(), "Should have Participant role");
     assertNotNull(result.getGraphClaims(), "Claims should be extracted");
     assertFalse(result.getGraphClaims().isEmpty(), "Should have claims");
   }
@@ -204,7 +204,7 @@ public class GaiaxTrustFrameworkTest {
         getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
     assertNotNull(result, "Should process Gaia-X credential");
-    assertEquals("Participant", result.getRole());
+    assertEquals("Participant", result.getBaseClass());
   }
 
   // ==================== Behavioral Toggle Tests ====================

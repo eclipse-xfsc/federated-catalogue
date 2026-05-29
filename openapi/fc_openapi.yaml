@@ -175,16 +175,16 @@ components:
             - "2 triple(s) were removed from your upload because they use the reserved internal namespace
                <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
                This namespace is reserved for internal catalogue use only and cannot be set by external clients."
-        role:
+        baseClass:
           type: string
           description: >-
-            Resolved trust-framework role name (e.g. "Participant", "ServiceOffering").
+            Resolved trust-framework base-class name (e.g. "Participant", "ServiceOffering").
             Absent for non-credential RDF content.
           example: Participant
         frameworkProfileId:
           type: string
           description: >-
-            Bundle profile identifier that resolved the role (e.g. "gaia-x-2511").
+            Bundle profile identifier that resolved the base class (e.g. "gaia-x-2511").
             Absent for non-credential RDF content.
           example: gaia-x-2511
         name:
@@ -676,18 +676,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrustFrameworkBundleEntry'
-          description: Per-bundle role states for this trust framework family.
+          description: Per-bundle base-class states for this trust framework family.
     TrustFrameworkBundleEntry:
       type: object
       properties:
         id:
           type: string
           description: Bundle profile ID (e.g. gaia-x-2511)
-        roles:
+        baseClasses:
           type: object
           additionalProperties:
             type: boolean
-          description: Per-role enabled state for this bundle, keyed by role name.
+          description: Per-base-class enabled state for this bundle, keyed by base-class name.
         effectiveConfig:
           $ref: '#/components/schemas/TrustFrameworkBundleEffectiveConfig'
         overriddenFields:
@@ -741,10 +741,10 @@ components:
         enabled:
           type: boolean
           description: Desired enabled state of the schema validation module.
-    TrustFrameworkRolePatch:
+    TrustFrameworkBaseClassPatch:
       type: object
       description: >-
-        Merge-patch body for PATCH /admin/trust-frameworks/{bundleId}/roles/{roleName}.
+        Merge-patch body for PATCH /admin/trust-frameworks/{bundleId}/base-classes/{baseClassName}.
         At least one field must be present. Only the supplied fields are modified;
         absent fields are left unchanged.
       minProperties: 1
@@ -752,7 +752,7 @@ components:
       properties:
         enabled:
           type: boolean
-          description: Desired enabled state of the role within the bundle.
+          description: Desired enabled state of the base class within the bundle.
     SchemaValidationStatus:
       type: object
       properties:
@@ -797,7 +797,7 @@ components:
             True when no trust-framework bundles are active. In that case
             contributions cannot be computed for any ontology; the UI
             should surface a banner explaining that the OWL toggle has no
-            roles to gate.
+            base classes to gate.
       required:
         - items
         - noActiveBundles
@@ -805,7 +805,7 @@ components:
       type: object
       description: >-
         One runtime-uploaded ontology and its contribution to each
-        registered trust-framework role.
+        registered trust-framework base class.
       properties:
         id:
           type: string
@@ -822,10 +822,10 @@ components:
         contributions:
           type: object
           description: >-
-            For each registered role name, the number of distinct
-            rdfs:subClassOf+ descendants reachable from the role's primary
+            For each registered base-class name, the number of distinct
+            rdfs:subClassOf+ descendants reachable from the base class's primary
             root and additional_roots, aggregated across active
-            trust-framework bundles. Roles with zero contributions are
+            trust-framework bundles. Base classes with zero contributions are
             omitted. Empty when parseError is true.
           additionalProperties:
             type: integer
@@ -1499,15 +1499,15 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
-  /admin/trust-frameworks/{bundleId}/roles/{roleName}:
+  /admin/trust-frameworks/{bundleId}/base-classes/{baseClassName}:
     patch:
       tags:
         - TrustFrameworkAdmin
-      summary: Merge-patch a single role within a trust-framework bundle
+      summary: Merge-patch a single base class within a trust-framework bundle
       description: >-
         Merge-patch semantics (RFC 7396): only fields present in the body are modified.
         At least one field must be present.
-      operationId: patchTrustFrameworkRole
+      operationId: patchTrustFrameworkBaseClass
       security:
         - jwt: []
       parameters:
@@ -1516,7 +1516,7 @@ paths:
           required: true
           schema:
             type: string
-        - name: roleName
+        - name: baseClassName
           in: path
           required: true
           schema:
@@ -1526,10 +1526,10 @@ paths:
         content:
           application/merge-patch+json:
             schema:
-              $ref: '#/components/schemas/TrustFrameworkRolePatch'
+              $ref: '#/components/schemas/TrustFrameworkBaseClassPatch'
       responses:
         '200':
-          description: Role state updated
+          description: Base-class state updated
         '400':
           $ref: '#/components/responses/ClientError'
         '401':
@@ -1607,11 +1607,11 @@ paths:
     get:
       tags:
         - SchemaValidationAdmin
-      summary: List uploaded ontologies and their subclass contributions to registered roles
+      summary: List uploaded ontologies and their subclass contributions to registered base classes
       description: >-
         Returns the runtime-uploaded ontologies currently consulted by the OWL
         module when it is enabled, with the number of subclasses each ontology
-        contributes to each registered trust-framework role (Participant,
+        contributes to each registered trust-framework base class (Participant,
         ServiceOffering, Resource for the Gaia-X 2511 bundle). Read-only —
         admins toggle the OWL module as a whole on
         `PATCH /admin/schema-validation/modules/{type}`. This endpoint surfaces
@@ -1621,7 +1621,7 @@ paths:
         - jwt: []
       responses:
         '200':
-          description: List of ontologies with per-role subclass counts
+          description: List of ontologies with per-base-class subclass counts
           content:
             application/json:
               schema:
@@ -3376,7 +3376,7 @@ paths:
             Trust-framework bundle identifier for disambiguation. Ignored when
             exactly one bundle is active. Required when the credential type is
             resolvable in more than one active bundle (e.g. two bundles both
-            declare a "Participant" role).
+            declare a "Participant" base class).
           required: false
           schema:
             type: string

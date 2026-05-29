@@ -182,24 +182,24 @@ public class GraphRebuilder {
     return true;
   }
 
-  private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) throws Exception {
+  private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) {
         String contentType = assetMetaData.getContentType();
         if (VerificationConstants.MEDIA_TYPE_NTRIPLES.equals(contentType)
                 || VerificationConstants.MEDIA_TYPE_TURTLE.equals(contentType)
                 || VerificationConstants.MEDIA_TYPE_RDF_XML.equals(contentType)) {
             return claimExtractionService.extractAllTriples(assetMetaData.getContentAccessor());
         }
-        // Parity with the upload path: JWT-secured credentials must be decoded to JSON-LD
-        // before claim extraction. Pure content decode — no signature or policy enforcement.
-        ContentAccessor content = credentialFormatDetector.unwrapToJsonLd(assetMetaData.getContentAccessor());
-        // VP payloads may embed inner credentials as EnvelopedVerifiableCredential entries
-        // (data:application/vc+jwt,... URIs). Resolve them in place so the claim extractors
-        // see the inner credentialSubject; the upload path does this in extractAndValidateClaims.
-        content = envelopedCredentialResolver.resolveInnerEnvelopedCredentials(content);
-        List<RdfClaim> claims = claimExtractionService.extractCredentialClaims(content);
+    // Parity with the upload path: JWT-secured credentials must be decoded to JSON-LD
+    // before claim extraction. Pure content decode — no signature or policy enforcement.
+    ContentAccessor content = credentialFormatDetector.unwrapToJsonLd(assetMetaData.getContentAccessor());
+    // VP payloads may embed inner credentials as EnvelopedVerifiableCredential entries
+    // (data:application/vc+jwt,... URIs). Resolve them in place so the claim extractors
+    // see the inner credentialSubject; the upload path does this in extractAndValidateClaims.
+    content = envelopedCredentialResolver.resolveInnerEnvelopedCredentials(content);
+    List<RdfClaim> claims = claimExtractionService.extractCredentialClaims(content);
         if (claims == null || claims.isEmpty()) {
             log.debug("extractClaims; credential extraction returned empty for {}, falling back to all-triples", contentType);
-            return claimExtractionService.extractAllTriples(content);
+          return claimExtractionService.extractAllTriples(content);
         }
         return claims;
     }

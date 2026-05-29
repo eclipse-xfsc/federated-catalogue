@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBaseClassPatch;
 
 /**
  * Regression test for the portal WebClient codecs. The admin-API endpoints use the
@@ -35,8 +35,8 @@ class ClientConfigCodecsTest {
   }
 
   @Test
-  void configuredEncoder_writesTrustFrameworkRolePatch_underMergePatchJson() {
-    assertWritable(TrustFrameworkRolePatch.class);
+  void configuredEncoder_writesTrustFrameworkBaseClassPatch_underMergePatchJson() {
+    assertWritable(TrustFrameworkBaseClassPatch.class);
   }
 
   @Test

@@ -32,7 +32,7 @@ class CredentialVerificationResultTest {
   void getRole_constructedWithRole_returnsRole() {
     CredentialVerificationResult result = minimal("Participant");
 
-    assertEquals("Participant", result.getRole());
+    assertEquals("Participant", result.getBaseClass());
   }
 
   @Test
@@ -106,7 +106,7 @@ class CredentialVerificationResultTest {
     NonCredentialVerificationResult result = new NonCredentialVerificationResult(
         NOW, "active", List.of());
 
-    assertNull(result.getRole());
+    assertNull(result.getBaseClass());
     assertNull(result.getFrameworkProfileId());
   }
 

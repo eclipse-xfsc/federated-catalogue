@@ -20,7 +20,7 @@ import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkRolePatch;
+import eu.xfsc.fc.api.generated.model.TrustFrameworkBaseClassPatch;
 
 /**
  * Client for Admin API endpoints.
@@ -74,18 +74,18 @@ public class AdminClient extends ServiceClient {
   }
 
   /**
-   * Applies a merge-patch to a role within the identified bundle. Only fields present in the
+   * Applies a merge-patch to a base class within the identified bundle. Only fields present in the
    * patch are modified; absent fields are left unchanged.
    *
    * @param bundleId         trust framework bundle identifier
-   * @param roleName         role name within the bundle
+   * @param baseClassName    base-class name within the bundle
    * @param patch            fields to update
    * @param authorizedClient OAuth2 client for bearer token
    */
-  public void patchTrustFrameworkRole(String bundleId, String roleName,
-                                      TrustFrameworkRolePatch patch, OAuth2AuthorizedClient authorizedClient) {
-    doPatch("/admin/trust-frameworks/{bundleId}/roles/{roleName}", patch,
-        Map.of("bundleId", bundleId, "roleName", roleName), Void.class, authorizedClient);
+  public void patchTrustFrameworkBaseClass(String bundleId, String baseClassName,
+                                           TrustFrameworkBaseClassPatch patch, OAuth2AuthorizedClient authorizedClient) {
+    doPatch("/admin/trust-frameworks/{bundleId}/base-classes/{baseClassName}", patch,
+        Map.of("bundleId", bundleId, "baseClassName", baseClassName), Void.class, authorizedClient);
   }
 
   /**

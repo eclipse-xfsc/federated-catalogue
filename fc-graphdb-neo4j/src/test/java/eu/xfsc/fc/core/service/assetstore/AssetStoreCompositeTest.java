@@ -20,7 +20,6 @@ import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
 import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
 import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.VerificationConstants;
-import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
 import eu.xfsc.fc.core.util.GraphRebuilder;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
@@ -55,8 +54,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.data.domain.Page;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
-
 import java.util.List;
 import java.util.Map;
 
@@ -84,7 +81,7 @@ import static eu.xfsc.fc.core.util.TestUtil.getAccessor;
     ValidationResultHasher.class
 })
 @Slf4j
-@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
+@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.EMBEDDED)
 @Import(EmbeddedNeo4JConfig.class)
 public class AssetStoreCompositeTest {
 
@@ -123,13 +120,13 @@ public class AssetStoreCompositeTest {
     @Autowired
     private GraphRebuilder graphRebuilder;
 
-    private JWSSigner jwtSigner;
+  private JWSSigner jwtSigner;
 
-    @BeforeAll
-    void initSigner() throws Exception {
-        OctetKeyPair jwk = new OctetKeyPairGenerator(Curve.Ed25519).keyID("test-key").generate();
-        jwtSigner = new Ed25519Signer(jwk);
-    }
+  @BeforeAll
+  void initSigner() throws Exception {
+    OctetKeyPair jwk = new OctetKeyPairGenerator(Curve.Ed25519).keyID("test-key").generate();
+    jwtSigner = new Ed25519Signer(jwk);
+  }
 
     @BeforeEach
     void stubValidationResultStore() {
@@ -306,44 +303,46 @@ public class AssetStoreCompositeTest {
         assetStorePublisher.deleteAsset(assetMeta.getAssetHash());
     }
 
-    @Test
-    void rebuildGraphDb_jwtWrappedCredential_restoresSameClaims() throws Exception {
+  @Test
+  void rebuildGraphDb_jwtWrappedCredential_restoresSameClaims() throws Exception {
 
-        schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
-        String vpJson = getAccessor("Claims-Extraction-Tests/providerTest.jsonld").getContentAsString();
-        ContentAccessor content =
-                new ContentAccessorDirect(danubetechVpJwt(vpJson), VerificationConstants.MEDIA_TYPE_VP_JWT);
+    schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
+    String vpJson = getAccessor("Claims-Extraction-Tests/providerTest.jsonld").getContentAsString();
+    ContentAccessor content =
+        new ContentAccessorDirect(danubetechVpJwt(vpJson), VerificationConstants.MEDIA_TYPE_VP_JWT);
 
-        // Upload path: unwrap JWT → extract claims
-        CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
-        AssetMetadata assetMeta = new AssetMetadata(content, result);
-        assetStorePublisher.storeCredential(assetMeta, result);
+    // Upload path: unwrap JWT → extract claims
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+    AssetMetadata assetMeta = new AssetMetadata(content, result);
+    assetStorePublisher.storeCredential(assetMeta, result);
 
-        int afterStore = graphStore.queryData(new GraphQuery("MATCH (n) RETURN n", null)).getResults().size();
-        Assertions.assertTrue(afterStore > 1, "JWT-wrapped credential must yield claims at upload time");
+    int afterStore = graphStore.queryData(new GraphQuery("MATCH (n) RETURN n", null)).getResults().size();
+    Assertions.assertTrue(afterStore > 1, "JWT-wrapped credential must yield claims at upload time");
 
-        graphStore.deleteClaims(assetMeta.getId());
-        int afterDelete = graphStore.queryData(new GraphQuery("MATCH (n) RETURN n", null)).getResults().size();
-        Assertions.assertTrue(afterDelete < afterStore, "claims must be removed before rebuild");
+    graphStore.deleteClaims(assetMeta.getId());
+    int afterDelete = graphStore.queryData(new GraphQuery("MATCH (n) RETURN n", null)).getResults().size();
+    Assertions.assertTrue(afterDelete < afterStore, "claims must be removed before rebuild");
 
-        graphRebuilder.rebuildGraphDb(1, 0, 1, 1);
+    graphRebuilder.rebuildGraphDb(1, 0, 1, 1);
 
-        int afterRebuild = graphStore.queryData(new GraphQuery("MATCH (n) RETURN n", null)).getResults().size();
-        Assertions.assertEquals(afterStore, afterRebuild,
-                "rebuild must restore the same claims for a JWT-wrapped credential as at upload");
+    int afterRebuild = graphStore.queryData(new GraphQuery("MATCH (n) RETURN n", null)).getResults().size();
+    Assertions.assertEquals(afterStore, afterRebuild,
+        "rebuild must restore the same claims for a JWT-wrapped credential as at upload");
 
-        assetStorePublisher.deleteAsset(assetMeta.getAssetHash());
-    }
+    assetStorePublisher.deleteAsset(assetMeta.getAssetHash());
+  }
 
-    /** Wraps a JSON-LD Verifiable Presentation into a danubetech-style compact JWT (vp wrapper claim). */
-    private String danubetechVpJwt(String vpJson) throws Exception {
-        Map<String, Object> vp = JSONObjectUtils.parse(vpJson);
-        JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("vp", vp).build();
-        JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
-                .keyID("did:web:example.com#test-key")
-                .build();
-        SignedJWT signedJwt = new SignedJWT(header, claims);
-        signedJwt.sign(jwtSigner);
-        return signedJwt.serialize();
-    }
+  /**
+   * Wraps a JSON-LD Verifiable Presentation into a danubetech-style compact JWT (vp wrapper claim).
+   */
+  private String danubetechVpJwt(String vpJson) throws Exception {
+    Map<String, Object> vp = JSONObjectUtils.parse(vpJson);
+    JWTClaimsSet claims = new JWTClaimsSet.Builder().claim("vp", vp).build();
+    JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.EdDSA)
+        .keyID("did:web:example.com#test-key")
+        .build();
+    SignedJWT signedJwt = new SignedJWT(header, claims);
+    signedJwt.sign(jwtSigner);
+    return signedJwt.serialize();
+  }
 }
