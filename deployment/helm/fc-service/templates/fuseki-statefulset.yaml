@@ -16,7 +16,14 @@ spec:
         {{- include "fc-service.fuseki.selectorLabels" . | nindent 8 }}
     spec:
       securityContext:
-        fsGroup: 9008
+        fsGroup: 1000
+      initContainers:
+      - name: init-tdb-dir
+        image: {{ .Values.fuseki.image.repository }}:{{ .Values.fuseki.image.tag }}
+        command: ["sh", "-c", "mkdir -p /fuseki/databases/{{ .Values.fuseki.dataset }}"]
+        volumeMounts:
+        - name: fuseki-data
+          mountPath: /fuseki/databases
       containers:
       - name: fuseki
         image: {{ .Values.fuseki.image.repository }}:{{ .Values.fuseki.image.tag }}
@@ -25,19 +32,16 @@ spec:
         - containerPort: 3030
           name: http
         env:
-        - name: ADMIN_PASSWORD
-          value: {{ .Values.fuseki.adminPassword | quote }}
-        - name: FUSEKI_DATASET_1
-          value: {{ .Values.fuseki.dataset | quote }}
-        - name: JVM_ARGS
-          value: {{ .Values.fuseki.jvmArgs | quote }}
-        - name: ENABLE_UPDATE
-          value: "true"
-        - name: ENABLE_DATA_WRITE
-          value: "true"
+        - name: JAVA_OPTIONS
+          value: {{ .Values.fuseki.javaOptions | quote }}
+        args:
+        - "--tdb2"
+        - "--loc=/fuseki/databases/{{ .Values.fuseki.dataset }}"
+        - "--update"
+        - "/{{ .Values.fuseki.dataset }}"
         volumeMounts:
         - name: fuseki-data
-          mountPath: /fuseki
+          mountPath: /fuseki/databases
         resources:
           {{- toYaml .Values.fuseki.resources | nindent 10 }}
   volumeClaimTemplates:

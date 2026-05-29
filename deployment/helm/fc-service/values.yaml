@@ -177,12 +177,20 @@ env:
     value: "true"
   - name: GRAPHSTORE_IMPL
     value: fuseki
-  - name: GRAPHSTORE_URI
+  - name: GRAPHSTORE_FUSEKI_URI
     value: http://fc-fuseki:3030/ds
+  - name: GRAPHSTORE_NEO4J_URI
+    value: bolt://fc-neo4j:7687
   - name: GRAPHSTORE_USER
-    value: admin
+    value: neo4j
   - name: GRAPHSTORE_PASSWORD
-    value: admin
+    value: neo12345
+  - name: SPRING_NEO4J_URI
+    value: bolt://fc-neo4j:7687
+  - name: SPRING_NEO4J_AUTHENTICATION_USERNAME
+    value: neo4j
+  - name: SPRING_NEO4J_AUTHENTICATION_PASSWORD
+    value: neo12345
   - name: KEYCLOAK_AUTH_SERVER_URL
     value: http://fc-keycloak-headless.federated-catalogue.svc.cluster.local:8080/auth
   - name: KEYCLOAK_CREDENTIALS_SECRET
@@ -381,11 +389,10 @@ did:
 fuseki:
   fullnameOverride: fc-fuseki
   image:
-    repository: docker.io/secoresearch/fuseki
+    repository: ghcr.io/eclipse-xfsc/federated-catalogue/fc-fuseki
     tag: "5.5.0"
   dataset: ds
-  adminPassword: admin
-  jvmArgs: "-Xmx1g"
+  javaOptions: "-Xmx1g"
   persistence:
     size: 10Gi
   resources:
