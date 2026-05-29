@@ -146,16 +146,16 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFrameworkRole_knownBundleAndRole_returns200() throws Exception {
+  void patchTrustFrameworkBaseClass_knownBundleAndRole_returns200() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());
 
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
@@ -164,9 +164,9 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFrameworkRole_unknownBundle_returns404() throws Exception {
+  void patchTrustFrameworkBaseClass_unknownBundle_returns404() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/nonexistent-bundle/roles/Participant")
+            .patch("/admin/trust-frameworks/nonexistent-bundle/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
@@ -176,9 +176,9 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFrameworkRole_unknownRole_returns404() throws Exception {
+  void patchTrustFrameworkBaseClass_unknownRole_returns404() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/UnknownRole")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/UnknownBaseClass")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
@@ -188,9 +188,9 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFrameworkRole_missingBody_returns400() throws Exception {
+  void patchTrustFrameworkBaseClass_missingBody_returns400() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             // missing body
             .with(csrf()))
@@ -199,9 +199,9 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
-  void patchTrustFrameworkRole_emptyBody_returns400() throws Exception {
+  void patchTrustFrameworkBaseClass_emptyBody_returns400() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content("{}")
             .with(csrf()))
@@ -209,9 +209,9 @@ public class TrustFrameworkAdminControllerTest {
   }
 
   @Test
-  void patchTrustFrameworkRole_unauthenticated_returns401() throws Exception {
+  void patchTrustFrameworkBaseClass_unauthenticated_returns401() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
@@ -220,9 +220,9 @@ public class TrustFrameworkAdminControllerTest {
 
   @Test
   @WithMockUser
-  void patchTrustFrameworkRole_wrongRole_returns403() throws Exception {
+  void patchTrustFrameworkBaseClass_wrongRole_returns403() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders
-            .patch("/admin/trust-frameworks/gaia-x-2511/roles/Participant")
+            .patch("/admin/trust-frameworks/gaia-x-2511/base-classes/Participant")
             .contentType(MERGE_PATCH_JSON_VALUE)
             .content(ENABLED_TRUE)
             .with(csrf()))
@@ -274,9 +274,9 @@ public class TrustFrameworkAdminControllerTest {
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].id").value(hasItem("gaia-x-2511")))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].roles.Participant").value(hasItem(true)))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].roles.ServiceOffering").value(hasItem(true)))
-        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].roles.Resource").value(hasItem(true)));
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].baseClasses.Participant").value(hasItem(true)))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].baseClasses.ServiceOffering").value(hasItem(true)))
+        .andExpect(jsonPath("$[?(@.id == 'gaia-x')].bundles[0].baseClasses.Resource").value(hasItem(true)));
   }
 
   @Test

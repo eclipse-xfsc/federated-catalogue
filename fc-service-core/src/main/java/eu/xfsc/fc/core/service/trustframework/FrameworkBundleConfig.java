@@ -15,12 +15,12 @@ public record FrameworkBundleConfig(
     @JsonProperty("family") String family,
     @JsonProperty("namespace") String namespace,
     @JsonProperty("validation_type") ValidationType validationType,
-    @JsonProperty("roles") Map<String, RoleConfig> roles,
+    @JsonProperty("base_classes") Map<String, BaseClassConfig> baseClasses,
     @JsonProperty("properties") Map<String, String> properties
 ) {
 
   public FrameworkBundleConfig {
-    roles = roles != null ? roles : Map.of();
+    baseClasses = baseClasses != null ? baseClasses : Map.of();
     properties = properties != null ? properties : Map.of();
   }
 }

@@ -54,10 +54,10 @@ import lombok.extern.slf4j.Slf4j;
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {RoleResolutionCharacterisationTest.TestApplication.class,
+@ContextConfiguration(classes = {BaseClassResolutionCharacterisationTest.TestApplication.class,
     VerificationStackTestConfig.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
-public class RoleResolutionCharacterisationTest {
+public class BaseClassResolutionCharacterisationTest {
 
   private static final boolean VERIFY_SEMANTICS = true;
   private static final boolean VERIFY_VC_SIGNATURES = true;
@@ -109,7 +109,7 @@ public class RoleResolutionCharacterisationTest {
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
           "gx:LegalPerson must produce a plain CredentialVerificationResult — no role-specific subclass");
-      assertEquals("Participant", result.getRole());
+      assertEquals("Participant", result.getBaseClass());
       assertNotNull(result.getGraphClaims());
       assertFalse(result.getGraphClaims().isEmpty(), "Participant credential must produce non-empty claims");
     }
@@ -123,7 +123,7 @@ public class RoleResolutionCharacterisationTest {
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
           "gx:ServiceOffering must produce a plain CredentialVerificationResult — no role-specific subclass");
-      assertEquals("ServiceOffering", result.getRole());
+      assertEquals("ServiceOffering", result.getBaseClass());
       assertNotNull(result.getGraphClaims());
       assertFalse(result.getGraphClaims().isEmpty(), "ServiceOffering credential must produce non-empty claims");
     }
@@ -139,7 +139,7 @@ public class RoleResolutionCharacterisationTest {
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
           "gx:DigitalServiceOffering must produce a plain CredentialVerificationResult (gx-2511 additional_roots edge case)");
-      assertEquals("ServiceOffering", result.getRole());
+      assertEquals("ServiceOffering", result.getBaseClass());
       assertNotNull(result.getGraphClaims());
       assertFalse(result.getGraphClaims().isEmpty(), "DigitalServiceOffering credential must produce non-empty claims");
     }
@@ -154,7 +154,7 @@ public class RoleResolutionCharacterisationTest {
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
           "gx:Resource must produce a plain CredentialVerificationResult — no role-specific subclass");
-      assertEquals("Resource", result.getRole());
+      assertEquals("Resource", result.getBaseClass());
       assertNotNull(result.getGraphClaims());
       assertFalse(result.getGraphClaims().isEmpty(), "Resource credential must produce non-empty claims");
     }
@@ -259,7 +259,7 @@ public class RoleResolutionCharacterisationTest {
     CredentialVerificationResult result = verificationService.verifyCredential(
         jwt, SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
 
-    assertEquals("Participant", result.getRole(),
+    assertEquals("Participant", result.getBaseClass(),
         "gx:LegalPerson in JWT credentialSubject must resolve to Participant role");
     assertEquals(VALIDATOR_KID, result.getPublicKey(),
         "publicKey must equal the DID URI of the first validator from the JWT verifier");
@@ -286,7 +286,7 @@ public class RoleResolutionCharacterisationTest {
     @Test
     void verifyCredential_unknownTypePresentInVp_throwsClientException() {
       // credentialSubject type is ex:CustomEntity — not in any active bundle hierarchy.
-      // resolveSubjectRole returns UNKNOWN → ClientException (400).
+      // resolveSubjectBaseClass returns UNKNOWN → ClientException (400).
         ContentAccessorDirect vp = new ContentAccessorDirect("""
             {
               "@context": ["https://www.w3.org/ns/credentials/v2"],

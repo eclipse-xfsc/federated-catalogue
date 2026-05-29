@@ -32,8 +32,8 @@ import eu.xfsc.fc.api.generated.model.OntologyImpactList;
 import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
+import eu.xfsc.fc.core.service.trustframework.BaseClassConfig;
 import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
-import eu.xfsc.fc.core.service.trustframework.RoleConfig;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import lombok.RequiredArgsConstructor;
@@ -41,18 +41,18 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Computes the per-ontology contribution of runtime-uploaded ontologies to each
- * registered trust-framework role.
+ * registered trust-framework base class.
  *
  * <p>For every {@link SchemaType#ONTOLOGY} row in the schema store, this service parses
  * the ontology with Jena and counts the {@code rdfs:subClassOf+} descendants reachable
- * from each registered role's primary root URI and its {@code additional_roots} siblings.
+ * from each registered base class's primary root URI and its {@code additional_roots} siblings.
  * The result is surfaced to the admin schema-validation page so the OWL toggle's effect
  * is concrete: admins can see what each stored ontology contributes before flipping the
  * toggle off.
  *
  * <p>When an ontology fails to parse the entry carries {@code parseError=true} so the
  * UI can warn the admin instead of silently hiding the row — otherwise an unparseable
- * ontology looks identical to a healthy ontology with zero matching roles, and an admin
+ * ontology looks identical to a healthy ontology with zero matching base classes, and an admin
  * would draw the wrong conclusion about whether disabling OWL is safe.
  *
  * <p>The computation is read-only and consults only data already in the catalogue. No
@@ -89,7 +89,7 @@ public class OntologyImpactService {
   private final TrustFrameworkRegistry trustFrameworkRegistry;
 
   /**
-   * Returns the impact list: one entry per stored ontology with a role-to-count map,
+   * Returns the impact list: one entry per stored ontology with a base-class-to-count map,
    * plus a {@code noActiveBundles} flag when there are no active bundles to compute
    * contributions against.
    *
@@ -99,8 +99,8 @@ public class OntologyImpactService {
   public OntologyImpactList computeImpact() {
     Map<SchemaType, List<String>> schemaList = schemaStore.getSchemaList();
     List<String> ontologyIds = schemaList.getOrDefault(SchemaType.ONTOLOGY, List.of());
-    Map<String, Set<String>> roleRoots = collectRoleRoots();
-    boolean noActiveBundles = roleRoots.isEmpty();
+    Map<String, Set<String>> baseClassRoots = collectBaseClassRoots();
+    boolean noActiveBundles = baseClassRoots.isEmpty();
 
     List<OntologyImpactEntry> entries = new ArrayList<>(ontologyIds.size());
     for (String schemaId : ontologyIds) {
@@ -115,38 +115,38 @@ public class OntologyImpactService {
         entries.add(parseErrorEntry(schemaId, "Could not load schema record"));
         continue;
       }
-      entries.add(buildEntry(record, roleRoots));
+      entries.add(buildEntry(record, baseClassRoots));
     }
 
     return new OntologyImpactList().items(entries).noActiveBundles(noActiveBundles);
   }
 
   /**
-   * Collects all role root URIs (primary + additional_roots) across every active bundle,
-   * keyed by role name. Counts under the same role name from different bundles are
+   * Collects all base-class root URIs (primary + additional_roots) across every active bundle,
+   * keyed by base-class name. Counts under the same base-class name from different bundles are
    * aggregated.
    */
-  private Map<String, Set<String>> collectRoleRoots() {
-    Map<String, Set<String>> roleRoots = new HashMap<>();
+  private Map<String, Set<String>> collectBaseClassRoots() {
+    Map<String, Set<String>> baseClassRoots = new HashMap<>();
     Collection<TrustFrameworkBundle> bundles = trustFrameworkRegistry.getActiveBundles();
     for (TrustFrameworkBundle bundle : bundles) {
       FrameworkBundleConfig config = bundle.config();
       String namespace = config.namespace();
-      for (Map.Entry<String, RoleConfig> roleEntry : config.roles().entrySet()) {
-        String roleName = roleEntry.getKey();
-        Set<String> rootsForRole = roleRoots.computeIfAbsent(roleName, k -> new HashSet<>());
-        rootsForRole.add(namespace + roleName);
-        for (String additionalRoot : roleEntry.getValue().additionalRoots()) {
+      for (Map.Entry<String, BaseClassConfig> baseClassEntry : config.baseClasses().entrySet()) {
+        String baseClassName = baseClassEntry.getKey();
+        Set<String> rootsForBaseClass = baseClassRoots.computeIfAbsent(baseClassName, k -> new HashSet<>());
+        rootsForBaseClass.add(namespace + baseClassName);
+        for (String additionalRoot : baseClassEntry.getValue().additionalRoots()) {
           if (additionalRoot != null && !additionalRoot.isBlank()) {
-            rootsForRole.add(additionalRoot);
+            rootsForBaseClass.add(additionalRoot);
           }
         }
       }
     }
-    return roleRoots;
+    return baseClassRoots;
   }
 
-  private OntologyImpactEntry buildEntry(SchemaRecord record, Map<String, Set<String>> roleRoots) {
+  private OntologyImpactEntry buildEntry(SchemaRecord record, Map<String, Set<String>> baseClassRoots) {
     Map<String, Integer> contribs = new HashMap<>();
     String displayName = record.getId();
     boolean parseError = false;
@@ -162,13 +162,13 @@ public class OntologyImpactService {
         if (resolvedName != null && !resolvedName.isBlank()) {
           displayName = resolvedName;
         }
-        for (Map.Entry<String, Set<String>> roleEntry : roleRoots.entrySet()) {
+        for (Map.Entry<String, Set<String>> baseClassEntry : baseClassRoots.entrySet()) {
           Set<String> subclasses = new HashSet<>();
-          for (String root : roleEntry.getValue()) {
+          for (String root : baseClassEntry.getValue()) {
             subclasses.addAll(querySubclasses(model, root));
           }
           if (!subclasses.isEmpty()) {
-            contribs.put(roleEntry.getKey(), subclasses.size());
+            contribs.put(baseClassEntry.getKey(), subclasses.size());
           }
         }
       } catch (QueryCancelledException ex) {
@@ -209,7 +209,7 @@ public class OntologyImpactService {
     // A stable per-ontology base URI ensures relative IRIs in Turtle (e.g. `<MyClass>`)
     // resolve to a predictable absolute form instead of `file://` (default working dir)
     // or empty-base failure. Without this, an ontology authored with relative IRIs
-    // contributes zero subclasses to every role and silently misleads admins.
+    // contributes zero subclasses to every base class and silently misleads admins.
     String baseUri = ONTOLOGY_BASE_URI_PREFIX + record.getId();
     try {
       model.read(new StringReader(record.content()), baseUri, Lang.TURTLE.getName());

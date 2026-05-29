@@ -37,9 +37,9 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.QueryException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.RdfClaim;
+import eu.xfsc.fc.core.service.trustframework.BaseClassConfig;
 import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
-import eu.xfsc.fc.core.service.trustframework.ResolvedRole;
-import eu.xfsc.fc.core.service.trustframework.RoleConfig;
+import eu.xfsc.fc.core.service.trustframework.ResolvedBaseClass;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.verification.VerificationConstants;
@@ -49,11 +49,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ClaimValidator {
 
   /**
-   * Message template for role-toggle rejection. Used in {@link ClientException} when a resolved
-   * role is explicitly disabled.
-   * Arguments (in order): {@code frameworkProfileId}, {@code role}.
+   * Message template for base-class-toggle rejection. Used in {@link ClientException} when a
+   * resolved base class is explicitly disabled.
+   * Arguments (in order): {@code frameworkProfileId}, {@code baseClass}.
    */
-  static final String ROLE_DISABLED_MSG = "Trust framework role '%s/%s' is disabled";
+  static final String BASE_CLASS_DISABLED_MSG = "Trust framework base class '%s/%s' is disabled";
 
     // Stored to temporarily deviate from the standard Jena behavior of parsing
     // literals
@@ -171,38 +171,38 @@ public class ClaimValidator {
 
         } // else it's a blank node, which is OK
     }
-    
+
     public Pair<String, Set<String>> resolveClaims(List<RdfClaim> claims, String subject) {
         Model model = validateClaims(claims);
       String added = ExtendClaims.addPropertyGraphUri(model, subject, VerificationConstants.GAIAX_CLAIMS_GRAPH_URI);
         Set<String> props = ExtendClaims.getMultivalProp(model);
         return Pair.of(added, props);
     }
-    
-    
+
+
     private static final String CREDENTIAL_SUBJECT = CredentialConstants.CREDENTIAL_SUBJECT_URI;
 
   /**
-   * Resolves the trust-framework role of the credential subject.
+   * Resolves the trust-framework base class of the credential subject.
    *
    * <p>Fast path: looks up each type URI in the registry's pre-built index (populated at boot
    * from bundle ontologies). Slow path: when the registry has no match and a composite ontology
    * is provided, performs a SPARQL subclass walk over that ontology — needed for subclasses
    * introduced via dynamically uploaded schemas.
    *
-   * @param sm                Jena stream manager (for JSON-LD context resolution)
-   * @param subject           JSON-LD credential string whose {@code credentialSubject} type is inspected
-   * @param registry          the active trust-framework registry
-   * @param compositeOntology union ontology to use as fallback; may be {@code null}
-   * @param isRoleEnabled     predicate {@code (bundleId, roleName) -> enabled}; when it returns
-   *                          {@code false} for the matched role a {@link ClientException} is thrown
-   * @return the first resolved role, or {@link ResolvedRole#UNKNOWN} when no framework claims the type
-   * @throws ClientException when the matched role is disabled according to {@code isRoleEnabled}
+   * @param sm                  Jena stream manager (for JSON-LD context resolution)
+   * @param subject             JSON-LD credential string whose {@code credentialSubject} type is inspected
+   * @param registry            the active trust-framework registry
+   * @param compositeOntology   union ontology to use as fallback; may be {@code null}
+   * @param isBaseClassEnabled  predicate {@code (bundleId, baseClassName) -> enabled}; when it returns
+   *                            {@code false} for the matched base class a {@link ClientException} is thrown
+   * @return the first resolved base class, or {@link ResolvedBaseClass#UNKNOWN} when no framework claims the type
+   * @throws ClientException when the matched base class is disabled according to {@code isBaseClassEnabled}
    */
-  public static ResolvedRole resolveSubjectRole(StreamManager sm, String subject,
-                                                TrustFrameworkRegistry registry,
-                                                ContentAccessor compositeOntology,
-                                                BiPredicate<String, String> isRoleEnabled) {
+  public static ResolvedBaseClass resolveSubjectBaseClass(StreamManager sm, String subject,
+                                                          TrustFrameworkRegistry registry,
+                                                          ContentAccessor compositeOntology,
+                                                          BiPredicate<String, String> isBaseClassEnabled) {
         try {
           Model data = ModelFactory.createDefaultModel();
           RDFParser.create()
@@ -220,51 +220,51 @@ public class ClaimValidator {
                 continue;
               }
               String typeUri = rdfNode.asResource().getURI();
-              ResolvedRole role = registry.resolveRole(typeUri);
-              if (role.isResolved()) {
-                if (!isRoleEnabled.test(role.frameworkProfileId(), role.role())) {
+              ResolvedBaseClass baseClass = registry.resolveBaseClass(typeUri);
+              if (baseClass.isResolved()) {
+                if (!isBaseClassEnabled.test(baseClass.frameworkProfileId(), baseClass.baseClass())) {
                   throw new ClientException(
-                      ROLE_DISABLED_MSG.formatted(role.frameworkProfileId(), role.role()));
+                      BASE_CLASS_DISABLED_MSG.formatted(baseClass.frameworkProfileId(), baseClass.baseClass()));
                 }
-                return role;
+                return baseClass;
               }
               unresolved.add(typeUri);
             }
           }
           if (compositeOntology != null && !unresolved.isEmpty()) {
-            return resolveViaOntology(unresolved, registry, compositeOntology, isRoleEnabled);
+            return resolveViaOntology(unresolved, registry, compositeOntology, isBaseClassEnabled);
           }
         } catch (ClientException ce) {
           throw ce;
         } catch (Exception e) {
-          log.debug("resolveSubjectRole.error: {}", e.getMessage());
+          log.debug("resolveSubjectBaseClass.error: {}", e.getMessage());
         }
-    return ResolvedRole.UNKNOWN;
+    return ResolvedBaseClass.UNKNOWN;
   }
 
-  private static ResolvedRole resolveViaOntology(List<String> typeUris,
-                                                 TrustFrameworkRegistry registry,
-                                                 ContentAccessor compositeOntology,
-                                                 BiPredicate<String, String> isRoleEnabled) {
+  private static ResolvedBaseClass resolveViaOntology(List<String> typeUris,
+                                                      TrustFrameworkRegistry registry,
+                                                      ContentAccessor compositeOntology,
+                                                      BiPredicate<String, String> isBaseClassEnabled) {
     OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MICRO_RULE_INF);
         model.read(new StringReader(compositeOntology.getContentAsString()), null, Lang.TURTLE.getName());
     for (TrustFrameworkBundle bundle : registry.getActiveBundles()) {
       FrameworkBundleConfig config = bundle.config();
-      for (Map.Entry<String, RoleConfig> roleEntry : config.roles().entrySet()) {
-        String roleName = roleEntry.getKey();
-        RoleConfig roleConfig = roleEntry.getValue();
+      for (Map.Entry<String, BaseClassConfig> baseClassEntry : config.baseClasses().entrySet()) {
+        String baseClassName = baseClassEntry.getKey();
+        BaseClassConfig baseClassConfig = baseClassEntry.getValue();
         List<String> rootUris = new ArrayList<>();
         if (config.namespace() != null) {
-          rootUris.add(config.namespace() + roleName);
+          rootUris.add(config.namespace() + baseClassName);
         }
-        rootUris.addAll(roleConfig.additionalRoots());
-        ResolvedRole resolved = new ResolvedRole(config.id(), roleName);
+        rootUris.addAll(baseClassConfig.additionalRoots());
+        ResolvedBaseClass resolved = new ResolvedBaseClass(config.id(), baseClassName);
         for (String typeUri : typeUris) {
           for (String rootUri : rootUris) {
             if (isSubclassOf(typeUri, rootUri, model)) {
-              if (!isRoleEnabled.test(resolved.frameworkProfileId(), resolved.role())) {
+              if (!isBaseClassEnabled.test(resolved.frameworkProfileId(), resolved.baseClass())) {
                 throw new ClientException(
-                    ROLE_DISABLED_MSG.formatted(resolved.frameworkProfileId(), resolved.role()));
+                    BASE_CLASS_DISABLED_MSG.formatted(resolved.frameworkProfileId(), resolved.baseClass()));
               }
               return resolved;
             }
@@ -272,7 +272,7 @@ public class ClaimValidator {
         }
       }
     }
-    return ResolvedRole.UNKNOWN;
+    return ResolvedBaseClass.UNKNOWN;
   }
 
   private static boolean isSubclassOf(String typeUri, String rootUri, OntModel model) {
@@ -296,4 +296,3 @@ public class ClaimValidator {
   }
 
 }
-

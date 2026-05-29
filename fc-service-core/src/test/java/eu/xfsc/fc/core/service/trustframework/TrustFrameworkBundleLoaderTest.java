@@ -291,7 +291,7 @@ class TrustFrameworkBundleLoaderTest {
     assertThat(bundle.config().namespace())
         .as("namespace must be inherited from classpath bundle")
         .isEqualTo(CLASSPATH_NAMESPACE);
-    assertThat(bundle.config().roles())
+    assertThat(bundle.config().baseClasses())
         .as("roles must be inherited from classpath bundle")
         .containsKey("Participant");
   }

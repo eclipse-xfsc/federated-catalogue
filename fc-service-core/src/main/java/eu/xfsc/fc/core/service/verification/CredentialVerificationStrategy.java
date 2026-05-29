@@ -29,7 +29,7 @@ import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
-import eu.xfsc.fc.core.service.trustframework.ResolvedRole;
+import eu.xfsc.fc.core.service.trustframework.ResolvedBaseClass;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.verification.cache.CachingLocator;
@@ -133,7 +133,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
       throw new VerificationException("Semantic Error: no proper CredentialSubject found");
     }
 
-    ResolvedRole resolvedRole = resolvePrimaryRole(typedCredentials, verifySemantics);
+    ResolvedBaseClass resolvedBaseClass = resolvePrimaryBaseClass(typedCredentials, verifySemantics);
     FilteredClaims filtered = extractAndValidateClaims(ctx.payload());
 
     if (verifySchema) {
@@ -148,7 +148,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
         verifySemantics, verifyVCSignatures, verifyVPSignatures);
 
     CredentialVerificationResult result =
-        assembleResult(resolvedRole, typedCredentials, filtered.claims(), validators);
+        assembleResult(resolvedBaseClass, typedCredentials, filtered.claims(), validators);
     if (filtered.hasWarning()) {
       result.setWarnings(List.of(filtered.warning()));
     }
@@ -231,20 +231,20 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
   }
 
     /**
-     * Phase 2: Resolve the dominant role from typed credentials and validate type constraints.
+     * Phase 2: Resolve the dominant base class from typed credentials and validate type constraints.
      */
-    private ResolvedRole resolvePrimaryRole(TypedCredentials typedCredentials, boolean verifySemantics) {
-      Collection<ResolvedRole> roles = typedCredentials.getResolvedRoles();
-      if (roles.isEmpty()) {
-        return ResolvedRole.UNKNOWN;
+    private ResolvedBaseClass resolvePrimaryBaseClass(TypedCredentials typedCredentials, boolean verifySemantics) {
+      Collection<ResolvedBaseClass> baseClasses = typedCredentials.getResolvedBaseClasses();
+      if (baseClasses.isEmpty()) {
+        return ResolvedBaseClass.UNKNOWN;
       }
-      if (roles.size() > 1 && verifySemantics) {
-        long distinctRoles = roles.stream().map(ResolvedRole::role).distinct().count();
-        if (distinctRoles > 1) {
-          throw new VerificationException("Semantic error: credential has several types: " + roles);
+      if (baseClasses.size() > 1 && verifySemantics) {
+        long distinctBaseClasses = baseClasses.stream().map(ResolvedBaseClass::baseClass).distinct().count();
+        if (distinctBaseClasses > 1) {
+          throw new VerificationException("Semantic error: credential has several types: " + baseClasses);
         }
       }
-      return roles.iterator().next();
+      return baseClasses.iterator().next();
     }
 
   /**
@@ -311,10 +311,10 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
   }
 
   /**
-   * Phase 5: Build the generic result from credential data and the resolved role.
-   * No branching on role name — the role is stored as data, not used for dispatch.
+   * Phase 5: Build the generic result from credential data and the resolved base class.
+   * No branching on base-class name — the base class is stored as data, not used for dispatch.
    */
-  private CredentialVerificationResult assembleResult(ResolvedRole resolvedRole,
+  private CredentialVerificationResult assembleResult(ResolvedBaseClass resolvedBaseClass,
                                                       TypedCredentials typedCredentials, List<RdfClaim> graphClaims,
                                                       List<Validator> validators) {
     String credentialSubjectId = typedCredentials.getID();
@@ -322,8 +322,8 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
     Instant issuedDate = typedCredentials.getIssuanceDate();
     Instant now = Instant.now();
     String status = AssetStatus.ACTIVE.getValue();
-    String role = resolvedRole.isResolved() ? resolvedRole.role() : null;
-    String profileId = resolvedRole.isResolved() ? resolvedRole.frameworkProfileId() : null;
+    String baseClass = resolvedBaseClass.isResolved() ? resolvedBaseClass.baseClass() : null;
+    String profileId = resolvedBaseClass.isResolved() ? resolvedBaseClass.frameworkProfileId() : null;
 
     String effectiveIssuer = issuer != null ? issuer : credentialSubjectId;
     String holder = typedCredentials.getHolder();
@@ -331,7 +331,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
     String publicKey = validators.isEmpty() ? null : validators.getFirst().getDidURI();
 
     CredentialVerificationResult result = new CredentialVerificationResult(now, status,
-        effectiveIssuer, issuedDate, credentialSubjectId, graphClaims, validators, role, profileId);
+        effectiveIssuer, issuedDate, credentialSubjectId, graphClaims, validators, baseClass, profileId);
     result.setName(name);
     result.setPublicKey(publicKey);
     return result;
@@ -452,7 +452,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
   private TypedCredentials getCredentials(VerifiablePresentation vp, CredentialFormat format) {
     log.trace("getCredentials.enter; got VP: {}", vp);
     Object obj = vp.getJsonObject().get(VERIFIABLE_CREDENTIAL_KEY);
-    Map<VerifiableCredential, ResolvedRole> creds;
+    Map<VerifiableCredential, ResolvedBaseClass> creds;
     switch (obj) {
       case null -> creds = Collections.emptyMap();
       case List<?> l -> {
@@ -462,7 +462,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
             VerifiableCredential unwrapped =
                 envelopedCredentialResolver.tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
             if (unwrapped != null) {
-              creds.put(unwrapped, resolveRole(unwrapped, format));
+              creds.put(unwrapped, resolveBaseClass(unwrapped, format));
             }
             continue;
           }
@@ -474,27 +474,27 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
             VerifiableCredential unwrapped =
                 envelopedCredentialResolver.tryUnwrapEnvelopedVc(entryMap, vp.getDocumentLoader());
             if (unwrapped != null) {
-              creds.put(unwrapped, resolveRole(unwrapped, format));
+              creds.put(unwrapped, resolveBaseClass(unwrapped, format));
             }
             continue;
           }
           VerifiableCredential vc = VerifiableCredential.fromMap(entryMap);
           vc.setDocumentLoader(vp.getDocumentLoader());
-          creds.put(vc, resolveRole(vc, format));
+          creds.put(vc, resolveBaseClass(vc, format));
         }
       }
       case String jwtStr -> {
         VerifiableCredential unwrapped =
             envelopedCredentialResolver.tryUnwrapJwtVc(jwtStr, vp.getDocumentLoader());
         creds = unwrapped != null
-            ? Map.of(unwrapped, resolveRole(unwrapped, format))
+            ? Map.of(unwrapped, resolveBaseClass(unwrapped, format))
             : Collections.emptyMap();
       }
       default -> {
         @SuppressWarnings("unchecked")
         VerifiableCredential vc = VerifiableCredential.fromMap((Map<String, Object>) obj);
         vc.setDocumentLoader(vp.getDocumentLoader());
-        creds = Map.of(vc, resolveRole(vc, format));
+        creds = Map.of(vc, resolveBaseClass(vc, format));
       }
     }
     TypedCredentials tcs = new TypedCredentials(vp, creds);
@@ -504,7 +504,7 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
 
   private TypedCredentials getCredentials(VerifiableCredential vc, CredentialFormat format) {
     log.trace("getCredentials.enter; got VC: {}", vc);
-    TypedCredentials tcs = new TypedCredentials(null, Map.of(vc, resolveRole(vc, format)));
+    TypedCredentials tcs = new TypedCredentials(null, Map.of(vc, resolveBaseClass(vc, format)));
     log.trace("getCredentials.exit; returning: {}", tcs);
     return tcs;
   }
@@ -541,31 +541,31 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
   }
 
   /**
-   * Resolves the trust-framework role of a credential. Uses the registry index as the fast path;
-   * falls back to the composite schema ontology for subclasses introduced via dynamically
+   * Resolves the trust-framework base class of a credential. Uses the registry index as the fast
+   * path; falls back to the composite schema ontology for subclasses introduced via dynamically
    * uploaded schemas.
    *
    * <p>The OWL composite ontology is only consulted when the {@code OWL} schema module is
    * administratively enabled (admin toggle on the schema-validation page). When OWL is
-   * disabled, this method passes {@code null} to {@link ClaimValidator#resolveSubjectRole}:
+   * disabled, this method passes {@code null} to {@link ClaimValidator#resolveSubjectBaseClass}:
    * the registry-index fast path still runs (so framework-direct types like Participant,
    * ServiceOffering, Resource keep resolving), but the slow {@code rdfs:subClassOf+} walk
    * over uploaded ontologies is skipped — custom subclass-only types resolve to
-   * {@link ResolvedRole#UNKNOWN}.</p>
+   * {@link ResolvedBaseClass#UNKNOWN}.</p>
    *
    * <p>The toggle does not ride on the caller's {@code verifySchema} or
    * {@code verifySemantics} flags: type dispatch is a configuration of the catalogue's
    * type system, not a per-request validation step.</p>
    */
-  private ResolvedRole resolveRole(VerifiableCredential credential, CredentialFormat format) {
+  private ResolvedBaseClass resolveBaseClass(VerifiableCredential credential, CredentialFormat format) {
     ContentAccessor compositeOntology =
         schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)
             ? schemaStore.getCompositeSchema(SchemaStore.SchemaType.ONTOLOGY)
             : null;
-    ResolvedRole result = ClaimValidator.resolveSubjectRole(
+    ResolvedBaseClass result = ClaimValidator.resolveSubjectBaseClass(
         getStreamManager(), credential.toJson(), trustFrameworkRegistry, compositeOntology,
-        trustFrameworkService::isRoleEnabled);
-    log.debug("resolveRole; format: {}, got role: {}", format, result);
+        trustFrameworkService::isBaseClassEnabled);
+    log.debug("resolveBaseClass; format: {}, got base class: {}", format, result);
     return result;
   }
 

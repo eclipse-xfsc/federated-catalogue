@@ -32,7 +32,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 
 /**
  * Pins the OWL module toggle. The toggle gates whether
- * {@link CredentialVerificationStrategy#resolveRole} consults the runtime composite
+ * {@link CredentialVerificationStrategy#resolveBaseClass} consults the runtime composite
  * ontology built from {@link SchemaType#ONTOLOGY} rows.
  *
  * <p>Bundle-embedded ontologies are pre-walked into the registry tier-1 index at startup
@@ -40,13 +40,13 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
  * subclasses of registered roots in the bundle ontology resolve via the registry regardless
  * of the OWL toggle. The toggle therefore only affects ontologies uploaded at runtime via
  * {@code schemaStore.addSchema(..., ONTOLOGY)} — those feed the runtime composite that
- * {@code resolveRole} fetches per request.
+ * {@code resolveBaseClass} fetches per request.
  *
  * <p>Test strategy: spy on {@link SchemaStoreImpl} and assert whether
  * {@code getCompositeSchema(ONTOLOGY)} is invoked, which is the precise observable effect
  * of the toggle gate. Outcome-level assertions (registry-direct types keep resolving) are
  * covered by {@link RoleResolutionCharacterisationTest}; null-tolerance of the downstream
- * {@code ClaimValidator.resolveSubjectRole} is covered by {@link LoireTypeResolutionTest}.
+ * {@code ClaimValidator.resolveSubjectBaseClass} is covered by {@link LoireTypeResolutionTest}.
  *
  * <p><b>Fixture note:</b> the {@code participantCredential2.jsonld}, {@code
  * customExtParticipant.jsonld}, and {@code gx-2511-test-ontology.ttl} fixtures used below
@@ -157,7 +157,7 @@ class CredentialVerificationStrategyOwlToggleTest {
         getAccessor(CUSTOM_PARTICIPANT_FIXTURE), false, false, false, false);
 
     assertNotNull(result);
-    assertEquals("Participant", result.getRole(),
+    assertEquals("Participant", result.getBaseClass(),
         "ext:CustomParticipant rdfs:subClassOf gx:LegalPerson → resolves to Participant role");
   }
 
@@ -186,6 +186,6 @@ class CredentialVerificationStrategyOwlToggleTest {
         getAccessor(PARTICIPANT_FIXTURE), false, false, false, false);
 
     assertNotNull(result);
-    assertNotNull(result.getRole(), "registry-direct type resolves regardless of OWL toggle");
+    assertNotNull(result.getBaseClass(), "registry-direct type resolves regardless of OWL toggle");
   }
 }
