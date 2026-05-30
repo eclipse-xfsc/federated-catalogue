@@ -5,6 +5,40 @@ Configuration and runtime tuning for operators of the Federated Catalogue.
 For the architectural and conceptual description of the service, see the
 [Architecture Document](https://github.com/eclipse-xfsc/docs/tree/main/federated-catalogue).
 
+## Keycloak Realm Configuration
+
+The Keycloak realm name is configurable via the `KEYCLOAK_REALM` environment variable.
+
+| Property         | Env var          | Default                     | Description                                       |
+|------------------|------------------|-----------------------------|---------------------------------------------------|
+| `keycloak.realm` | `KEYCLOAK_REALM` | `federated-catalogue-realm` | Realm name the application authenticates against. |
+
+The same variable is honored by `fc-service-server`, `fc-demo-portal`, `docker-compose.yml`, the Helm chart
+(`keycloak.realm` value), and the manual Kubernetes manifests under `deployment/manual/`.
+
+### Fresh deployment (default)
+
+The bundled realm import files define a realm named `federated-catalogue-realm`:
+
+- `keycloak/realms/{dev,staging,prod}/fc-realm.json` — imported by the docker-compose stack
+- `deployment/helm/fc-service/fc-realm.json` — imported by the Helm chart's Keycloak ConfigMap
+
+No further action is required.
+
+### Existing deployment with a legacy `gaia-x` realm
+
+Set `KEYCLOAK_REALM=gaia-x`. Keycloak's `--import-realm` is a no-op once the realm already exists in the
+database, so deployments with a pre-existing `gaia-x` realm keep working without migration. No bundled JSON
+ships for this case; bring your own import file if you also need to provision the realm fresh.
+
+### Helm
+
+```yaml
+keycloak:
+  realm: federated-catalogue-realm   # set to "gaia-x" for legacy
+  realmFile: fc-realm.json           # bring your own JSON if you need a legacy import
+```
+
 ## Trust Framework Configuration
 
 The Federated Catalogue activates trust frameworks via a list of **trust-framework family IDs**. Families listed at
