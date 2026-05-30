@@ -4,6 +4,6 @@ kind: ConfigMap
 metadata:
   name: {{ .Values.keycloak.fullnameOverride }}-realm-configmap
 data:
-  gaia-x-realm.json: |-
-{{ .Files.Get "gaia-x-realm.json" | indent 4}}
+  { { .Values.keycloak.realmFile } }: |-
+  { { .Files.Get .Values.keycloak.realmFile | indent 4 } }
 {{- end }}      

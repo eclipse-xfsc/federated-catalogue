@@ -45,8 +45,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://key-server:8080/realms/gaia-x
-#          jwk-set-uri: http://key-server:8080/realms/gaia-x/protocol/openid-connect/certs
+          issuer-uri: http://key-server:8080/realms/${keycloak.realm}
+  #          jwk-set-uri: http://key-server:8080/realms/${keycloak.realm}/protocol/openid-connect/certs
   threads:
     virtual:
       enabled: true
@@ -71,7 +71,7 @@ springdoc:
 
 keycloak:
   auth-server-url: http://key-server:8080
-  realm: gaia-x
+  realm: ${KEYCLOAK_REALM:federated-catalogue-realm}
   resource: federated-catalogue
   credentials:
     secret: ${KEYCLOAK_CREDENTIALS_SECRET:}

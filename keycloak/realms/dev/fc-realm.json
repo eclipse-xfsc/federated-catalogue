@@ -1,7 +1,7 @@
 {
-  "id": "gaia-x",
-  "realm": "gaia-x",
-  "displayName": "GAIA-X",
+  "id": "federated-catalogue-realm",
+  "realm": "federated-catalogue-realm",
+  "displayName": "Federated Catalogue",
   "notBefore": 1660684842,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -54,7 +54,7 @@
         "description": "${role_uma_authorization}",
         "composite": false,
         "clientRole": false,
-        "containerId": "gaia-x",
+        "containerId": "federated-catalogue-realm",
         "attributes": {}
       },
       {
@@ -63,16 +63,16 @@
         "description": "${role_offline-access}",
         "composite": false,
         "clientRole": false,
-        "containerId": "gaia-x",
+        "containerId": "federated-catalogue-realm",
         "attributes": {}
       },
       {
         "id": "8ee7d6f7-f168-4b62-ae34-1c18ffbf631a",
-        "name": "default-roles-gaia-x",
+        "name": "default-roles-federated-catalogue-realm",
         "description": "${role_default-roles}",
         "composite": false,
         "clientRole": false,
-        "containerId": "gaia-x",
+        "containerId": "federated-catalogue-realm",
         "attributes": {}
       }
     ],
@@ -588,11 +588,11 @@
   "groups": [],
   "defaultRole": {
     "id": "8ee7d6f7-f168-4b62-ae34-1c18ffbf631a",
-    "name": "default-roles-gaia-x",
+    "name": "default-roles-federated-catalogue-realm",
     "description": "${role_default-roles}",
     "composite": false,
     "clientRole": false,
-    "containerId": "gaia-x"
+    "containerId": "federated-catalogue-realm"
   },
   "requiredCredentials": [
     "password"
@@ -649,7 +649,7 @@
       "disableableCredentialTypes": [],
       "requiredActions": [],
       "realmRoles": [
-        "default-roles-gaia-x"
+        "default-roles-federated-catalogue-realm"
       ],
       "clientRoles": {
         "federated-catalogue": [
@@ -676,7 +676,7 @@
         }
       ],
       "realmRoles": [
-        "default-roles-gaia-x"
+        "default-roles-federated-catalogue-realm"
       ],
       "clientRoles": {
         "federated-catalogue": [
@@ -696,7 +696,7 @@
         }
       ],
       "realmRoles": [
-        "default-roles-gaia-x"
+        "default-roles-federated-catalogue-realm"
       ],
       "clientRoles": {
         "federated-catalogue": [
@@ -730,13 +730,13 @@
       "clientId": "account",
       "name": "${client_account}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/gaia-x/account/",
+      "baseUrl": "/realms/federated-catalogue-realm/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/realms/gaia-x/account/*"
+        "/realms/federated-catalogue-realm/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -776,13 +776,13 @@
       "clientId": "account-console",
       "name": "${client_account-console}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/gaia-x/account/",
+      "baseUrl": "/realms/federated-catalogue-realm/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/realms/gaia-x/account/*"
+        "/realms/federated-catalogue-realm/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -1021,7 +1021,7 @@
       "defaultClientScopes": [
         "web-origins",
         "acr",
-        "gaia-x",
+        "federated-catalogue-realm",
         "roles",
         "basic"
       ],
@@ -1115,13 +1115,13 @@
       "clientId": "security-admin-console",
       "name": "${client_security-admin-console}",
       "rootUrl": "${authAdminUrl}",
-      "baseUrl": "/admin/gaia-x/console/",
+      "baseUrl": "/admin/federated-catalogue-realm/console/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "/admin/gaia-x/console/*"
+        "/admin/federated-catalogue-realm/console/*"
       ],
       "webOrigins": [
         "+"
@@ -1771,7 +1771,7 @@
     },
     {
       "id": "fff4bd04-c33f-412d-a617-8c35a7410b3a",
-      "name": "gaia-x",
+      "name": "federated-catalogue-realm",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",
@@ -2021,7 +2021,7 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
   "smtpServer": {},
-  "loginTheme": "gaia-x",
+  "loginTheme": "federated-catalogue-realm",
   "eventsEnabled": false,
   "eventsListeners": [
     "jboss-logging"

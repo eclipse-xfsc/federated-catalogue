@@ -1,3 +1,9 @@
+keycloak:
+  # Pin to gaia-x so existing test fixtures (mock-data/openid-configs.json, controller mocks
+  # calling `when(keycloak.realm("gaia-x"))`) keep working without rewrites.
+  # Production default is federated-catalogue-realm.
+  realm: gaia-x
+
 federated-catalogue:
   scope: test
   verification:

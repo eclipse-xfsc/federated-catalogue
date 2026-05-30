@@ -30,8 +30,10 @@ spec:
                 secretKeyRef:
                   name: fc-server-keys-secret
                   key: keycloak_client_secret
+            - name: KEYCLOAK_REALM
+              value: "federated-catalogue-realm"
             - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI
-              value: https://fc-key-server.gxfs.dev/realms/gaia-x
+              value: https://fc-key-server.gxfs.dev/realms/$(KEYCLOAK_REALM)
             - name: FEDERATED_CATALOGUE_BASE_URI
               value: http://fc-service:8081
           ports:

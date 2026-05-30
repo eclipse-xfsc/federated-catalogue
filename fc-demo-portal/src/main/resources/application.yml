@@ -23,7 +23,7 @@ spring:
               - email
         provider:
           keycloak:
-            issuer-uri: http://key-server/realms/gaia-x
+            issuer-uri: http://key-server/realms/${KEYCLOAK_REALM:federated-catalogue-realm}
 
 federated-catalogue:
   base-uri: http://fc-server

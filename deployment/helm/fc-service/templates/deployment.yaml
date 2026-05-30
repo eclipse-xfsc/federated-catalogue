@@ -37,8 +37,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- toYaml .Values.env | nindent 12 }}
+            - name: KEYCLOAK_REALM
+              value: { { .Values.keycloak.realm | quote } }
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
-              value: "https://{{ .Values.hosts.keycloak }}/auth/realms/gaia-x"
+              value: "https://{{ .Values.hosts.keycloak }}/auth/realms/{{ .Values.keycloak.realm }}"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
