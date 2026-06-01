@@ -58,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"graphstore.impl=neo4j"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
+@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.EMBEDDED)
 @Import(EmbeddedNeo4JConfig.class)
 @WithMockUser(roles = {QUERY_EXECUTE})
 public class QueryControllerTest {
@@ -435,7 +435,7 @@ public class QueryControllerTest {
 
     QueryInfo info = objectMapper.readValue(response, QueryInfo.class);
     assertEquals("NEO4J", info.getBackend());
-    assertEquals("OPENCYPHER", info.getQueryLanguage());
+    assertEquals(eu.xfsc.fc.api.generated.model.QueryLanguage.OPENCYPHER, info.getQueryLanguage());
     assertEquals(Boolean.TRUE, info.getEnabled());
     assertNotNull(info.getExampleQuery());
     assertNotNull(info.getDocumentation());

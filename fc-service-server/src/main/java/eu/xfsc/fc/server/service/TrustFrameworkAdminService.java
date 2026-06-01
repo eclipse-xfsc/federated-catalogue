@@ -25,7 +25,7 @@ import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService.
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundleConfigService.Overrides;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
-import eu.xfsc.fc.server.generated.controller.TrustFrameworkAdminApiDelegate;
+import eu.xfsc.fc.server.generated.controller.AdminTrustFrameworksApiDelegate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegate {
+public class TrustFrameworkAdminService implements AdminTrustFrameworksApiDelegate {
 
   private final TrustFrameworkService trustFrameworkService;
   private final TrustFrameworkRegistry trustFrameworkRegistry;
@@ -105,7 +105,6 @@ public class TrustFrameworkAdminService implements TrustFrameworkAdminApiDelegat
    * The change takes effect on the next compliance call — no restart required.
    *
    * @param bundleId registry bundle profile ID
-   * @param body     decoded merge-patch object (set of property → value)
    * @return 200 on success, 400 if the body is empty or contains unknown / mistyped
    * properties, 404 if the bundle is not registered
    */

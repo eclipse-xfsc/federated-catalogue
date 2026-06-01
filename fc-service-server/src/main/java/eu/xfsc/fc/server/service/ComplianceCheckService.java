@@ -2,7 +2,6 @@ package eu.xfsc.fc.server.service;
 
 import java.util.List;
 
-import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.compliance.TrustFrameworkProfileConfig;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -10,10 +9,7 @@ import org.springframework.stereotype.Service;
 import eu.xfsc.fc.api.generated.model.ComplianceCheckRequest;
 import eu.xfsc.fc.api.generated.model.ComplianceCheckResult;
 import eu.xfsc.fc.api.generated.model.StoredValidationResult;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkPublicEntry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOrchestrator;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOutcome;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceResultStore;
@@ -35,8 +31,6 @@ public class ComplianceCheckService implements ComplianceApiDelegate {
 
   private final ComplianceCheckOrchestrator orchestrator;
   private final ComplianceResultStore resultStore;
-  private final TrustFrameworkService trustFrameworkService;
-  private final TrustFrameworkRegistry registry;
   private final TrustFrameworkProfileResolver profileResolver;
 
   @Override
@@ -73,28 +67,6 @@ public class ComplianceCheckService implements ComplianceApiDelegate {
             .toList();
 
     return ResponseEntity.ok(results);
-  }
-
-  @Override
-  public ResponseEntity<List<TrustFrameworkPublicEntry>> getTrustFrameworksPublic() {
-    log.debug("getTrustFrameworksPublic");
-
-    var activeBundles = registry.getActiveBundles();
-    List<TrustFrameworkPublicEntry> entries = trustFrameworkService.findAll().stream()
-        .filter(TrustFrameworkConfig::enabled)
-        .map(cfg -> {
-          List<String> profiles = activeBundles.stream()
-              .filter(bundle -> cfg.id().equals(bundle.config().family()))
-              .map(bundle -> bundle.config().id())
-              .toList();
-          return new TrustFrameworkPublicEntry()
-              .id(cfg.id())
-              .name(cfg.name())
-              .profiles(profiles);
-        })
-        .toList();
-
-    return ResponseEntity.ok(entries);
   }
 
   private ComplianceCheckResult toDto(ComplianceCheckOutcome outcome) {

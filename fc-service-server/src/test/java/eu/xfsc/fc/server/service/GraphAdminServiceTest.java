@@ -40,11 +40,21 @@ class GraphAdminServiceTest {
   @Mock
   private AssetStore assetStore;
 
+  @Mock
+  private eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository adminConfigRepository;
+
+  @Mock
+  private GraphStoreProbe graphStoreProbe;
+
+  @Mock
+  private eu.xfsc.fc.server.service.graphdb.RoutingGraphStore routingGraphStore;
+
   private GraphAdminService service;
 
   @BeforeEach
   void setUp() {
-    service = new GraphAdminService(graphRebuildService, graphStore, assetStore, 4, 100);
+    service = new GraphAdminService(graphRebuildService, graphStore, assetStore,
+        adminConfigRepository, graphStoreProbe, routingGraphStore, 4, 100);
   }
 
   @Test

@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
+@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.EMBEDDED)
 // The embedded Fuseki dataset is a singleton in any Spring context the test framework caches
 // across `graphstore.impl=fuseki` tests. The "test.fuseki.isolate" marker below makes this class's
 // context cache key unique, so the dataset is dedicated to this test and only contains the two
@@ -189,7 +189,7 @@ public class QueryControllerFusekiTest {
 
     QueryInfo info = objectMapper.readValue(response, QueryInfo.class);
     assertEquals("FUSEKI", info.getBackend());
-    assertEquals("SPARQL", info.getQueryLanguage());
+    assertEquals(eu.xfsc.fc.api.generated.model.QueryLanguage.SPARQL, info.getQueryLanguage());
     assertEquals(Boolean.TRUE, info.getEnabled());
     assertNotNull(info.getExampleQuery());
     assertNotNull(info.getDocumentation());

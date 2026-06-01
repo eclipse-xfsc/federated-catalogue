@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Reachability probe for graph store backends, independent of which backend is currently
- * active. Used by {@code GraphDatabaseAdminService} to pre-flight a switch — the operator
+ * active. Used by {@code GraphAdminService} to pre-flight a switch — the operator
  * cannot persist a backend the server will then fail to boot against.
  *
  * <p>Each probe opens a short-lived connection (Bolt driver verifyConnectivity, HTTP GET

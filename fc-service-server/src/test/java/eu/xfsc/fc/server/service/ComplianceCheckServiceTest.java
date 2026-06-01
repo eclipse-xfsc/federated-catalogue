@@ -1,16 +1,17 @@
 package eu.xfsc.fc.server.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import eu.xfsc.fc.api.generated.model.ComplianceCheckRequest;
+import eu.xfsc.fc.core.dao.validation.ValidationResult;
+import eu.xfsc.fc.core.dao.validation.ValidatorType;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
+import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
+import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOrchestrator;
+import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceResultStore;
+import eu.xfsc.fc.core.service.trustframework.compliance.FailureCategory;
+import eu.xfsc.fc.core.service.trustframework.compliance.IssuedAttestation;
+import eu.xfsc.fc.core.service.trustframework.compliance.TrustFrameworkProfileConfig;
+import eu.xfsc.fc.core.service.trustframework.compliance.UnverifiableAttestation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,23 +22,15 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
-import eu.xfsc.fc.api.generated.model.ComplianceCheckRequest;
-import eu.xfsc.fc.api.generated.model.TrustFrameworkPublicEntry;
-import eu.xfsc.fc.core.dao.validation.ValidationResult;
-import eu.xfsc.fc.core.dao.validation.ValidatorType;
-import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
-import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkBundle;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
-import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
-import eu.xfsc.fc.core.service.trustframework.ValidationType;
-import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOrchestrator;
-import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceResultStore;
-import eu.xfsc.fc.core.service.trustframework.compliance.FailureCategory;
-import eu.xfsc.fc.core.service.trustframework.compliance.IssuedAttestation;
-import eu.xfsc.fc.core.service.trustframework.compliance.TrustFrameworkProfileConfig;
-import eu.xfsc.fc.core.service.trustframework.compliance.UnverifiableAttestation;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ComplianceCheckServiceTest {
@@ -159,59 +152,8 @@ class ComplianceCheckServiceTest {
     assertThat(response.getBody().getFirst().getConforms()).isTrue();
   }
 
-  @Test
-  void getTrustFrameworksPublic_disabledFrameworkExcluded() {
-    var enabled = tfConfig("gaia-x", "GAIA-X", true);
-    var disabled = tfConfig("untp", "UNTP", false);
-    when(trustFrameworkService.findAll()).thenReturn(List.of(enabled, disabled));
-    when(registry.getActiveBundles()).thenReturn(List.of());
-
-    var response = service.getTrustFrameworksPublic();
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).extracting(TrustFrameworkPublicEntry::getId)
-        .containsExactly("gaia-x")
-        .doesNotContain("untp");
-  }
-
-  @Test
-  void getTrustFrameworksPublic_profilesMatchedByFamilyId() {
-    var tfCfg = tfConfig("gaia-x", "GAIA-X", true);
-    when(trustFrameworkService.findAll()).thenReturn(List.of(tfCfg));
-    var matchingBundle = bundle("gaia-x-2511", "gaia-x");
-    var otherBundle = bundle("untp-v1", "untp");
-    when(registry.getActiveBundles()).thenReturn(List.of(matchingBundle, otherBundle));
-
-    var response = service.getTrustFrameworksPublic();
-
-    assertThat(response.getBody()).hasSize(1);
-    assertThat(response.getBody().getFirst().getProfiles())
-        .containsExactly("gaia-x-2511")
-        .doesNotContain("untp-v1");
-  }
-
-  @Test
-  void getTrustFrameworksPublic_noActiveBundles_emptyProfilesList() {
-    when(trustFrameworkService.findAll()).thenReturn(List.of(tfConfig("gaia-x", "GAIA-X", true)));
-    when(registry.getActiveBundles()).thenReturn(List.of());
-
-    var response = service.getTrustFrameworksPublic();
-
-    assertThat(response.getBody()).hasSize(1);
-    assertThat(response.getBody().getFirst().getProfiles()).isEmpty();
-  }
-
   private static ComplianceCheckRequest request(String profileId, String credential) {
     return new ComplianceCheckRequest().frameworkProfileId(profileId).credential(credential);
   }
 
-  private static TrustFrameworkConfig tfConfig(String id, String name, boolean enabled) {
-    return new TrustFrameworkConfig(id, name, enabled, null, null);
-  }
-
-  private static TrustFrameworkBundle bundle(String profileId, String familyId) {
-    var config = new FrameworkBundleConfig(profileId, familyId, "https://example.org/",
-        ValidationType.SHACL, Map.of(), Map.of());
-    return new TrustFrameworkBundle(config, null, null);
-  }
 }

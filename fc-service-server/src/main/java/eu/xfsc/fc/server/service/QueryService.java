@@ -135,7 +135,7 @@ public class QueryService implements QueryApiDelegate {
       Reader reader = new InputStreamReader(resource.getInputStream());
       page = FileCopyUtils.copyToString(reader);
     } catch (IOException e) {
-      log.error("queryPage; error in getting file: {}", e);
+      log.error("queryPage; error in getting file: {}", e, e.getMessage(), e);
       throw new ServerException(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
     HttpHeaders responseHeaders = new HttpHeaders();
@@ -161,7 +161,7 @@ public class QueryService implements QueryApiDelegate {
     info.setEnabled(supported.isPresent());
     supported.ifPresent(lang -> {
       QueryLanguageProperties props = QueryLanguageProperties.of(lang);
-      info.setQueryLanguage(lang.name());
+      info.setQueryLanguage(QueryLanguage.fromValue(lang.name()));
       info.setContentType(props.contentType());
       info.setExampleQuery(props.exampleQuery());
       info.setDocumentation(props.documentationUrl());

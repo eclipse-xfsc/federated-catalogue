@@ -10,120 +10,72 @@ servers:
   - url: https://fc-server.xfsc.org
     description: some future test environment
 components:
-  responses:
-    NotFound:
-      description: The specified resource was not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Unauthorized
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Forbidden:
-      description: >-
-        Forbidden. The user does not have the permission to execute this
-        request.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    ServerError:
-      description: >-
-        May contain hints how to solve the error or indicate what went wrong at
-        the server. Must not outline any information about the internal
-        structure of the server.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    ClientError:
-      description: >-
-        May contain hints how to solve the error or indicate what was wrong in
-        the request.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Conflict:
-      description: HTTP Conflict 409
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unprocessible:
-      description: HTTP Unprocessible Entity 422
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    UnsupportedMediaType:
-      description: >-
-        The Content-Type indicates a query language not supported by the active
-        graph database backend. Check GET /query/info for the supported language.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
   schemas:
-    AssetEnrichmentResponse:
+    AdminHealthStatus:
       type: object
-      description: Response returned when an existing non-RDF asset is enriched with RDF metadata.
-      required:
-        - assetId
-        - triplesAdded
-        - triplesRejected
       properties:
-        assetId:
+        catalogueStatus:
           type: string
-          description: IRI (subjectId) of the enriched asset.
-        triplesAdded:
+          description: Catalogue service status (UP/DOWN)
+        graphDbStatus:
+          type: object
+          properties:
+            connected:
+              type: boolean
+            backend:
+              type: string
+            claimCount:
+              type: integer
+              format: int64
+        keycloakStatus:
+          type: string
+          description: Keycloak status (UP/DOWN/UNKNOWN)
+        fileStoreStatus:
+          type: string
+          description: File store status (UP/DOWN)
+        databaseStatus:
+          type: string
+          description: Database status (UP/DOWN)
+        keycloakUrl:
+          type: string
+          description: Keycloak issuer URL
+        fileStorePath:
+          type: string
+          description: File store directory path
+    AdminStats:
+      type: object
+      properties:
+        totalAssets:
           type: integer
-          description: Number of RDF triples written to the graph store after namespace filtering.
-        triplesRejected:
+          format: int64
+          description: Total number of assets in the catalogue
+        activeAssets:
           type: integer
-          description: Number of triples filtered out due to protected namespace policy.
-    Error:
-      type: object
-      properties:
-        code:
+          format: int64
+          description: Number of active assets
+        activeTrustFrameworks:
+          type: integer
+          format: int64
+          description: Number of active trust frameworks
+        totalUsers:
+          type: integer
+          format: int64
+          description: Total number of registered users
+        totalSchemas:
+          type: integer
+          format: int64
+          description: Total number of schemas
+        totalParticipants:
+          type: integer
+          format: int64
+          description: Total number of participants
+        graphClaimCount:
+          type: integer
+          format: int64
+          description: Number of claims in the graph database
+        graphBackend:
           type: string
-        message:
-          type: string
-      required:
-        - code
-        - message
-    Statement:
-      type: object
-      properties:
-        statement:
-          type: string
-          example: Match (m:Movie) where m.released > 2000 RETURN m
-        parameters:
-          $ref: '#/components/schemas/Parameters'
-      required:
-        - statement
-    Parameters:
-      type: object
-      additionalProperties:
-        type: object
-      example:
-        name: "John"
-        limit: 10
-        offset: 5
-    Result:
-      type: object
-      additionalProperties:
-        type: object
-    QueryLanguage:
-      type: string
-      enum:
-        - OPENCYPHER
-        - SPARQL
-      default: OPENCYPHER
+          description: The graph database backend type
     AnnotatedStatement:
       allOf:
         - $ref: '#/components/schemas/Statement'
@@ -144,145 +96,12 @@ components:
                 queryLanguage: SPARQL
                 timeout: 30
                 withTotalCount: false
-    VerificationResult:
-      type: object
-      properties:
-        verificationTimestamp:
-          type: string
-          format : date-time
-        lifecycleStatus: #!! is not known when verifying external credentials -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
-          type: string # does the asset have a lifecycle status in this catalogue?
-          description: Lifecycle-state an asset would get, if it would be added to the catalogue.
-        issuer: #!! Is this the participant? -> Julius: Yes, the participant that created the credential
-          type: string # contains the id of the issuers credential if available #!! NOT FURTHER SPECIFIED
-          description: ID of the issuer's credential, if available.
-        issuedDateTime:
-          type: string
-          format: date-time
-        validatorDids:
-          type: array
-          items:
-            type: string
-            description: The DIDs of validators that signed parts of the credential
-        warnings:
-          type: array
-          description: >-
-            Warnings issued during processing (e.g. triples removed due to reserved namespace filtering).
-            The operation succeeded for all remaining data. Absent or empty when no warnings occurred.
-          items:
-            type: string
-          example:
-            - "2 triple(s) were removed from your upload because they use the reserved internal namespace
-               <https://projects.eclipse.org/projects/technology.xfsc/federated-catalogue/meta#>.
-               This namespace is reserved for internal catalogue use only and cannot be set by external clients."
-        baseClass:
-          type: string
-          description: >-
-            Resolved trust-framework base-class name (e.g. "Participant", "ServiceOffering").
-            Absent for non-credential RDF content.
-          example: Participant
-        frameworkProfileId:
-          type: string
-          description: >-
-            Bundle profile identifier that resolved the base class (e.g. "gaia-x-2511").
-            Absent for non-credential RDF content.
-          example: gaia-x-2511
-        name:
-          type: string
-          description: Display name of the credential holder, or the issuer DID if no holder is present.
-        publicKey:
-          type: string
-          description: >-
-            DID URI of the first validator that signed the credential. Absent when no validators are present.
-        claims:
-          type: object
-          additionalProperties: true
-          description: >-
-            Raw claims from the credential, keyed by claim property URI. Single values are
-            strings; multi-valued properties are arrays of strings.
-      required:
-        - verificationTimestamp
-        - lifecycleStatus #!! is not known when verifying external credentials. Remove from required -> Julius: You are supposed to compute the status (active, invalid, etc.) from the available information. That is the result of the validation. Maybe rename to just status
-        - issuer #!! Comment on issuer: if available, but still required?? Remove from required -> Julius: required
-        - issuedDateTime
-        - validatorDids
-        - warnings
-    Participant:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Global ID of the participant
-        name:
-          type: string
-        publicKey: #!! Can this be changed? If it is changed, are all credentials signed by the old key invalid? -> Julius: For the first version you can assume that credentials go invalid when the TrustAnchor or participant key change
-          type: string
-        asset:
-          type: string
-    User:
-      type: object
-      properties:
-        participantId:
-          type: string
-          description: Global ID of the associated participant
-          example: ExampleCompany
-        firstName:
-          type: string
-          example: John
-        lastName:
-          type: string
-          example: Doe
-        email:
-          type: string
-        roleIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/Role'
-      required:
-        - participantId
-        - firstName
-        - lastName
-        - email
-    UserProfile:
-      allOf:
-        - $ref: '#/components/schemas/User'
-        - type: object
-          properties:
-            id:
-              type: string
-              description: Internal catalogue user id
-              example: ExampleCompany-John-Doe
-            username:
-              type: string
-              example: John Doe
-          required:
-            - id
-            - username
-    Role: #!! Changed Role from an object with a single String property to simply a String
-      type: string
-      example: Ro-MU-CA
-    Session:
-      type: object
-      properties:
-        userId:
-          type: string
-        creationDatetime:
-          type: string
-          format: date-time
-        status: #!! What is a status?
-          type: string
-#        seed: #!! We must have a seed to do pagination, user must be able to set it? -> Julius: ok
-#          type: string
-        roleIds:
-          type: array
-          items:
-            $ref: '#/components/schemas/Role'
     Asset:
       type: object
       properties:
         assetHash:
           type: string
-        id: #!! Added id / credentialSubject
+        id:
           type: string
         status:
           $ref: '#/components/schemas/AssetStatus'
@@ -315,7 +134,7 @@ components:
           type: integer
           format: int64
           description: Size of the uploaded asset in bytes
-        warnings:
+        warnings: &warningsProperty
           type: array
           description: >-
             Warnings issued during processing (e.g. triples removed due to reserved namespace filtering).
@@ -336,13 +155,23 @@ components:
           description: >-
             IRI of the linked machine-readable asset, if this asset is a human-readable
             representation linked to a machine-readable parent. Absent when no link exists.
-    AssetStatus:
-      type: string
-      enum:
-        - active
-        - eol
-        - deprecated
-        - revoked
+    AssetEnrichmentResponse:
+      type: object
+      description: Response returned when an existing non-RDF asset is enriched with RDF metadata.
+      required:
+        - assetId
+        - triplesAdded
+        - triplesRejected
+      properties:
+        assetId:
+          type: string
+          description: IRI (subjectId) of the enriched asset.
+        triplesAdded:
+          type: integer
+          description: Number of RDF triples written to the graph store after namespace filtering.
+        triplesRejected:
+          type: integer
+          description: Number of triples filtered out due to protected namespace policy.
     AssetResult:
       type: object
       properties:
@@ -350,44 +179,6 @@ components:
           $ref: '#/components/schemas/Asset'
         content:
           type: string
-    OntologySchema:
-      type: object
-      properties:
-        ontologies:
-          description: 'SchemaIds of ontologies, defining the terms of a schema'
-          type: array
-          items:
-            type: string
-            example: schemaId
-        shapes:
-          description: 'SchemaIds of shapes (SHACL Shapes Constraint Language) used to validate instances against the schema.'
-          type: array
-          items:
-            type: string
-            example: schemaId
-        vocabularies:
-          description: 'SchemaIds of controlled vocabularies used in the schema'
-          type: array
-          items:
-            type: string
-            example: schemaId
-        jsonSchemas:
-          description: 'SchemaIds of JSON Schemas used to validate JSON assets.'
-          type: array
-          items:
-            type: string
-            example: schemaId
-        xmlSchemas:
-          description: 'SchemaIds of XML Schemas (XSD) used to validate XML assets.'
-          type: array
-          items:
-            type: string
-            example: schemaId
-    ResultPage:
-      type: object
-      properties:
-        totalCount:
-          type: integer
     Assets:
       allOf:
         - $ref: '#/components/schemas/ResultPage'
@@ -397,57 +188,13 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/AssetResult'
-    Participants:
-      allOf:
-        - $ref: '#/components/schemas/ResultPage'
-        - type: object
-          properties:
-            items: 
-              type: array
-              items: 
-                $ref: '#/components/schemas/Participant'
-    UserProfiles:
-      allOf:
-        - $ref: '#/components/schemas/ResultPage'
-        - type: object
-          properties:
-            items: 
-              type: array
-              items: 
-                $ref: '#/components/schemas/UserProfile'
-    Results:
-      allOf:
-        - $ref: '#/components/schemas/ResultPage'
-        - type: object
-          properties:
-            items:
-              type: array
-              items:
-                $ref: '#/components/schemas/Result'
-    SchemaResult:
-      type: object
-      properties:
-        id:
-          type: string
-          description: 'The internal identifier of the schema.'
-        warnings:
-          type: array
-          items:
-            type: string
-          description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
-        createdAt:
-          type: string
-          format: date-time
-          nullable: true
-          description: 'Timestamp when the schema was first uploaded. Present on creation, null on updates.'
-        version:
-          type: integer
-          nullable: true
-          description: 'Current version number after this operation. Present on updates, null on creation.'
-        previousVersion:
-          type: integer
-          nullable: true
-          description: 'Version number before this operation. Null for first version or on creation.'
+    AssetStatus:
+      type: string
+      enum:
+        - active
+        - eol
+        - deprecated
+        - revoked
     AssetVersion:
       type: object
       required: [version, createdAt, createdBy, status, isCurrent]
@@ -486,82 +233,80 @@ components:
           items:
             $ref: '#/components/schemas/AssetVersion'
           description: 'Descending list (newest first) for the requested page.'
-    SchemaVersion:
+    ComplianceCheckRequest:
+      type: object
+      required: [ frameworkProfileId, credential ]
+      properties:
+        frameworkProfileId:
+          type: string
+          description: The trust-framework profile ID to check against (e.g. "mock-2026")
+        credential:
+          type: string
+          description: Raw VP JWT credential to submit to the compliance service
+
+    ComplianceCheckResult:
       type: object
       properties:
+        conforms:
+          type: boolean
+          description: True when the compliance service issued an attestation
+        failureCategory:
+          type: string
+          nullable: true
+          description: Set when conforms is false; describes how the check failed (currently UNVERIFIABLE_ATTESTATION)
+        attestationCredential:
+          type: string
+          nullable: true
+          description: Raw JWT compliance credential returned by the service (present only on conforms=true)
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
+    GraphDatabaseStatus:
+      type: object
+      properties:
+        activeBackend:
+          type: string
+          description: Currently active graph database backend
+        connected:
+          type: boolean
+          description: Whether the graph database is reachable
+        claimCount:
+          type: integer
+          format: int64
+          description: Number of claims in the graph database
         version:
-          type: integer
-          description: '1-based version ordinal.'
-        createdAt:
           type: string
-          format: date-time
-          description: 'Timestamp when this version was created.'
-        isCurrent:
+          description: Graph database version or implementation info
+        rebuildNeeded:
           type: boolean
-          description: 'Whether this is the current (latest) version.'
-    SchemaVersionList:
+          description: |
+            True when the active graph store has no claims but RDF assets exist in
+            storage — typical after a backend switch or fresh start. The admin UI
+            surfaces a rebuild prompt that calls `POST /admin/graph/rebuild`. Non-RDF
+            assets are excluded from this check because they do not produce graph
+            claims even after a successful rebuild.
+        rdfAssetCount:
+          type: integer
+          format: int64
+          description: |
+            Number of active RDF assets in storage that would be re-indexed by a
+            rebuild. Surfaced alongside `rebuildNeeded` so the UI can show how many
+            assets the rebuild will process.
+    GraphDatabaseSwitchResult:
       type: object
       properties:
-        schemaId:
+        message:
           type: string
-          description: 'The schema identifier.'
-        versions:
-          type: array
-          items:
-            $ref: '#/components/schemas/SchemaVersion'
-    QueryInfo:
-      type: object
-      properties:
-        backend:
-          type: string
-          example: "NEO4J"
-        queryLanguage:
-          type: string
-          example: "OPENCYPHER"
-        contentType:
-          type: string
-          example: "application/opencypher-query"
-        enabled:
-          type: boolean
-          example: true
-        exampleQuery:
-          type: string
-        documentation:
-          type: string
-    RebuildStatus:
-      type: object
-      properties:
-        total:
-          type: integer
-          format: int64
-          description: Total number of assets to process
-        processed:
-          type: integer
-          format: int64
-          description: Number of assets processed so far
-        percentComplete:
-          type: integer
-          description: Completion percentage (0-100)
-        running:
-          type: boolean
-          description: Whether a rebuild is currently running
-        complete:
-          type: boolean
-          description: Whether the rebuild has completed
-        failed:
-          type: boolean
-          description: Whether the rebuild has failed
-        errorMessage:
-          type: string
-          description: Error message if the rebuild failed
-        errors:
-          type: integer
-          format: int64
-          description: Number of assets that failed during processing
-        durationMs:
-          type: integer
-          format: int64
-          description: Duration in milliseconds since rebuild started
+          description: Human-readable status message
+
     GraphStatus:
       type: object
       properties:
@@ -589,218 +334,12 @@ components:
         syncAssessment:
           type: string
           description: Sync assessment (empty, in-sync, out-of-sync, unknown, disabled)
-    AdminStats:
-      type: object
-      properties:
-        totalAssets:
-          type: integer
-          format: int64
-          description: Total number of assets in the catalogue
-        activeAssets:
-          type: integer
-          format: int64
-          description: Number of active assets
-        activeTrustFrameworks:
-          type: integer
-          format: int64
-          description: Number of active trust frameworks
-        totalUsers:
-          type: integer
-          format: int64
-          description: Total number of registered users
-        totalSchemas:
-          type: integer
-          format: int64
-          description: Total number of schemas
-        totalParticipants:
-          type: integer
-          format: int64
-          description: Total number of participants
-        graphClaimCount:
-          type: integer
-          format: int64
-          description: Number of claims in the graph database
-        graphBackend:
-          type: string
-          description: The graph database backend type
-    AdminHealthStatus:
-      type: object
-      properties:
-        catalogueStatus:
-          type: string
-          description: Catalogue service status (UP/DOWN)
-        graphDbStatus:
-          type: object
-          properties:
-            connected:
-              type: boolean
-            backend:
-              type: string
-            claimCount:
-              type: integer
-              format: int64
-        keycloakStatus:
-          type: string
-          description: Keycloak status (UP/DOWN/UNKNOWN)
-        fileStoreStatus:
-          type: string
-          description: File store status (UP/DOWN)
-        databaseStatus:
-          type: string
-          description: Database status (UP/DOWN)
-        keycloakUrl:
-          type: string
-          description: Keycloak issuer URL
-        fileStorePath:
-          type: string
-          description: File store directory path
     KeycloakAdminUrl:
       type: object
       properties:
         url:
           type: string
           description: Keycloak Admin Console URL for the catalogue realm
-    TrustFrameworkEntry:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Trust framework identifier
-        name:
-          type: string
-          description: Display name
-        enabled:
-          type: boolean
-          description: Whether this framework is active
-        bundles:
-          type: array
-          items:
-            $ref: '#/components/schemas/TrustFrameworkBundleEntry'
-          description: Per-bundle base-class states for this trust framework family.
-    TrustFrameworkBundleEntry:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Bundle profile ID (e.g. gaia-x-2511)
-        baseClasses:
-          type: object
-          additionalProperties:
-            type: boolean
-          description: Per-base-class enabled state for this bundle, keyed by base-class name.
-        effectiveConfig:
-          $ref: '#/components/schemas/TrustFrameworkBundleEffectiveConfig'
-        overriddenFields:
-          type: array
-          description: >-
-            Names of effective-config fields whose value currently comes from a
-            persisted override (DB row) rather than the bundle YAML. Allows the
-            UI to distinguish operator-set values from YAML defaults.
-          items:
-            type: string
-    TrustFrameworkBundleEffectiveConfig:
-      type: object
-      description: >-
-        Effective compliance configuration of a bundle after applying any per-bundle
-        overrides on top of the YAML baseline. Resolved by the catalogue server at
-        request time; read-only.
-      properties:
-        clientType:
-          type: string
-        serviceUrl:
-          type: string
-        compliancePath:
-          type: string
-        apiVersion:
-          type: string
-        timeoutSeconds:
-          type: integer
-        trustAnchorUrl:
-          type: string
-    TrustFrameworkPatch:
-      type: object
-      description: >-
-        Merge-patch body for PATCH /admin/trust-frameworks/{id}. At least one field
-        must be present. Only the supplied fields are modified; absent fields are
-        left unchanged.
-      minProperties: 1
-      additionalProperties: false
-      properties:
-        enabled:
-          type: boolean
-          description: Desired enabled state of the trust framework family.
-    SchemaModulePatch:
-      type: object
-      description: >-
-        Merge-patch body for PATCH /admin/schema-validation/modules/{type}. At least
-        one field must be present. Only the supplied fields are modified; absent fields
-        are left unchanged.
-      minProperties: 1
-      additionalProperties: false
-      properties:
-        enabled:
-          type: boolean
-          description: Desired enabled state of the schema validation module.
-    TrustFrameworkBaseClassPatch:
-      type: object
-      description: >-
-        Merge-patch body for PATCH /admin/trust-frameworks/{bundleId}/base-classes/{baseClassName}.
-        At least one field must be present. Only the supplied fields are modified;
-        absent fields are left unchanged.
-      minProperties: 1
-      additionalProperties: false
-      properties:
-        enabled:
-          type: boolean
-          description: Desired enabled state of the base class within the bundle.
-    SchemaValidationStatus:
-      type: object
-      properties:
-        totalSchemaCount:
-          type: integer
-          format: int64
-          description: Total number of schemas across all modules
-        modules:
-          type: array
-          items:
-            $ref: '#/components/schemas/SchemaValidationModule'
-    SchemaValidationModule:
-      type: object
-      properties:
-        type:
-          type: string
-          description: Module type (SHACL, JSON_SCHEMA, XML_SCHEMA, OWL)
-        name:
-          type: string
-          description: Display name
-        description:
-          type: string
-          description: Module description
-        schemaCount:
-          type: integer
-          format: int64
-          description: Number of schemas for this module
-        enabled:
-          type: boolean
-          description: Whether this module is active
-    OntologyImpactList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OntologyImpactEntry'
-        noActiveBundles:
-          type: boolean
-          default: false
-          description: >-
-            True when no trust-framework bundles are active. In that case
-            contributions cannot be computed for any ontology; the UI
-            should surface a banner explaining that the OWL toggle has no
-            base classes to gate.
-      required:
-        - items
-        - noActiveBundles
     OntologyImpactEntry:
       type: object
       description: >-
@@ -849,44 +388,371 @@ components:
         - name
         - contributions
         - parseError
-    GraphDatabaseStatus:
+    OntologyImpactList:
       type: object
       properties:
-        activeBackend:
-          type: string
-          description: Currently active graph database backend
-        connected:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OntologyImpactEntry'
+        noActiveBundles:
           type: boolean
-          description: Whether the graph database is reachable
-        claimCount:
-          type: integer
-          format: int64
-          description: Number of claims in the graph database
-        version:
-          type: string
-          description: Graph database version or implementation info
-        rebuildNeeded:
-          type: boolean
-          description: |
-            True when the active graph store has no claims but RDF assets exist in
-            storage — typical after a backend switch or fresh start. The admin UI
-            surfaces a rebuild prompt that calls `POST /admin/graph/rebuild`. Non-RDF
-            assets are excluded from this check because they do not produce graph
-            claims even after a successful rebuild.
-        rdfAssetCount:
-          type: integer
-          format: int64
-          description: |
-            Number of active RDF assets in storage that would be re-indexed by a
-            rebuild. Surfaced alongside `rebuildNeeded` so the UI can show how many
-            assets the rebuild will process.
-    GraphDatabaseSwitchResult:
+          default: false
+          description: >-
+            True when no trust-framework bundles are active. In that case
+            contributions cannot be computed for any ontology; the UI
+            should surface a banner explaining that the OWL toggle has no
+            base classes to gate.
+      required:
+        - items
+        - noActiveBundles
+    OntologySchema:
       type: object
       properties:
-        message:
+        ontologies:
+          description: 'SchemaIds of ontologies, defining the terms of a schema'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        shapes:
+          description: 'SchemaIds of shapes (SHACL Shapes Constraint Language) used to validate instances against the schema.'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        vocabularies:
+          description: 'SchemaIds of controlled vocabularies used in the schema'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        jsonSchemas:
+          description: 'SchemaIds of JSON Schemas used to validate JSON assets.'
+          type: array
+          items:
+            type: string
+            example: schemaId
+        xmlSchemas:
+          description: 'SchemaIds of XML Schemas (XSD) used to validate XML assets.'
+          type: array
+          items:
+            type: string
+            example: schemaId
+    Parameters:
+      type: object
+      additionalProperties:
+        type: object
+      example:
+        name: "John"
+        limit: 10
+        offset: 5
+    Participant:
+      type: object
+      properties:
+        id:
           type: string
-          description: Human-readable status message
+          description: Global ID of the participant
+        name:
+          type: string
+        publicKey:
+          type: string
+        asset:
+          type: string
+    Participants:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Participant'
+    ProvenanceCredential:
+      type: object
+      required: [ id, assetId, assetVersion, issuer, issuedAt, provenanceType, credentialFormat ]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Internal surrogate key of the persisted provenance credential.
+        assetId:
+          type: string
+          description: IRI of the asset this credential is attached to.
+        assetVersion:
+          type: integer
+          description: 1-based Envers version ordinal the credential is linked to.
+        credentialId:
+          type: string
+          description: VC id field (unique per asset).
+        issuer:
+          type: string
+          description: DID of the VC issuer.
+        issuedAt:
+          type: string
+          format: date-time
+          description: issuedDateTime extracted from the VC.
+        provenanceType:
+          type: string
+          enum: [ CREATION, DERIVATION, ATTRIBUTION, MODIFICATION ]
+          description: >
+            Provenance relation type, derived by detecting the PROV-O predicate present in
+            credentialSubject. CREATION=wasGeneratedBy, DERIVATION=wasDerivedFrom,
+            ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf.
+        credentialFormat:
+          type: string
+          enum: [ JSONLD, JSONLD_JWT, JWT ]
+          description: Detected credential format.
+        credentialContent:
+          type: string
+          description: Raw VC payload (JSON-LD or JWT string).
+        verified:
+          type: boolean
+          description: Whether this credential has been verified.
+        verificationTimestamp:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the last verification was performed.
+        verificationResult:
+          $ref: '#/components/schemas/ProvenanceVerificationResult'
+    ProvenanceCredentials:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProvenanceCredential'
+    ProvenanceVerificationResult:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+          description: Overall validity of the credential.
+        verificationTimestamp:
+          type: string
+          format: date-time
+        verificationMethod:
+          type: string
+          description: DID verification method used.
+        issuerResolutionStatus:
+          type: string
+          enum: [ RESOLVED, UNRESOLVABLE, TEMPORARILY_UNAVAILABLE ]
+          description: Result of DID resolution for the issuer.
+        issuedDateTime:
+          type: string
+          format: date-time
+        signatureValid:
+          type: boolean
+        credentialExpiryValid:
+          type: boolean
+        validatorDids:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
 
+    QueryInfo:
+      type: object
+      properties:
+        backend:
+          type: string
+          example: "NEO4J"
+        queryLanguage:
+          $ref: '#/components/schemas/QueryLanguage'
+        contentType:
+          type: string
+          example: "application/opencypher-query"
+        enabled:
+          type: boolean
+          example: true
+        exampleQuery:
+          type: string
+        documentation:
+          type: string
+    QueryLanguage:
+      type: string
+      enum:
+        - OPENCYPHER
+        - SPARQL
+      default: OPENCYPHER
+    RebuildStatus:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: Total number of assets to process
+        processed:
+          type: integer
+          format: int64
+          description: Number of assets processed so far
+        percentComplete:
+          type: integer
+          description: Completion percentage (0-100)
+        running:
+          type: boolean
+          description: Whether a rebuild is currently running
+        complete:
+          type: boolean
+          description: Whether the rebuild has completed
+        failed:
+          type: boolean
+          description: Whether the rebuild has failed
+        errorMessage:
+          type: string
+          description: Error message if the rebuild failed
+        errors:
+          type: integer
+          format: int64
+          description: Number of assets that failed during processing
+        durationMs:
+          type: integer
+          format: int64
+          description: Duration in milliseconds since rebuild started
+    Result:
+      type: object
+      additionalProperties:
+        type: object
+    ResultPage:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+    Results:
+      allOf:
+        - $ref: '#/components/schemas/ResultPage'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Result'
+    Role:
+      type: string
+      example: Ro-MU-CA
+    SchemaModulePatch:
+      type: object
+      description: >-
+        Merge-patch body for PATCH /admin/schema-validation/modules/{type}. At least
+        one field must be present. Only the supplied fields are modified; absent fields
+        are left unchanged.
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+          description: Desired enabled state of the schema validation module.
+    SchemaResult:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 'The internal identifier of the schema.'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: 'Warnings generated during schema import (e.g. filtered protected namespace statements).'
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Timestamp when the schema was first uploaded. Present on creation, null on updates.'
+        version:
+          type: integer
+          nullable: true
+          description: 'Current version number after this operation. Present on updates, null on creation.'
+        previousVersion:
+          type: integer
+          nullable: true
+          description: 'Version number before this operation. Null for first version or on creation.'
+    SchemaValidationModule:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Module type (SHACL, JSON_SCHEMA, XML_SCHEMA, OWL)
+        name:
+          type: string
+          description: Display name
+        description:
+          type: string
+          description: Module description
+        schemaCount:
+          type: integer
+          format: int64
+          description: Number of schemas for this module
+        enabled:
+          type: boolean
+          description: Whether this module is active
+    SchemaValidationStatus:
+      type: object
+      properties:
+        totalSchemaCount:
+          type: integer
+          format: int64
+          description: Total number of schemas across all modules
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaValidationModule'
+    SchemaVersion:
+      type: object
+      properties:
+        version:
+          type: integer
+          description: '1-based version ordinal.'
+        createdAt:
+          type: string
+          format: date-time
+          description: 'Timestamp when this version was created.'
+        isCurrent:
+          type: boolean
+          description: 'Whether this is the current (latest) version.'
+    SchemaVersionList:
+      type: object
+      properties:
+        schemaId:
+          type: string
+          description: 'The schema identifier.'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchemaVersion'
+    Session:
+      type: object
+      properties:
+        userId:
+          type: string
+        creationDatetime:
+          type: string
+          format: date-time
+        status:
+          type: string
+        roleIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    Statement:
+      type: object
+      properties:
+        statement:
+          type: string
+          example: Match (m:Movie) where m.released > 2000 RETURN m
+        parameters:
+          $ref: '#/components/schemas/Parameters'
+      required:
+        - statement
     StoredValidationResult:
       type: object
       properties:
@@ -940,55 +806,142 @@ components:
           nullable: true
           description: Reason the result was marked outdated; null when outdated is false
 
-    ProvenanceCredential:
+    TrustFrameworkBaseClassPatch:
       type: object
-      required: [id, assetId, assetVersion, issuer, issuedAt, provenanceType, credentialFormat]
+      description: >-
+        Merge-patch body for PATCH /admin/trust-frameworks/{bundleId}/base-classes/{baseClassName}.
+        At least one field must be present. Only the supplied fields are modified;
+        absent fields are left unchanged.
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+          description: Desired enabled state of the base class within the bundle.
+    TrustFrameworkBundleEffectiveConfig:
+      type: object
+      description: >-
+        Effective compliance configuration of a bundle after applying any per-bundle
+        overrides on top of the YAML baseline. Resolved by the catalogue server at
+        request time; read-only.
+      properties:
+        clientType:
+          type: string
+        serviceUrl:
+          type: string
+        compliancePath:
+          type: string
+        apiVersion:
+          type: string
+        timeoutSeconds:
+          type: integer
+        trustAnchorUrl:
+          type: string
+    TrustFrameworkBundleEntry:
+      type: object
       properties:
         id:
-          type: integer
-          format: int64
-          description: Internal surrogate key of the persisted provenance credential.
-        assetId:
           type: string
-          description: IRI of the asset this credential is attached to.
-        assetVersion:
-          type: integer
-          description: 1-based Envers version ordinal the credential is linked to.
-        credentialId:
+          description: Bundle profile ID (e.g. gaia-x-2511)
+        baseClasses:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: Per-base-class enabled state for this bundle, keyed by base-class name.
+        effectiveConfig:
+          $ref: '#/components/schemas/TrustFrameworkBundleEffectiveConfig'
+        overriddenFields:
+          type: array
+          description: >-
+            Names of effective-config fields whose value currently comes from a
+            persisted override (DB row) rather than the bundle YAML. Allows the
+            UI to distinguish operator-set values from YAML defaults.
+          items:
+            type: string
+    TrustFrameworkEntry:
+      type: object
+      properties:
+        id:
           type: string
-          description: VC id field (unique per asset).
-        issuer:
+          description: Trust framework identifier
+        name:
           type: string
-          description: DID of the VC issuer.
-        issuedAt:
-          type: string
-          format: date-time
-          description: issuedDateTime extracted from the VC.
-        provenanceType:
-          type: string
-          enum: [CREATION, DERIVATION, ATTRIBUTION, MODIFICATION]
-          description: >
-            Provenance relation type, derived by detecting the PROV-O predicate present in
-            credentialSubject. CREATION=wasGeneratedBy, DERIVATION=wasDerivedFrom,
-            ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf.
-        credentialFormat:
-          type: string
-          enum: [JSONLD, JSONLD_JWT, JWT]
-          description: Detected credential format.
-        credentialContent:
-          type: string
-          description: Raw VC payload (JSON-LD or JWT string).
-        verified:
+          description: Display name
+        enabled:
           type: boolean
-          description: Whether this credential has been verified.
-        verificationTimestamp:
+          description: Whether this framework is active
+        bundles:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrustFrameworkBundleEntry'
+          description: Per-bundle base-class states for this trust framework family.
+    TrustFrameworkPatch:
+      type: object
+      description: >-
+        Merge-patch body for PATCH /admin/trust-frameworks/{id}. At least one field
+        must be present. Only the supplied fields are modified; absent fields are
+        left unchanged.
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+          description: Desired enabled state of the trust framework family.
+    TrustFrameworkPublicEntry:
+      type: object
+      properties:
+        id:
           type: string
-          format: date-time
-          nullable: true
-          description: When the last verification was performed.
-        verificationResult:
-          $ref: '#/components/schemas/ProvenanceVerificationResult'
-    ProvenanceCredentials:
+          description: Family ID (e.g. "gaia-x", "mock")
+        name:
+          type: string
+          description: Human-readable family name
+        profiles:
+          type: array
+          items:
+            type: string
+          description: Profile IDs registered for this family (e.g. ["gaia-x-2511"])
+
+    User:
+      type: object
+      properties:
+        participantId:
+          type: string
+          description: Global ID of the associated participant
+          example: ExampleCompany
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+        roleIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+      required:
+        - participantId
+        - firstName
+        - lastName
+        - email
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            id:
+              type: string
+              description: Internal catalogue user id
+              example: ExampleCompany-John-Doe
+            username:
+              type: string
+              example: John Doe
+          required:
+            - id
+            - username
+    UserProfiles:
       allOf:
         - $ref: '#/components/schemas/ResultPage'
         - type: object
@@ -996,42 +949,24 @@ components:
             items:
               type: array
               items:
-                $ref: '#/components/schemas/ProvenanceCredential'
-    ProvenanceVerificationResult:
+                $ref: '#/components/schemas/UserProfile'
+    ValidationReport:
       type: object
+      required:
+        - conforms
       properties:
-        isValid:
+        conforms:
           type: boolean
-          description: Overall validity of the credential.
-        verificationTimestamp:
-          type: string
-          format: date-time
-        verificationMethod:
-          type: string
-          description: DID verification method used.
-        issuerResolutionStatus:
-          type: string
-          enum: [RESOLVED, UNRESOLVABLE, TEMPORARILY_UNAVAILABLE]
-          description: Result of DID resolution for the issuer.
-        issuedDateTime:
-          type: string
-          format: date-time
-        signatureValid:
-          type: boolean
-        credentialExpiryValid:
-          type: boolean
-        validatorDids:
+          description: True if validation passed with no violations
+        violations:
           type: array
           items:
-            type: string
-        errors:
-          type: array
-          items:
-            type: string
-        warnings:
-          type: array
-          items:
-            type: string
+            $ref: '#/components/schemas/ValidationViolation'
+          description: List of constraint violations (empty if conforms=true)
+        rawReport:
+          type: string
+          nullable: true
+          description: Serialised raw report (SHACL Turtle for RDF; error message for JSON/XML)
 
     ValidationRequest:
       type: object
@@ -1103,24 +1038,6 @@ components:
         report:
           $ref: '#/components/schemas/ValidationReport'
 
-    ValidationReport:
-      type: object
-      required:
-        - conforms
-      properties:
-        conforms:
-          type: boolean
-          description: True if validation passed with no violations
-        violations:
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationViolation'
-          description: List of constraint violations (empty if conforms=true)
-        rawReport:
-          type: string
-          nullable: true
-          description: Serialised raw report (SHACL Turtle for RDF; error message for JSON/XML)
-
     ValidationViolation:
       type: object
       properties:
@@ -1141,47 +1058,117 @@ components:
           type: string
           description: The SHACL shape that was violated
 
-    ComplianceCheckRequest:
-      type: object
-      required: [ frameworkProfileId, credential ]
-      properties:
-        frameworkProfileId:
-          type: string
-          description: The trust-framework profile ID to check against (e.g. "mock-2026")
-        credential:
-          type: string
-          description: Raw VP JWT credential to submit to the compliance service
-
-    ComplianceCheckResult:
+    VerificationResult:
       type: object
       properties:
-        conforms:
-          type: boolean
-          description: True when the compliance service issued an attestation
-        failureCategory:
+        verificationTimestamp:
           type: string
-          nullable: true
-          description: Set when conforms is false; describes how the check failed (currently UNVERIFIABLE_ATTESTATION)
-        attestationCredential:
+          format: date-time
+        lifecycleStatus:
+          type: string # does the asset have a lifecycle status in this catalogue?
+          description: Lifecycle-state an asset would get, if it would be added to the catalogue.
+        issuer:
+          type: string # contains the id of the issuers credential if available
+          description: ID of the issuer's credential, if available.
+        issuedDateTime:
           type: string
-          nullable: true
-          description: Raw JWT compliance credential returned by the service (present only on conforms=true)
-
-    TrustFrameworkPublicEntry:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Family ID (e.g. "gaia-x", "mock")
-        name:
-          type: string
-          description: Human-readable family name
-        profiles:
+          format: date-time
+        validatorDids:
           type: array
           items:
             type: string
-          description: Profile IDs registered for this family (e.g. ["gaia-x-2511"])
-
+            description: The DIDs of validators that signed parts of the credential
+        warnings: *warningsProperty
+        baseClass:
+          type: string
+          description: >-
+            Resolved trust-framework base-class name (e.g. "Participant", "ServiceOffering").
+            Absent for non-credential RDF content.
+          example: Participant
+        frameworkProfileId:
+          type: string
+          description: >-
+            Bundle profile identifier that resolved the base class (e.g. "gaia-x-2511").
+            Absent for non-credential RDF content.
+          example: gaia-x-2511
+        name:
+          type: string
+          description: Display name of the credential holder, or the issuer DID if no holder is present.
+        publicKey:
+          type: string
+          description: >-
+            DID URI of the first validator that signed the credential. Absent when no validators are present.
+        claims:
+          type: object
+          additionalProperties: true
+          description: >-
+            Raw claims from the credential, keyed by claim property URI. Single values are
+            strings; multi-valued properties are arrays of strings.
+      required:
+        - verificationTimestamp
+        - lifecycleStatus
+        - issuer
+        - issuedDateTime
+        - validatorDids
+        - warnings
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: >-
+        Forbidden. The user does not have the permission to execute this
+        request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: >-
+        May contain hints how to solve the error or indicate what went wrong at
+        the server. Must not outline any information about the internal
+        structure of the server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ClientError:
+      description: >-
+        May contain hints how to solve the error or indicate what was wrong in
+        the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: HTTP Conflict 409
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessible:
+      description: HTTP Unprocessible Entity 422
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: >-
+        The Content-Type indicates a query language not supported by the active
+        graph database backend. Check GET /query/info for the supported language.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   parameters:
     OffsetParam:
       name: offset
@@ -1202,31 +1189,6 @@ components:
         default: 100
       required: false
       description: The number of items to return.
-    OrderByParam:
-      in: query
-      name: orderBy
-      schema:
-        type: string
-      required: false
-      description: Results will be sorted by this field.
-    AscendingParam:
-      in: query
-      name: ascending
-      schema:
-        type: boolean
-        default: true
-      required: false
-      description: Ascending/Descending ordering.
-    StatusParam:
-      in: query
-      name: statuses
-      schema:
-        type: array
-        items:
-          $ref: '#/components/schemas/AssetStatus'
-      explode: false
-      required: false
-      description: Asset statuses
   securitySchemes:
     jwt:
       type: http
@@ -1262,20 +1224,20 @@ tags:
     description: Role Managemet operations
   - name: Session
     description: Management for auth sessions in the catalogue
-  - name: Graph Admin
-    description: Graph database administration operations.
   - name: Admin
     description: Administration dashboard and system management operations.
-  - name: TrustFrameworkAdmin
+  - name: AdminTrustFrameworks
     description: Trust framework configuration and management.
-  - name: SchemaValidationAdmin
+  - name: AdminSchemaValidation
     description: Schema validation module configuration.
-  - name: GraphDatabaseAdmin
-    description: Graph database status and backend switching.
+  - name: AdminGraph
+    description: Graph database administration — status, backend switching, and rebuild operations.
   - name: Validations
     description: Stored validation results.
   - name: Compliance
     description: Trust-framework compliance check endpoints.
+  - name: TrustFrameworks
+    description: Public discovery of enabled trust frameworks.
 paths:
   /admin/me:
     get:
@@ -1358,7 +1320,7 @@ paths:
   /admin/trust-frameworks:
     get:
       tags:
-        - TrustFrameworkAdmin
+        - AdminTrustFrameworks
       summary: List all registered trust frameworks
       operationId: getTrustFrameworks
       security:
@@ -1381,7 +1343,7 @@ paths:
   /admin/trust-frameworks/{id}:
     patch:
       tags:
-        - TrustFrameworkAdmin
+        - AdminTrustFrameworks
       summary: Partially update a trust framework
       description: >-
         Applies a merge-patch to the identified trust framework. Only the fields
@@ -1419,7 +1381,7 @@ paths:
   /admin/trust-frameworks/bundles/{bundleId}:
     patch:
       tags:
-        - TrustFrameworkAdmin
+        - AdminTrustFrameworks
       summary: Merge-patch external client identifiers of a trust-framework bundle
       description: >-
         Merge-patch semantics (RFC 7396): only fields present in the body are modified.
@@ -1468,7 +1430,7 @@ paths:
           $ref: '#/components/responses/ServerError'
     delete:
       tags:
-        - TrustFrameworkAdmin
+        - AdminTrustFrameworks
       summary: Clear all external-identifier overrides for a trust-framework bundle
       description: >-
         Removes any persisted overrides for the given bundle, restoring the bundle YAML
@@ -1499,7 +1461,7 @@ paths:
   /admin/trust-frameworks/{bundleId}/base-classes/{baseClassName}:
     patch:
       tags:
-        - TrustFrameworkAdmin
+        - AdminTrustFrameworks
       summary: Merge-patch a single base class within a trust-framework bundle
       description: >-
         Merge-patch semantics (RFC 7396): only fields present in the body are modified.
@@ -1540,7 +1502,7 @@ paths:
   /admin/schema-validation:
     get:
       tags:
-        - SchemaValidationAdmin
+        - AdminSchemaValidation
       summary: Get schema validation module status
       operationId: getSchemaValidationStatus
       security:
@@ -1561,7 +1523,7 @@ paths:
   /admin/schema-validation/modules/{type}:
     patch:
       tags:
-        - SchemaValidationAdmin
+        - AdminSchemaValidation
       summary: Partially update a schema validation module
       description: >-
         Applies a merge-patch to the identified schema validation module. Only the
@@ -1603,7 +1565,7 @@ paths:
   /admin/schema-validation/ontologies:
     get:
       tags:
-        - SchemaValidationAdmin
+        - AdminSchemaValidation
       summary: List uploaded ontologies and their subclass contributions to registered base classes
       description: >-
         Returns the runtime-uploaded ontologies currently consulted by the OWL
@@ -1632,7 +1594,7 @@ paths:
   /admin/graph-database:
     get:
       tags:
-        - GraphDatabaseAdmin
+        - AdminGraph
       summary: Get graph database status
       operationId: getGraphDatabaseStatus
       security:
@@ -1653,7 +1615,7 @@ paths:
   /admin/graph-database/switch:
     post:
       tags:
-        - GraphDatabaseAdmin
+        - AdminGraph
       summary: Switch the graph database backend (requires restart)
       operationId: switchGraphDatabase
       security:
@@ -1678,7 +1640,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/GraphDatabaseSwitchResult'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/ClientError'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1688,7 +1650,7 @@ paths:
   /admin/graph/rebuild:
     post:
       tags:
-        - Graph Admin
+        - AdminGraph
       summary: Trigger an asynchronous graph rebuild
       operationId: triggerGraphRebuild
       security:
@@ -1715,7 +1677,7 @@ paths:
   /admin/graph/rebuild/status:
     get:
       tags:
-        - Graph Admin
+        - AdminGraph
       summary: Get the current graph rebuild status
       operationId: getGraphRebuildStatus
       security:
@@ -1730,7 +1692,7 @@ paths:
   /admin/graph/status:
     get:
       tags:
-        - Graph Admin
+        - AdminGraph
       summary: Get the current graph store status
       operationId: getGraphStatus
       security:
@@ -1750,7 +1712,7 @@ paths:
       operationId: readAssets
       security:
         - jwt: []
-      parameters: #!! Added filter parameters for all(?) metadata fields
+      parameters:
         - name: uploadTimerange
           in: query
           description: >-
@@ -2168,7 +2130,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssetVersionList'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/ClientError'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2514,135 +2476,6 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /trust-frameworks:
-    get:
-      tags:
-        - Compliance
-      summary: List enabled trust frameworks and their profiles (public discovery)
-      operationId: getTrustFrameworksPublic
-      security:
-        - jwt: [ ]
-      responses:
-        '200':
-          description: List of enabled trust framework families with their profile IDs
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TrustFrameworkPublicEntry'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /validations/{id}:
-    get:
-      tags:
-        - Validations
-      summary: Get a single stored validation result by ID
-      operationId: getValidationResult
-      security:
-        - jwt: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: The stored validation result
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StoredValidationResult'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /assets/{asset_hash}:
-    delete:
-      tags:
-        - Assets
-      summary: Completely delete an asset by its content hash
-      description: >
-        Unlike other asset endpoints which use IRI-based identification (/assets/{id}),
-        the delete operation uses the SHA-256 content hash to guarantee unambiguous
-        single-row targeting. See ADR 7 — Delete Operation Exception.
-      operationId: deleteAsset
-      security:
-        - jwt: []
-      parameters:
-        - name: asset_hash
-          in: path
-          description: Hash identifier of the asset
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-        '400':
-          $ref: '#/components/responses/ClientError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-  /assets/{asset_hash}/revoke:
-    post:
-      tags:
-        - Assets
-      summary: Change the lifecycle state of an asset to revoked
-      description: >
-        Like the delete operation, the revoke endpoint uses the SHA-256 content hash
-        to guarantee unambiguous single-row targeting. Only ACTIVE assets can be revoked.
-        When versioning is introduced (CAT-FR-LM-01), this endpoint will be replaced by
-        version-specific revocation (POST /assets/{id}/versions/{v}/revoke).
-        See ADR 7 — Delete Operation Exception.
-      operationId: revokeAsset
-      security:
-        - jwt: []
-      parameters:
-        - name: asset_hash
-          in: path
-          description: Hash identifier of the asset
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Revoked
-          headers:
-            location:
-              description: URL of the asset
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Asset'
-        '400':
-          $ref: '#/components/responses/ClientError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
   /assets/{id}/provenance:
     post:
       tags:
@@ -2888,7 +2721,117 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /query: #!! Suggestion: rename to query, and allow only a single query. If multiple queries are ever added in the future, add an endpoint queries. -> Julius: ok
+  /assets/{asset_hash}:
+    delete:
+      tags:
+        - Assets
+      summary: Completely delete an asset by its content hash
+      description: >
+        Unlike other asset endpoints which use IRI-based identification (/assets/{id}),
+        the delete operation uses the SHA-256 content hash to guarantee unambiguous
+        single-row targeting. See ADR 7 — Delete Operation Exception.
+      operationId: deleteAsset
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: asset_hash
+          in: path
+          description: Hash identifier of the asset
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/{asset_hash}/revoke:
+    post:
+      tags:
+        - Assets
+      summary: Change the lifecycle state of an asset to revoked
+      deprecated: true
+      description: >
+        DEPRECATED — use `POST /assets/{id}/versions/{version}/revoke` instead.
+        Like the delete operation, the revoke endpoint uses the SHA-256 content hash
+        to guarantee unambiguous single-row targeting. Only ACTIVE assets can be revoked.
+        This hash-based revoke is superseded by the version-based variant
+        (`POST /assets/{id}/versions/{version}/revoke`); the hash-based endpoint will be
+        removed in a future major version once clients (Java client, BDD steps,
+        performance harness) have migrated. See ADR 7 — Delete Operation Exception.
+      operationId: revokeAsset
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: asset_hash
+          in: path
+          description: Hash identifier of the asset
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Revoked
+          headers:
+            location:
+              description: URL of the asset
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /validations/{id}:
+    get:
+      tags:
+        - Validations
+      summary: Get a single stored validation result by ID
+      operationId: getValidationResult
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: The stored validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /query:
     get:
       tags:
         - Query
@@ -3092,6 +3035,71 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServerError'
+  /schemas/latest:
+    get:
+      tags:
+        - Schemas
+      summary: 'Get the latest schema for a given type.'
+      description: >-
+        Behavior depends on schema type:
+
+        **RDF types** (ontology, shape, vocabulary): Returns the **composite schema** — a merged union
+        of all stored schemas of that type. This is meaningful because RDF schemas are additive
+        (shapes and ontologies can be combined into a single graph).
+
+        **Non-RDF types** (json, xml): Returns the **most recently uploaded** schema of that type.
+        Compositing does not apply because JSON and XML schemas are self-contained and cannot be
+        meaningfully merged.
+      operationId: getLatestSchema
+      parameters:
+        - name: type
+          in: query
+          description: 'Type of the schema.'
+          required: true
+          schema:
+            type: string
+            enum:
+              - ontology
+              - shape
+              - vocabulary
+              - json
+              - xml
+        - name: term
+          in: query
+          description: 'The URI of the term of the requested schema e.g. `https://w3id.org/gaia-x/2511#ServiceOffering`'
+          required: false
+          schema:
+            type: string
+      security:
+        - jwt: [ ]
+      responses:
+        '200':
+          description: 'The latest schemas for the given type or term.'
+          content:
+            application/rdf+xml:
+              schema:
+                type: string
+                description: 'OWL file describing the ontology of the schema or SKOS file describing the controlled vocabulary.'
+            text/turtle:
+              schema:
+                type: string
+                description: 'SHACL file describing the ontology of the schema.'
+            application/schema+json:
+              schema:
+                type: string
+                description: 'JSON Schema file.'
+            application/xml:
+              schema:
+                type: string
+                description: 'XML Schema (XSD) file.'
+        '400':
+          $ref: '#/components/responses/ClientError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /schemas/{schemaId}:
     get:
       tags:
@@ -3249,75 +3257,36 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
-  /schemas/latest:
-    get: 
+  /trust-frameworks:
+    get:
       tags:
-        - Schemas
-      summary: 'Get the latest schema for a given type.'
-      description: >-
-        Behavior depends on schema type:
-
-        **RDF types** (ontology, shape, vocabulary): Returns the **composite schema** — a merged union
-        of all stored schemas of that type. This is meaningful because RDF schemas are additive
-        (shapes and ontologies can be combined into a single graph).
-
-        **Non-RDF types** (json, xml): Returns the **most recently uploaded** schema of that type.
-        Compositing does not apply because JSON and XML schemas are self-contained and cannot be
-        meaningfully merged.
-      operationId: getLatestSchema
-      parameters:
-        - name: type
-          in: query
-          description: 'Type of the schema.'
-          required: true
-          schema:
-            type: string
-            enum:
-              - ontology
-              - shape
-              - vocabulary
-              - json
-              - xml
-        - name: term
-          in: query
-          description: 'The URI of the term of the requested schema e.g. `https://w3id.org/gaia-x/2511#ServiceOffering`'
-          required: false
-          schema:
-            type: string
+        - TrustFrameworks
+      summary: List enabled trust frameworks and their profiles (public discovery)
+      operationId: getTrustFrameworksPublic
+      security:
+        - jwt: [ ]
       responses:
         '200':
-          description: 'The latest schemas for the given type or term.'
+          description: List of enabled trust framework families with their profile IDs
           content:
-            application/rdf+xml:
+            application/json:
               schema:
-                type: string
-                description: 'OWL file describing the ontology of the schema or SKOS file describing the controlled vocabulary.'
-            text/turtle:
-              schema:
-                type: string
-                description: 'SHACL file describing the ontology of the schema.'
-            application/schema+json:
-              schema:
-                type: string
-                description: 'JSON Schema file.'
-            application/xml:
-              schema:
-                type: string
-                description: 'XML Schema (XSD) file.'
-        '400':
-          $ref: '#/components/responses/ClientError'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrustFrameworkPublicEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
+
   /verification:
     get:
       tags:
         - Verification
       summary: Show a HTML page to verify (portions of) a signed credential
       operationId: verifyPage
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: >-
@@ -3411,6 +3380,8 @@ paths:
           application/vp+ld+json+jwt:
             schema:
               type: string
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: Verification result
@@ -3432,12 +3403,12 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
   /participants:
-    get: #!! Needs pagination; Should this really include the entire Participant credential, or only the hash?
+    get:
       tags:
         - Participants
       summary: Get the registered participants
       operationId: getParticipants
-      parameters: #!! Added pagination parameters
+      parameters:
         - $ref: '#/components/parameters/OffsetParam'
         - $ref: '#/components/parameters/LimitParam'
 #        - $ref: '#/components/parameters/OrderByParam'
@@ -3467,14 +3438,14 @@ paths:
           application/json:
             schema:
               type: string
-      responses: #!! Should contain a Location header with the link to the new participant?
+      responses:
         '201':
           description: Created Participant
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Participant'
-          headers: #!! Added location header with participant URL
+          headers:
             location: 
               description: 'URL of the added Participant'
               schema: 
@@ -3522,14 +3493,14 @@ paths:
         - Participants
       summary: Update a participant in the catalogue
       operationId: updateParticipant
-      parameters: #!! fehlt da nicht irgendwie das update?
+      parameters:
         - in: path
           name: participantId
           required: true
           description: The participant to update.
           schema:
             type: string
-      requestBody: #!! Added participant as request body
+      requestBody:
         description: Participant credential
         required: true
         content:
@@ -3614,17 +3585,19 @@ paths:
           $ref: '#/components/responses/ServerError'
       security:
         - jwt: []
-  /users: #!! This may conflict with an SSO setup using an external auth provider
-    get: #!! potentially long list needs pagination
+  /users:
+    get:
       tags:
         - Users
       summary: List the registered users
       operationId: getUsers
-      parameters: #!! Added pagination parameters
+      parameters:
         - $ref: '#/components/parameters/OffsetParam'
         - $ref: '#/components/parameters/LimitParam'
 #        - $ref: '#/components/parameters/OrderByParam'
 #        - $ref: '#/components/parameters/AscendingParam'
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: List of usernames
@@ -3649,6 +3622,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
+      security:
+        - jwt: [ ]
       responses:
         '201':
           description: Created User profile
@@ -3656,7 +3631,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserProfile'
-          headers: #!! Added location header with user URL
+          headers:
             location: 
               description: 'URL of the added User'
               schema: 
@@ -3681,6 +3656,8 @@ paths:
           required: true
           schema:
             type: string
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: User profile
@@ -3710,10 +3687,12 @@ paths:
       requestBody:
         description: 'Updated user data, Participant ID will be ignored if provided.'
         required: true
-        content: #!! Participant ID should be ignored if provided
+        content:
           application/json:
             schema:
               $ref: '#/components/schemas/User'
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: Updated user profile
@@ -3740,6 +3719,8 @@ paths:
           required: true
           schema:
             type: string
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: Deleted user profile
@@ -3769,13 +3750,15 @@ paths:
           required: true
           schema:
             type: string
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: User roles
           content:
             application/json:
               schema:
-                type: array #!! Changed to array, since roles implies plural
+                type: array
                 items:
                   $ref: '#/components/schemas/Role'
         '400':
@@ -3802,9 +3785,11 @@ paths:
         content:
           application/json:
             schema:
-              type: array #!! Changed to array, since roles implies plural
+              type: array
               items:
                 $ref: '#/components/schemas/Role'
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: All assigned roles of the user
@@ -3826,13 +3811,15 @@ paths:
         - Roles
       summary: Get all registered roles in the catalogue
       operationId: getAllRoles
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: All roles
           content:
             application/json:
               schema:
-                type: array #!! Changed to array, since roles implies plural
+                type: array
                 items:
                   $ref: '#/components/schemas/Role'
         '400':
@@ -3840,11 +3827,14 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /session: #!! Changed to singular, since a user has only 1 session, and the get response is only one session.
+  /session:
     get:
+      summary: Return the current authenticated session
       tags:
         - Session
       operationId: getCurrentSession
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: Get information on the current session
@@ -3854,10 +3844,13 @@ paths:
                 $ref: '#/components/schemas/Session'
         '500':
           $ref: '#/components/responses/ServerError'
-    delete: #!! This should be an implementation detail, logout is SSO-system dependent
+    delete:
+      summary: Close the current authenticated session
       tags:
         - Session
       operationId: logoutCurrentSession
+      security:
+        - jwt: [ ]
       responses:
         '200':
           description: The current session was closed

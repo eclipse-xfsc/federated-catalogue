@@ -35,6 +35,35 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <configuration>
+                    <installDirectory>${project.build.directory}</installDirectory>
+                    <workingDirectory>${project.parent.basedir}/openapi</workingDirectory>
+                    <nodeVersion>v24.16.0</nodeVersion>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-for-openapi-lint</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>lint-openapi-spec</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>npx</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>--yes @redocly/cli@2.31.5 lint fc_openapi.yaml --config redocly.yaml</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <configuration>
@@ -48,7 +77,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <skipValidateSpec>true</skipValidateSpec>
+                            <skipValidateSpec>false</skipValidateSpec>
                             <generateSupportingFiles>false</generateSupportingFiles>
                             <inputSpec>${project.parent.basedir}/openapi/fc_openapi.yaml</inputSpec>
                             <generatorName>spring</generatorName>

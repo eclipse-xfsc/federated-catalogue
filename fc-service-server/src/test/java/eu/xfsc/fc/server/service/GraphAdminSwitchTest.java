@@ -7,9 +7,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -18,18 +18,20 @@ import eu.xfsc.fc.core.dao.adminconfig.AdminConfigEntry;
 import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
+import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.server.service.graphdb.RoutingGraphStore;
 
 /**
- * Unit tests for {@link GraphDatabaseAdminService}. Focused on the order of
- * persist-vs-swap on the switch path — persisting a preference for a backend whose
- * live swap then fails would trap the next cold boot, so save must not happen unless
- * the swap succeeded.
+ * Unit tests for the backend-switch path of {@link GraphAdminService}. Focused on the
+ * order of persist-vs-swap — persisting a preference for a backend whose live swap then
+ * fails would trap the next cold boot, so save must not happen unless the swap succeeded.
  */
 @ExtendWith(MockitoExtension.class)
-class GraphDatabaseAdminServiceTest {
+class GraphAdminSwitchTest {
 
+  @Mock
+  private GraphRebuildService graphRebuildService;
   @Mock
   private GraphStore graphStore;
   @Mock
@@ -41,8 +43,13 @@ class GraphDatabaseAdminServiceTest {
   @Mock
   private RoutingGraphStore routingGraphStore;
 
-  @InjectMocks
-  private GraphDatabaseAdminService service;
+  private GraphAdminService service;
+
+  @BeforeEach
+  void setUp() {
+    service = new GraphAdminService(graphRebuildService, graphStore, assetStore,
+        adminConfigRepository, graphStoreProbe, routingGraphStore, 4, 100);
+  }
 
   @Test
   void switchGraphDatabase_setActiveThrows_doesNotPersistPreference() {
