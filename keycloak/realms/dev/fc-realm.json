@@ -65,15 +65,6 @@
         "clientRole": false,
         "containerId": "federated-catalogue-realm",
         "attributes": {}
-      },
-      {
-        "id": "8ee7d6f7-f168-4b62-ae34-1c18ffbf631a",
-        "name": "default-roles-federated-catalogue-realm",
-        "description": "${role_default-roles}",
-        "composite": false,
-        "clientRole": false,
-        "containerId": "federated-catalogue-realm",
-        "attributes": {}
       }
     ],
     "client": {
