@@ -9,6 +9,11 @@ Each `.jsonld` file is the *credential payload only* — it is not signed.
 To ingest it, sign it as a Verifiable Credential JWT (VC-JWT) and POST the
 JWT to `/assets`.
 
+## Prerequisites
+
+Catalogue stack running and Keycloak bootstrapped — see [`../README.md`](../README.md) for the full setup and
+authentication flow (`auth.sh`).
+
 ## Examples
 
 | File                          | `credentialSubject` type | Purpose                                                                    |

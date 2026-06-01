@@ -19,9 +19,24 @@
 #   KEYCLOAK_URL      Keycloak base URL (default: http://localhost:8080)
 #   KEYCLOAK_REALM    Realm name (default: gaia-x)
 #
+# Environment file (optional — feeds defaults for the vars above):
+#   --env <path>      Path to a KEY=VALUE env file (e.g. environments/local.env)
+#   EXAMPLES_ENV=<path>  Same, but via environment variable
+#
+#   The env file is parsed line-by-line (# comments and blank lines ignored).
+#   Values in the env file are only used when the corresponding env var is NOT
+#   already set in the caller's environment — caller-set vars always win.
+#   The file is never executed (no bare source), so it cannot run arbitrary code.
+#
 # Typical usage:
 #   export TOKEN=$(./auth.sh)
 #   curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/...
+#
+# With an environment file:
+#   export TOKEN=$(./auth.sh --env environments/local.env)
+#   hurl --variables-file environments/local.env \
+#        --variable token=$(./auth.sh --env environments/local.env) \
+#        dcs-template-demo/dcs-template-demo.hurl
 #
 # Or:
 #   ./auth.sh > /dev/null && curl -H "Authorization: Bearer $(cat .token)" ...
@@ -30,6 +45,49 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEV_ENV="${SCRIPT_DIR}/../docker/dev.env"
+
+# --- parse --env flag ---
+_env_file="${EXAMPLES_ENV:-}"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --env)
+      shift
+      _env_file="${1:?--env requires a path argument}"
+      shift
+      ;;
+    *)
+      printf 'auth.sh: unknown argument: %s\n' "$1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# --- load env file (safe line-by-line parser, never executed) ---
+if [[ -n "${_env_file}" ]]; then
+  [[ -f "${_env_file}" ]] || { printf 'auth.sh: env file not found: %s\n' "${_env_file}" >&2; exit 1; }
+  while IFS= read -r _line || [[ -n "${_line}" ]]; do
+    # strip leading/trailing whitespace
+    _line="${_line#"${_line%%[![:space:]]*}"}"
+    _line="${_line%"${_line##*[![:space:]]}"}"
+    # skip blank lines and comments
+    [[ -z "${_line}" || "${_line}" == \#* ]] && continue
+    # split on first '=' only
+    _key="${_line%%=*}"
+    _val="${_line#*=}"
+    # trim trailing whitespace from key
+    _key="${_key%"${_key##*[![:space:]]}"}"
+    # trim leading whitespace from value
+    _val="${_val#"${_val%%[![:space:]]*}"}"
+    # strip optional surrounding quotes from value
+    if [[ "${_val}" == '"'*'"' || "${_val}" == "'"*"'" ]]; then
+      _val="${_val:1:${#_val}-2}"
+    fi
+    # only assign if not already set in caller's environment
+    if [[ -z "${!_key+set}" ]]; then
+      export "${_key}=${_val}"
+    fi
+  done < "${_env_file}"
+fi
 
 : "${FC_USERNAME:=admin}"
 : "${FC_PASSWORD:=admin}"

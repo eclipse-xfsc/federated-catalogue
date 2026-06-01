@@ -3,8 +3,8 @@
 Python utilities for signing Verifiable Credentials against the local docker
 stack's DID (`did:web:did-server`).
 
-These scripts are copied from `cat-integration-tests/scripts/`. They are now also
-co-located with the Bruno collection so onboarding users find them in either place.
+These scripts are copied from `cat-integration-tests/scripts/` and are the current
+recommended tool for signing fixtures locally.
 
 ## Scripts
 

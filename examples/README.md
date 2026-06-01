@@ -38,6 +38,37 @@ The token is also written to `.token` in the current directory, so you can use
 `--header "Authorization: Bearer $(cat .token)"` in scripts without re-running. `.token` and `.refresh_token` are
 gitignored.
 
+## Pointing at a non-local environment
+
+By default every command targets the bundled docker-compose stack. To point at a hosted QA or staging instance, swap
+the environment file — one file feeds both hurl and auth.sh.
+
+**Convention:** one `KEY=VALUE` file per target stack under `environments/`. Files named `*.env` are gitignored;
+`*.env.example` files are tracked as templates.
+
+**Local stack (default):**
+
+```bash
+hurl --variables-file environments/local.env \
+     --variable token=$(./auth.sh --env environments/local.env) \
+     dcs-template-demo/dcs-template-demo.hurl
+```
+
+**Hosted QA instance:**
+
+```bash
+# First time: copy the template and fill in your tenant's values
+cp environments/qa.env.example environments/qa.env
+$EDITOR environments/qa.env
+
+hurl --variables-file environments/qa.env \
+     --variable token=$(./auth.sh --env environments/qa.env) \
+     dcs-template-demo/dcs-template-demo.hurl
+```
+
+The env file supplies `baseUrl` for hurl and the `FC_*` / `KEYCLOAK_*` vars for auth.sh. Env vars already set in your
+shell always take precedence over the file — existing one-liner usage (`FC_USERNAME=alice ./auth.sh`) is unaffected.
+
 ## Signing fixtures for strict mode
 
 The default catalogue profile accepts unsigned JSON-LD. For the strict profile, each VC must be signed as a VC-JWT 2.0.
