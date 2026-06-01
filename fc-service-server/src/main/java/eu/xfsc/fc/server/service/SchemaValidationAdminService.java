@@ -21,7 +21,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import eu.xfsc.fc.core.service.verification.OntologyImpactService;
 import eu.xfsc.fc.core.service.verification.SchemaModuleConfigService;
 import eu.xfsc.fc.core.service.verification.SchemaModuleType;
-import eu.xfsc.fc.server.generated.controller.SchemaValidationAdminApiDelegate;
+import eu.xfsc.fc.server.generated.controller.AdminSchemaValidationApiDelegate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SchemaValidationAdminService implements SchemaValidationAdminApiDelegate {
+public class SchemaValidationAdminService implements AdminSchemaValidationApiDelegate {
 
   private static final String CONFIG_PREFIX = "schema.module.";
   private static final String CONFIG_SUFFIX = ".enabled";
