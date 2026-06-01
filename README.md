@@ -14,6 +14,11 @@ of [Gaia-X Federation Services Lot 5 — Federated Catalogue / Core Catalogue Fe
 The supported way to build and run the Federated Catalogue locally is via the bundled Docker Compose
 stack: [Steps to build FC](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docker/README.md).
 
+The Keycloak realm name is configurable via the `KEYCLOAK_REALM` env var (default
+`federated-catalogue-realm`). Existing deployments with a pre-existing `gaia-x` realm keep working by setting
+`KEYCLOAK_REALM=gaia-x`. See [Keycloak Realm Configuration](docs/operator-guide.md#keycloak-realm-configuration)
+in the operator guide for details.
+
 ## Documentation
 
 | Topic                                                       | Location                                                                                                       |

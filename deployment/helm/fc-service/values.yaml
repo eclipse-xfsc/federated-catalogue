@@ -229,6 +229,10 @@ keycloak:
   fullnameOverride: fc-keycloak
   replicas: 1
 
+  # Realm configuration — set realm to "gaia-x" to keep legacy deployments
+  realm: federated-catalogue-realm
+  realmFile: fc-realm.json
+
   # Use official Keycloak image from quay.io
   image:
     repository: quay.io/keycloak/keycloak

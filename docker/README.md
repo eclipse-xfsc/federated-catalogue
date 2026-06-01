@@ -88,7 +88,7 @@ For development and running integration tests, assign `Ro-MU-CA` or `ADMIN_ALL`.
 If you need to update the realm (e.g., after adding new roles), use Keycloak's partial import:
 
 1. Go to Realm Settings → Action → Partial import
-2. Upload `keycloak/realms/gaia-x-realm.json`
+2. Upload `keycloak/realms/<env>/fc-realm.json` (where `<env>` matches your `KC_REALM_ENV`)
 3. Select **Skip** for existing resources (preserves client secret and user accounts)
 
 New roles will be created; existing ones are preserved. To update composite role mappings on existing roles, manually edit them in the Keycloak UI or do a full teardown (`./dev.sh clean`) and restart.

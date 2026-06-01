@@ -1,12 +1,25 @@
 # Keycloak Realm Configuration
 
-The `gaia-x-realm.json` file exists in three environment-specific subdirectories:
+Each environment-specific subdirectory contains a single ecosystem-neutral realm import file
+`fc-realm.json` (realm name `federated-catalogue-realm`).
 
 | Directory  | Purpose                                      |
 |------------|----------------------------------------------|
 | `dev/`     | Local development (docker-compose stack)     |
 | `staging/` | Staging environment                          |
 | `prod/`    | Production environment                       |
+
+The realm name is selected at runtime via `KEYCLOAK_REALM` (default `federated-catalogue-realm`).
+The name in the imported JSON must match `KEYCLOAK_REALM` for the application to authenticate against it.
+
+### Existing `gaia-x` deployments
+
+Keycloak's `--import-realm` only imports when the realm does not already exist in the database, so
+existing deployments (e.g. our QA stage) already have a `gaia-x` realm persisted in Postgres. They
+continue to work by setting `KEYCLOAK_REALM=gaia-x` — no import file is needed.
+
+A fresh deployment that wants a `gaia-x` realm name must supply its own realm import JSON via a
+volume mount or ConfigMap; we no longer ship one.
 
 ## Why three copies?
 

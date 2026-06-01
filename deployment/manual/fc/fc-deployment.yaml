@@ -33,10 +33,12 @@ spec:
               value: "5"
             - name: DATASTORE_FILE_PATH
               value: /var/lib/fc-service/filestore
+            - name: KEYCLOAK_REALM
+              value: "federated-catalogue-realm"
             - name: KEYCLOAK_AUTH_SERVER_URL
               value: https://fc-key-server.gxfs.dev
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
-              value: https://fc-key-server.gxfs.dev/realms/gaia-x
+              value: https://fc-key-server.gxfs.dev/realms/$(KEYCLOAK_REALM)
             - name: KEYCLOAK_CREDENTIALS_SECRET
               value: DVIgraQHZsKG3IVDSDwu5CgCE07gx4YE
 #              valueFrom:

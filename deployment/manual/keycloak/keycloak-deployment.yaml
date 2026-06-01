@@ -41,6 +41,8 @@ spec:
                 secretKeyRef:
                   name: fc-key-server-pass-secret
                   key: password
+            - name: KEYCLOAK_REALM
+              value: "federated-catalogue-realm"
             - name: PROXY_ADDRESS_FORWARDING
               value: "true"
             - name: KEYCLOAK_FRONTEND_URL

@@ -244,7 +244,8 @@ services:
       target: "${FC_DEMO_PORTAL_DOCKER_TARGET}"
     environment:
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_FC_CLIENT_OIDC_CLIENT_SECRET: "${FC_CLIENT_SECRET}"
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://key-server:8080/realms/gaia-x
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM:-federated-catalogue-realm}"
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://key-server:8080/realms/${KEYCLOAK_REALM:-federated-catalogue-realm}
       FEDERATED_CATALOGUE_BASE_URI: http://fc-server:8081
     ports:
       - "8088:8088"
