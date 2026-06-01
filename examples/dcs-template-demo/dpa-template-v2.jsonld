@@ -27,7 +27,7 @@
     "schema:inLanguage": "en",
     "dcs:humanReadableMimeType": "text/markdown",
     "dcs:humanReadableHashAlgorithm": "SHA-256",
-    "dcs:humanReadableHash": "07add930525fa67d40976bf9fe582000c849314e2717913b166f0a2dbb8893db",
+    "dcs:humanReadableHash": "83e6ff5971b5a4791bc1ff026f2d28de125ad3d3e68327bcbc98680e4861f549",
     "prov:wasDerivedFrom": {
       "id": "https://deltadao.example.org/templates/dpa/v1"
     }

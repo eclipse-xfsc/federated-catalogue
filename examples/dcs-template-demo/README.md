@@ -46,82 +46,43 @@ The metadata uses three vocabularies:
   `../../docker/README.md`](../../docker/README.md) §Keycloak setup.
 - For step 7 onward, a second user `bob` with the same role (or reuse `alice`; in this demo Alice and Bob represent two
   roles, not strictly two users).
-- `curl`, `jq`, `sha256sum`.
+- `curl`, `jq`, `sha256sum`, and [`hurl`](https://hurl.dev) (≥ 4.x).
 
-## Walkthrough
+## How to run
 
-The walkthrough below is **curl-first**. Every step has a 1:1 counterpart in the Bruno collection at
-`fc-tools/Eclipse XFSC Federated Catalogue/Demos/01 DCS Template Repository/` — open Bruno if you prefer a GUI.
-
-### 0. Get a token
-
-Use the shared helper at [`../auth.sh`](../auth.sh):
+The whole scenario is one executable [hurl](https://hurl.dev) file —
+[`dcs-template-demo.hurl`](./dcs-template-demo.hurl) — that captures responses, asserts what should come back, and
+chains the steps together. It is both the demo *and* the integration test.
 
 ```bash
-cd /path/to/federated-catalogue/examples/dcs-template-demo
-export TOKEN=$(FC_USERNAME=alice FC_PASSWORD=alice ../auth.sh)
+cd examples/dcs-template-demo
+hurl --variable token=$(../auth.sh) \
+     --variable baseUrl=http://localhost:8081 \
+     --test dcs-template-demo.hurl
 ```
 
-The helper fetches an access token via Keycloak's password grant, writes it to `.token` (and the refresh token to
-`.refresh_token`) in the current directory, and prints the token on stdout. Subsequent runs use the refresh token
-silently. Defaults: `admin`/`admin`, Keycloak at `http://localhost:8080`, realm `gaia-x`, client secret read from
-`../../docker/dev.env`. Override any of `FC_USERNAME`, `FC_PASSWORD`, `FC_CLIENT_ID`, `FC_CLIENT_SECRET`,
-`KEYCLOAK_URL`, `KEYCLOAK_REALM` via env vars.
+Replay one step at a time with `--to-entry N`. Each entry below corresponds to a numbered block in the .hurl file:
 
-### 1. Confirm Fuseki is the active query backend
+| #  | Entry                                                           | What it proves                                                                                              |
+|----|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| 1  | `GET /admin/graph-database`                                     | Fuseki is the active backend                                                                                |
+| 2  | `POST /assets` (`dpa-template-v1.jsonld`)                       | Machine-readable template is stored                                                                         |
+| 3  | `POST /assets/.../human-readable` (`dpa-template-v1.md`)        | Human-readable rendering is linked to the metadata VC                                                       |
+| 4  | `POST /assets/.../provenance` (`provenance-v1-created.jsonld`)  | `prov:Activity` created by Alice is recorded                                                                |
+| 5  | `POST /assets/.../provenance` (`provenance-v1-approved.jsonld`) | Approval by Bob; lifecycle state derivable from latest event                                                |
+| 6  | `POST /query` SPARQL — latest approved DPA for DE               | CWE discovers v1                                                                                            |
+| 7  | `GET /assets/.../human-readable`, asserts SHA-256               | Downloaded body matches `dcs:humanReadableHash` claim                                                       |
+| 8  | Publish v2 (machine-readable + human-readable + approval)       | `prov:wasDerivedFrom v1` is recorded                                                                        |
+| 9  | Re-run the same SPARQL                                          | v2 now wins via `FILTER NOT EXISTS { ?newer prov:wasDerivedFrom+ ?template … }` — *no client change needed* |
+| 10 | `GET /assets/.../provenance` and `.../versions`                 | Full audit trail and version lineage                                                                        |
 
-```bash
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8081/query/backend | jq .
-```
+Diagnostics: `hurl -v` for one-line HTTP per request, `hurl --vv` for full bodies, `hurl --curl out.sh` for an
+equivalent curl command per request (hurl 5.x+).
 
-Expect `"backend": "fuseki"`.
+### The headline query
 
-### 2. Upload the machine-readable template (v1)
-
-```bash
-curl -sS -X POST http://localhost:8081/assets \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/ld+json" \
-  --data-binary @dpa-template-v1.jsonld | jq .
-```
-
-Note the `id` field in the response — that is the catalogue's **asset IRI** for v1. Export it:
-
-```bash
-export TPL_V1_ID="https://deltadao.example.org/templates/dpa/v1"
-```
-
-### 3. Upload and link the human-readable rendering
-
-```bash
-curl -sS -X POST "http://localhost:8081/assets/$(printf %s "$TPL_V1_ID" | jq -sRr @uri)/human-readable" \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@dpa-template-v1.md;type=text/markdown" | jq .
-```
-
-### 4. Attach creation provenance (Alice)
-
-```bash
-curl -sS -X POST "http://localhost:8081/assets/$(printf %s "$TPL_V1_ID" | jq -sRr @uri)/provenance" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  --data-binary @provenance-v1-created.jsonld | jq .
-```
-
-### 5. Attach approval provenance (Bob)
-
-```bash
-curl -sS -X POST "http://localhost:8081/assets/$(printf %s "$TPL_V1_ID" | jq -sRr @uri)/provenance" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  --data-binary @provenance-v1-approved.jsonld | jq .
-```
-
-Conceptually, the template is now "approved" — the catalogue holds two PROV-O activity VCs whose `dcs:action` values
-progress `created` → `approved`. CWE can derive the current state by querying the latest provenance event.
-
-### 6. CWE discovery — find the latest approved DPA for jurisdiction DE
+The CWE-discovery SPARQL is the pedagogically interesting moment — it's what makes "publish v2" automatically promote v2
+without any client-side bookkeeping. It lives in entries 6 and 9 of the .hurl file; here it is in isolation:
 
 ```sparql
 PREFIX dcs:    <https://w3id.org/facis/dcs/1#>
@@ -150,90 +111,9 @@ ORDER BY DESC(?approvedAt)
 LIMIT 1
 ```
 
-```bash
-curl -sS -X POST http://localhost:8081/query \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/sparql-query" \
-  -H "Accept: application/sparql-results+json" \
-  --data-binary @- <<'SPARQL' | jq .
-PREFIX dcs:    <https://w3id.org/facis/dcs/1#>
-PREFIX schema: <https://schema.org/>
-PREFIX prov:   <http://www.w3.org/ns/prov#>
-SELECT ?template ?version ?hash WHERE {
-  ?template a dcs:ContractTemplate ;
-            dcs:category    "data-processing-agreement" ;
-            dcs:jurisdiction "DE" ;
-            schema:version  ?version ;
-            dcs:humanReadableHash ?hash .
-  ?act a prov:Activity ;
-       prov:used ?template ;
-       dcs:action "approved" ;
-       prov:endedAtTime ?approvedAt .
-  FILTER NOT EXISTS {
-    ?newer a dcs:ContractTemplate ;
-           prov:wasDerivedFrom+ ?template ;
-           ^prov:used / dcs:action "approved" .
-  }
-}
-ORDER BY DESC(?approvedAt)
-LIMIT 1
-SPARQL
-```
-
-Expect one binding: `?template = https://deltadao.example.org/templates/dpa/v1`, `?version = "1.0.0"`,
-`?hash = "0d30a254..."`.
-
-### 7. Download the rendering and verify the hash
-
-```bash
-curl -fsS "http://localhost:8081/assets/$(printf %s "$TPL_V1_ID" | jq -sRr @uri)/human-readable" \
-  -H "Authorization: Bearer $TOKEN" \
-  -o /tmp/dpa-v1.md
-sha256sum /tmp/dpa-v1.md
-```
-
-Compare against `0d30a254b01a6379912b1d61058affac6a770a895b94b7a64ab3bd5fa0383d2b` (the `dcs:humanReadableHash` claim).
-Match ⇒ the template is intact and CWE can safely use it.
-
-### 8. Publish v2 — revised template
-
-```bash
-curl -sS -X POST http://localhost:8081/assets \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/ld+json" \
-  --data-binary @dpa-template-v2.jsonld | jq .
-
-export TPL_V2_ID="https://deltadao.example.org/templates/dpa/v2"
-
-curl -sS -X POST "http://localhost:8081/assets/$(printf %s "$TPL_V2_ID" | jq -sRr @uri)/human-readable" \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@dpa-template-v2.md;type=text/markdown" | jq .
-
-curl -sS -X POST "http://localhost:8081/assets/$(printf %s "$TPL_V2_ID" | jq -sRr @uri)/provenance" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  --data-binary @provenance-v2-approved.jsonld | jq .
-```
-
-The v2 metadata VC declares `prov:wasDerivedFrom v1` — that statement, plus the `approved` provenance activity on v2,
-satisfies the discovery query's `FILTER NOT EXISTS` clause for v1.
-
-### 9. CWE re-discovery — same query, different answer
-
-Re-run the query from step 6. The binding is now `?template = .../templates/dpa/v2`, `?version = "1.1.0"`,
-`?hash = "07add930..."`. v1 has been silently superseded — no client change needed.
-
-### 10. Audit trail — list provenance and version history
-
-```bash
-# Full provenance log for v1 — created (Alice) → approved (Bob)
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:8081/assets/$(printf %s "$TPL_V1_ID" | jq -sRr @uri)/provenance" | jq .
-
-# Version history walks the prov:wasDerivedFrom chain
-curl -sS -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:8081/assets/$(printf %s "$TPL_V2_ID" | jq -sRr @uri)/versions" | jq .
-```
+Pre-v2 publication this binds `?template = .../templates/dpa/v1`, `?version = "1.0.0"`,
+`?hash = "4542119c..."`. After step 8 it binds v2:
+`?version = "1.1.0"`, `?hash = "83e6ff59..."`. Both bindings are asserted by the hurl file.
 
 ## What this demo proves
 

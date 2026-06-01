@@ -134,6 +134,21 @@ On success, the catalogue returns `201 Created` with a `Location` header
 pointing at `/assets/{id}`. Once stored, the credentials can be exercised by
 the queries in the Architecture Appendix.
 
+## Verifying the appendix queries end-to-end
+
+[`verify-against-fuseki.hurl`](./verify-against-fuseki.hurl) ingests all five payloads against a running Fuseki-backed
+stack and asserts that every SPARQL query from the Architecture Appendix returns the documented bindings:
+
+```bash
+cd examples/queries
+hurl --variable token=$(../auth.sh) \
+     --variable baseUrl=http://localhost:8081 \
+     --test verify-against-fuseki.hurl
+```
+
+`hurl -v` prints one HTTP exchange per request; `hurl --vv` prints full request/response bodies; `hurl --curl out.sh`
+(hurl 5.x+) writes an equivalent curl command per request if you need to hand a single call to a teammate without hurl.
+
 ## Recommended ingestion order
 
 The examples reference each other, so ingest them in this order to keep

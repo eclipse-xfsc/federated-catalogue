@@ -1,8 +1,11 @@
 # Federated Catalogue — Getting Started
 
-This folder is the front door for new users. The walkthroughs are tool-agnostic: every step is shown as `curl`. If you
-prefer a GUI, import [`../openapi/fc_openapi.yaml`](../openapi/fc_openapi.yaml) into your favourite OpenAPI client (
-Bruno, Insomnia, Postman, …) and replay the same calls from there.
+This folder is the front door for new users. Each demo ships as an executable [hurl](https://hurl.dev) file — `hurl` is
+a small CLI that runs HTTP requests from a plain-text file and asserts the responses. The same files double as the
+narrative for the demo and as the integration test that proves the catalogue still behaves the way the docs claim.
+
+Prefer a GUI? Import [`../openapi/fc_openapi.yaml`](../openapi/fc_openapi.yaml) into your favourite OpenAPI client
+(Bruno, Insomnia, Postman, Hoppscotch, …) and replay the same calls from there.
 
 ## Demos
 
@@ -18,7 +21,8 @@ Bruno, Insomnia, Postman, …) and replay the same calls from there.
 - The catalogue stack running locally: `cd ../docker && docker compose --env-file dev.env up -d` (Fuseki backend,
   signature checks off by default — see [`../docker/README.md`](../docker/README.md) for strict mode).
 - Keycloak bootstrapped with at least one user that has the `Ro-MU-CA` or `ADMIN_ALL` role.
-- `curl`, `jq`, `sha256sum`, `python3` in your `$PATH`.
+- [`hurl`](https://hurl.dev) ≥ 4.x for the executable demos. `curl`, `jq`, `sha256sum`, `python3` also expected in your
+  `$PATH` for ad-hoc poking and the signing helpers.
 
 ## Authenticating curl
 
