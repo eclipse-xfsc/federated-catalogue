@@ -1,9 +1,17 @@
 # Federated Catalog Credential Signer
 
-> **Note:** This tool signs credentials using Tagus-era JsonWebSignature2020 Linked Data proofs.
-> LD proof verification has been removed from the Federated Catalogue (Loire release).
-> The catalogue now only accepts JWT and Enveloped Credential (EVC/EVP) signatures.
-> This tool needs to be rewritten to produce JWT signatures or removed entirely.
+> # ⛔ DEPRECATED — DO NOT USE FOR NEW WORK
+>
+> This tool signs credentials using the Tagus-era **JsonWebSignature2020 Linked Data Proof** format.
+>
+> Linked Data Proof verification has been **removed** from the Federated Catalogue (Loire release). The running
+> catalogue accepts only JWT-signed credentials and W3C VC 2.0 Enveloped Credentials/Presentations (EVC/EVP). Credentials
+> produced by this tool will be **rejected** by the catalogue.
+>
+> The tool is retained only for historical reference and for generating negative-test fixtures. Use the Python signing
+> utilities under `fc-tools/signing/` for current JWT/EVC/EVP signing instead.
+>
+> A future change will either rewrite this tool to produce JWT signatures, or remove the directory entirely.
 
 ## Usage
 
@@ -41,6 +49,9 @@ As a workaround, the fixture files in this module pre-include the URI as a strin
 **Trigger of the error:** Pushing a signed credential to a deployed version of Federated Catalogue using the `POST /assets` API
 **Raised Error:** 442 error caused by the verification error `Signatures error; … does not match with proof.`
 **Error handling:**
-1. The generated private key is not automatically used and should be copied to the [resources](https://gitlab.eclipse.org/eclipse/xfsc/cat/fc-service/-/tree/main/fc-tools/signer/src/main/resources?ref_type=heads) directory
+
+1. The generated private key is not automatically used and should be copied to
+   the [resources](https://github.com/eclipse-xfsc/federated-catalogue/tree/main/fc-tools/signer/src/main/resources)
+   directory
 
 2. Secondly, the public key for the generated private key needs to be inserted into the FC Service that you deployed and to which you are trying to push the signed credential

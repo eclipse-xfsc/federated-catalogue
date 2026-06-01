@@ -1,11 +1,13 @@
 # Build & Test Procedure
 
-Ensure you have JDK 17, Maven 3.5.4 (or newer) and Git installed
+Ensure you have a recent JDK, Maven, and Git installed. The authoritative build-tool versions are pinned in `pom.xml` (
+`<java.version>`) and the project `Dockerfile` / `Dockerfile.dev`; check those if you are unsure which JDK / Maven
+version the project currently targets.
 
 First clone the Federated Catalogue repository:
 
 ``` sh
-git clone git@gitlab.eclipse.org:eclipse/xfsc/cat/fc-service.git
+git clone https://github.com/eclipse-xfsc/federated-catalogue.git
 ```
 
 ## Run Catalog

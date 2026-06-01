@@ -10,10 +10,10 @@ The Federated Catalogue is the result of work by many contributors across multip
 - [Shyam Thorat](https://gitlab.com/shyamthorat)
 - [Natallia Smoliak](https://gitlab.com/nsmoliak)
 
-## GXFS (Gaia-X Federation Services) project
+## Alignment with the GXFS programme (2021–2024)
 
-The following colleagues aligned the project roadmap with funded Gaia-X community work and supported community events
-such as the [GXFS Tech Workshops](https://www.gxfs.eu/events/):
+The following colleagues aligned the project roadmap with the funded Gaia-X Federation Services (GXFS) work from which
+XFSC emerged, and supported community events such as the historical [GXFS Tech Workshops](https://www.gxfs.eu/events/):
 
 - [Christoph Lange](https://gitlab.eclipse.org/langec), Fraunhofer FIT
 - [Paul Moosmann](https://gitlab.eclipse.org/moosmannp), Fraunhofer FIT

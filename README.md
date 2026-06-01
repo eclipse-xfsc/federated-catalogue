@@ -19,6 +19,13 @@ The Keycloak realm name is configurable via the `KEYCLOAK_REALM` env var (defaul
 `KEYCLOAK_REALM=gaia-x`. See [Keycloak Realm Configuration](docs/operator-guide.md#keycloak-realm-configuration)
 in the operator guide for details.
 
+## Getting started — try the API
+
+Walkthrough guide and scenario demos for new users live under [`examples/`](./examples/README.md): how to ingest assets,
+query the graph, and exercise admin-UI behaviour switches. The walkthroughs are curl-based and tool-agnostic. Prefer a
+GUI? Import [`openapi/fc_openapi.yaml`](./openapi/fc_openapi.yaml) into your favourite OpenAPI client (Bruno, Insomnia,
+Postman, …) for a per-endpoint workspace that stays in sync with the spec.
+
 ## Documentation
 
 | Topic                                                       | Location                                                                                                       |
@@ -35,7 +42,7 @@ in the operator guide for details.
 
 The catalogue accepts Gaia-X Loire (VC 2.0 JWT) and standard JWT-VC; see
 the [Operator Guide](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/operator-guide.md#supported-credential-formats)
-for the full matrix and the asset/credential terminology note (CAT-NFR-01).
+for the full matrix and the asset/credential terminology note.
 
 ## Contributing & Contact
 

@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    {
+      "prov": "http://www.w3.org/ns/prov#",
+      "dcs": "https://w3id.org/facis/dcs/1#"
+    }
+  ],
+  "id": "https://deltadao.example.org/credentials/provenance/dpa-v1-created.json",
+  "type": [
+    "VerifiableCredential"
+  ],
+  "issuer": "did:web:deltadao.example.org",
+  "validFrom": "2026-06-01T09:30:00Z",
+  "credentialSubject": {
+    "id": "https://deltadao.example.org/templates/dpa/v1#prov-created",
+    "type": "prov:Activity",
+    "prov:wasAssociatedWith": {
+      "id": "did:web:deltadao.example.org:users:alice",
+      "type": "prov:Agent",
+      "prov:actedOnBehalfOf": {
+        "id": "did:web:deltadao.example.org",
+        "type": "prov:Organization"
+      }
+    },
+    "prov:generated": {
+      "id": "https://deltadao.example.org/templates/dpa/v1"
+    },
+    "prov:startedAtTime": "2026-06-01T09:00:00Z",
+    "prov:endedAtTime": "2026-06-01T09:30:00Z",
+    "dcs:action": "created"
+  }
+}

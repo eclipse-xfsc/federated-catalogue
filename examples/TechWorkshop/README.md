@@ -1,6 +1,17 @@
-# Workshop Structure
+# Workshop Structure (Historical Archive — March 2023)
 
-These instructions were originally prepared for the GXFS Tech Workshop on 15–16 March 2023.
+> # 📦 Archived material
+>
+> These instructions were prepared for the **GXFS Tech Workshop on 15–16 March 2023**. They are kept as a historical
+> record of the catalogue's onboarding flow at that time.
+>
+> The materials predate the Loire release and the asset/IRI generalisation, and they reference flows, UI elements, and
+> credential formats (Self-Descriptions, LD-Proof signing, the shared GXFS demo instance, the Postman token workflow) that
+> no longer match the current catalogue. Do **not** follow these steps against a current deployment — they will not work.
+>
+> For current onboarding examples, use the integration-test suite (`cat-integration-tests/`) and the documentation in
+> the repository's [Architecture Document](https://github.com/eclipse-xfsc/docs/tree/main/federated-catalogue)
+> and [Operator Guide](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/operator-guide.md).
 
 0. Introductory Presentation
 1. Exercises
