@@ -2766,7 +2766,19 @@ paths:
         Removes every version, every linked human-readable companion, and every provenance
         credential associated with the asset identified by `id` (URL-encoded asset IRI). The
         operation is idempotent — calling it a second time on the same id returns 204 even if no
-        rows remain.
+        rows remain, so demo scripts can reset state without environment teardown.
+
+
+        Cross-participant scoping: when a live row is present, the caller's `participant_id` claim
+        must match the issuer recorded on that row, otherwise the request is refused with 403.
+        Requests against an unknown id always succeed with 204 and reveal nothing about the
+        catalogue's contents.
+
+
+        Audit history is preserved: cascade-delete removes the publicly queryable rows and the
+        graph projection for every version, but the underlying audit log of past content
+        revisions is left in place. Data-subject-erasure requirements that demand audit-row
+        removal are out of scope of this endpoint.
       operationId: deleteAssetById
       security:
         - jwt: [ ]
