@@ -44,7 +44,7 @@ class NonCredentialIngestionStrategyTest {
     when(claimExtractionService.extractAllTriples(payload)).thenReturn(List.of());
 
     assertThrows(ClientException.class,
-        () -> strategy.ingest(payload, false, false, false, false));
+        () -> strategy.ingest(payload, false, false, false));
   }
 
   @Test
@@ -55,7 +55,7 @@ class NonCredentialIngestionStrategyTest {
     when(protectedNamespaceFilter.filterClaims(claims, FILTER_CONTEXT))
         .thenReturn(new FilteredClaims(claims, null));
 
-    CredentialVerificationResult result = strategy.ingest(payload, false, false, false, false);
+    CredentialVerificationResult result = strategy.ingest(payload, false, false, false);
 
     assertInstanceOf(NonCredentialVerificationResult.class, result);
     assertNotNull(result.getGraphClaims());
@@ -71,7 +71,7 @@ class NonCredentialIngestionStrategyTest {
     when(protectedNamespaceFilter.filterClaims(rawClaims, FILTER_CONTEXT))
         .thenReturn(new FilteredClaims(safeClaims, "1 triple(s) removed"));
 
-    CredentialVerificationResult result = strategy.ingest(payload, false, false, false, false);
+    CredentialVerificationResult result = strategy.ingest(payload, false, false, false);
 
     assertInstanceOf(NonCredentialVerificationResult.class, result);
     assertNotNull(result.getWarnings());
@@ -85,7 +85,7 @@ class NonCredentialIngestionStrategyTest {
         .thenThrow(new RiotException("parse error"));
 
     assertThrows(ClientException.class,
-        () -> strategy.ingest(payload, false, false, false, false));
+        () -> strategy.ingest(payload, false, false, false));
   }
 
   @Test
@@ -95,7 +95,7 @@ class NonCredentialIngestionStrategyTest {
         .thenThrow(new RuntimeException("unexpected"));
 
     assertThrows(ServerException.class,
-        () -> strategy.ingest(payload, false, false, false, false));
+        () -> strategy.ingest(payload, false, false, false));
   }
 
   @Test
@@ -106,8 +106,8 @@ class NonCredentialIngestionStrategyTest {
     when(protectedNamespaceFilter.filterClaims(claims, FILTER_CONTEXT))
         .thenReturn(new FilteredClaims(claims, null));
 
-    CredentialVerificationResult r1 = strategy.ingest(payload, true, true, true, true);
-    CredentialVerificationResult r2 = strategy.ingest(payload, false, false, false, false);
+    CredentialVerificationResult r1 = strategy.ingest(payload, true, true, true);
+    CredentialVerificationResult r2 = strategy.ingest(payload, false, false, false);
 
     assertInstanceOf(NonCredentialVerificationResult.class, r1);
     assertInstanceOf(NonCredentialVerificationResult.class, r2);

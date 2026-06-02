@@ -12,7 +12,7 @@ import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
  *
  * <p>Implementations:
  * <ul>
- *   <li>{@link CredentialVerificationStrategy} — W3C VC/VP (JSON-LD or JWT, incl. Loire
+ *   <li>{@link CredentialIngestionStrategy} — W3C VC/VP (JSON-LD or JWT, incl. Loire
  *       and W3C VC 2.0 Enveloped wrappers) with full semantic/schema/signature checks.</li>
  *   <li>{@link NonCredentialIngestionStrategy} — non-credential RDF payloads ingested as raw
  *       triples (no VC pipeline).</li>
@@ -32,14 +32,13 @@ public interface RdfIngestionStrategy {
    *
    * @param payload            the credential content to verify
    * @param verifySemantics    whether to perform semantic verification
-   * @param verifySchema       whether to perform schema verification
    * @param verifyVPSignatures whether to verify VP signatures
    * @param verifyVCSignatures whether to verify VC signatures
    * @return the verification result
    * @throws VerificationException if verification fails
    */
   CredentialVerificationResult ingest(ContentAccessor payload,
-                                      boolean verifySemantics, boolean verifySchema,
+                                      boolean verifySemantics,
                                       boolean verifyVPSignatures,
                                       boolean verifyVCSignatures) throws VerificationException;
 

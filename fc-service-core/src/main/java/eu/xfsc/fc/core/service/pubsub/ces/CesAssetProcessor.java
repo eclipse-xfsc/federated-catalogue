@@ -38,8 +38,6 @@ public class CesAssetProcessor {
 
     @Value("${subscriber.verify.semantics:true}")
     private boolean verifySemantics;
-    @Value("${subscriber.verify.schema:true}")
-    private boolean verifySchema;
     @Value("${subscriber.verify.vp-signature:true}")
     private boolean verifyVPSignature;
     @Value("${subscriber.verify.vc-signature:true}")
@@ -112,7 +110,7 @@ public class CesAssetProcessor {
 	    		verifySubjectIntegrity(subContent, parts[0], parts[1]);
 	    	}
 	    	ContentAccessor payload = new ContentAccessorDirect(subContent);
-	    	CredentialVerificationResult vr = verificationService.verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
+	    	CredentialVerificationResult vr = verificationService.verifyCredential(payload, verifySemantics, verifyVPSignature, verifyVCSignature);
 	    	AssetMetadata assetMeta = new AssetMetadata(vr.getId(), vr.getIssuer(), vr.getValidators(), payload);
 	    	assetStore.storeCredential(assetMeta, vr);
 	    	processed = true;

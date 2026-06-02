@@ -32,7 +32,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 
 /**
  * Pins the OWL module toggle. The toggle gates whether
- * {@link CredentialVerificationStrategy#resolveBaseClass} consults the runtime composite
+ * {@link CredentialIngestionStrategy#resolveBaseClass} consults the runtime composite
  * ontology built from {@link SchemaType#ONTOLOGY} rows.
  *
  * <p>Bundle-embedded ontologies are pre-walked into the registry tier-1 index at startup
@@ -64,10 +64,10 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
-@ContextConfiguration(classes = {CredentialVerificationStrategyOwlToggleTest.TestApplication.class,
+@ContextConfiguration(classes = {CredentialIngestionStrategyOwlToggleTest.TestApplication.class,
     VerificationStackTestConfig.class})
 @AutoConfigureEmbeddedDatabase(provider = AutoConfigureEmbeddedDatabase.DatabaseProvider.ZONKY)
-class CredentialVerificationStrategyOwlToggleTest {
+class CredentialIngestionStrategyOwlToggleTest {
 
   private static final String PARTICIPANT_FIXTURE =
       "VerificationService/syntax/participantCredential2.jsonld";
@@ -118,7 +118,7 @@ class CredentialVerificationStrategyOwlToggleTest {
     when(schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)).thenReturn(true);
 
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(PARTICIPANT_FIXTURE), false, false, false, false);
+        getAccessor(PARTICIPANT_FIXTURE), false, false, false);
 
     assertNotNull(result);
     verify(schemaStore, atLeastOnce()).getCompositeSchema(SchemaType.ONTOLOGY);
@@ -129,7 +129,7 @@ class CredentialVerificationStrategyOwlToggleTest {
     when(schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)).thenReturn(false);
 
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(PARTICIPANT_FIXTURE), false, false, false, false);
+        getAccessor(PARTICIPANT_FIXTURE), false, false, false);
 
     assertNotNull(result);
     verify(schemaStore, never()).getCompositeSchema(SchemaType.ONTOLOGY);
@@ -142,7 +142,7 @@ class CredentialVerificationStrategyOwlToggleTest {
     when(schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)).thenReturn(false);
 
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(PARTICIPANT_FIXTURE), true, false, false, false);
+        getAccessor(PARTICIPANT_FIXTURE), true, false, false);
 
     assertNotNull(result);
     verify(schemaStore, never()).getCompositeSchema(SchemaType.ONTOLOGY);
@@ -154,7 +154,7 @@ class CredentialVerificationStrategyOwlToggleTest {
     when(schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)).thenReturn(true);
 
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(CUSTOM_PARTICIPANT_FIXTURE), false, false, false, false);
+        getAccessor(CUSTOM_PARTICIPANT_FIXTURE), false, false, false);
 
     assertNotNull(result);
     assertEquals("Participant", result.getBaseClass(),
@@ -171,7 +171,7 @@ class CredentialVerificationStrategyOwlToggleTest {
     // ClientException (→ HTTP 400). Mirrors the user-visible effect of the OWL kill-switch.
     ClientException ex = assertThrows(ClientException.class,
         () -> verificationService.verifyCredential(
-            getAccessor(CUSTOM_PARTICIPANT_FIXTURE), false, false, false, false));
+            getAccessor(CUSTOM_PARTICIPANT_FIXTURE), false, false, false, true));
     assertNotNull(ex.getMessage());
   }
 
@@ -183,7 +183,7 @@ class CredentialVerificationStrategyOwlToggleTest {
     when(schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)).thenReturn(false);
 
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(PARTICIPANT_FIXTURE), false, false, false, false);
+        getAccessor(PARTICIPANT_FIXTURE), false, false, false);
 
     assertNotNull(result);
     assertNotNull(result.getBaseClass(), "registry-direct type resolves regardless of OWL toggle");

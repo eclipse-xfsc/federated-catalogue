@@ -33,6 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Instant;
 
+// require-base-class defaults to false (caller-only). Tests expecting rejection for
+// unknown-type credentials pass requireBaseClass=true via the query parameter.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -147,32 +149,6 @@ public class VerificationControllerTest {
             .andExpect(status().isOk());
   }
 
-  /** POST /verification with verifySchema=true rejects a SHACL-invalid credential. */
-  @Test
-  public void verifyShaclInvalidCredential_SchemaEnabled_ShouldReturnSchemaError() throws Exception {
-    schemaStore.addSchema(getAccessor("mock-data/legal-personShape.ttl"));
-    try {
-      String json = getMockFileDataAsString("default-participant.json");
-      String response = mockMvc.perform(MockMvcRequestBuilders.post("/verification")
-              .queryParam("verifySchema", "true")
-              .queryParam("verifyVPSignature", "false")
-              .queryParam("verifyVCSignature", "false")
-              .contentType(MediaType.APPLICATION_JSON)
-              .accept(MediaType.APPLICATION_JSON)
-              .content(json)
-              .with(csrf()))
-              .andExpect(status().isUnprocessableEntity())
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      Error error = objectMapper.readValue(response, Error.class);
-      assertTrue(error.getMessage().startsWith("Schema error"), "Expected schema error but got: " + error.getMessage());
-    } finally {
-      schemaStore.clear();
-      schemaStore.initializeDefaultSchemas();
-    }
-  }
-
   private static final String UNKNOWN_TYPE_VP = """
       {
         "@context": ["https://www.w3.org/ns/credentials/v2"],
@@ -197,6 +173,7 @@ public class VerificationControllerTest {
             .queryParam("verifySemantics", "false")
             .queryParam("verifyVPSignature", "false")
             .queryParam("verifyVCSignature", "false")
+            .queryParam("requireBaseClass", "true")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(UNKNOWN_TYPE_VP)
@@ -210,6 +187,7 @@ public class VerificationControllerTest {
             .queryParam("verifySemantics", "false")
             .queryParam("verifyVPSignature", "false")
             .queryParam("verifyVCSignature", "false")
+            .queryParam("requireBaseClass", "true")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(UNKNOWN_TYPE_VP)
@@ -221,27 +199,6 @@ public class VerificationControllerTest {
     Error error = objectMapper.readValue(response, Error.class);
     assertTrue(error.getMessage().contains("gaia-x-2511"),
         "Expected active bundle ID 'gaia-x-2511' in error message: " + error.getMessage());
-  }
-
-  /** POST /verification with verifySchema=false accepts a SHACL-invalid credential. */
-  @Test
-  public void verifyShaclInvalidCredential_SchemaDisabled_ShouldReturnSuccess() throws Exception {
-    schemaStore.addSchema(getAccessor("mock-data/legal-personShape.ttl"));
-    try {
-      String json = getMockFileDataAsString("default-participant.json");
-      mockMvc.perform(MockMvcRequestBuilders.post("/verification")
-              .queryParam("verifySchema", "false")
-              .queryParam("verifyVPSignature", "false")
-              .queryParam("verifyVCSignature", "false")
-              .contentType(MediaType.APPLICATION_JSON)
-              .accept(MediaType.APPLICATION_JSON)
-              .content(json)
-              .with(csrf()))
-              .andExpect(status().isOk());
-    } finally {
-      schemaStore.clear();
-      schemaStore.initializeDefaultSchemas();
-    }
   }
 
 }

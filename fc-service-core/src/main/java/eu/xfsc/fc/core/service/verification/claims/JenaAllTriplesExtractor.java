@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Supports JSON-LD, Turtle, N-Triples, and RDF/XML. Used exclusively in the
  * non-credential routing path ({@link eu.xfsc.fc.core.service.verification.CredentialFormat#UNKNOWN})
- * in {@code CredentialVerificationStrategy}. Must NOT be added to the static {@code extractors[]}
+ * in {@code CredentialIngestionStrategy}. Must NOT be added to the static {@code extractors[]}
  * array — it is Spring-injected and invoked only from the early-return non-credential branch.
  */
 @Slf4j

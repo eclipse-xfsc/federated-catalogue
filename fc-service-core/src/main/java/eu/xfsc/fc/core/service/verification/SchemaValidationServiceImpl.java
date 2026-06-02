@@ -70,25 +70,7 @@ public class SchemaValidationServiceImpl implements SchemaValidationService {
     return result;
   }
 
-  /** {@inheritDoc} */
-  @Override
-  public SchemaValidationResult validateClaimsAgainstCompositeSchema(List<RdfClaim> claims) {
-    log.debug("validateClaimsAgainstCompositeSchema.enter;");
-    SchemaValidationResult result = null;
-    try {
-      ContentAccessor shaclShape = schemaStore.getCompositeSchema(SchemaStore.SchemaType.SHAPE);
-      result = validateClaimsAgainstSchema(claims, shaclShape);
-    } catch (Exception exc) {
-      log.info("validateClaimsAgainstCompositeSchema.error: {}", exc.getMessage());
-    }
-    boolean conforms = result != null && result.isConforming();
-    log.debug("validateClaimsAgainstCompositeSchema.exit; conforms: {}", conforms);
-    return result;
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public SchemaValidationResult validateClaimsAgainstSchema(List<RdfClaim> claims, ContentAccessor schema) {
+  private SchemaValidationResult validateClaimsAgainstSchema(List<RdfClaim> claims, ContentAccessor schema) {
     Model shapesModel = rdfAssetParser.parseShape(schema);
     Model dataModel = buildDataModel(claims);
     Resource reportResource = ValidationUtil.validateModel(dataModel, shapesModel, true);

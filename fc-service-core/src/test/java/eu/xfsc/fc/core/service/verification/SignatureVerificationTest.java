@@ -84,7 +84,7 @@ public class SignatureVerificationTest {
 	        ContentAccessor content = new ContentAccessorDirect(TestUtil.fakeLoireJwt("did:web:example.com"));
 
 	        Exception ex = assertThrowsExactly(VerificationException.class, ()
-	                -> verificationService.verifyCredential(content, false, false, false, true));
+	                -> verificationService.verifyCredential(content, false, false, true));
 	        assertTrue(ex.getMessage().contains("must contain x5c or x5u"),
 	            "Should require trust chain. Got: " + ex.getMessage());
 	    } finally {
