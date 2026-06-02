@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,13 @@ class JwtVcComplianceClientTest {
   private static final String CANNED_CC_JWT =
       "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"
           + ".eyJpc3MiOiJkaWQ6d2ViOmNvbXBsaWFuY2UuZXhhbXBsZSIsImV4cCI6MTc2NzIyMzk5OX0.";
+
+  // VC 2.0 compliance credential JWT — no payload exp, validUntil=2099-12-31T23:59:59Z
+  // (the shape the live GXDCH Loire attestation uses; exp lives only in the JOSE header).
+  private static final String CANNED_CC_JWT_VC2 =
+      "eyJhbGciOiJub25lIiwidHlwIjoidmMrand0In0"
+          + ".eyJpc3MiOiJkaWQ6d2ViOmNvbXBsaWFuY2UubGFiLmdhaWEteC5ldTpkZXZlbG9wbWVu"
+          + "dCIsInZhbGlkVW50aWwiOiIyMDk5LTEyLTMxVDIzOjU5OjU5WiJ9.";
 
   private MockWebServer server;
   private JwtVcComplianceClient client;
@@ -101,6 +109,25 @@ class JwtVcComplianceClientTest {
     assertTrue(req.getPath().contains("vcid=" + expectedVcid),
         "vcid query param must be single-percent-encoded");
     assertEquals(TEST_VP_JWT, req.getBody().readUtf8());
+    // application/vp+jwt is the content type the GXDCH endpoint declares for this request.
+    assertEquals("application/vp+jwt", req.getHeader("Content-Type"));
+  }
+
+  @Test
+  void check_201WithVc2ValidUntil_setsCredentialValidUntilFromValidUntilClaim() {
+
+    server.enqueue(new MockResponse()
+        .setResponseCode(201)
+        .setBody(CANNED_CC_JWT_VC2)
+        .addHeader("Content-Type", "application/jwt"));
+
+    var credential = new ContentAccessorDirect(TEST_VP_JWT);
+
+    ComplianceCheckOutcome outcome = client.check(credential, config);
+
+    var attestation = assertInstanceOf(IssuedAttestation.class, outcome);
+    // GXDCH attestations carry validity as the VC 2.0 validUntil claim, not a numeric exp.
+    assertEquals(Instant.parse("2099-12-31T23:59:59Z"), attestation.credentialValidUntil());
   }
 
   @Test

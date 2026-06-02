@@ -22,6 +22,16 @@ public final class FcMediaTypes {
    */
   public static final MediaType MERGE_PATCH_JSON = MediaType.valueOf(MERGE_PATCH_JSON_VALUE);
 
+  /**
+   * Verifiable Presentation JWT content type (W3C VC-JOSE-COSE).
+   */
+  public static final String VP_JWT_VALUE = "application/vp+jwt";
+
+  /**
+   * {@link MediaType} form of {@link #VP_JWT_VALUE}.
+   */
+  public static final MediaType VP_JWT = MediaType.valueOf(VP_JWT_VALUE);
+
   private FcMediaTypes() {
   }
 }
