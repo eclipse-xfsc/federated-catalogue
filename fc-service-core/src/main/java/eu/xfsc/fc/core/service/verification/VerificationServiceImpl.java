@@ -94,7 +94,7 @@ public class VerificationServiceImpl implements VerificationService {
   public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures, boolean requireBaseClass) throws VerificationException {
     CredentialVerificationResult result = resolveStrategy(payload).ingest(payload,
-        verifySemantics, verifyVPSignatures, verifyVCSignatures);
+        verifySemantics, verifyVPSignatures, verifyVCSignatures, requireBaseClass);
     if (requireBaseClass && !(result instanceof NonCredentialVerificationResult) && result.getBaseClass() == null) {
       String bundleInfo = getActiveTrustFrameworkBundleInfos();
       throw new ClientException(

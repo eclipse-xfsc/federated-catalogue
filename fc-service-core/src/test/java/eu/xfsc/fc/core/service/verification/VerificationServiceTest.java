@@ -214,13 +214,14 @@ public class VerificationServiceTest {
 
   @Test
   void validVCUnknownType_gaiaxEnabled_throwsNoProperSubjectError() {
-    // With gaiax enabled, non-Gaia-X credentials are rejected by the semantics check.
+    // With gaiax enabled and base-class compliance opted in (requireBaseClass=true),
+    // non-Gaia-X credentials are rejected.
     jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       String path = "VerificationService/jsonld/input.vc.jsonld";
       schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
       Exception ex = assertThrowsExactly(VerificationException.class,
-          () -> verificationService.verifyCredential(getAccessor(path), true, false, false));
+          () -> verificationService.verifyCredential(getAccessor(path), true, false, false, true));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
@@ -335,7 +336,7 @@ public class VerificationServiceTest {
     jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       Exception ex = assertThrowsExactly(VerificationException.class, ()
-          -> verificationService.verifyCredential(content, true, false, false));
+          -> verificationService.verifyCredential(content, true, false, false, true));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
@@ -954,7 +955,7 @@ public class VerificationServiceTest {
       ContentAccessor content = getAccessor("Claims-Tests/vc2NonGaiax.jsonld");
 
       Exception ex = assertThrowsExactly(VerificationException.class,
-          () -> verificationService.verifyCredential(content, true, false, false));
+          () -> verificationService.verifyCredential(content, true, false, false, true));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
