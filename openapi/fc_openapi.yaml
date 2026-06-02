@@ -2529,17 +2529,28 @@ paths:
       summary: Attach a provenance credential to an asset version.
       description: >
         Stores a VC 2.0 JSON-LD or VC-JWT provenance credential against the given asset version.
-        If version is omitted the current version is used. credentialSubject.id MUST equal
-        {assetId}:v{N}.
+        If version is omitted the current version is used.
+
+
+        Two `credentialSubject` shapes are accepted:
+
+
+          - *Entity-centric* — `credentialSubject.id` equals `{assetId}:v{N}`. The versioned-asset
+            IRI becomes the graph subject; the projected PROV-O triples decorate that subject.
+          - *Activity-centric* — `credentialSubject.id` is the activity's own IRI (any absolute
+            IRI). The credential MUST then declare `prov:generated` or `prov:used` (compact or
+            expanded form) pointing at `{assetId}:v{N}` so the activity links back to a versioned
+            asset. The activity IRI becomes the graph subject; the projected triples form the
+            activity's star of relations.
 
 
         credentialSubject MUST declare at least one — and MAY declare several — of the supported
         W3C PROV-O predicates: prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo,
         prov:wasRevisionOf, prov:generated, prov:used, prov:wasAssociatedWith,
         prov:actedOnBehalfOf (compact prov:X or expanded http://www.w3.org/ns/prov#X form). Every
-        recognised predicate is projected to the graph store as its own triple under the versioned
-        asset IRI; the predicate that appears first on credentialSubject is also recorded as the
-        row's provenanceType for relational filtering.
+        recognised predicate is projected to the graph store as its own triple under the resolved
+        graph subject; the predicate that appears first on credentialSubject is also recorded as
+        the row's provenanceType for relational filtering.
 
 
         Attaching a provenance credential does not advance the asset version counter (the counter

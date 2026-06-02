@@ -6,6 +6,7 @@ import eu.xfsc.fc.api.generated.model.ProvenanceVerificationResult;
 import eu.xfsc.fc.api.generated.model.ProvenanceVerificationResult.IssuerResolutionStatusEnum;
 import eu.xfsc.fc.core.dao.assets.AssetDao;
 import eu.xfsc.fc.core.dao.provenance.ProvenanceCredentialRepository;
+import eu.xfsc.fc.core.dao.provenance.ProvenanceType;
 import eu.xfsc.fc.core.dao.provenance.ProvenanceRecord;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -64,14 +66,10 @@ public class ProvenanceServiceImpl implements ProvenanceService {
     String expectedSubjectId = assetId + ":v" + resolvedVersion;
 
     CredentialVerificationResult verificationResult = parser.parseAndValidateVc(rawVc, format);
+    ProvenanceCredentialInfo credentialInfo = parser.extractCredentialInfo(rawVc);
 
     String subjectId = verificationResult.getId();
-    if (!expectedSubjectId.equals(subjectId)) {
-      throw new ClientException(
-          "credentialSubject.id '" + subjectId + "' must equal '" + expectedSubjectId + "'");
-    }
-
-    ProvenanceCredentialInfo credentialInfo = parser.extractCredentialInfo(rawVc);
+    String graphSubject = resolveGraphSubject(subjectId, expectedSubjectId, credentialInfo);
 
     if (credentialInfo.credentialId() != null
         && repository.existsByCredentialId(credentialInfo.credentialId())) {
@@ -79,7 +77,7 @@ public class ProvenanceServiceImpl implements ProvenanceService {
           "Provenance credential already exists: credentialId=" + credentialInfo.credentialId());
     }
 
-    List<RdfClaim> provTriples = ProvOTripleBuilder.buildAll(expectedSubjectId, credentialInfo.facts());
+    List<RdfClaim> provTriples = ProvOTripleBuilder.buildAll(graphSubject, credentialInfo.facts());
     FilteredClaims filtered = namespaceFilter.filterClaims(provTriples, "provenance add");
     if (filtered.hasWarning()) {
       throw new ClientException(
@@ -107,9 +105,42 @@ public class ProvenanceServiceImpl implements ProvenanceService {
     log.info("add; stored provenance credential id={} for asset={} version={}",
         entity.getId(), assetId, resolvedVersion);
 
-    graphStore.addClaims(provTriples, expectedSubjectId);
+    graphStore.addClaims(provTriples, graphSubject);
 
     return mapper.toModel(entity);
+  }
+
+  /**
+   * Pick the IRI that anchors the projected PROV-O triples for this credential.
+   *
+   * <p>Two shapes are accepted:
+   * <ul>
+   *   <li><b>Entity-centric</b> — {@code credentialSubject.id == expectedSubjectId}
+   *       ({@code assetId:vN}); the versioned-asset IRI is the graph subject. This is the
+   *       backwards-compatible shape used by the simple "fact about a version" credential.</li>
+   *   <li><b>Activity-centric</b> — {@code credentialSubject.id} is the activity's own IRI; the
+   *       credential must declare {@code prov:generated} or {@code prov:used} (compact or
+   *       expanded) pointing at {@code expectedSubjectId} so the activity can be linked back to a
+   *       versioned asset. The activity IRI becomes the graph subject and the projected triples
+   *       form the activity's star of relations.</li>
+   * </ul>
+   */
+  private String resolveGraphSubject(String subjectId, String expectedSubjectId,
+                                      ProvenanceCredentialInfo credentialInfo) {
+    if (expectedSubjectId.equals(subjectId)) {
+      return expectedSubjectId;
+    }
+    boolean linksToVersionedAsset = credentialInfo.facts().stream()
+        .anyMatch(fact -> (fact.type() == ProvenanceType.GENERATION
+                          || fact.type() == ProvenanceType.USAGE)
+                          && expectedSubjectId.equals(fact.objectValue()));
+    if (!linksToVersionedAsset) {
+      throw new ClientException(
+          "credentialSubject.id '" + subjectId + "' must either equal '" + expectedSubjectId
+              + "' (entity-centric form) or declare prov:generated/prov:used pointing at '"
+              + expectedSubjectId + "' (activity-centric form).");
+    }
+    return subjectId;
   }
 
   /** {@inheritDoc} */
@@ -279,16 +310,40 @@ public class ProvenanceServiceImpl implements ProvenanceService {
   @Override
   @Transactional
   public void deleteByAssetId(String assetId) {
-    // Provenance triples are written under the versioned subject IRI {assetId}:v{N}, so cascade
-    // cleanup must remove the graph projection per version before dropping the relational rows.
-    Set<Integer> versions = repository
-        .findByAssetIdOrderByIssuedAtDesc(assetId, Pageable.unpaged())
-        .getContent().stream()
-        .map(ProvenanceRecord::getAssetVersion)
-        .collect(Collectors.toSet());
-    for (Integer version : versions) {
-      graphStore.deleteClaims(assetId + ":v" + version);
+    // Provenance triples are written under the credential's resolved graph subject IRI — either
+    // the versioned-asset IRI {assetId}:v{N} (entity-centric credentials) or the activity's own
+    // IRI (activity-centric credentials). Cleanup re-parses each stored credential to recover the
+    // exact graph subject so both shapes are reachable; the versioned-asset IRI is also deleted
+    // unconditionally so any historical entity-centric projection is removed even when no
+    // relational row survives to point at it.
+    List<ProvenanceRecord> records = repository
+        .findByAssetIdOrderByIssuedAtDesc(assetId, Pageable.unpaged()).getContent();
+    Set<String> subjectsToClear = new LinkedHashSet<>();
+    for (ProvenanceRecord record : records) {
+      subjectsToClear.add(assetId + ":v" + record.getAssetVersion());
+      try {
+        ProvenanceCredentialInfo info = parser.extractCredentialInfo(record.getCredentialContent());
+        String subjectId = parser.extractCredentialSubjectId(record.getCredentialContent());
+        if (subjectId != null) {
+          subjectsToClear.add(subjectId);
+        }
+        // Also delete the link targets that the credential pointed at — for an activity-centric
+        // credential these are the versioned-asset IRIs already covered above, but the parsed
+        // facts are the authoritative source if the relational row's version drifts.
+        info.facts().forEach(fact -> {
+          if (fact.type() == ProvenanceType.GENERATION || fact.type() == ProvenanceType.USAGE) {
+            subjectsToClear.add(fact.objectValue());
+          }
+        });
+      } catch (RuntimeException ex) {
+        log.warn("deleteByAssetId; could not re-parse stored credential {} — graph cleanup may "
+            + "leave triples under the activity IRI", record.getCredentialId(), ex);
+      }
+    }
+    for (String subject : subjectsToClear) {
+      graphStore.deleteClaims(subject);
     }
     repository.deleteByAssetId(assetId);
   }
+
 }

@@ -90,6 +90,22 @@ public class ProvenanceCredentialParser {
         formatLabel);
   }
 
+  /**
+   * Extracts {@code credentialSubject.id} from a raw VC payload without re-running the predicate
+   * validation. Returns {@code null} when the payload is unparseable or the field is absent;
+   * callers use this to recover the graph subject IRI of a previously-stored credential so the
+   * full set of projected triples can be cleaned up regardless of whether the credential was
+   * entity- or activity-centric.
+   */
+  public String extractCredentialSubjectId(String rawVc) {
+    try {
+      JsonNode subject = objectMapper.readTree(rawVc.strip()).path(CREDENTIAL_SUBJECT_KEY);
+      return subject.path(VC_ID_KEY).asText(null);
+    } catch (JsonProcessingException ex) {
+      return null;
+    }
+  }
+
   private String extractCredentialId(JsonNode root) {
     JsonNode idNode = root.path(VC_ID_KEY);
     return idNode.isTextual() ? idNode.asText() : null;

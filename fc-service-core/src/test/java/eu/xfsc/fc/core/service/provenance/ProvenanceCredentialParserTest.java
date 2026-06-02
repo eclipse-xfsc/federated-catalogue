@@ -1,6 +1,7 @@
 package eu.xfsc.fc.core.service.provenance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -161,6 +162,75 @@ class ProvenanceCredentialParserTest {
     parser.parseAndValidateVc(rawVc, "JSONLD");
 
     verify(verificationService).verifyCredential(ArgumentMatchers.any(ContentAccessor.class), ArgumentMatchers.eq(false));
+  }
+
+  @Test
+  void extractCredentialSubjectId_entityCentricVc_returnsVersionedAssetIri() {
+    String vc = vcWith("prov:wasGeneratedBy", OBJECT_VALUE);
+
+    String subjectId = parser.extractCredentialSubjectId(vc);
+
+    assertNotNull(subjectId);
+    assertEquals(SUBJECT_ID, subjectId);
+  }
+
+  @Test
+  void extractCredentialSubjectId_activityCentricVc_returnsActivityIri() {
+    String activityIri = "urn:activity:alice-created-v1";
+    String vc = """
+        {
+          "id": "did:vc:activity-subject-extract",
+          "credentialSubject": {
+            "id": "%s",
+            "prov:generated": "%s",
+            "prov:wasAssociatedWith": "did:web:alice"
+          }
+        }
+        """.formatted(activityIri, SUBJECT_ID);
+
+    String subjectId = parser.extractCredentialSubjectId(vc);
+
+    assertEquals(activityIri, subjectId,
+        "Activity-centric VC must surface the activity's own IRI, not the linked asset IRI");
+  }
+
+  @Test
+  void extractCredentialSubjectId_missingCredentialSubject_returnsNull() {
+    String vc = """
+        {"id": "did:vc:no-subject"}
+        """;
+
+    assertNull(parser.extractCredentialSubjectId(vc));
+  }
+
+  @Test
+  void extractCredentialSubjectId_credentialSubjectWithoutId_returnsNull() {
+    String vc = """
+        {
+          "credentialSubject": {
+            "prov:wasGeneratedBy": "%s"
+          }
+        }
+        """.formatted(OBJECT_VALUE);
+
+    assertNull(parser.extractCredentialSubjectId(vc));
+  }
+
+  @Test
+  void extractCredentialSubjectId_malformedJson_returnsNull() {
+    assertNull(parser.extractCredentialSubjectId("not even json"));
+  }
+
+  @Test
+  void extractCredentialSubjectId_payloadWithLeadingWhitespace_returnsIdAfterStripping() {
+    String activityIri = "urn:activity:trimmed";
+    String vc = "   \n  " + """
+        {
+          "credentialSubject": { "id": "%s", "prov:wasGeneratedBy": "%s" }
+        }
+        """.formatted(activityIri, OBJECT_VALUE);
+
+    assertEquals(activityIri, parser.extractCredentialSubjectId(vc));
   }
 
   @Test
