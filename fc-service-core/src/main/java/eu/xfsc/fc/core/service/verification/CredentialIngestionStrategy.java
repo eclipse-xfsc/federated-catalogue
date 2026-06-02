@@ -112,11 +112,12 @@ public class CredentialIngestionStrategy implements RdfIngestionStrategy {
   @Override
   public CredentialVerificationResult ingest(ContentAccessor payload,
                                              boolean verifySemantics,
-                                             boolean verifyVPSignatures, boolean verifyVCSignatures)
+                                             boolean verifyVPSignatures, boolean verifyVCSignatures,
+                                             boolean requireBaseClass)
       throws VerificationException {
     log.debug("ingest.enter; verifySemantics: {},"
-            + " verifyVPSignatures: {}, verifyVCSignatures: {}",
-        verifySemantics, verifyVPSignatures, verifyVCSignatures);
+            + " verifyVPSignatures: {}, verifyVCSignatures: {}, requireBaseClass: {}",
+        verifySemantics, verifyVPSignatures, verifyVCSignatures, requireBaseClass);
     long stamp = System.currentTimeMillis();
 
     VerificationContext ctx = detectAndUnwrap(payload, verifyVCSignatures || verifyVPSignatures);
@@ -127,7 +128,12 @@ public class CredentialIngestionStrategy implements RdfIngestionStrategy {
 
     TypedCredentials typedCredentials = parseCredentials(ld, requireVP, verifySemantics, ctx.format());
 
-    if (verifySemantics && trustFrameworkService.hasAnyEnabled() && !typedCredentials.hasClasses()) {
+    // Base-class resolution is an opt-in gate: the upload path passes
+    // requireBaseClass=false so credentials destined for an external clearing house — whose
+    // vocabulary the catalogue does not index — are accepted; callers that need
+    // trust-framework compliance (e.g. the /verification endpoint, strict config) opt in.
+    if (requireBaseClass && verifySemantics
+        && trustFrameworkService.hasAnyEnabled() && !typedCredentials.hasClasses()) {
       throw new VerificationException("Semantic Error: no proper CredentialSubject found");
     }
 

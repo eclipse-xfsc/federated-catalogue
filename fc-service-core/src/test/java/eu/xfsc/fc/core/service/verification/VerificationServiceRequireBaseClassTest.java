@@ -71,7 +71,7 @@ class VerificationServiceRequireBaseClassTest {
 
   @Test
   void verifyCredential_defaultOverload_unknownType_returnsResultWithoutThrowing() throws Exception {
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullBaseClassResult);
 
     CredentialVerificationResult result = verificationServiceImpl.verifyCredential(jwtPayload);
@@ -82,7 +82,7 @@ class VerificationServiceRequireBaseClassTest {
 
   @Test
   void verifyCredential_requireBaseClassFalse_unknownType_returnsResultWithoutThrowing() throws Exception {
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullBaseClassResult);
 
     CredentialVerificationResult result = verificationServiceImpl.verifyCredential(jwtPayload, false);
@@ -93,7 +93,7 @@ class VerificationServiceRequireBaseClassTest {
 
   @Test
   void verifyCredential_requireBaseClassTrue_unknownType_throwsClientException() {
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullBaseClassResult);
     when(trustFrameworkRegistry.getActiveBundles()).thenReturn(List.of());
 
@@ -105,7 +105,7 @@ class VerificationServiceRequireBaseClassTest {
 
   @Test
   void verifyCredential_5argRequireBaseClassTrue_unknownType_throwsClientException() {
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullBaseClassResult);
     when(trustFrameworkRegistry.getActiveBundles()).thenReturn(List.of());
 

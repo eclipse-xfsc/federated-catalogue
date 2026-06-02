@@ -1832,6 +1832,10 @@ paths:
         Human-readable assets (attachments uploaded via
         `/assets/{asset_id}/human-readable`) cannot be enriched with metadata —
         attempting to enrich one returns HTTP 422.
+        Trust-framework base-class compliance is not enforced on upload: a
+        credential whose subject type does not resolve to a known base class is
+        still stored (HTTP 201). Use `POST /verification` with
+        `requireBaseClass=true` to enforce base-class resolution.
       operationId: addAsset
       security:
         - jwt: []
@@ -3340,11 +3344,12 @@ paths:
         - name: requireBaseClass
           in: query
           description: >-
-            When true, reject a credential whose @type cannot be resolved to a
-            base class in any active trust-framework bundle (HTTP 400). When
-            false (the default), credentials with unresolvable types are accepted
-            with a null base class. Useful for cross-framework demos against the
-            bundled gaia-x-2511 / mock-2026 bundles.
+            When true, reject a credential whose subject type cannot be resolved
+            to a base class in any active trust-framework bundle — HTTP 422 when
+            semantic verification is enabled (the default), otherwise HTTP 400.
+            When false (the default), credentials with unresolvable types are
+            accepted with a null base class. Useful for cross-framework demos
+            against the bundled gaia-x-2511 / mock-2026 bundles.
           required: false
           schema:
             type: boolean

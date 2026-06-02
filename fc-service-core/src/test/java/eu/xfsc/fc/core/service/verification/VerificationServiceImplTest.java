@@ -58,7 +58,7 @@ class VerificationServiceImplTest {
         NOW, "active", "did:web:example.com", NOW,
         "did:web:example.com", List.of(), List.of(), null, null);
 
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullRoleResult);
 
     assertThrowsExactly(ClientException.class,
@@ -73,7 +73,7 @@ class VerificationServiceImplTest {
     NonCredentialVerificationResult nonCredentialResult =
         new NonCredentialVerificationResult(NOW, "active", List.of());
 
-    when(nonCredentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(nonCredentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nonCredentialResult);
 
     CredentialVerificationResult result = verificationServiceImpl.verifyCredential(payload);
@@ -90,7 +90,7 @@ class VerificationServiceImplTest {
         NOW, "active", "did:web:example.com", NOW,
         "did:web:example.com", List.of(), List.of(), null, null);
 
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullRoleResult);
 
     assertThrowsExactly(ClientException.class,
@@ -106,7 +106,7 @@ class VerificationServiceImplTest {
         NOW, "active", "did:web:example.com", NOW,
         "did:web:example.com", List.of(), List.of(), "SomeRole", "some-bundle");
 
-    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(resolvedResult);
 
     CredentialVerificationResult result = verificationServiceImpl.verifyCredential(payload);

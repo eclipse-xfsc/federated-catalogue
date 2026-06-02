@@ -34,12 +34,17 @@ public interface RdfIngestionStrategy {
    * @param verifySemantics    whether to perform semantic verification
    * @param verifyVPSignatures whether to verify VP signatures
    * @param verifyVCSignatures whether to verify VC signatures
+   * @param requireBaseClass   when {@code true}, reject a credential whose subject does not
+   *                           resolve to a known trust-framework base class; when {@code false}
+   *                           (the credential-upload default) the credential is accepted even if
+   *                           no base class resolves
    * @return the verification result
    * @throws VerificationException if verification fails
    */
   CredentialVerificationResult ingest(ContentAccessor payload,
                                       boolean verifySemantics,
                                       boolean verifyVPSignatures,
-                                      boolean verifyVCSignatures) throws VerificationException;
+                                      boolean verifyVCSignatures,
+                                      boolean requireBaseClass) throws VerificationException;
 
 }
