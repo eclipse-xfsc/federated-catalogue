@@ -1,17 +1,12 @@
 package eu.xfsc.fc.server.service;
 
-import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.server.config.AssetProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Verifies the human-readable companion content-type filter. The accepted set is computed from a
@@ -20,6 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * family is admitted.
  */
 class HumanReadableContentTypeAllowlistTest {
+
+  private final HumanReadableContentTypeMatcher matcher =
+      new HumanReadableContentTypeMatcher(new AssetProperties());
 
   // Allowlist accepts entire safe document, structured-data, image, audio, and video families.
 
@@ -55,7 +53,7 @@ class HumanReadableContentTypeAllowlistTest {
       "video/webm"
   })
   void acceptedTypes_default_pass(String contentType) {
-    assertDoesNotThrow(() -> invokeValidator(newAssetService(), contentType));
+    assertTrue(matcher.isAccepted(contentType));
   }
 
   // Denylist overrides any family match — script-execution and opaque-binary risks.
@@ -80,7 +78,7 @@ class HumanReadableContentTypeAllowlistTest {
       "application/x-httpd-php"
   })
   void refusedTypes_denylist_overrideFamilyMatch(String contentType) {
-    assertThrows(ClientException.class, () -> invokeValidator(newAssetService(), contentType));
+    assertFalse(matcher.isAccepted(contentType));
   }
 
   // Types outside every family — refused by absence rather than denylist.
@@ -93,7 +91,7 @@ class HumanReadableContentTypeAllowlistTest {
       "chemical/x-pdb"
   })
   void unmatchedTypes_outsideAllowedFamilies_refused(String contentType) {
-    assertThrows(ClientException.class, () -> invokeValidator(newAssetService(), contentType));
+    assertFalse(matcher.isAccepted(contentType));
   }
 
   // Parameter-bearing MIME types match by their base type — charset and similar are stripped.
@@ -105,34 +103,18 @@ class HumanReadableContentTypeAllowlistTest {
       "text/plain;charset=ISO-8859-1"
   })
   void parameterisedType_strippedBeforeMatching_passes(String contentType) {
-    assertDoesNotThrow(() -> invokeValidator(newAssetService(), contentType));
+    assertTrue(matcher.isAccepted(contentType));
   }
 
   // Malformed or absent values are refused with the same client error as a real mismatch.
 
   @Test
   void nullContentType_refused() {
-    assertThrows(ClientException.class, () -> invokeValidator(newAssetService(), null));
+    assertFalse(matcher.isAccepted(null));
   }
 
   @Test
   void malformedContentType_refused() {
-    assertThrows(ClientException.class, () -> invokeValidator(newAssetService(), "not a mime type"));
-  }
-
-  private AssetService newAssetService() {
-    AssetService service = (AssetService) org.springframework.beans.BeanUtils.instantiateClass(AssetService.class);
-    ReflectionTestUtils.setField(service, "assetProperties", new AssetProperties());
-    return service;
-  }
-
-  private void invokeValidator(AssetService service, String contentType) throws Throwable {
-    try {
-      Method method = AssetService.class.getDeclaredMethod("validateHumanReadableContentType", String.class);
-      method.setAccessible(true);
-      method.invoke(service, contentType);
-    } catch (InvocationTargetException ex) {
-      throw ex.getCause();
-    }
+    assertFalse(matcher.isAccepted("not a mime type"));
   }
 }
