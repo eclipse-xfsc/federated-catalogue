@@ -202,6 +202,17 @@ public class AssetStoreImpl implements AssetStore {
     deleteAsset(hash, false);
   }
 
+  @Override
+  @Transactional
+  public int deleteByAssetId(final String id) {
+    Optional<Asset> live = assetRepository.findBySubjectId(id);
+    if (live.isEmpty()) {
+      return 0;
+    }
+    deleteAsset(live.get().getAssetHash(), false);
+    return 1;
+  }
+
   private void deleteAsset(final String hash, final boolean cascading) {
     final Optional<Asset> assetOpt = assetRepository.findByAssetHashWithLinkedAsset(hash);
     // Only cascade from MR → HR once; a cascading call never triggers a further cascade.

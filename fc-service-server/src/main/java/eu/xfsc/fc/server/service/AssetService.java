@@ -218,6 +218,24 @@ public class AssetService implements AssetsApiDelegate {
   }
 
   /**
+   * Cascade-delete every version, every human-readable companion, and every provenance credential
+   * for the asset identified by the URL-encoded IRI. The operation is idempotent — repeated calls
+   * for an unknown id return {@code 204} without an error. When an asset is present, the issuer
+   * recorded on it must match the calling participant.
+   */
+  @Override
+  @Transactional
+  public ResponseEntity<Void> deleteAssetById(String id) {
+    String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
+    if (assetStorePublisher.existsById(decodedId)) {
+      AssetMetadata live = assetStorePublisher.getById(decodedId);
+      checkParticipantAccess(live.getIssuer());
+    }
+    assetStorePublisher.deleteByAssetId(decodedId);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+  }
+
+  /**
    * Service method for POST /assets : Add a new asset to the catalogue.
    *
    * @param body The new asset content (required)

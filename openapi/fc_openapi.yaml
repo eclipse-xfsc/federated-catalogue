@@ -2757,6 +2757,35 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/ServerError'
+  /assets/by-id/{id}:
+    delete:
+      tags:
+        - Assets
+      summary: Cascade-delete every version of an asset identified by its IRI
+      description: >
+        Removes every version, every linked human-readable companion, and every provenance
+        credential associated with the asset identified by `id` (URL-encoded asset IRI). The
+        operation is idempotent — calling it a second time on the same id returns 204 even if no
+        rows remain.
+      operationId: deleteAssetById
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: URL-encoded asset IRI (subject identifier).
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deletion accepted (idempotent; no body)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /assets/{asset_hash}/revoke:
     post:
       tags:
