@@ -27,7 +27,7 @@ spec:
                   name: fc-keycloak-client-secret
                   key: keycloak_client_secret
             - name: KEYCLOAK_REALM
-              value: { { .Values.keycloak.realm | quote } }
+              value: {{ .Values.keycloak.realm | quote }}
             - name: SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI
               value: "https://{{ .Values.hosts.keycloak }}/auth/realms/{{ .Values.keycloak.realm }}"
             - name: FEDERATED_CATALOGUE_BASE_URI
