@@ -103,8 +103,7 @@ public class BaseClassResolutionCharacterisationTest {
     @Test
     void verifyParticipant_legalPersonVp_resolvesToParticipantRole() {
         CredentialVerificationResult result = verificationService.verifyCredential(
-            getAccessor("VerificationService/syntax/participantCredential2.jsonld"),
-            SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+            getAccessor("VerificationService/syntax/participantCredential2.jsonld"), SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
@@ -117,8 +116,7 @@ public class BaseClassResolutionCharacterisationTest {
     @Test
     void verifyOffering_serviceOfferingVp_resolvesToServiceOfferingRole() {
         CredentialVerificationResult result = verificationService.verifyCredential(
-            getAccessor("VerificationService/syntax/serviceOffering1.jsonld"),
-            SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+            getAccessor("VerificationService/syntax/serviceOffering1.jsonld"), SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
@@ -133,8 +131,7 @@ public class BaseClassResolutionCharacterisationTest {
       // gx:DigitalServiceOffering is not an OWL subclass of gx:ServiceOffering in gx-2511.
       // It is covered via additionalRoots in framework.yaml — the correct long-term mechanism.
         CredentialVerificationResult result = verificationService.verifyCredential(
-            getAccessor("CharacterisationTests/digitalServiceOffering.jsonld"),
-            SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+            getAccessor("CharacterisationTests/digitalServiceOffering.jsonld"), SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
@@ -148,8 +145,7 @@ public class BaseClassResolutionCharacterisationTest {
     void verifyResource_resourceVp_resolvesToResourceRole() {
       // gx:VirtualResource rdfs:subClassOf gx:Resource — exercises the OWL subclass walk
         CredentialVerificationResult result = verificationService.verifyCredential(
-            getAccessor("CharacterisationTests/resourceCredential.jsonld"),
-            SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+            getAccessor("CharacterisationTests/resourceCredential.jsonld"), SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
         assertNotNull(result);
       assertEquals(CredentialVerificationResult.class, result.getClass(),
@@ -162,8 +158,7 @@ public class BaseClassResolutionCharacterisationTest {
   @Test
   void verifyParticipant_nameAndPublicKeyPopulatedInGenericResult() {
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor("VerificationService/syntax/participantCredential2.jsonld"),
-        SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+        getAccessor("VerificationService/syntax/participantCredential2.jsonld"), SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
     assertNotNull(result);
     assertNotNull(result.getName(), "name must be populated in the generic result");
@@ -175,8 +170,7 @@ public class BaseClassResolutionCharacterisationTest {
   @Test
   void verifyParticipant_idEqualsCredentialSubjectId_notIssuer() {
     CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor("VerificationService/syntax/participantCredential2.jsonld"),
-        SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+        getAccessor("VerificationService/syntax/participantCredential2.jsonld"), SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
     assertEquals(PARTICIPANT_CREDENTIAL_SUBJECT_ID, result.getId(),
         "id must be credentialSubjectId, not issuer");
@@ -226,8 +220,7 @@ public class BaseClassResolutionCharacterisationTest {
         """);
 
     Exception ex = assertThrowsExactly(VerificationException.class,
-        () -> verificationService.verifyCredential(vp, VERIFY_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES,
-            SKIP_VC_SIGNATURES),
+        () -> verificationService.verifyCredential(vp, VERIFY_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES),
         "VP with Participant+Resource types must be rejected when semantics verification is enabled");
     assertNotNull(ex.getMessage());
   }
@@ -257,7 +250,7 @@ public class BaseClassResolutionCharacterisationTest {
     ContentAccessorDirect jwt = new ContentAccessorDirect(fakeParticipantLoireJwt("did:web:example.com"));
 
     CredentialVerificationResult result = verificationService.verifyCredential(
-        jwt, SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+        jwt, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
 
     assertEquals("Participant", result.getBaseClass(),
         "gx:LegalPerson in JWT credentialSubject must resolve to Participant role");
@@ -309,6 +302,6 @@ public class BaseClassResolutionCharacterisationTest {
 
       assertThrowsExactly(ClientException.class,
           () -> verificationService.verifyCredential(
-              vp, SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES));
+              vp, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES, true));
     }
 }

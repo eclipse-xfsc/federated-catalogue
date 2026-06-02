@@ -11,7 +11,7 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
 import eu.xfsc.fc.core.service.verification.CredentialFormatDetector;
-import eu.xfsc.fc.core.service.verification.CredentialVerificationStrategy;
+import eu.xfsc.fc.core.service.verification.CredentialIngestionStrategy;
 import eu.xfsc.fc.core.service.verification.EnvelopedCredentialResolver;
 import eu.xfsc.fc.core.service.verification.JwtContentPreprocessor;
 import eu.xfsc.fc.core.service.verification.LoireCredentialProcessor;
@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Import;
  * Shared test configuration for the verification stack.
  *
  * <p>Import this class in any test that needs {@link VerificationServiceImpl} or
- * {@link CredentialVerificationStrategy}. Tests that mock {@link JwtSignatureVerifier}
+ * {@link CredentialIngestionStrategy}. Tests that mock {@link JwtSignatureVerifier}
  * declare {@code @MockitoBean} in the test class — it overrides the real bean registered here.
  *
  * <p>When the verification stack gains a new dependency, add the configuration class here;
@@ -43,7 +43,7 @@ import org.springframework.context.annotation.Import;
 @Import({
     ClaimExtractionService.class,
     CredentialFormatDetector.class,
-    CredentialVerificationStrategy.class,
+    CredentialIngestionStrategy.class,
     DatabaseConfig.class,
     DidDocumentResolver.class,
     DidResolverConfig.class,

@@ -34,7 +34,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
  * OWL enabled and is rejected with HTTP 400 when OWL is disabled. Registry-direct types
  * resolve regardless.
  *
- * <p>Companion to {@code CredentialVerificationStrategyOwlToggleTest} in fc-service-core,
+ * <p>Companion to {@code CredentialIngestionStrategyOwlToggleTest} in fc-service-core,
  * which pins the same behaviour at the strategy layer (composite-schema spy assertions
  * plus role-resolution outcome assertions). This class adds the HTTP-status mapping
  * piece — that a {@code ResolvedBaseClass.UNKNOWN} from the OWL-off path surfaces as
@@ -132,6 +132,7 @@ class VerificationOwlToggleControllerTest {
             .queryParam("verifySemantics", "false")
             .queryParam("verifyVPSignature", "false")
             .queryParam("verifyVCSignature", "false")
+            .queryParam("requireBaseClass", "true")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(CUSTOM_PARTICIPANT_VP)

@@ -1,4 +1,4 @@
-# Strict verification overlay — turns ON the verification flags only (schema + signatures).
+# Strict verification overlay — turns ON the signature verification flags.
 #
 # Per ADR-003, this overlay overrides *only* the env vars that differ from the base compose.
 # The mock trust framework, the compliance-mock WireMock stub, and the trustframeworks
@@ -14,6 +14,5 @@
 services:
   server:
     environment:
-      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VP_SIGNATURE: "true"
       FEDERATED_CATALOGUE_VERIFICATION_VC_SIGNATURE: "true"

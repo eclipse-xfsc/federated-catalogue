@@ -232,7 +232,7 @@ public class RevalidationServiceTest {
 
   public String addAsset(final ContentAccessor content) throws VerificationException {
     try {
-      final CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+      final CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
       final AssetMetadata assetMetadata = new AssetMetadata(content, vr);
       assetStore.storeCredential(assetMetadata, vr);
       return assetMetadata.getAssetHash();

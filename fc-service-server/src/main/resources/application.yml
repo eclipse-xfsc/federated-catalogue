@@ -133,7 +133,6 @@ subscriber:
   fixed-rate: 30s
   verify:
     semantics: true
-    schema: true
     vp-signature: false
     vc-signature: false
     integrity: true
@@ -184,8 +183,11 @@ federated-catalogue:
   verification:
     http-timeout: 3000
 
+    # Toggle interactions are documented in arc42 chapter 5
+    # (Verification toggle interactions). Each flag below sets one independent
+    # gate; combine carefully.
+    # VP/VC envelope semantic checks — 422 on violation.
     semantics: true
-    schema: false
     vp-signature: false
     vc-signature: false
     signature-verifier: uni-res #local

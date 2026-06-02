@@ -39,7 +39,7 @@ public class NonCredentialIngestionStrategy implements RdfIngestionStrategy {
 
   @Override
   public CredentialVerificationResult ingest(ContentAccessor payload,
-                                             boolean verifySemantics, boolean verifySchema,
+                                             boolean verifySemantics,
                                              boolean verifyVPSignatures, boolean verifyVCSignatures)
       throws VerificationException {
     try {

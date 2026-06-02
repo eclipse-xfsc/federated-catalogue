@@ -80,6 +80,24 @@ trust-framework bundles; the admin API and the `getTrustFrameworks` endpoint exp
 For the architecture of the trust-framework bundle / family / profile model, see the
 [Architecture Document](https://github.com/eclipse-xfsc/docs/tree/main/federated-catalogue).
 
+## Verification: No Forced Validation on Upload
+
+The upload path runs no forced SHACL/JSON-Schema/XML-Schema validation and no
+trust-framework base-class compliance check.
+
+Schema validation is on-demand against **stored** assets via
+`POST /assets/validate` (CAT-FR-CO-05): the endpoint takes asset IDs and
+schema IDs, validates them, and persists the validation report as triples
+per CAT-FR-CO-02. Operators that want to discard non-conforming uploads
+follow store → validate → (delete on failure); the validation report is
+retained as audit evidence either way.
+
+A caller that wants the post-strategy base-class check on `POST /verification`
+must opt in explicitly with the `requireBaseClass=true` query parameter.
+
+For the full set of verification toggles and the runtime OWL schema-validation
+module, see the [Operator Wiki](https://github.com/eclipse-xfsc/federated-catalogue/wiki).
+
 ## Supported Credential Formats
 
 The Federated Catalogue accepts the following Verifiable Credential formats for submission:

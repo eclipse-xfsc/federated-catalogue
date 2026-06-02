@@ -154,7 +154,7 @@ public class AssetStoreCompositeTest {
         schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
         ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
         // Only verify semantics, not schema or signatures
-        CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
         AssetMetadata assetMeta = new AssetMetadata(content, result);
         assetStorePublisher.storeCredential(assetMeta, result);
 
@@ -187,7 +187,7 @@ public class AssetStoreCompositeTest {
         schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
         ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
         // Only verify semantics, not schema or signatures
-        CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
         AssetMetadata assetMeta = new AssetMetadata(content, result);
         assetStorePublisher.storeCredential(assetMeta, result);
 
@@ -226,7 +226,7 @@ public class AssetStoreCompositeTest {
         schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
         ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential-with-fcmeta.jsonld");
         // Skip all verification — we only care about claim storage and rebuild filtering
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
         AssetMetadata assetMeta = new AssetMetadata(content, result);
         assetStorePublisher.storeCredential(assetMeta, result);
 
@@ -268,7 +268,7 @@ public class AssetStoreCompositeTest {
                 + "<http://example.org/non-credential-test/Resource> .";
         ContentAccessorDirect content = new ContentAccessorDirect(nTriples, VerificationConstants.MEDIA_TYPE_NTRIPLES);
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
         Assertions.assertInstanceOf(NonCredentialVerificationResult.class, result,
                 "N-Triples content without VC/VP structure must produce a NonCredentialVerificationResult");
         Assertions.assertFalse(result.getClaims().isEmpty(),
@@ -312,7 +312,7 @@ public class AssetStoreCompositeTest {
         new ContentAccessorDirect(danubetechVpJwt(vpJson), VerificationConstants.MEDIA_TYPE_VP_JWT);
 
     // Upload path: unwrap JWT → extract claims
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     AssetMetadata assetMeta = new AssetMetadata(content, result);
     assetStorePublisher.storeCredential(assetMeta, result);
 
