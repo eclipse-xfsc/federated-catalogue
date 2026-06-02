@@ -97,7 +97,17 @@ public class VerificationServiceImpl implements VerificationService {
     return verifyCredential(payload, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures, true);
   }
 
-  private CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
+  @Override
+  public CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics,
+                                                       boolean verifySchema,
+                                                       boolean verifyVPSignatures, boolean verifyVCSignatures,
+                                                       boolean requireBaseClass) throws VerificationException {
+    return verifyCredentialInternal(payload, verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures,
+        requireBaseClass);
+  }
+
+  private CredentialVerificationResult verifyCredentialInternal(ContentAccessor payload, boolean verifySemantics,
+                                                                boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures, boolean requireBaseClass) throws VerificationException {
     CredentialVerificationResult result = resolveStrategy(payload).ingest(payload,
         verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);

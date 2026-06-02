@@ -57,4 +57,13 @@ public interface VerificationService {
   CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException;
 
+  /**
+   * Same as {@link #verifyCredential(ContentAccessor, boolean, boolean, boolean, boolean)} but with
+   * an explicit {@code requireBaseClass} toggle so the verification REST endpoint can expose the
+   * base-class gate without forcing it on every caller of the upload path.
+   */
+  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
+                                                boolean verifyVPSignatures, boolean verifyVCSignatures,
+                                                boolean requireBaseClass) throws VerificationException;
+
 }

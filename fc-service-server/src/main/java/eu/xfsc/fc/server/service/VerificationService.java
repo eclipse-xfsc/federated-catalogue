@@ -50,12 +50,15 @@ public class VerificationService implements VerificationApiDelegate {
   @Override
   public ResponseEntity<VerificationResult> verify(Boolean verifySemantics, Boolean verifySchema,
                                                    Boolean verifyVPSignature, Boolean verifyVCSignature,
-                                                   String framework, String body) {
+                                                   String framework, Boolean requireBaseClass, String body) {
     log.debug(
-        "verify.enter; got body of length: {}; verify semantics: {}, schema: {}, vp-signature: {}, vc-signature: {}, framework: {}",
-        body.length(), verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, framework);
+        "verify.enter; got body of length: {}; verify semantics: {}, schema: {}, vp-signature: {}, vc-signature: {}, "
+            + "framework: {}, requireBaseClass: {}",
+        body.length(), verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, framework,
+        requireBaseClass);
+    boolean enforceBaseClass = Boolean.TRUE.equals(requireBaseClass);
     VerificationResult verificationResult = verificationService.verifyCredential(new ContentAccessorDirect(body),
-            verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature);
+        verifySemantics, verifySchema, verifyVPSignature, verifyVCSignature, enforceBaseClass);
     log.debug("verify.exit; returning result: {}", verificationResult);
     return ResponseEntity.ok(verificationResult);
 
