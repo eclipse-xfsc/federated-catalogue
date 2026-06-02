@@ -3,6 +3,7 @@ package eu.xfsc.fc.demo.controller;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +21,7 @@ import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphDatabaseSwitchResult;
 import eu.xfsc.fc.api.generated.model.KeycloakAdminUrl;
 import eu.xfsc.fc.api.generated.model.OntologyImpactList;
+import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.SchemaValidationStatus;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkEntry;
@@ -166,5 +168,22 @@ public class AdminController {
       @RequestBody Map<String, String> body,
       @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
     return adminClient.switchGraphDatabase(body.get("backend"), authorizedClient);
+  }
+
+  /**
+   * Trigger an asynchronous graph rebuild. Returns 202 Accepted when a fresh rebuild
+   * is started, 409 Conflict when a rebuild is already running.
+   */
+  @PostMapping("/graph/rebuild")
+  public ResponseEntity<RebuildStatus> triggerGraphRebuild(
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    return adminClient.triggerGraphRebuild(authorizedClient);
+  }
+
+  /** Get the current graph rebuild progress. */
+  @GetMapping("/graph/rebuild/status")
+  public RebuildStatus getGraphRebuildStatus(
+      @RegisteredOAuth2AuthorizedClient("fc-client-oidc") OAuth2AuthorizedClient authorizedClient) {
+    return adminClient.getGraphRebuildStatus(authorizedClient);
   }
 }

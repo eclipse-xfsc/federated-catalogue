@@ -3,11 +3,13 @@ package eu.xfsc.fc.demo.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Client;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oauth2Login;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Map;
@@ -16,12 +18,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.api.generated.model.SchemaModulePatch;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkPatch;
 import eu.xfsc.fc.api.generated.model.TrustFrameworkBaseClassPatch;
@@ -181,5 +186,54 @@ class AdminControllerTest {
 
     verify(adminClient).deleteTrustFrameworkBundleConfig(eq("gaia-x-2511"),
         any(OAuth2AuthorizedClient.class));
+  }
+
+  @Test
+  void triggerGraphRebuild_unauthenticated_redirectsToLogin() throws Exception {
+    mockMvc.perform(post("/admin/graph/rebuild"))
+        .andExpect(status().is3xxRedirection());
+  }
+
+  @Test
+  void getGraphRebuildStatus_unauthenticated_redirectsToLogin() throws Exception {
+    mockMvc.perform(get("/admin/graph/rebuild/status"))
+        .andExpect(status().is3xxRedirection());
+  }
+
+  @Test
+  void triggerGraphRebuild_authenticated_started_returns202() throws Exception {
+    when(adminClient.triggerGraphRebuild(any(OAuth2AuthorizedClient.class)))
+        .thenReturn(ResponseEntity.status(HttpStatus.ACCEPTED).body(new RebuildStatus()));
+
+    mockMvc.perform(post("/admin/graph/rebuild")
+            .with(oauth2Login())
+            .with(oauth2Client(REG_ID)))
+        .andExpect(status().isAccepted());
+
+    verify(adminClient).triggerGraphRebuild(any(OAuth2AuthorizedClient.class));
+  }
+
+  @Test
+  void triggerGraphRebuild_authenticated_alreadyRunning_returns409() throws Exception {
+    when(adminClient.triggerGraphRebuild(any(OAuth2AuthorizedClient.class)))
+        .thenReturn(ResponseEntity.status(HttpStatus.CONFLICT).body(new RebuildStatus()));
+
+    mockMvc.perform(post("/admin/graph/rebuild")
+            .with(oauth2Login())
+            .with(oauth2Client(REG_ID)))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  void getGraphRebuildStatus_authenticated_forwardsToAdminClient() throws Exception {
+    when(adminClient.getGraphRebuildStatus(any(OAuth2AuthorizedClient.class)))
+        .thenReturn(new RebuildStatus());
+
+    mockMvc.perform(get("/admin/graph/rebuild/status")
+            .with(oauth2Login())
+            .with(oauth2Client(REG_ID)))
+        .andExpect(status().isOk());
+
+    verify(adminClient).getGraphRebuildStatus(any(OAuth2AuthorizedClient.class));
   }
 }

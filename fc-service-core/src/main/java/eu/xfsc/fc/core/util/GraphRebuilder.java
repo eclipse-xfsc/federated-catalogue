@@ -132,9 +132,13 @@ public class GraphRebuilder {
     // have contentAccessor = null; calling extractClaims(null) would throw a NullPointerException.
     rebuildLinkTriples();
 
-    // After asset claims are restored, rebuild validation result triples
+    // After asset claims are restored, rebuild validation result triples. The
+    // progress callback contract (see Javadoc on the public overload) ticks once
+    // per asset; reusing it here would push processed past total because the
+    // rebuild status `total` only counts assets. Run silently — the
+    // rebuildValidationResults info log emits a per-pass summary for operators.
     log.info("Rebuilding validation result triples...");
-    rebuildValidationResults(progressCallback);
+    rebuildValidationResults(null);
     log.info("Graph rebuild complete (assets + validation results)");
   }
 
@@ -178,6 +182,13 @@ public class GraphRebuilder {
     }
     List<RdfClaim> claims = extractClaims(assetMetaData);
     claims = protectedNamespaceFilter.filterClaims(claims, "graph rebuild").claims();
+    // Remove any prior claims for this credential subject before re-adding so the
+    // rebuild is idempotent — repeated rebuilds against the same asset set must
+    // converge on the same graph state, not accumulate. Without this clear, RDF
+    // backends silently grow on every rebuild because the per-claim RDF-star
+    // annotations regenerate slightly different blank-node identifiers each pass,
+    // and Neo4j hits its n10s.unique-uri constraint mid-import.
+    graphStore.deleteClaims(assetMetaData.getId());
     graphStore.addClaims(claims, assetMetaData.getId());
     return true;
   }
