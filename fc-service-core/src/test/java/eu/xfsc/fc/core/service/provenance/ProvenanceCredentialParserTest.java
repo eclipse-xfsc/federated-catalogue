@@ -256,6 +256,81 @@ class ProvenanceCredentialParserTest {
     assertEquals(ProvenanceType.CREATION, info.primary().type());
   }
 
+  @ParameterizedTest
+  @MethodSource("compactPredicates")
+  void extractCredentialInfo_objectReferenceWithJsonLdId_returnsIriFromAtId(String predicate, ProvenanceType expected) {
+    String vc = """
+        {
+          "id": "did:vc:test-002",
+          "credentialSubject": {
+            "id": "%s",
+            "%s": {"@id": "%s"}
+          }
+        }
+        """.formatted(SUBJECT_ID, predicate, OBJECT_VALUE);
+
+    ProvenanceCredentialInfo info = parser.extractCredentialInfo(vc);
+
+    assertEquals(expected, info.primary().type());
+    assertEquals(OBJECT_VALUE, info.primary().objectValue());
+  }
+
+  @ParameterizedTest
+  @MethodSource("compactPredicates")
+  void extractCredentialInfo_objectReferenceWithCompactId_returnsIriFromId(String predicate, ProvenanceType expected) {
+    String vc = """
+        {
+          "id": "did:vc:test-003",
+          "credentialSubject": {
+            "id": "%s",
+            "%s": {"id": "%s"}
+          }
+        }
+        """.formatted(SUBJECT_ID, predicate, OBJECT_VALUE);
+
+    ProvenanceCredentialInfo info = parser.extractCredentialInfo(vc);
+
+    assertEquals(expected, info.primary().type());
+    assertEquals(OBJECT_VALUE, info.primary().objectValue());
+  }
+
+  @Test
+  void extractCredentialInfo_nestedObjectReferenceWithExtraProperties_returnsTopLevelIri() {
+    // PROV-O wasAssociatedWith may carry a nested Agent description; only the @id matters here.
+    String vc = """
+        {
+          "id": "did:vc:test-004",
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasAssociatedWith": {
+              "id": "%s",
+              "type": "prov:Agent",
+              "prov:actedOnBehalfOf": {"id": "did:web:org"}
+            }
+          }
+        }
+        """.formatted(SUBJECT_ID, OBJECT_VALUE);
+
+    ProvenanceCredentialInfo info = parser.extractCredentialInfo(vc);
+
+    assertEquals(ProvenanceType.ASSOCIATION, info.primary().type());
+    assertEquals(OBJECT_VALUE, info.primary().objectValue());
+  }
+
+  @Test
+  void extractCredentialInfo_objectReferenceWithoutIdField_throwsClientException() {
+    String vc = """
+        {
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasGeneratedBy": {"type": "prov:Activity"}
+          }
+        }
+        """.formatted(SUBJECT_ID);
+
+    assertThrows(ClientException.class, () -> parser.extractCredentialInfo(vc));
+  }
+
   @Test
   void extractCredentialInfo_predicateWithNullValue_throwsClientException() {
     String vc = """

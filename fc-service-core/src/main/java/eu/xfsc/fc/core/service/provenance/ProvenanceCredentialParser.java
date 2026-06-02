@@ -25,6 +25,7 @@ public class ProvenanceCredentialParser {
 
   private static final String CREDENTIAL_SUBJECT_KEY = "credentialSubject";
   private static final String VC_ID_KEY = "id";
+  private static final String JSONLD_ID_KEY = "@id";
   private static final String CONTEXT_KEY = "@context";
   private static final String ACCEPTED_PREDICATES =
       "prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, prov:wasRevisionOf, "
@@ -124,10 +125,11 @@ public class ProvenanceCredentialParser {
       if (type == null) {
         continue;
       }
-      String objectValue = field.getValue().asText(null);
+      String objectValue = extractIriReference(field.getValue());
       if (objectValue == null) {
         throw new ClientException(
-            "PROV-O predicate '" + field.getKey() + "' must have a string value.");
+            "PROV-O predicate '" + field.getKey() + "' must reference an IRI — either as a "
+                + "string or as an object with '@id' or 'id'.");
       }
       facts.add(new ProvenanceInfo(type, objectValue));
     }
@@ -137,6 +139,27 @@ public class ProvenanceCredentialParser {
               + ACCEPTED_PREDICATES);
     }
     return List.copyOf(facts);
+  }
+
+  /**
+   * Returns the IRI a PROV-O predicate points at. PROV-O object properties relate resources to
+   * resources (W3C PROV-DM), so the JSON-LD payload may carry either the compacted string IRI
+   * (when the context declares the predicate as {@code "@type": "@id"}) or an object node with
+   * {@code @id}/{@code id}. Datatyped/literal values return {@code null}.
+   */
+  private static String extractIriReference(JsonNode value) {
+    if (value == null || value.isNull()) {
+      return null;
+    }
+    if (value.isTextual()) {
+      String text = value.asText();
+      return text.isEmpty() ? null : text;
+    }
+    if (value.isObject()) {
+      JsonNode id = value.has(JSONLD_ID_KEY) ? value.get(JSONLD_ID_KEY) : value.get(VC_ID_KEY);
+      return (id != null && id.isTextual()) ? id.asText() : null;
+    }
+    return null;
   }
 
   private JsonNode parseJson(String rawVc) {
