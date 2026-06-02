@@ -6,7 +6,7 @@
 #
 #   hurl --variables-file ../environments/local.env --to-entry 5 --test scenario-b-graph-switch.hurl
 #
-#   docker compose --env-file ../../docker/dev.env restart fc-server
+#   docker compose --env-file ../../docker/dev.env restart server
 #   # wait for /actuator/health UP
 #
 #   hurl --variables-file ../environments/local.env --from-entry 6 --test scenario-b-graph-switch.hurl
@@ -40,7 +40,7 @@ jsonpath "$.activeBackend" == "FUSEKI"
 POST {{baseUrl}}/query
 Authorization:  Bearer {{token}}
 Content-Type:  application/sparql-query
-Accept:  application/sparql-results+json
+Accept:   application/json
 ```
 SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 5
 ```
@@ -101,7 +101,8 @@ retry: 30
 retry-interval: 2000
 HTTP 200
 [Asserts]
-jsonpath "$.status" == "COMPLETED"
+jsonpath "$.complete" == true
+jsonpath "$.failed" == false
 
 # ============================================================================
 # B.7 Query the same data via openCypher on Neo4j
@@ -109,10 +110,13 @@ jsonpath "$.status" == "COMPLETED"
 POST {{baseUrl}}/query
 Authorization: Bearer {{token}}
 Content-Type:  application/opencypher-query
+Accept:   application/json
 ```
-MATCH (t:ContractTemplate) RETURN t.uri AS template, t.name AS name
+MATCH (n) RETURN n LIMIT 5
 ```
 HTTP 200
+[Asserts]
+jsonpath "$.totalCount" >= 1
 
 # ============================================================================
 # B.8 Reset — switch back to Fuseki (requires another restart + rebuild after)
