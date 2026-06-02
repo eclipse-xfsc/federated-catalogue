@@ -11,6 +11,7 @@ import eu.xfsc.fc.core.dao.assets.AssetRepository;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.ContentAccessorBinary;
+import eu.xfsc.fc.core.service.assetstore.AssetRecord;
 import eu.xfsc.fc.core.security.SecurityAuditorAware;
 import eu.xfsc.fc.core.service.graphdb.DummyGraphStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
@@ -96,6 +97,26 @@ class AssetVersionCounterTest {
     final int finalCount = assetStore.getVersionCount(mrMeta.getId());
     assertEquals(1, finalCount,
         "Repeated link/unlink mutations must not advance the machine-VC version counter");
+  }
+
+  @Test
+  void getVersionCount_afterMachineReadableUpdate_advancesVersionCount() {
+    final String assetId = "urn:uuid:version-counter-mr-update";
+    final var v1Meta = storeNonRdfAsset(assetId, "mr v1 content");
+
+    final int countAfterV1 = assetStore.getVersionCount(assetId);
+    assertEquals(1, countAfterV1,
+        "Initial upload must register exactly one content version");
+
+    final var v2Meta = storeNonRdfAsset(assetId, "mr v2 content");
+
+    final int countAfterV2 = assetStore.getVersionCount(assetId);
+    final AssetRecord latestVersion = assetStore.getByIdAndVersion(assetId, countAfterV2);
+
+    assertEquals(2, countAfterV2,
+        "Updating asset content with different hash must advance the version counter");
+    assertEquals(v2Meta.getAssetHash(), latestVersion.getAssetHash(),
+        "Latest version must reflect the new content hash");
   }
 
   private void linkAssets(String mrId, String hrId) {
