@@ -31,15 +31,6 @@ class ComplianceCheckOrchestratorTest {
   private static final String FAMILY_ID = "mock";
   private static final String ASSET_ID = "https://example.com/asset-001";
   private static final String ASSET_PAYLOAD = "test-asset-payload";
-  // JWT with payload {"id":"urn:example:test-asset-001"}
-  private static final String VP_JWT_ASSET_ID = "urn:example:test-asset-001";
-  private static final String VP_JWT_MATCHING =
-      "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"
-          + ".eyJpZCI6InVybjpleGFtcGxlOnRlc3QtYXNzZXQtMDAxIn0.";
-  // JWT with payload {"id":"urn:example:different-asset"} — id differs from ASSET_ID
-  private static final String VP_JWT_MISMATCHED_ID =
-      "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"
-          + ".eyJpZCI6InVybjpleGFtcGxlOmRpZmZlcmVudC1hc3NldCJ9.";
   private static final TrustFrameworkProfileConfig MOCK_CONFIG = new TrustFrameworkProfileConfig(
       PROFILE_ID, FAMILY_ID, "jwt-vc-compliance", "http://localhost",
       "/api/credential-offers/standard-compliance", "loire", 30);
@@ -116,6 +107,28 @@ class ComplianceCheckOrchestratorTest {
   }
 
   @Test
+  void check_credentialIdDiffersFromAssetId_delegatesToClient() {
+    // The catalogue keys an asset by its credential-subject id, which differs from a VP
+    // envelope's own 'id' claim. The orchestrator must still forward such a credential to the
+    // client — credentials destined for an external clearing house are not indexed by VP id.
+    var expected = new IssuedAttestation("cred-jwt", null);
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
+    when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
+    when(mockClient.check(any(), any())).thenReturn(expected);
+
+    // JWT payload {"id":"urn:example:different-asset"} — differs from ASSET_ID
+    String credentialWithDifferentId =
+        "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0"
+            + ".eyJpZCI6InVybjpleGFtcGxlOmRpZmZlcmVudC1hc3NldCJ9.";
+
+    ComplianceCheckOutcome result =
+        orchestrator.check(ASSET_ID, PROFILE_ID, credentialWithDifferentId);
+
+    assertInstanceOf(IssuedAttestation.class, result);
+  }
+
+  @Test
   void check_clientThrowsTimeoutException_propagates() {
     when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
     when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
@@ -146,26 +159,6 @@ class ComplianceCheckOrchestratorTest {
 
     assertThrows(ServiceUnavailableException.class,
         () -> orchestrator.check(ASSET_ID, PROFILE_ID, ASSET_PAYLOAD));
-  }
-
-  @Test
-  void check_vpIdMismatch_returnsUnverifiableAttestation() {
-    ComplianceCheckOutcome outcome = orchestrator.check(ASSET_ID, PROFILE_ID, VP_JWT_MISMATCHED_ID);
-
-    assertInstanceOf(UnverifiableAttestation.class, outcome);
-  }
-
-  @Test
-  void check_vpIdMatches_delegatesToClient() {
-    var expected = new IssuedAttestation("cred-jwt", null);
-    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
-    when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
-    when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
-    when(mockClient.check(any(), any())).thenReturn(expected);
-
-    ComplianceCheckOutcome result = orchestrator.check(VP_JWT_ASSET_ID, PROFILE_ID, VP_JWT_MATCHING);
-
-    assertInstanceOf(IssuedAttestation.class, result);
   }
 
   @Test
