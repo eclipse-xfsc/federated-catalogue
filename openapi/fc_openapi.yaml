@@ -2098,6 +2098,15 @@ paths:
       summary: Get version history for an asset.
       description: >
         Returns a paginated list of all versions of the asset, ordered descending (newest first).
+
+
+        A "version" is one distinct content hash observed in the asset's audit history. Saves that
+        only change non-content fields (linking a human-readable companion, lifecycle-status
+        transitions, last-modified bookkeeping) reuse an existing hash and do not produce a new
+        version entry — so attaching a provenance credential or a human-readable companion never
+        advances the version count.
+
+
         Required permission: ASSET_READ or ADMIN_ALL
       operationId: readAssetVersions
       parameters:
@@ -2197,6 +2206,14 @@ paths:
         Uploads a human-readable document (e.g. PDF) and links it bidirectionally
         to the existing machine-readable asset identified by {id}. The human-readable document
         is stored as an independent asset with its own IRI.
+
+
+        The uploaded part's Content-Type must be one of the configured human-readable types
+        (currently application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document,
+        text/html, text/plain); any other value is rejected with 400. Linking a companion does not
+        advance the machine-readable asset's version counter.
+
+
         Multipart uploads are handled by the server outside the generated delegate pattern.
         Required permission: ASSET_CREATE or ADMIN_ALL
       operationId: uploadHumanReadable
@@ -2488,11 +2505,21 @@ paths:
       description: >
         Stores a VC 2.0 JSON-LD or VC-JWT provenance credential against the given asset version.
         If version is omitted the current version is used. credentialSubject.id MUST equal
-        {assetId}:v{N}. The credentialSubject MUST contain exactly one of the supported W3C PROV-O
-        predicates: prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, or
-        prov:wasRevisionOf (compact or expanded IRI form). The predicate value becomes the PROV-O
-        triple object stored in the graph. VC 1.1 payloads or credentials using the CAT-internal
-        namespace are rejected with 400. Duplicate credentialId returns 409.
+        {assetId}:v{N}.
+
+
+        credentialSubject MUST declare at least one — and MAY declare several — of the supported
+        W3C PROV-O predicates: prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo,
+        prov:wasRevisionOf, prov:generated, prov:used, prov:wasAssociatedWith,
+        prov:actedOnBehalfOf (compact prov:X or expanded http://www.w3.org/ns/prov#X form). Every
+        recognised predicate is projected to the graph store as its own triple under the versioned
+        asset IRI; the predicate that appears first on credentialSubject is also recorded as the
+        row's provenanceType for relational filtering.
+
+
+        Attaching a provenance credential does not advance the asset version counter (the counter
+        reflects distinct content hashes, not metadata events). VC 1.1 payloads and credentials
+        using the CAT-internal namespace are rejected with 400. Duplicate credentialId returns 409.
         Required permission: ASSET_UPDATE or ADMIN_ALL
       operationId: addProvenanceCredential
       security:
@@ -2734,6 +2761,10 @@ paths:
         Unlike other asset endpoints which use IRI-based identification (/assets/{id}),
         the delete operation uses the SHA-256 content hash to guarantee unambiguous
         single-row targeting. See ADR 7 — Delete Operation Exception.
+
+
+        For idempotent cascade-by-IRI semantics (every version, every linked companion, every
+        provenance row), prefer DELETE /assets/by-id/{id}.
       operationId: deleteAsset
       security:
         - jwt: [ ]
