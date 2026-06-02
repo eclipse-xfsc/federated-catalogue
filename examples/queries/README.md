@@ -9,11 +9,6 @@ Each `.jsonld` file is the *credential payload only* — it is not signed.
 To ingest it, sign it as a Verifiable Credential JWT (VC-JWT) and POST the
 JWT to `/assets`.
 
-## Prerequisites
-
-Catalogue stack running and Keycloak bootstrapped — see [`../README.md`](../README.md) for the full setup and
-authentication flow (`auth.sh`).
-
 ## Examples
 
 | File                          | `credentialSubject` type | Purpose                                                                    |
@@ -33,7 +28,6 @@ The Gaia-X 2511 SHACL shapes that validate these payloads ship with the
 catalogue at `fc-service-core/src/main/resources/trustframeworks/gaia-x-2511/shapes.ttl`.
 
 References:
-
 - Gaia-X Architecture, "Gaia-X Credential Format" and "Verifying Gaia-X Credentials" sections.
 - Gaia-X ICAM, credential and proof-of-possession requirements.
 
@@ -138,21 +132,6 @@ The catalogue verifies:
 On success, the catalogue returns `201 Created` with a `Location` header
 pointing at `/assets/{id}`. Once stored, the credentials can be exercised by
 the queries in the Architecture Appendix.
-
-## Verifying the appendix queries end-to-end
-
-[`verify-against-fuseki.hurl`](./verify-against-fuseki.hurl) ingests all five payloads against a running Fuseki-backed
-stack and asserts that every SPARQL query from the Architecture Appendix returns the documented bindings:
-
-```bash
-cd examples/queries
-hurl --variable token=$(../auth.sh) \
-     --variable baseUrl=http://localhost:8081 \
-     --test verify-against-fuseki.hurl
-```
-
-`hurl -v` prints one HTTP exchange per request; `hurl --vv` prints full request/response bodies; `hurl --curl out.sh`
-(hurl 5.x+) writes an equivalent curl command per request if you need to hand a single call to a teammate without hurl.
 
 ## Recommended ingestion order
 

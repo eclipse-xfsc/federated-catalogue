@@ -14,7 +14,8 @@ listed in [`../../openapi/fc_openapi.yaml`](../../openapi/fc_openapi.yaml).
 ## Prerequisites
 
 - Catalogue stack running: `cd ../../docker && docker compose --env-file dev.env up -d`.
-- Token in `$TOKEN`: `export TOKEN=$(../auth.sh)` (see [`../README.md`](../README.md#authenticating-curl)).
+- Keycloak credentials in [`../environments/local.env`](../environments/local.env) — each scenario authenticates inline
+  on its first entry (see [`../README.md`](../README.md#authentication)).
 
 ---
 
@@ -24,9 +25,7 @@ Executable as [`scenario-a-schema-validation.hurl`](./scenario-a-schema-validati
 
 ```bash
 cd examples/admin-toggles-demo
-hurl --variable token=$(../auth.sh) \
-     --variable baseUrl=http://localhost:8081 \
-     --test scenario-a-schema-validation.hurl
+hurl --variables-file ../environments/local.env --test scenario-a-schema-validation.hurl
 ```
 
 The scenario uses [`legal-person-shacl-invalid.jsonld`](./legal-person-shacl-invalid.jsonld), a `gx:LegalPerson` that
@@ -39,14 +38,11 @@ deliberately violates three constraints of the loaded Gaia-X 2511 shapes:
 The credential is **semantically valid Loire** (correct type, valid JSON-LD, valid VC-2.0 envelope). Only the
 *shape-level* rules from the registry are violated.
 
-| Entry                                                                                    | What it asserts                                                                                           |
-|------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| A.1 `GET /admin/schema-validation`                                                       | SHACL is `enabled: false` (dev default)                                                                   |
-| A.2 `POST /assets` (invalid payload)                                                     | 201 — accepted because SHACL is off                                                                       |
-| A.3 `PATCH /admin/schema-validation/modules/SHACL {"enabled": true}` then re-read status | SHACL now `enabled: true`                                                                                 |
-| A.4 `POST /assets` (same payload, different id)                                          | **400 — rejected; the headline assertion of the demo**                                                    |
-| A.5 `POST /assets/validate` against the asset stored in A.2                              | The already-stored asset can be re-validated retrospectively; storage is independent of validation policy |
-| A.6 Reset SHACL to `enabled: false`                                                      | Leaves the catalogue in its starting state                                                                |
+The headline assertion: the same payload that is *accepted* with SHACL off is *rejected with violation details* once
+SHACL is turned on — and the previously-stored asset can be re-validated retrospectively, proving that storage is
+independent of validation policy. See the comments in [
+`scenario-a-schema-validation.hurl`](./scenario-a-schema-validation.hurl)
+for the step-by-step.
 
 ---
 
@@ -63,39 +59,26 @@ graph store. Switching backends doesn't touch the assets — it rebuilds the gra
 ```bash
 cd examples/admin-toggles-demo
 
-# Part 1 — confirm Fuseki, switch to Neo4j (persisted, not yet active)
-hurl --variable token=$(../auth.sh) \
-     --variable baseUrl=http://localhost:8081 \
-     --to-entry 4 \
-     --test scenario-b-graph-switch.hurl
+# Part 1 — auth + confirm Fuseki + switch to Neo4j (persisted, not yet active)
+hurl --variables-file ../environments/local.env --to-entry 5 --test scenario-b-graph-switch.hurl
 
 # Manual restart — hurl can't do this for you
 docker compose --env-file ../../docker/dev.env restart fc-server
 until curl -fsS http://localhost:8081/actuator/health >/dev/null 2>&1; do sleep 2; done
 
-# Part 2 — rebuild on Neo4j, query via openCypher, reset to Fuseki
-hurl --variable token=$(../auth.sh) \
-     --variable baseUrl=http://localhost:8081 \
-     --from-entry 5 \
-     --test scenario-b-graph-switch.hurl
+# Part 2 — re-auth + rebuild on Neo4j + query via openCypher + reset to Fuseki
+hurl --variables-file ../environments/local.env --from-entry 6 --test scenario-b-graph-switch.hurl
 
 # Second restart needed to make the Fuseki reset take effect
 docker compose --env-file ../../docker/dev.env restart fc-server
 ```
 
-| Entry                                                         | What it asserts                                                   |
-|---------------------------------------------------------------|-------------------------------------------------------------------|
-| B.1 `GET /admin/graph-database`                               | Fuseki is the active backend                                      |
-| B.2 `POST /query` SPARQL `?s ?p ?o` LIMIT 5                   | Sanity — the graph is queryable                                   |
-| B.3 `POST /admin/graph-database/switch {"backend": "NEO4J"}`  | Selection persisted (takes effect on restart)                     |
-| B.4 `GET /admin/graph-database`                               | Read-back — backend still reports Fuseki *until* the restart      |
-| —                                                             | **Manual:** `docker compose restart fc-server`                    |
-| B.5 `POST /admin/graph/rebuild`                               | Catalogue re-projects RDF from PostgreSQL into Neo4j              |
-| B.6 `GET /admin/graph/rebuild/status` (polled)                | Status reaches `COMPLETED`                                        |
-| B.7 `POST /query` openCypher `MATCH (t:ContractTemplate) …`   | Same data answers the same logical question — *without re-upload* |
-| B.8 `POST /admin/graph-database/switch {"backend": "FUSEKI"}` | Resets the persisted backend choice                               |
+Per-step assertions live as comments in [`scenario-b-graph-switch.hurl`](./scenario-b-graph-switch.hurl). The
+pedagogically interesting moment is the openCypher query after the rebuild: same data, different query language,
+*without re-upload*.
 
-If you haven't run Demo 1 yet, the Neo4j-side query in B.7 returns an empty result set. Either run the DCS demo first
+If you haven't run Demo 1 yet, the Neo4j-side openCypher query returns an empty result set. Either run the DCS demo
+first
 (see [`../dcs-template-demo/`](../dcs-template-demo/)) or seed the catalogue with [`../queries/`](../queries/) fixtures
 before starting Scenario B.
 

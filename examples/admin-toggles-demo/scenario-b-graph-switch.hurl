@@ -1,22 +1,29 @@
 # Demo 2 / Scenario B — Graph backend switch
 #
-# This scenario REQUIRES a docker-compose restart between parts B.1 and B.2.
-# Hurl cannot drive `docker compose restart` itself, so the flow is split
-# into two .hurl files via the --to-entry boundary documented in the demo
-# README. Run as:
+# This scenario REQUIRES a docker-compose restart between parts B.4 and B.5.
+# The flow splits into two hurl invocations across the restart; each one
+# starts with its own inline auth step so {{token}} is fresh on resume.
 #
-#   hurl --variable token=$(../auth.sh) \
-#        --variable baseUrl=http://localhost:8081 \
-#        --to-entry 4 \
-#        --test scenario-b-graph-switch.hurl
+#   hurl --variables-file ../environments/local.env --to-entry 5 --test scenario-b-graph-switch.hurl
 #
 #   docker compose --env-file ../../docker/dev.env restart fc-server
 #   # wait for /actuator/health UP
 #
-#   hurl --variable token=$(../auth.sh) \
-#        --variable baseUrl=http://localhost:8081 \
-#        --from-entry 5 \
-#        --test scenario-b-graph-switch.hurl
+#   hurl --variables-file ../environments/local.env --from-entry 6 --test scenario-b-graph-switch.hurl
+
+# ============================================================================
+# B.0 Authenticate — Keycloak password grant; capture {{token}}
+# ============================================================================
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+[Form]
+grant_type: password
+client_id: {{clientId}}
+client_secret: {{clientSecret}}
+username: {{username}}
+password: {{password}}
+HTTP 200
+[Captures]
+token: jsonpath "$.access_token"
 
 # ============================================================================
 # B.1 Confirm Fuseki is active
@@ -25,7 +32,7 @@ GET {{baseUrl}}/admin/graph-database
 Authorization:  Bearer {{token}}
 HTTP 200
 [Asserts]
-jsonpath "$.backend" == "FUSEKI"
+jsonpath "$.activeBackend" == "FUSEKI"
 
 # ============================================================================
 # B.2 Quick SPARQL probe — anything is enough (templates from Demo 1 if present)
@@ -58,6 +65,20 @@ HTTP 200
 GET {{baseUrl}}/admin/graph-database
 Authorization:  Bearer {{token}}
 HTTP 200
+
+# ============================================================================
+# B.4b (POST-RESTART) Re-authenticate — fresh token after the restart break
+# ============================================================================
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+[Form]
+grant_type: password
+client_id: {{clientId}}
+client_secret: {{clientSecret}}
+username: {{username}}
+password: {{password}}
+HTTP 200
+[Captures]
+token: jsonpath "$.access_token"
 
 # ============================================================================
 # B.5 (POST-RESTART) Rebuild the graph projection in Neo4j

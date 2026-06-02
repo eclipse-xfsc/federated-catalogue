@@ -56,33 +56,17 @@ chains the steps together. It is both the demo *and* the integration test.
 
 ```bash
 cd examples/dcs-template-demo
-hurl --variable token=$(../auth.sh) \
-     --variable baseUrl=http://localhost:8081 \
-     --test dcs-template-demo.hurl
+hurl --variables-file ../environments/local.env --test dcs-template-demo.hurl
 ```
 
-Replay one step at a time with `--to-entry N`. Each entry below corresponds to a numbered block in the .hurl file:
-
-| #  | Entry                                                           | What it proves                                                                                              |
-|----|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| 1  | `GET /admin/graph-database`                                     | Fuseki is the active backend                                                                                |
-| 2  | `POST /assets` (`dpa-template-v1.jsonld`)                       | Machine-readable template is stored                                                                         |
-| 3  | `POST /assets/.../human-readable` (`dpa-template-v1.md`)        | Human-readable rendering is linked to the metadata VC                                                       |
-| 4  | `POST /assets/.../provenance` (`provenance-v1-created.jsonld`)  | `prov:Activity` created by Alice is recorded                                                                |
-| 5  | `POST /assets/.../provenance` (`provenance-v1-approved.jsonld`) | Approval by Bob; lifecycle state derivable from latest event                                                |
-| 6  | `POST /query` SPARQL — latest approved DPA for DE               | CWE discovers v1                                                                                            |
-| 7  | `GET /assets/.../human-readable`, asserts SHA-256               | Downloaded body matches `dcs:humanReadableHash` claim                                                       |
-| 8  | Publish v2 (machine-readable + human-readable + approval)       | `prov:wasDerivedFrom v1` is recorded                                                                        |
-| 9  | Re-run the same SPARQL                                          | v2 now wins via `FILTER NOT EXISTS { ?newer prov:wasDerivedFrom+ ?template … }` — *no client change needed* |
-| 10 | `GET /assets/.../provenance` and `.../versions`                 | Full audit trail and version lineage                                                                        |
-
-Diagnostics: `hurl -v` for one-line HTTP per request, `hurl --vv` for full bodies, `hurl --curl out.sh` for an
-equivalent curl command per request (hurl 5.x+).
+Each numbered block in the `.hurl` file is one entry; replay one at a time with `--to-entry N`. Diagnostics:
+`hurl -v` for one-line HTTP per request, `hurl --vv` for full bodies, `hurl --curl out.sh` for the equivalent curl
+commands (hurl 5.x+).
 
 ### The headline query
 
 The CWE-discovery SPARQL is the pedagogically interesting moment — it's what makes "publish v2" automatically promote v2
-without any client-side bookkeeping. It lives in entries 6 and 9 of the .hurl file; here it is in isolation:
+without any client-side bookkeeping. The `.hurl` file runs it before and after the v2 publish; here it is in isolation:
 
 ```sparql
 PREFIX dcs:    <https://w3id.org/facis/dcs/1#>

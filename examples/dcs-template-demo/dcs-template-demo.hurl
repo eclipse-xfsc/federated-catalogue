@@ -2,17 +2,29 @@
 #
 # Run end-to-end:
 #   cd examples/dcs-template-demo
-#   hurl --variable token=$(../auth.sh) \
-#        --variable baseUrl=http://localhost:8081 \
-#        --test dcs-template-demo.hurl
+#   hurl --variables-file ../environments/local.env --test dcs-template-demo.hurl
 #
-# Run one step at a time:
-#   hurl --to-entry 4 --variable token=$(../auth.sh) --variable baseUrl=http://localhost:8081 dcs-template-demo.hurl
+# Run one step at a time (note: entry 1 is the auth step, demo steps start at entry 2):
+#   hurl --variables-file ../environments/local.env --to-entry 5 dcs-template-demo.hurl
 #
 # Diagnostics:
 #   hurl -v   ...        # one-line HTTP per request
 #   hurl --vv ...        # full request/response bodies
 #   hurl --curl out.sh   # emit equivalent curl commands (hurl 5.x+)
+
+# ============================================================================
+# 0. Authenticate — Keycloak password grant; capture {{token}}
+# ============================================================================
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+[Form]
+grant_type: password
+client_id: {{clientId}}
+client_secret: {{clientSecret}}
+username: {{username}}
+password: {{password}}
+HTTP 200
+[Captures]
+token: jsonpath "$.access_token"
 
 # ============================================================================
 # 1. Confirm Fuseki is the active query backend
@@ -21,7 +33,7 @@ GET {{baseUrl}}/admin/graph-database
 Authorization:  Bearer {{token}}
 HTTP 200
 [Asserts]
-jsonpath "$.backend" == "FUSEKI"
+jsonpath "$.activeBackend" == "FUSEKI"
 
 # ============================================================================
 # 2. Upload the machine-readable template (v1)

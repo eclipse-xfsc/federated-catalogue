@@ -3,14 +3,26 @@
 #
 # Usage:
 #   cd examples/queries
-#   hurl --variable token=$(../auth.sh) \
-#        --variable baseUrl=http://localhost:8081 \
-#        --test verify-against-fuseki.hurl
+#   hurl --variables-file ../environments/local.env --test verify-against-fuseki.hurl
 #
 # Diagnostics:
 #   hurl -v   ...        # one-line HTTP per request
 #   hurl --vv ...        # full request/response bodies
 #   hurl --curl out.sh   # emit equivalent curl commands (hurl 5.x+)
+
+# ----------------------------------------------------------------------------
+# Authenticate — Keycloak password grant; capture {{token}}
+# ----------------------------------------------------------------------------
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+[Form]
+grant_type: password
+client_id: {{clientId}}
+client_secret: {{clientSecret}}
+username: {{username}}
+password: {{password}}
+HTTP 200
+[Captures]
+token: jsonpath "$.access_token"
 
 # ----------------------------------------------------------------------------
 # Sanity — Fuseki is the active backend
@@ -19,7 +31,7 @@ GET {{baseUrl}}/admin/graph-database
 Authorization:  Bearer {{token}}
 HTTP 200
 [Asserts]
-jsonpath "$.backend" == "FUSEKI"
+jsonpath "$.activeBackend" == "FUSEKI"
 
 # ----------------------------------------------------------------------------
 # Upload the five Loire payloads

@@ -20,54 +20,38 @@ Prefer a GUI? Import [`../openapi/fc_openapi.yaml`](../openapi/fc_openapi.yaml) 
 
 - The catalogue stack running locally: `cd ../docker && docker compose --env-file dev.env up -d` (Fuseki backend,
   signature checks off by default — see [`../docker/README.md`](../docker/README.md) for strict mode).
-- Keycloak bootstrapped with at least one user that has the `Ro-MU-CA` or `ADMIN_ALL` role.
+- Keycloak bootstrapped with at least one user that has the `Ro-MU-CA` or `ADMIN_ALL` role (the dev realm bundled
+  at `../keycloak/realms/dev/fc-realm.json` provides this — user `fc-ca-test`).
 - [`hurl`](https://hurl.dev) ≥ 4.x for the executable demos. `curl`, `jq`, `sha256sum`, `python3` also expected in your
   `$PATH` for ad-hoc poking and the signing helpers.
+- `127.0.0.1 key-server` in `/etc/hosts` (per [`../docker/README.md`](../docker/README.md#keycloak-setup)) so the
+  token's `iss` claim matches what fc-server expects.
 
-## Authenticating curl
+## Authentication
 
-Every demo starts by getting a Keycloak access token. Use [`./auth.sh`](./auth.sh) — it handles password grant on first
-call and silent refresh thereafter:
+Each `.hurl` scenario starts with an inline Keycloak password-grant step that captures the access token into a
+`{{token}}` variable. Subsequent requests use `Authorization: Bearer {{token}}`. No shell wrapper is required — hurl
+handles the full flow itself.
 
-```bash
-export TOKEN=$(./auth.sh)                                  # admin/admin defaults
-export TOKEN=$(FC_USERNAME=alice FC_PASSWORD=alice ./auth.sh)
-```
-
-The token is also written to `.token` in the current directory, so you can use
-`--header "Authorization: Bearer $(cat .token)"` in scripts without re-running. `.token` and `.refresh_token` are
-gitignored.
-
-## Pointing at a non-local environment
-
-By default every command targets the bundled docker-compose stack. To point at a hosted QA or staging instance, swap
-the environment file — one file feeds both hurl and auth.sh.
-
-**Convention:** one `KEY=VALUE` file per target stack under `environments/`. Files named `*.env` are gitignored;
-`*.env.example` files are tracked as templates.
-
-**Local stack (default):**
+The Keycloak coordinates (URL, realm, client, user, password) live in the environment file passed via
+`--variables-file`. The bundled [`environments/local.env`](./environments/local.env) targets the docker-compose stack
+with the dev realm's defaults; copy [`environments/qa.env.example`](./environments/qa.env.example) for hosted stacks.
 
 ```bash
-hurl --variables-file environments/local.env \
-     --variable token=$(./auth.sh --env environments/local.env) \
-     dcs-template-demo/dcs-template-demo.hurl
-```
+# Run the primary demo against the local stack
+hurl --variables-file environments/local.env --test dcs-template-demo/dcs-template-demo.hurl
 
-**Hosted QA instance:**
+# Run a single entry (handy while debugging — entry 1 is auth, demo steps start at 2)
+hurl --variables-file environments/local.env --to-entry 5 dcs-template-demo/dcs-template-demo.hurl
 
-```bash
-# First time: copy the template and fill in your tenant's values
+# Point at a hosted QA stack
 cp environments/qa.env.example environments/qa.env
 $EDITOR environments/qa.env
-
-hurl --variables-file environments/qa.env \
-     --variable token=$(./auth.sh --env environments/qa.env) \
-     dcs-template-demo/dcs-template-demo.hurl
+hurl --variables-file environments/qa.env --test dcs-template-demo/dcs-template-demo.hurl
 ```
 
-The env file supplies `baseUrl` for hurl and the `FC_*` / `KEYCLOAK_*` vars for auth.sh. Env vars already set in your
-shell always take precedence over the file — existing one-liner usage (`FC_USERNAME=alice ./auth.sh`) is unaffected.
+**Convention:** one `KEY=VALUE` file per target stack under `environments/`. All files except `local.env` and
+`*.env.example` are gitignored — copy the example and never commit your tenant's secrets.
 
 ## Signing fixtures for strict mode
 

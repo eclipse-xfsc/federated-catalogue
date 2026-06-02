@@ -1,9 +1,21 @@
 # Demo 2 / Scenario A — SHACL validation on/off
 #
 # cd examples/admin-toggles-demo
-# hurl --variable token=$(../auth.sh) \
-#      --variable baseUrl=http://localhost:8081 \
-#      --test scenario-a-schema-validation.hurl
+# hurl --variables-file ../environments/local.env --test scenario-a-schema-validation.hurl
+
+# ============================================================================
+# A.0 Authenticate — Keycloak password grant; capture {{token}}
+# ============================================================================
+POST {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+[Form]
+grant_type: password
+client_id: {{clientId}}
+client_secret: {{clientSecret}}
+username: {{username}}
+password: {{password}}
+HTTP 200
+[Captures]
+token: jsonpath "$.access_token"
 
 # ============================================================================
 # A.1 Confirm SHACL is OFF by default (per dev.env)
