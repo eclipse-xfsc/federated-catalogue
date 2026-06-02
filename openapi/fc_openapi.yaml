@@ -2888,7 +2888,24 @@ paths:
       tags:
         - Query
       summary: Send a query to the Catalogue
-      description: 'Required permission: QUERY_EXECUTE or ADMIN_ALL'
+      description: >
+        Required permission: QUERY_EXECUTE or ADMIN_ALL.
+
+
+        The SPARQL backend is RDF-star (SPARQL-Star) aware. Credential claims are projected as
+        reified triples annotated with `cred:credentialSubject`
+        (`http://www.w3.org/2018/credentials#credentialSubject`): each claim triple `s p o`
+        appears in the graph as `<< s p o >> <cred:credentialSubject> <subject>`. Discovery
+        queries that target the credential claims must therefore reach into the reification, for
+        example:
+
+
+        `SELECT ?subject WHERE { << ?subject a <https://example.org/dcs/1#ContractTemplate> >>
+        <http://www.w3.org/2018/credentials#credentialSubject> ?subject }`.
+
+
+        Asserted (non-reified) triples emitted by the catalogue itself — such as the
+        machine-readable ↔ human-readable link predicates — are queryable with plain SPARQL.
       operationId: query
       parameters:
         - in: query
