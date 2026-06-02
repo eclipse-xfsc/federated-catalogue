@@ -384,6 +384,38 @@ public class AssetControllerTest {
     }
 
     @Test
+    public void deleteAssetById_noAuth_returnsUnauthorized() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/assets/by-id/{id}", assetMeta.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    public void deleteAssetById_noPermission_returnsForbidden() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/assets/by-id/{id}", assetMeta.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockJwtAuth(authorities = {ASSET_DELETE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
+        @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
+    public void deleteAssetById_withPermission_returnsNoContent() throws Exception {
+        assetStorePublisher.storeCredential(assetMeta, getStaticVerificationResult());
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/assets/by-id/{id}", assetMeta.getId())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     public void addAsset_noAuth_returnsUnauthorized() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/assets")
                         .with(csrf())

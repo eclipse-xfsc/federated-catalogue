@@ -98,6 +98,9 @@ public class SecurityConfig {
           .requestMatchers(HttpMethod.GET, "/assets", "/assets/*").hasAnyRole(ASSET_READ, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets").hasAnyRole(ASSET_CREATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.DELETE, "/assets/*").hasAnyRole(ASSET_DELETE, ADMIN_ALL)
+          // Cascade-by-IRI uses a multi-segment path (/assets/by-id/{id}) that would otherwise
+          // fall through to anyRequest().authenticated() and silently bypass the ASSET_DELETE check.
+          .requestMatchers(HttpMethod.DELETE, "/assets/by-id/**").hasAnyRole(ASSET_DELETE, ADMIN_ALL)
 
           // Compliance check APIs
           .requestMatchers(HttpMethod.POST, "/assets/*/compliance-check").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
