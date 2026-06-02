@@ -25,7 +25,11 @@ class ProvOTripleBuilderTest {
         Arguments.of(ProvenanceType.CREATION, PROV_NS + "wasGeneratedBy"),
         Arguments.of(ProvenanceType.DERIVATION, PROV_NS + "wasDerivedFrom"),
         Arguments.of(ProvenanceType.ATTRIBUTION, PROV_NS + "wasAttributedTo"),
-        Arguments.of(ProvenanceType.MODIFICATION, PROV_NS + "wasRevisionOf")
+        Arguments.of(ProvenanceType.MODIFICATION, PROV_NS + "wasRevisionOf"),
+        Arguments.of(ProvenanceType.GENERATION, PROV_NS + "generated"),
+        Arguments.of(ProvenanceType.USAGE, PROV_NS + "used"),
+        Arguments.of(ProvenanceType.ASSOCIATION, PROV_NS + "wasAssociatedWith"),
+        Arguments.of(ProvenanceType.DELEGATION, PROV_NS + "actedOnBehalfOf")
     );
   }
 
@@ -63,5 +67,21 @@ class ProvOTripleBuilderTest {
   void build_invalidAssetId_throwsClientException(String invalidAssetId) {
     assertThrows(ClientException.class,
         () -> ProvOTripleBuilder.build(invalidAssetId, ProvenanceType.CREATION, OBJECT_VALUE));
+  }
+
+  @org.junit.jupiter.api.Test
+  void buildAll_multipleFacts_emitsOneTriplePerFactInOrder() {
+    List<ProvenanceInfo> facts = List.of(
+        new ProvenanceInfo(ProvenanceType.CREATION, "did:web:example:activity"),
+        new ProvenanceInfo(ProvenanceType.ASSOCIATION, "did:web:example:agent"),
+        new ProvenanceInfo(ProvenanceType.DELEGATION, "did:web:example:organisation"));
+
+    List<RdfClaim> triples = ProvOTripleBuilder.buildAll(ASSET_ID, facts);
+
+    assertEquals(3, triples.size());
+    assertEquals("<" + PROV_NS + "wasGeneratedBy>", triples.get(0).getPredicateString());
+    assertEquals("<" + PROV_NS + "wasAssociatedWith>", triples.get(1).getPredicateString());
+    assertEquals("<" + PROV_NS + "actedOnBehalfOf>", triples.get(2).getPredicateString());
+    assertEquals("<did:web:example:agent>", triples.get(1).getObjectString());
   }
 }

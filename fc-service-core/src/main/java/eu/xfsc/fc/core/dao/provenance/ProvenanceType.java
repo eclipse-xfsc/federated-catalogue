@@ -18,5 +18,17 @@ public enum ProvenanceType {
   ATTRIBUTION,
 
   /** {@code prov:wasRevisionOf} — asset is a revision of another entity. */
-  MODIFICATION
+  MODIFICATION,
+
+  /** {@code prov:wasGeneratedBy} inverse view — activity generated this entity. */
+  GENERATION,
+
+  /** {@code prov:used} — activity used this entity (or this entity was used by an activity). */
+  USAGE,
+
+  /** {@code prov:wasAssociatedWith} — activity was associated with this agent. */
+  ASSOCIATION,
+
+  /** {@code prov:actedOnBehalfOf} — agent acted on behalf of another agent. */
+  DELEGATION
 }

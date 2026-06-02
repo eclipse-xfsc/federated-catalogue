@@ -79,8 +79,7 @@ public class ProvenanceServiceImpl implements ProvenanceService {
           "Provenance credential already exists: credentialId=" + credentialInfo.credentialId());
     }
 
-    List<RdfClaim> provTriples = ProvOTripleBuilder.build(
-        expectedSubjectId, credentialInfo.provenance().type(), credentialInfo.provenance().objectValue());
+    List<RdfClaim> provTriples = ProvOTripleBuilder.buildAll(expectedSubjectId, credentialInfo.facts());
     FilteredClaims filtered = namespaceFilter.filterClaims(provTriples, "provenance add");
     if (filtered.hasWarning()) {
       throw new ClientException(
@@ -94,7 +93,7 @@ public class ProvenanceServiceImpl implements ProvenanceService {
         .credentialId(credentialInfo.credentialId())
         .issuer(verificationResult.getIssuer())
         .issuedAt(verificationResult.getIssuedDateTime())
-        .provenanceType(credentialInfo.provenance().type())
+        .provenanceType(credentialInfo.primary().type())
         .credentialContent(rawVc)
         .credentialFormat(credentialInfo.formatLabel())
         .build();

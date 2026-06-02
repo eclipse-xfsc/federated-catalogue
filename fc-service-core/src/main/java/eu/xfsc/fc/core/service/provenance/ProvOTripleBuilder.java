@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -30,9 +31,13 @@ public final class ProvOTripleBuilder {
   private static final String PROV_WAS_DERIVED_FROM = "<" + ProvOConstants.NAMESPACE + "wasDerivedFrom>";
   private static final String PROV_WAS_ATTRIBUTED_TO = "<" + ProvOConstants.NAMESPACE + "wasAttributedTo>";
   private static final String PROV_WAS_REVISION_OF = "<" + ProvOConstants.NAMESPACE + "wasRevisionOf>";
+  private static final String PROV_GENERATED = "<" + ProvOConstants.NAMESPACE + "generated>";
+  private static final String PROV_USED = "<" + ProvOConstants.NAMESPACE + "used>";
+  private static final String PROV_WAS_ASSOCIATED_WITH = "<" + ProvOConstants.NAMESPACE + "wasAssociatedWith>";
+  private static final String PROV_ACTED_ON_BEHALF_OF = "<" + ProvOConstants.NAMESPACE + "actedOnBehalfOf>";
 
   /**
-   * Builds a list containing the single PROV-O triple for the given provenance credential.
+   * Builds the PROV-O triples for a single recognised predicate.
    *
    * @param assetId        versioned asset identifier used as the triple subject (e.g. {@code did:example:abc:v1})
    * @param provenanceType the provenance relation type to map to a PROV-O predicate
@@ -43,17 +48,45 @@ public final class ProvOTripleBuilder {
       String assetId, ProvenanceType provenanceType, String objectValue) {
     validateIri(assetId, "assetId");
     validateIri(objectValue, "objectValue");
-    String predicate = switch (provenanceType) {
+    return List.of(new RdfClaim(
+        "<" + assetId + ">",
+        predicateFor(provenanceType),
+        "<" + objectValue + ">"));
+  }
+
+  /**
+   * Builds one triple per recognised predicate on the credential subject. The subject IRI is reused
+   * across all triples so that the projected graph contains a star of relations rooted at the
+   * versioned asset identifier.
+   *
+   * @param assetId versioned asset identifier used as the triple subject
+   * @param facts   ordered list of recognised predicate/value pairs, as parsed from the VC
+   * @return one {@link RdfClaim} per fact, in input order
+   */
+  public static List<RdfClaim> buildAll(String assetId, List<ProvenanceInfo> facts) {
+    validateIri(assetId, "assetId");
+    List<RdfClaim> triples = new ArrayList<>(facts.size());
+    for (ProvenanceInfo fact : facts) {
+      validateIri(fact.objectValue(), "objectValue");
+      triples.add(new RdfClaim(
+          "<" + assetId + ">",
+          predicateFor(fact.type()),
+          "<" + fact.objectValue() + ">"));
+    }
+    return List.copyOf(triples);
+  }
+
+  private static String predicateFor(ProvenanceType provenanceType) {
+    return switch (provenanceType) {
       case CREATION -> PROV_WAS_GENERATED_BY;
       case DERIVATION -> PROV_WAS_DERIVED_FROM;
       case ATTRIBUTION -> PROV_WAS_ATTRIBUTED_TO;
       case MODIFICATION -> PROV_WAS_REVISION_OF;
+      case GENERATION -> PROV_GENERATED;
+      case USAGE -> PROV_USED;
+      case ASSOCIATION -> PROV_WAS_ASSOCIATED_WITH;
+      case DELEGATION -> PROV_ACTED_ON_BEHALF_OF;
     };
-    RdfClaim triple = new RdfClaim(
-        "<" + assetId + ">",
-        predicate,
-        "<" + objectValue + ">");
-    return List.of(triple);
   }
 
   private static void validateIri(String value, String field) {

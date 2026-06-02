@@ -49,7 +49,11 @@ class ProvenanceCredentialParserTest {
         Arguments.of("prov:wasGeneratedBy", ProvenanceType.CREATION),
         Arguments.of("prov:wasDerivedFrom", ProvenanceType.DERIVATION),
         Arguments.of("prov:wasAttributedTo", ProvenanceType.ATTRIBUTION),
-        Arguments.of("prov:wasRevisionOf", ProvenanceType.MODIFICATION)
+        Arguments.of("prov:wasRevisionOf", ProvenanceType.MODIFICATION),
+        Arguments.of("prov:generated", ProvenanceType.GENERATION),
+        Arguments.of("prov:used", ProvenanceType.USAGE),
+        Arguments.of("prov:wasAssociatedWith", ProvenanceType.ASSOCIATION),
+        Arguments.of("prov:actedOnBehalfOf", ProvenanceType.DELEGATION)
     );
   }
 
@@ -58,8 +62,9 @@ class ProvenanceCredentialParserTest {
   void extractCredentialInfo_compactPredicate_returnsCorrectProvenance(String predicate, ProvenanceType expected) {
     ProvenanceCredentialInfo info = parser.extractCredentialInfo(vcWith(predicate, OBJECT_VALUE));
 
-    assertEquals(expected, info.provenance().type());
-    assertEquals(OBJECT_VALUE, info.provenance().objectValue());
+    assertEquals(expected, info.primary().type());
+    assertEquals(OBJECT_VALUE, info.primary().objectValue());
+    assertEquals(1, info.facts().size());
   }
 
   static Stream<Arguments> fullIriPredicates() {
@@ -67,7 +72,11 @@ class ProvenanceCredentialParserTest {
         Arguments.of(PROV_NS + "wasGeneratedBy", ProvenanceType.CREATION),
         Arguments.of(PROV_NS + "wasDerivedFrom", ProvenanceType.DERIVATION),
         Arguments.of(PROV_NS + "wasAttributedTo", ProvenanceType.ATTRIBUTION),
-        Arguments.of(PROV_NS + "wasRevisionOf", ProvenanceType.MODIFICATION)
+        Arguments.of(PROV_NS + "wasRevisionOf", ProvenanceType.MODIFICATION),
+        Arguments.of(PROV_NS + "generated", ProvenanceType.GENERATION),
+        Arguments.of(PROV_NS + "used", ProvenanceType.USAGE),
+        Arguments.of(PROV_NS + "wasAssociatedWith", ProvenanceType.ASSOCIATION),
+        Arguments.of(PROV_NS + "actedOnBehalfOf", ProvenanceType.DELEGATION)
     );
   }
 
@@ -76,8 +85,9 @@ class ProvenanceCredentialParserTest {
   void extractCredentialInfo_fullIriPredicate_returnsCorrectProvenance(String predicate, ProvenanceType expected) {
     ProvenanceCredentialInfo info = parser.extractCredentialInfo(vcWith(predicate, OBJECT_VALUE));
 
-    assertEquals(expected, info.provenance().type());
-    assertEquals(OBJECT_VALUE, info.provenance().objectValue());
+    assertEquals(expected, info.primary().type());
+    assertEquals(OBJECT_VALUE, info.primary().objectValue());
+    assertEquals(1, info.facts().size());
   }
 
   @Test
@@ -151,6 +161,29 @@ class ProvenanceCredentialParserTest {
     parser.parseAndValidateVc(rawVc, "JSONLD");
 
     verify(verificationService).verifyCredential(ArgumentMatchers.any(ContentAccessor.class), ArgumentMatchers.eq(false));
+  }
+
+  @Test
+  void extractCredentialInfo_multiplePredicatesOnSameSubject_returnsAllFactsInOrder() {
+    String vc = """
+        {
+          "id": "did:vc:test-multi",
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasGeneratedBy": "did:web:example:activity",
+            "prov:wasAssociatedWith": "did:web:example:agent",
+            "prov:actedOnBehalfOf": "did:web:example:organisation"
+          }
+        }
+        """.formatted(SUBJECT_ID);
+
+    ProvenanceCredentialInfo info = parser.extractCredentialInfo(vc);
+
+    assertEquals(3, info.facts().size());
+    assertEquals(ProvenanceType.CREATION, info.facts().get(0).type());
+    assertEquals(ProvenanceType.ASSOCIATION, info.facts().get(1).type());
+    assertEquals(ProvenanceType.DELEGATION, info.facts().get(2).type());
+    assertEquals(ProvenanceType.CREATION, info.primary().type());
   }
 
   @Test

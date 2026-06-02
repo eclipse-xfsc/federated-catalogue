@@ -9,6 +9,9 @@ import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.service.verification.VerificationService;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,22 +27,33 @@ public class ProvenanceCredentialParser {
   private static final String VC_ID_KEY = "id";
   private static final String CONTEXT_KEY = "@context";
   private static final String ACCEPTED_PREDICATES =
-      "prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, prov:wasRevisionOf";
+      "prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, prov:wasRevisionOf, "
+          + "prov:generated, prov:used, prov:wasAssociatedWith, prov:actedOnBehalfOf";
 
   /**
    * Recognizes both compact ({@code prov:X}) and expanded ({@code http://www.w3.org/ns/prov#X})
-   * forms of the four supported PROV-O predicates.
+   * forms of every supported PROV-O predicate. Insertion order is preserved to make the parsed
+   * fact list deterministic.
    */
-  private static final Map<String, ProvenanceType> PREDICATE_MAP = Map.of(
-      "prov:wasGeneratedBy", ProvenanceType.CREATION,
-      ProvOConstants.NAMESPACE + "wasGeneratedBy", ProvenanceType.CREATION,
-      "prov:wasDerivedFrom", ProvenanceType.DERIVATION,
-      ProvOConstants.NAMESPACE + "wasDerivedFrom", ProvenanceType.DERIVATION,
-      "prov:wasAttributedTo", ProvenanceType.ATTRIBUTION,
-      ProvOConstants.NAMESPACE + "wasAttributedTo", ProvenanceType.ATTRIBUTION,
-      "prov:wasRevisionOf", ProvenanceType.MODIFICATION,
-      ProvOConstants.NAMESPACE + "wasRevisionOf", ProvenanceType.MODIFICATION
-  );
+  private static final Map<String, ProvenanceType> PREDICATE_MAP = buildPredicateMap();
+
+  private static Map<String, ProvenanceType> buildPredicateMap() {
+    Map<String, ProvenanceType> map = new LinkedHashMap<>();
+    register(map, "wasGeneratedBy", ProvenanceType.CREATION);
+    register(map, "wasDerivedFrom", ProvenanceType.DERIVATION);
+    register(map, "wasAttributedTo", ProvenanceType.ATTRIBUTION);
+    register(map, "wasRevisionOf", ProvenanceType.MODIFICATION);
+    register(map, "generated", ProvenanceType.GENERATION);
+    register(map, "used", ProvenanceType.USAGE);
+    register(map, "wasAssociatedWith", ProvenanceType.ASSOCIATION);
+    register(map, "actedOnBehalfOf", ProvenanceType.DELEGATION);
+    return Map.copyOf(map);
+  }
+
+  private static void register(Map<String, ProvenanceType> map, String localName, ProvenanceType type) {
+    map.put("prov:" + localName, type);
+    map.put(ProvOConstants.NAMESPACE + localName, type);
+  }
 
   private final VerificationService verificationService;
   private final ObjectMapper objectMapper;
@@ -81,27 +95,32 @@ public class ProvenanceCredentialParser {
     return idNode.isTextual() ? idNode.asText() : null;
   }
 
-  private ProvenanceInfo extractProvenance(JsonNode root) {
+  private List<ProvenanceInfo> extractProvenance(JsonNode root) {
     JsonNode subject = root.path(CREDENTIAL_SUBJECT_KEY);
     if (subject.isMissingNode() || subject.isNull()) {
       throw new ClientException(
           "Provenance credential must contain a 'credentialSubject' with a supported PROV-O predicate. "
               + "Accepted predicates: " + ACCEPTED_PREDICATES);
     }
+    List<ProvenanceInfo> facts = new ArrayList<>();
     for (Map.Entry<String, JsonNode> field : subject.properties()) {
       ProvenanceType type = PREDICATE_MAP.get(field.getKey());
-      if (type != null) {
-        String objectValue = field.getValue().asText(null);
-        if (objectValue == null) {
-          throw new ClientException(
-              "PROV-O predicate '" + field.getKey() + "' must have a string value.");
-        }
-        return new ProvenanceInfo(type, objectValue);
+      if (type == null) {
+        continue;
       }
+      String objectValue = field.getValue().asText(null);
+      if (objectValue == null) {
+        throw new ClientException(
+            "PROV-O predicate '" + field.getKey() + "' must have a string value.");
+      }
+      facts.add(new ProvenanceInfo(type, objectValue));
     }
-    throw new ClientException(
-        "credentialSubject must contain one of the supported PROV-O predicates: "
-            + ACCEPTED_PREDICATES);
+    if (facts.isEmpty()) {
+      throw new ClientException(
+          "credentialSubject must contain one of the supported PROV-O predicates: "
+              + ACCEPTED_PREDICATES);
+    }
+    return List.copyOf(facts);
   }
 
   private JsonNode parseJson(String rawVc) {

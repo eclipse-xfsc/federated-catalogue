@@ -494,11 +494,15 @@ components:
           description: issuedDateTime extracted from the VC.
         provenanceType:
           type: string
-          enum: [ CREATION, DERIVATION, ATTRIBUTION, MODIFICATION ]
+          enum: [ CREATION, DERIVATION, ATTRIBUTION, MODIFICATION, GENERATION, USAGE, ASSOCIATION, DELEGATION ]
           description: >
-            Provenance relation type, derived by detecting the PROV-O predicate present in
-            credentialSubject. CREATION=wasGeneratedBy, DERIVATION=wasDerivedFrom,
-            ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf.
+            Provenance relation type of the primary PROV-O predicate detected on
+            credentialSubject. A single credential may carry several recognised predicates; every
+            recognised predicate is projected to the graph store, while this field records the type
+            of the first one for relational filtering. Predicate mapping: CREATION=wasGeneratedBy,
+            DERIVATION=wasDerivedFrom, ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf,
+            GENERATION=generated, USAGE=used, ASSOCIATION=wasAssociatedWith,
+            DELEGATION=actedOnBehalfOf.
         credentialFormat:
           type: string
           enum: [ JSONLD, JSONLD_JWT, JWT ]
