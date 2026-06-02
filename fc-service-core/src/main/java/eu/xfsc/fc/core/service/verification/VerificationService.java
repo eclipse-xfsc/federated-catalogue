@@ -48,22 +48,28 @@ public interface VerificationService {
    *
    * @param payload ContentAccessor to credential which should be validated.
    * @param verifySemantics - whether to perform semantic validation (e.g. required properties, value types)
-   * @param verifySchema - whether to perform schema validation (SHACL, JSON Schema, XML Schema)
    * @param verifyVPSignatures - whether to perform VP signature verification (if the credential is a VP)
    * @param verifyVCSignatures - whether to perform VC signature verification (if the credential is a VC)
    * @return a credential metadata validation result. If the validation fails, the reason explains the issue.
-   * @throws VerificationException if the verification process encounters an error (e.g. invalid format, signature verification failure, schema validation failure).
+   * @throws VerificationException if the verification process encounters an error (e.g. invalid format, signature verification failure).
    */
-  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
+  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics,
 		  boolean verifyVPSignatures, boolean verifyVCSignatures) throws VerificationException;
 
   /**
-   * Same as {@link #verifyCredential(ContentAccessor, boolean, boolean, boolean, boolean)} but with
-   * an explicit {@code requireBaseClass} toggle so the verification REST endpoint can expose the
-   * base-class gate without forcing it on every caller of the upload path.
+   * Validates the credential payload with all verification toggles and an explicit
+   * base-class requirement.
+   *
+   * @param payload ContentAccessor to credential which should be validated.
+   * @param verifySemantics whether to perform semantic validation
+   * @param verifyVPSignatures whether to perform VP signature verification
+   * @param verifyVCSignatures whether to perform VC signature verification
+   * @param requireBaseClass whether to reject credentials whose @type cannot be resolved
+   *     to a base class in any active trust-framework bundle
+   * @return a credential metadata validation result.
    */
-  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics, boolean verifySchema,
-                                                boolean verifyVPSignatures, boolean verifyVCSignatures,
-                                                boolean requireBaseClass) throws VerificationException;
+  CredentialVerificationResult verifyCredential(ContentAccessor payload, boolean verifySemantics,
+		  boolean verifyVPSignatures, boolean verifyVCSignatures, boolean requireBaseClass)
+      throws VerificationException;
 
 }

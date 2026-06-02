@@ -1535,6 +1535,14 @@ paths:
         affected endpoints return `400 module_disabled:<MODULE>` (see `/assets/validate`
         and `/verification`). Storage of schemas is unaffected — stored schemas remain
         queryable through `/schemas/**` regardless of toggle state.
+
+
+        **Scope of the `OWL` module toggle:** it controls only whether
+        *runtime-uploaded* ontology extensions contribute their subclasses to the
+        active trust-framework base classes. The deploy-time
+        `verification.semantics` flag is a separate gate with different effects;
+        see the arc42 chapter "Verification toggle interactions" for how they
+        compose.
       operationId: patchSchemaModule
       security:
         - jwt: []
@@ -1828,6 +1836,10 @@ paths:
         Human-readable assets (attachments uploaded via
         `/assets/{asset_id}/human-readable`) cannot be enriched with metadata —
         attempting to enrich one returns HTTP 422.
+        Trust-framework base-class compliance is not enforced on upload: a
+        credential whose subject type does not resolve to a known base class is
+        still stored (HTTP 201). Use `POST /verification` with
+        `requireBaseClass=true` to enforce base-class resolution.
       operationId: addAsset
       security:
         - jwt: []
@@ -3481,13 +3493,6 @@ paths:
           schema:
             type: boolean
             default: true
-        - name: verifySchema
-          in: query
-          description: 'To verify credential against stored SHACL shapes or not'
-          required: false
-          schema:
-            type: boolean
-            default: false
         - name: verifyVPSignature
           in: query
           description: 'To verify VP signature or not'
@@ -3502,6 +3507,19 @@ paths:
           schema:
             type: boolean
             default: true
+        - name: requireBaseClass
+          in: query
+          description: >-
+            When true, reject a credential whose subject type cannot be resolved
+            to a base class in any active trust-framework bundle — HTTP 422 when
+            semantic verification is enabled (the default), otherwise HTTP 400.
+            When false (the default), credentials with unresolvable types are
+            accepted with a null base class. Useful for cross-framework demos
+            against the bundled gaia-x-2511 / mock-2026 bundles.
+          required: false
+          schema:
+            type: boolean
+            default: false
         - name: framework
           in: query
           description: >-
@@ -3567,14 +3585,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerificationResult'
         '400':
-          description: >-
-            Client error. When `verifySchema=true` and the SHACL module is
-            administratively disabled, the body is `module_disabled:SHACL`
-            (see `PUT /admin/schema-validation/modules/{type}`).
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/ClientError'
         '422':
           $ref: '#/components/responses/Unprocessible'
         '500':

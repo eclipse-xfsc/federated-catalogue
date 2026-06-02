@@ -25,7 +25,6 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
 import eu.xfsc.fc.core.pojo.FilteredClaims;
 import eu.xfsc.fc.core.pojo.RdfClaim;
-import eu.xfsc.fc.core.pojo.SchemaValidationResult;
 import eu.xfsc.fc.core.pojo.Validator;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
@@ -56,10 +55,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Verification strategy for Verifiable Credential payloads (VP/VC).
+ * Ingestion strategy for Verifiable Credential payloads (VP/VC).
  *
  * <p>Owns the verification pipeline orchestration: format detection, semantic checks,
- * schema verification, signature collection, claim extraction, role resolution, and result
+ * signature collection, claim extraction, role resolution, and result
  * assembly. Format-specific envelope handling is delegated to {@link CredentialFormatProcessor}
  * implementations; W3C VC 2.0 Enveloped Credential plumbing lives in
  * {@link EnvelopedCredentialResolver}; VC 2.0 date validation lives in {@link Vc2DateValidation}.
@@ -67,7 +66,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CredentialVerificationStrategy implements RdfIngestionStrategy {
+public class CredentialIngestionStrategy implements RdfIngestionStrategy {
 
   @Value("${federated-catalogue.verification.require-vp:false}")
   private boolean requireVP;
@@ -77,7 +76,6 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
   private final TrustFrameworkService trustFrameworkService;
   private final ProtectedNamespaceFilter protectedNamespaceFilter;
   private final SchemaStore schemaStore;
-  private final SchemaValidationService schemaValidationService;
   @Qualifier("contextCacheFileStore")
   private final FileStore fileStore;
   private final DocumentLoader documentLoader;
@@ -113,12 +111,13 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
 
   @Override
   public CredentialVerificationResult ingest(ContentAccessor payload,
-                                             boolean verifySemantics, boolean verifySchema,
-                                             boolean verifyVPSignatures, boolean verifyVCSignatures)
+                                             boolean verifySemantics,
+                                             boolean verifyVPSignatures, boolean verifyVCSignatures,
+                                             boolean requireBaseClass)
       throws VerificationException {
-    log.debug("ingest.enter; verifySemantics: {}, verifySchema: {},"
-            + " verifyVPSignatures: {}, verifyVCSignatures: {}",
-        verifySemantics, verifySchema, verifyVPSignatures, verifyVCSignatures);
+    log.debug("ingest.enter; verifySemantics: {},"
+            + " verifyVPSignatures: {}, verifyVCSignatures: {}, requireBaseClass: {}",
+        verifySemantics, verifyVPSignatures, verifyVCSignatures, requireBaseClass);
     long stamp = System.currentTimeMillis();
 
     VerificationContext ctx = detectAndUnwrap(payload, verifyVCSignatures || verifyVPSignatures);
@@ -129,20 +128,17 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
 
     TypedCredentials typedCredentials = parseCredentials(ld, requireVP, verifySemantics, ctx.format());
 
-    if (verifySemantics && trustFrameworkService.hasAnyEnabled() && !typedCredentials.hasClasses()) {
+    // Base-class resolution is an opt-in gate: the upload path passes
+    // requireBaseClass=false so credentials destined for an external clearing house — whose
+    // vocabulary the catalogue does not index — are accepted; callers that need
+    // trust-framework compliance (e.g. the /verification endpoint, strict config) opt in.
+    if (requireBaseClass && verifySemantics
+        && trustFrameworkService.hasAnyEnabled() && !typedCredentials.hasClasses()) {
       throw new VerificationException("Semantic Error: no proper CredentialSubject found");
     }
 
     ResolvedBaseClass resolvedBaseClass = resolvePrimaryBaseClass(typedCredentials, verifySemantics);
     FilteredClaims filtered = extractAndValidateClaims(ctx.payload());
-
-    if (verifySchema) {
-      if (!schemaModuleConfigService.isModuleEnabled(SchemaModuleType.SHACL)) {
-        throw new ClientException(
-            SchemaModuleConfigService.MODULE_DISABLED_PREFIX + SchemaModuleType.SHACL);
-      }
-      validateSchema(filtered.claims());
-    }
 
     List<Validator> validators = collectValidators(ctx, ld,
         verifySemantics, verifyVCSignatures, verifyVPSignatures);
@@ -263,15 +259,6 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
         filtered.claims() == null ? "null" : filtered.claims().size(),
         System.currentTimeMillis() - stamp);
     return filtered;
-  }
-
-  private void validateSchema(List<RdfClaim> claims) {
-    SchemaValidationResult result =
-        schemaValidationService.validateClaimsAgainstCompositeSchema(claims);
-    if (result == null || !result.isConforming()) {
-      throw new VerificationException(
-          "Schema error: " + (result == null ? "unknown" : result.getValidationReport()));
-    }
   }
 
   /**
@@ -553,9 +540,9 @@ public class CredentialVerificationStrategy implements RdfIngestionStrategy {
    * over uploaded ontologies is skipped — custom subclass-only types resolve to
    * {@link ResolvedBaseClass#UNKNOWN}.</p>
    *
-   * <p>The toggle does not ride on the caller's {@code verifySchema} or
-   * {@code verifySemantics} flags: type dispatch is a configuration of the catalogue's
-   * type system, not a per-request validation step.</p>
+   * <p>The toggle does not ride on the caller's {@code verifySemantics} flag: type
+   * dispatch is a configuration of the catalogue's type system, not a per-request
+   * validation step.</p>
    */
   private ResolvedBaseClass resolveBaseClass(VerifiableCredential credential, CredentialFormat format) {
     ContentAccessor compositeOntology =

@@ -127,7 +127,7 @@ public class CesCompositePublisherTest {
         cesPublisher.setTransactional(true);
         ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
         schemaStore.initializeDefaultSchemas();
-        CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+        CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
         assertNotNull(vr);
         AssetMetadata assetMetadata = new AssetMetadata(content, vr);
         mockCompService.enqueue(new MockResponse()
@@ -148,7 +148,7 @@ public class CesCompositePublisherTest {
         cesPublisher.setTransactional(false);
         ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
         schemaStore.initializeDefaultSchemas();
-        CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+        CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
         assertNotNull(vr);
         AssetMetadata assetMetadata = new AssetMetadata(content, vr);
         mockCompService.enqueue(new MockResponse()

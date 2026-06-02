@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>This component is purely cryptographic (ADR-3): it does not distinguish VC JWT
  * from VP JWT, and does not perform semantic checks (e.g., VP holder == iss).
- * All dispatch logic lives in {@code CredentialVerificationStrategy}.
+ * All dispatch logic lives in {@code CredentialIngestionStrategy}.
  *
  * <p>Security constraints enforced:
  * <ul>

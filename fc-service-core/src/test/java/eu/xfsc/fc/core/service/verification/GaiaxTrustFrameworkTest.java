@@ -61,11 +61,9 @@ public class GaiaxTrustFrameworkTest {
 
   // Verification flags for readability
   private static final boolean VERIFY_SEMANTICS = true;
-  private static final boolean VERIFY_SCHEMA = true;
   private static final boolean VERIFY_VP_SIGNATURES = true;
   private static final boolean VERIFY_VC_SIGNATURES = true;
   private static final boolean SKIP_SEMANTICS = false;
-  private static final boolean SKIP_SCHEMA = false;
   private static final boolean SKIP_VP_SIGNATURES = false;
   private static final boolean SKIP_VC_SIGNATURES = false;
 
@@ -90,7 +88,7 @@ public class GaiaxTrustFrameworkTest {
   private VerificationServiceImpl verificationService;
 
   @Autowired
-  private CredentialVerificationStrategy credentialVerificationStrategy;
+  private CredentialIngestionStrategy credentialVerificationStrategy;
 
   @Autowired
   private JdbcTemplate jdbcTemplate;
@@ -144,8 +142,7 @@ public class GaiaxTrustFrameworkTest {
     ContentAccessor content = loireJwtWithoutTrustChain();
 
     try {
-      CredentialVerificationResult result = verificationService.verifyCredential(
-          content, SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+      CredentialVerificationResult result = verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
       // Success - trust anchor check was skipped
       assertNotNull(result, "Should return result when Gaia-X is disabled");
     } catch (ClientException e) {
@@ -167,8 +164,7 @@ public class GaiaxTrustFrameworkTest {
 
     String path = "VerificationService/syntax/participantCredential2.jsonld";
 
-    CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+    CredentialVerificationResult result = verificationService.verifyCredential(getAccessor(path), VERIFY_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
     assertNotNull(result, "Should return result");
     assertEquals("Participant", result.getBaseClass(), "Should have Participant role");
@@ -185,8 +181,7 @@ public class GaiaxTrustFrameworkTest {
     ContentAccessor content = loireJwtWithoutTrustChain();
 
     Exception ex = assertThrowsExactly(VerificationException.class, () ->
-        verificationService.verifyCredential(content,
-            SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
+        verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
     assertTrue(ex.getMessage().contains("must contain x5c or x5u"),
         "Should require trust chain when Gaia-X is enabled. Got: " + ex.getMessage());
@@ -200,8 +195,7 @@ public class GaiaxTrustFrameworkTest {
     String path = "VerificationService/syntax/participantCredential2.jsonld";
 
     // Without signature verification, this should work
-    CredentialVerificationResult result = verificationService.verifyCredential(
-        getAccessor(path), VERIFY_SEMANTICS, VERIFY_SCHEMA, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
+    CredentialVerificationResult result = verificationService.verifyCredential(getAccessor(path), VERIFY_SEMANTICS, SKIP_VP_SIGNATURES, SKIP_VC_SIGNATURES);
 
     assertNotNull(result, "Should process Gaia-X credential");
     assertEquals("Participant", result.getBaseClass());
@@ -219,8 +213,7 @@ public class GaiaxTrustFrameworkTest {
     setFrameworkEnabled(GAIA_X_FAMILY, true);
 
     Exception enabledEx = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifyCredential(content,
-                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
+            verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
         "Should throw when Gaia-X is enabled");
     assertTrue(enabledEx.getMessage().contains("must contain x5c or x5u"),
         "Error should mention trust chain when enabled. Got: " + enabledEx.getMessage());
@@ -230,8 +223,7 @@ public class GaiaxTrustFrameworkTest {
     setFrameworkEnabled(GAIA_X_FAMILY, false);
 
     try {
-      verificationService.verifyCredential(content,
-          SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+      verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
     } catch (ClientException e) {
       assertTrue(e.getMessage().contains("not resolvable"),
           "ClientException must be unresolvable-type rejection, got: " + e.getMessage());
@@ -251,8 +243,7 @@ public class GaiaxTrustFrameworkTest {
     setFrameworkEnabled(GAIA_X_FAMILY, false);
 
     try {
-      verificationService.verifyCredential(content,
-          SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+      verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
     } catch (ClientException e) {
       assertTrue(e.getMessage().contains("not resolvable"),
           "ClientException must be unresolvable-type rejection, got: " + e.getMessage());
@@ -268,8 +259,7 @@ public class GaiaxTrustFrameworkTest {
     setFrameworkEnabled(GAIA_X_FAMILY, true);
 
     Exception ex = assertThrowsExactly(VerificationException.class, () ->
-            verificationService.verifyCredential(content,
-                SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
+            verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES),
         "Should throw when Gaia-X is enabled");
     assertTrue(ex.getMessage().contains("must contain x5c or x5u"),
         "Should require trust chain when Gaia-X is enabled. Got: " + ex.getMessage());
@@ -284,8 +274,7 @@ public class GaiaxTrustFrameworkTest {
     ContentAccessor content = loireJwtWithoutTrustChain();
 
     try {
-      verificationService.verifyCredential(content,
-          SKIP_SEMANTICS, SKIP_SCHEMA, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
+      verificationService.verifyCredential(content, SKIP_SEMANTICS, SKIP_VP_SIGNATURES, VERIFY_VC_SIGNATURES);
     } catch (ClientException e) {
       assertTrue(e.getMessage().contains("not resolvable"),
           "ClientException must be unresolvable-type rejection, got: " + e.getMessage());
@@ -302,8 +291,7 @@ public class GaiaxTrustFrameworkTest {
     String path = "VerificationService/sign/hasNoSignature1.json";
 
     Exception ex = assertThrowsExactly(VerificationException.class, () ->
-        verificationService.verifyCredential(getAccessor(path),
-            SKIP_SEMANTICS, SKIP_SCHEMA, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
+        verificationService.verifyCredential(getAccessor(path), SKIP_SEMANTICS, VERIFY_VP_SIGNATURES, VERIFY_VC_SIGNATURES));
 
     assertTrue(ex.getMessage().contains("Linked Data proof verification is not supported"),
         "Should reject LD credential. Got: " + ex.getMessage());

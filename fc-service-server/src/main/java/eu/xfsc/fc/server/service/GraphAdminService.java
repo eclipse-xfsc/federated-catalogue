@@ -156,25 +156,72 @@ public class GraphAdminService implements AdminGraphApiDelegate {
   @Override
   public ResponseEntity<GraphDatabaseStatus> getGraphDatabaseStatus() {
     GraphDatabaseStatus status = new GraphDatabaseStatus();
+
+    // Active backend identity is cheap to read and rarely fails — set it first so
+    // partial failures further down still leave the operator a hint about what is
+    // active. If we cannot even read the backend type, abort early with UNKNOWN.
+    GraphBackendType backendType;
     try {
-      GraphBackendType backendType = graphStore.getBackendType();
-      long rdfAssetCount = countActiveRdfAssets();
+      backendType = graphStore.getBackendType();
       status.setActiveBackend(backendType.name());
-      status.setConnected(backendType != GraphBackendType.NONE && graphStore.isHealthy());
-      status.setClaimCount(graphStore.getClaimCount());
-      status.setVersion(buildVersionString(backendType));
-      status.setRebuildNeeded(computeRebuildNeeded(backendType, status.getClaimCount(),
-          rdfAssetCount));
-      status.setRdfAssetCount(rdfAssetCount);
     } catch (RuntimeException ex) {
-      log.warn("Failed to get graph database status", ex);
+      log.warn("Failed to read active graph backend", ex);
       status.setActiveBackend("UNKNOWN");
       status.setConnected(false);
       status.setClaimCount(-1L);
       status.setVersion("unavailable");
       status.setRebuildNeeded(false);
       status.setRdfAssetCount(0L);
+      return ResponseEntity.ok(status);
     }
+
+    // rdfAssetCount comes from the catalogue DB, not the graph backend — independent
+    // of graph-store health so we always try.
+    long rdfAssetCount = 0L;
+    try {
+      rdfAssetCount = countActiveRdfAssets();
+    } catch (RuntimeException ex) {
+      log.warn("Failed to count active RDF assets", ex);
+    }
+    status.setRdfAssetCount(rdfAssetCount);
+
+    // isHealthy() is exception-safe in every current adapter, but wrap defensively
+    // so a future adapter that forgets to catch cannot break the status response.
+    boolean healthy = false;
+    try {
+      healthy = backendType != GraphBackendType.NONE && graphStore.isHealthy();
+    } catch (RuntimeException ex) {
+      log.warn("Graph backend health probe failed for {}", backendType, ex);
+    }
+    status.setConnected(healthy);
+
+    // Backend-touching reads run only when healthy — getClaimCount() and the version
+    // probe can throw (e.g. Neo4j without the n10s plugin) and must be skipped so
+    // the operator still sees the active backend name and the disconnected state.
+    if (healthy) {
+      long claimCount = -1L;
+      try {
+        claimCount = graphStore.getClaimCount();
+      } catch (RuntimeException ex) {
+        log.warn("Failed to read claim count from {}", backendType, ex);
+      }
+      status.setClaimCount(claimCount);
+
+      try {
+        status.setVersion(buildVersionString(backendType));
+      } catch (RuntimeException ex) {
+        log.warn("Failed to read version for {}", backendType, ex);
+        status.setVersion("unavailable");
+      }
+
+      status.setRebuildNeeded(claimCount != -1L
+          && computeRebuildNeeded(backendType, claimCount, rdfAssetCount));
+    } else {
+      status.setClaimCount(-1L);
+      status.setVersion("unavailable");
+      status.setRebuildNeeded(false);
+    }
+
     return ResponseEntity.ok(status);
   }
 

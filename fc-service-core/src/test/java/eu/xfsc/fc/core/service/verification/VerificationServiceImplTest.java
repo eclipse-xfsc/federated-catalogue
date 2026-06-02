@@ -10,11 +10,13 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -31,7 +33,7 @@ class VerificationServiceImplTest {
   private VerificationServiceImpl verificationServiceImpl;
 
   @Mock
-  private CredentialVerificationStrategy credentialStrategy;
+  private CredentialIngestionStrategy credentialStrategy;
 
   @Mock
   private NonCredentialIngestionStrategy nonCredentialStrategy;
@@ -42,6 +44,11 @@ class VerificationServiceImplTest {
   @Mock
   private TrustFrameworkRegistry trustFrameworkRegistry;
 
+  // The require-base-class gate defaults to false (caller-only). Tests that need the
+  // strict-gate behavior pass requireBaseClass=true explicitly to the verifyCredential overloads.
+  // Other tests are unaffected: they either return a NonCredentialVerificationResult (short-circuits
+  // the gate) or a result with a resolved base class.
+
   @Test
   void verifyCredential_jwtPayload_strategyReturnsNullRole_throwsClientException() {
     ContentAccessor payload = mock(ContentAccessor.class);
@@ -51,12 +58,11 @@ class VerificationServiceImplTest {
         NOW, "active", "did:web:example.com", NOW,
         "did:web:example.com", List.of(), List.of(), null, null);
 
-    when(credentialStrategy.ingest(any(),
-        anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullRoleResult);
 
     assertThrowsExactly(ClientException.class,
-        () -> verificationServiceImpl.verifyCredential(payload));
+        () -> verificationServiceImpl.verifyCredential(payload, true));
   }
 
   @Test
@@ -67,8 +73,7 @@ class VerificationServiceImplTest {
     NonCredentialVerificationResult nonCredentialResult =
         new NonCredentialVerificationResult(NOW, "active", List.of());
 
-    when(nonCredentialStrategy.ingest(any(),
-        anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(nonCredentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nonCredentialResult);
 
     CredentialVerificationResult result = verificationServiceImpl.verifyCredential(payload);
@@ -85,12 +90,11 @@ class VerificationServiceImplTest {
         NOW, "active", "did:web:example.com", NOW,
         "did:web:example.com", List.of(), List.of(), null, null);
 
-    when(credentialStrategy.ingest(any(),
-        anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(nullRoleResult);
 
     assertThrowsExactly(ClientException.class,
-        () -> verificationServiceImpl.verifyCredential(payload));
+        () -> verificationServiceImpl.verifyCredential(payload, true));
   }
 
   @Test
@@ -102,8 +106,7 @@ class VerificationServiceImplTest {
         NOW, "active", "did:web:example.com", NOW,
         "did:web:example.com", List.of(), List.of(), "SomeRole", "some-bundle");
 
-    when(credentialStrategy.ingest(any(),
-        anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
+    when(credentialStrategy.ingest(any(), anyBoolean(), anyBoolean(), anyBoolean(), anyBoolean()))
         .thenReturn(resolvedResult);
 
     CredentialVerificationResult result = verificationServiceImpl.verifyCredential(payload);

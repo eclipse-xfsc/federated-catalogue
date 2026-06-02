@@ -54,6 +54,9 @@ import static org.mockito.Mockito.when;
  * lookup against the bundled 2511 ontology.
  */
 @Slf4j
+// require-base-class defaults to false (caller-only gate). Tests expecting rejection
+// for unknown-type credentials now explicitly pass requireBaseClass=true via the 5-arg
+// verifyCredential overload to opt into the strict gate.
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ActiveProfiles("test")
@@ -99,7 +102,6 @@ public class VerificationServiceTest {
   @AfterEach
   public void storageSelfCleaning() throws IOException {
     schemaStore.clear();
-    verificationService.setVerifySchema(false);
   }
 
   @Test
@@ -114,7 +116,7 @@ public class VerificationServiceTest {
         }
               """);
 
-      CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+      CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
       assertNotNull(result);
     assertNotNull(result.getGraphClaims());
@@ -126,7 +128,7 @@ public class VerificationServiceTest {
     String vcJson = getAccessor("Claims-Tests/participantVC2.jsonld").getContentAsString();
     ContentAccessor content = new ContentAccessorDirect(fakeVcJwt(vcJson));
 
-    verificationService.verifyCredential(content, false, false, false, false);
+    verificationService.verifyCredential(content, false, false, false);
 
     verify(jwtPreprocessorSpy).unwrap(any());
   }
@@ -154,7 +156,7 @@ public class VerificationServiceTest {
               }
               """);
 
-      CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+      CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
       assertNotNull(result);
     assertNotNull(result.getGraphClaims());
@@ -172,7 +174,7 @@ public class VerificationServiceTest {
                 """);
 
         Exception ex = assertThrowsExactly(ClientException.class, ()
-                -> verificationService.verifyCredential(content, false, false, false, false));
+                -> verificationService.verifyCredential(content, false, false, false));
         assertEquals("Non-credential RDF content contains no triples", ex.getMessage());
     }
 
@@ -184,7 +186,7 @@ public class VerificationServiceTest {
         "https://w3id.org/gaia-x/2511#LegalPerson");
     ContentAccessor content = new ContentAccessorDirect(jwt);
 
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
     assertNotNull(vr);
     assertEquals("Participant", vr.getBaseClass());
     assertEquals("did:web:example.com", vr.getIssuer());
@@ -196,7 +198,7 @@ public class VerificationServiceTest {
     String path = "VerificationService/jsonld/input.vc.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, false));
+        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, true));
   }
 
   @Test
@@ -205,20 +207,21 @@ public class VerificationServiceTest {
     String path = "VerificationService/jsonld/input.vc.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     Exception ex = assertThrowsExactly(VerificationException.class,
-        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, true));
+        () -> verificationService.verifyCredential(getAccessor(path), true, false, true));
     assertTrue(ex.getMessage().contains("Signatures error"),
         "Expected signature error but got: " + ex.getMessage());
   }
 
   @Test
   void validVCUnknownType_gaiaxEnabled_throwsNoProperSubjectError() {
-    // With gaiax enabled, non-Gaia-X credentials are rejected by the semantics check.
+    // With gaiax enabled and base-class compliance opted in (requireBaseClass=true),
+    // non-Gaia-X credentials are rejected.
     jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       String path = "VerificationService/jsonld/input.vc.jsonld";
       schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
       Exception ex = assertThrowsExactly(VerificationException.class,
-          () -> verificationService.verifyCredential(getAccessor(path), true, false, false, false));
+          () -> verificationService.verifyCredential(getAccessor(path), true, false, false, true));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
@@ -232,7 +235,7 @@ public class VerificationServiceTest {
     String path = "VerificationService/jsonld/input.vp.jsonld";
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, false));
+        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, true));
   }
 
   @Test
@@ -240,7 +243,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     String path = "VerificationService/syntax/participantCredential2.jsonld";
     // verifyVCSigs=false: JWS in fixture was computed over original data; cannot re-sign (external GXDCH key)
-    CredentialVerificationResult vr = verificationService.verifyCredential(getAccessor(path), true, false, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(getAccessor(path), true, false, false);
     assertNotNull(vr);
     assertEquals("Participant", vr.getBaseClass());
     assertEquals("http://example.org/test-issuer", vr.getId());
@@ -255,7 +258,7 @@ public class VerificationServiceTest {
   void validSyntax_ValidServiceNewSchema() {
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering2.jsonld");
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
     assertNotNull(vr);
     assertEquals("ServiceOffering", vr.getBaseClass());
     assertEquals("https://www.example.org/mySoftwareOffering", vr.getId());
@@ -272,7 +275,7 @@ public class VerificationServiceTest {
   void validSyntax_ValidPersonNewSchema() {
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/legalPerson2.jsonld");
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
     assertNotNull(vr);
     assertEquals("Participant", vr.getBaseClass());
     assertEquals("http://gaiax.de", vr.getId());
@@ -299,7 +302,7 @@ public class VerificationServiceTest {
     String vpJwt = fakeLoireVpJwtWithVc("did:web:example.com", vcJson);
     ContentAccessor content = new ContentAccessorDirect(vpJwt);
 
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
     assertNotNull(vr);
     assertEquals("Resource", vr.getBaseClass());
     assertEquals("did:web:example.com", vr.getIssuer());
@@ -324,7 +327,7 @@ public class VerificationServiceTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/custom-participant-extension.ttl"));
     ContentAccessor content = getAccessor("VerificationService/syntax/customExtParticipant.jsonld");
 
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
     assertNotNull(vr);
     assertEquals("Participant", vr.getBaseClass());
 
@@ -333,7 +336,7 @@ public class VerificationServiceTest {
     jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       Exception ex = assertThrowsExactly(VerificationException.class, ()
-          -> verificationService.verifyCredential(content, true, true, false, false));
+          -> verificationService.verifyCredential(content, true, false, false, true));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
@@ -353,7 +356,7 @@ public class VerificationServiceTest {
       ContentAccessor legalParticipantContent = getAccessor("VerificationService/syntax/legalParticipant.jsonld");
 
       CredentialVerificationResult vrBefore = verificationService.verifyCredential(
-          legalParticipantContent, true, false, false, false);
+          legalParticipantContent, true, false, false);
       assertNotNull(vrBefore);
       assertEquals("Participant", vrBefore.getBaseClass());
 
@@ -363,7 +366,7 @@ public class VerificationServiceTest {
           "Schema store must be empty — bundle types must not require the schema store");
 
       CredentialVerificationResult vrAfterDelete = verificationService.verifyCredential(
-          legalParticipantContent, true, false, false, false);
+          legalParticipantContent, true, false, false);
       assertNotNull(vrAfterDelete);
       assertEquals("Participant", vrAfterDelete.getBaseClass(),
           "Bundle type must still resolve after schema store deletion");
@@ -374,7 +377,7 @@ public class VerificationServiceTest {
       // → resolveSubjectBaseClass returns UNKNOWN → ClientException.
       ContentAccessor customExtContent = getAccessor("VerificationService/syntax/customExtParticipant.jsonld");
       assertThrowsExactly(ClientException.class,
-          () -> verificationService.verifyCredential(customExtContent, true, false, false, false));
+          () -> verificationService.verifyCredential(customExtContent, true, false, false, true));
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
     }
@@ -386,7 +389,7 @@ public class VerificationServiceTest {
     String path = "VerificationService/sign/hasNoSignature1.json";
 
     Exception ex = assertThrowsExactly(VerificationException.class, ()
-            -> verificationService.verifyCredential(getAccessor(path), false, true, true, true));
+            -> verificationService.verifyCredential(getAccessor(path), false, true, true));
     assertTrue(ex.getMessage().contains("Linked Data proof verification is not supported"),
         "Should reject LD credential when signature verification is requested. Got: " + ex.getMessage());
   }
@@ -410,14 +413,14 @@ public class VerificationServiceTest {
     schemaStore.initializeDefaultSchemas();
     String path = "VerificationService/syntax/complexCredentialPartType.jsonld";
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(getAccessor(path), true, true, false, false));
+        () -> verificationService.verifyCredential(getAccessor(path), true, false, false, true));
   }
 
   @Test
   void invalidComplexCredential2Types() {
     schemaStore.initializeDefaultSchemas();
     String path = "VerificationService/syntax/complexCredential2Types.jsonld";
-    Exception ex = assertThrowsExactly(VerificationException.class, () -> verificationService.verifyCredential(getAccessor(path), true, true, false, false));
+    Exception ex = assertThrowsExactly(VerificationException.class, () -> verificationService.verifyCredential(getAccessor(path), true, false, false));
     assertEquals("Semantic error: credential has several types: ["
         + "ResolvedBaseClass[frameworkProfileId=gaia-x-2511, baseClass=Participant], "
         + "ResolvedBaseClass[frameworkProfileId=gaia-x-2511, baseClass=ServiceOffering]]", ex.getMessage());
@@ -427,7 +430,7 @@ public class VerificationServiceTest {
   void extractClaims_providerTest() {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/providerTest.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     List<RdfClaim> actualClaims = result.getGraphClaims();
     Set<RdfClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new CredentialClaim("<http://example.org/test-issuer>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#LegalPerson>"));
@@ -447,7 +450,7 @@ public class VerificationServiceTest {
   void extractClaims_participantTest() {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     List<RdfClaim> actualClaims = result.getGraphClaims();
 
     Set<RdfClaim> expectedClaims = new HashSet<>();
@@ -479,7 +482,7 @@ public class VerificationServiceTest {
   void extractClaims_participantTwoVCsTest() {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoVCs.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     List<RdfClaim> actualClaims = result.getGraphClaims();
     List<RdfClaim> expectedClaims = new ArrayList<>();
     expectedClaims.add(new CredentialClaim("_:b0", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://www.w3.org/2006/vcard/ns#Address>"));
@@ -504,7 +507,7 @@ public class VerificationServiceTest {
   void extractClaims_jsonValueCharacterTest() {
     schemaStore.initializeDefaultSchemas();
     ContentAccessor content = getAccessor("VerificationService/syntax/specialCharacters.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     List<RdfClaim> actualClaims = result.getGraphClaims();
     Set<RdfClaim> expectedClaims = new HashSet<>();
     expectedClaims.add(new CredentialClaim("<did:web:example.com:fad49ec6-d488-4bf9-bae5-d0ffa62a9bd2>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<https://w3id.org/gaia-x/2511#Resource>"));
@@ -539,7 +542,7 @@ public class VerificationServiceTest {
     String vpJwt = fakeLoireVpJwtWithVc("did:web:example.com", vc1Json, vc2Json);
     ContentAccessor content = new ContentAccessorDirect(vpJwt);
 
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     assertNotNull(result, "Claims extraction should succeed with additional contexts");
     assertNotNull(result.getGraphClaims(), "Claims should not be null");
   }
@@ -548,7 +551,7 @@ public class VerificationServiceTest {
   void extractClaims_participantTwoCSsTest() {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantTwoCSs.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     List<RdfClaim> actualClaims = result.getGraphClaims();
 
     Set<RdfClaim> expectedClaims = new HashSet<>();
@@ -604,47 +607,12 @@ public class VerificationServiceTest {
     assertTrue(validationResult.isConforming());
   }
 
-  /** With verifySchema=true, a credential that violates SHACL shapes should be rejected. */
-  @Test
-  void schemaValidationEnabled_InvalidCredential_Rejected() {
-    verificationService.setVerifySchema(true);
-    schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
-    schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
-    ContentAccessor content = getAccessor("VerificationService/syntax/participantCredential2.jsonld");
-    Exception ex = assertThrowsExactly(VerificationException.class, ()
-            // unsigned fixture, skip only signature verification
-            -> verificationService.verifyCredential(content, true, true, false,false));
-    assertTrue(ex.getMessage().startsWith("Schema error:"), "Expected schema validation error but got: " + ex.getMessage());
-  }
-
-  /** With verifySchema=false, a credential that violates SHACL shapes should still be accepted. */
-  @Test
-  void schemaValidationDisabled_InvalidCredential_Accepted() {
-    schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
-    schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
-    ContentAccessor content = getAccessor("VerificationService/syntax/participantCredential2.jsonld");
-    // verifySchema=false, verifyVCSigs=false: test schema-disabled acceptance, skip JWS (external GXDCH key)
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
-    assertNotNull(result, "Credential should be accepted when schema validation is disabled");
-  }
-
-  /** A JSON-LD asset invalid against stored SHACL shapes is accepted with the default configuration. */
-  @Test
-  void defaultConfig_NoAutomaticSchemaValidation() {
-    // verifySchema defaults to false; verifyVCSigs=false: JWS was computed over original fixture content
-    schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
-    schemaStore.addSchema(getAccessor("Validation-Tests/legal-personShape.ttl"));
-    ContentAccessor content = getAccessor("VerificationService/syntax/participantCredential2.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
-    assertNotNull(result, "Credential should be accepted with default config (no automatic schema validation)");
-  }
-
 
   @Test
   void extractClaims_protectedNamespaceFilteredTest() {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential-with-fcmeta.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     List<RdfClaim> actualClaims = result.getGraphClaims();
 
     for (RdfClaim claim : actualClaims) {
@@ -690,7 +658,7 @@ public class VerificationServiceTest {
     // so role resolution fails before claims are returned.
     ContentAccessor content = getAccessor("Claims-Extraction-Tests/participantCredential-only-fcmeta.jsonld");
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, false, false, false, false));
+        () -> verificationService.verifyCredential(content, false, false, false, true));
   }
 
   // --- T5: JWT signature verification smoke tests ---
@@ -708,7 +676,7 @@ public class VerificationServiceTest {
     when(jwtVerifierMock.verify(any())).thenReturn(testValidator);
 
     CredentialVerificationResult result =
-        verificationService.verifyCredential(jwtVc, false, false, false, true);
+        verificationService.verifyCredential(jwtVc, false, false, true);
 
     assertNotNull(result);
     assertNotNull(result.getValidators(), "JWT VC with verifyVCSignatures=true must have validators");
@@ -725,7 +693,7 @@ public class VerificationServiceTest {
     ContentAccessor ldContent = getAccessor("VerificationService/jsonld/input.vc.jsonld");
 
     Exception ex = assertThrowsExactly(VerificationException.class, ()
-        -> verificationService.verifyCredential(ldContent, false, false, false, true));
+        -> verificationService.verifyCredential(ldContent, false, false, true));
     assertTrue(ex.getMessage().contains("Linked Data proof verification is not supported"),
         "Should reject LD credential. Got: " + ex.getMessage());
     verify(jwtVerifierMock, never()).verify(any());
@@ -743,7 +711,7 @@ public class VerificationServiceTest {
     doReturn(vpJsonLd).when(jwtPreprocessorSpy).unwrap(any());
 
     VerificationException ex = assertThrowsExactly(VerificationException.class,
-        () -> verificationService.verifyCredential(vpJwt, true, false, true, false));
+        () -> verificationService.verifyCredential(vpJwt, true, true, false));
 
     assertTrue(ex.getMessage().contains("holder"), "Error must mention holder: " + ex.getMessage());
   }
@@ -762,7 +730,7 @@ public class VerificationServiceTest {
 
     // verifySemantics=false to skip class detection; verifyVPSignatures=true for JWT verification
     CredentialVerificationResult result =
-        verificationService.verifyCredential(vpJwt, false, false, true, false);
+        verificationService.verifyCredential(vpJwt, false, true, false);
 
     assertNotNull(result);
     assertNotNull(result.getValidators(), "VP JWT happy path must return validators");
@@ -774,7 +742,7 @@ public class VerificationServiceTest {
     String vcJson = getAccessor("Claims-Tests/participantVC2.jsonld").getContentAsString();
     ContentAccessor jwtVc = new ContentAccessorDirect(fakeVcJwt(vcJson));
 
-    verificationService.verifyCredential(jwtVc, false, false, false, false);
+    verificationService.verifyCredential(jwtVc, false, false, false);
 
     verify(jwtVerifierMock, never()).verify(any());
   }
@@ -795,7 +763,7 @@ public class VerificationServiceTest {
     jdbcTemplate.update("UPDATE trust_frameworks SET enabled = true WHERE id = 'gaia-x'");
     try {
       ClientException ex = assertThrowsExactly(ClientException.class,
-          () -> verificationService.verifyCredential(loireJwt, false, false, false, true));
+          () -> verificationService.verifyCredential(loireJwt, false, false, true));
       assertTrue(ex.getMessage().contains("x5c"), "Error must mention x5c: " + ex.getMessage());
       assertTrue(ex.getMessage().contains("x5u"), "Error must suggest x5u: " + ex.getMessage());
     } finally {
@@ -807,7 +775,7 @@ public class VerificationServiceTest {
   void verifyCredential_noFcmetaTriples_noWarnings() {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     ContentAccessor content = getAccessor("VerificationService/syntax/serviceOffering1.jsonld");
-    CredentialVerificationResult result = verificationService.verifyCredential(content, true, true, false, false);
+    CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);
     assertTrue(result.getWarnings().isEmpty(), "No warnings expected when upload contains no fcmeta triples");
   }
 
@@ -889,7 +857,7 @@ public class VerificationServiceTest {
     schemaStore.initializeDefaultSchemas();
 
     ContentAccessor content = getAccessor("Claims-Tests/participantVC2.jsonld");
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
 
     assertNotNull(vr);
     assertEquals("Participant", vr.getBaseClass(), "VC 2.0 with 2511#LegalPerson type must be recognized as Participant");
@@ -913,7 +881,7 @@ public class VerificationServiceTest {
         + "\"https://w3id.org/gaia-x/2511#legalName\":[{\"@value\":\"Example Corp\"}]"
         + "}}";
     ContentAccessor content = new ContentAccessorDirect(vcJson);
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, true, false, false);
 
     assertNotNull(vr, "VC 2.0 with future validUntil must pass semantic validation");
   }
@@ -934,7 +902,7 @@ public class VerificationServiceTest {
     ContentAccessor content = new ContentAccessorDirect(vcJson);
 
     Exception ex = assertThrowsExactly(VerificationException.class,
-        () -> verificationService.verifyCredential(content, true, false, false, false));
+        () -> verificationService.verifyCredential(content, true, false, false));
     assertTrue(ex.getMessage().contains("validUntil") || ex.getMessage().contains("expirationDate"),
         "Error must mention expired date field, got: " + ex.getMessage());
   }
@@ -944,7 +912,7 @@ public class VerificationServiceTest {
     String vcJson = getAccessor("Claims-Tests/participantVC2.jsonld").getContentAsString();
     ContentAccessor content = new ContentAccessorDirect(fakeVcJwt(vcJson));
 
-    CredentialVerificationResult vr = verificationService.verifyCredential(content, false, false, false, false);
+    CredentialVerificationResult vr = verificationService.verifyCredential(content, false, false, false);
 
     assertNotNull(vr, "JWT-wrapped VC 2.0 must be unwrapped and processed without exception");
   }
@@ -956,7 +924,7 @@ public class VerificationServiceTest {
     ContentAccessor content = new ContentAccessorDirect(invalidJwt);
 
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, false, false, false, false),
+        () -> verificationService.verifyCredential(content, false, false, false),
         "Invalid JWT-like content must throw ClientException, not a server error");
   }
 
@@ -972,7 +940,7 @@ public class VerificationServiceTest {
     ContentAccessor content = getAccessor("Claims-Tests/vc2NonGaiax.jsonld");
 
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, true, false, false, false));
+        () -> verificationService.verifyCredential(content, true, false, false, true));
   }
 
   /**
@@ -987,7 +955,7 @@ public class VerificationServiceTest {
       ContentAccessor content = getAccessor("Claims-Tests/vc2NonGaiax.jsonld");
 
       Exception ex = assertThrowsExactly(VerificationException.class,
-          () -> verificationService.verifyCredential(content, true, false, false, false));
+          () -> verificationService.verifyCredential(content, true, false, false, true));
       assertEquals("Semantic Error: no proper CredentialSubject found", ex.getMessage());
     } finally {
       jdbcTemplate.update("UPDATE trust_frameworks SET enabled = false WHERE id = 'gaia-x'");
@@ -1008,7 +976,7 @@ public class VerificationServiceTest {
     ContentAccessor content = new ContentAccessorDirect(evcBody, "application/vc+ld+json");
 
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, false, false, false, false));
+        () -> verificationService.verifyCredential(content, false, false, false, true));
     verify(loireJwtParserSpy).unwrap(any());
   }
 
@@ -1024,7 +992,7 @@ public class VerificationServiceTest {
     ContentAccessor content = new ContentAccessorDirect(evpBody, "application/vp+ld+json");
 
     assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, false, false, false, false));
+        () -> verificationService.verifyCredential(content, false, false, false, true));
     verify(loireJwtParserSpy).unwrap(any());
   }
 
@@ -1035,7 +1003,7 @@ public class VerificationServiceTest {
     ContentAccessor content = new ContentAccessorDirect(evcBody, "application/vc+ld+json");
 
     ClientException ex = assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, false, false, false, false));
+        () -> verificationService.verifyCredential(content, false, false, false));
 
     assertTrue(ex.getMessage().contains("EnvelopedVerifiableCredential"), ex.getMessage());
   }
@@ -1048,7 +1016,7 @@ public class VerificationServiceTest {
     ContentAccessor content = new ContentAccessorDirect(evcBody, "application/vc+ld+json");
 
     ClientException ex = assertThrowsExactly(ClientException.class,
-        () -> verificationService.verifyCredential(content, false, false, false, false));
+        () -> verificationService.verifyCredential(content, false, false, false));
 
     assertTrue(ex.getMessage().contains("EnvelopedVerifiableCredential"), ex.getMessage());
   }
@@ -1059,7 +1027,7 @@ public class VerificationServiceTest {
     void verifyCredential_nonCredentialJsonLd_returnsAllTriples() {
         ContentAccessor content = getAccessor("Claims-Tests/simple-jsonld.jsonld");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertNotNull(result.getGraphClaims());
@@ -1073,7 +1041,7 @@ public class VerificationServiceTest {
     void verifyCredential_turtleFormat_returnsAllTriples() {
         ContentAccessor content = getAccessor("Claims-Tests/simple.ttl");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertNotNull(result.getGraphClaims());
@@ -1087,7 +1055,7 @@ public class VerificationServiceTest {
     void verifyCredential_nTriplesFormat_returnsAllTriples() {
         ContentAccessor content = getAccessor("Claims-Tests/simple.nt");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertNotNull(result.getGraphClaims());
@@ -1101,7 +1069,7 @@ public class VerificationServiceTest {
     void verifyCredential_rdfXmlFormat_returnsAllTriples() {
         ContentAccessor content = getAccessor("Claims-Tests/simple.rdf");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertNotNull(result.getGraphClaims());
@@ -1115,7 +1083,7 @@ public class VerificationServiceTest {
     void verifyCredential_nonCredentialResult_claimsAreRdfClaimNotCredentialClaim() {
         ContentAccessor content = getAccessor("Claims-Tests/simple-jsonld.jsonld");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertFalse(result.getGraphClaims().isEmpty());
@@ -1129,7 +1097,7 @@ public class VerificationServiceTest {
         // Regression: VC 2.0 credential path unchanged — only credentialSubject triples returned
         ContentAccessor content = getAccessor("Claims-Tests/participantVC2.jsonld");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertNotNull(result.getGraphClaims(), "VC credential must return non-null claims");
@@ -1144,7 +1112,7 @@ public class VerificationServiceTest {
         // Regression: VC 2.0 credential extractors still return CredentialClaim instances
         ContentAccessor content = getAccessor("Claims-Tests/participantVC2.jsonld");
 
-        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false, false);
+        CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
 
         assertNotNull(result);
       assertFalse(result.getGraphClaims().isEmpty());

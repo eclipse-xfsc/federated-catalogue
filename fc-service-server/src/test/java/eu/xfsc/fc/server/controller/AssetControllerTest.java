@@ -519,9 +519,8 @@ public class AssetControllerTest {
     }
     
     /**
-     * POST /assets accepts a SHACL-invalid asset with default config (verifySchema=false).
-     * Same asset as addParicipantReturnCreatedResponse, but with a SHACL shape loaded that would reject it.
-     * Proves that schema validation is disabled in the upload flow.
+     * POST /assets accepts a SHACL-invalid asset: SHACL validation is only available
+     * on-demand via POST /assets/validate, never on the upload path.
      */
     @Test
     @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {

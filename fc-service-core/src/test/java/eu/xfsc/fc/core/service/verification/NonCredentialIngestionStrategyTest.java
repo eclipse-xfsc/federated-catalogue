@@ -106,7 +106,7 @@ class NonCredentialIngestionStrategyTest {
     when(protectedNamespaceFilter.filterClaims(claims, FILTER_CONTEXT))
         .thenReturn(new FilteredClaims(claims, null));
 
-    CredentialVerificationResult r1 = strategy.ingest(payload, true, true, true, true);
+    CredentialVerificationResult r1 = strategy.ingest(payload, true, true, true, false);
     CredentialVerificationResult r2 = strategy.ingest(payload, false, false, false, false);
 
     assertInstanceOf(NonCredentialVerificationResult.class, r1);

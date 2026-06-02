@@ -12,7 +12,7 @@ import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
  *
  * <p>Implementations:
  * <ul>
- *   <li>{@link CredentialVerificationStrategy} — W3C VC/VP (JSON-LD or JWT, incl. Loire
+ *   <li>{@link CredentialIngestionStrategy} — W3C VC/VP (JSON-LD or JWT, incl. Loire
  *       and W3C VC 2.0 Enveloped wrappers) with full semantic/schema/signature checks.</li>
  *   <li>{@link NonCredentialIngestionStrategy} — non-credential RDF payloads ingested as raw
  *       triples (no VC pipeline).</li>
@@ -32,15 +32,19 @@ public interface RdfIngestionStrategy {
    *
    * @param payload            the credential content to verify
    * @param verifySemantics    whether to perform semantic verification
-   * @param verifySchema       whether to perform schema verification
    * @param verifyVPSignatures whether to verify VP signatures
    * @param verifyVCSignatures whether to verify VC signatures
+   * @param requireBaseClass   when {@code true}, reject a credential whose subject does not
+   *                           resolve to a known trust-framework base class; when {@code false}
+   *                           (the credential-upload default) the credential is accepted even if
+   *                           no base class resolves
    * @return the verification result
    * @throws VerificationException if verification fails
    */
   CredentialVerificationResult ingest(ContentAccessor payload,
-                                      boolean verifySemantics, boolean verifySchema,
+                                      boolean verifySemantics,
                                       boolean verifyVPSignatures,
-                                      boolean verifyVCSignatures) throws VerificationException;
+                                      boolean verifyVCSignatures,
+                                      boolean requireBaseClass) throws VerificationException;
 
 }

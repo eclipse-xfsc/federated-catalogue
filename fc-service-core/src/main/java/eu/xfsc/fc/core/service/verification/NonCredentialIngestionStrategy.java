@@ -39,9 +39,11 @@ public class NonCredentialIngestionStrategy implements RdfIngestionStrategy {
 
   @Override
   public CredentialVerificationResult ingest(ContentAccessor payload,
-                                             boolean verifySemantics, boolean verifySchema,
-                                             boolean verifyVPSignatures, boolean verifyVCSignatures)
+                                             boolean verifySemantics,
+                                             boolean verifyVPSignatures, boolean verifyVCSignatures,
+                                             boolean requireBaseClass)
       throws VerificationException {
+    // requireBaseClass is not applicable to non-credential RDF (no credential subject to type).
     try {
       List<RdfClaim> claims = claimExtractionService.extractAllTriples(payload);
       if (claims.isEmpty()) {

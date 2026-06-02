@@ -200,7 +200,10 @@ services:
       # Enable a trust framework by listing its family (matches framework.yaml `family` field).
       # Multiple families: comma-separated, e.g. "gaia-x,untp".
       FEDERATED_CATALOGUE_ENABLED_TRUST_FRAMEWORKS: "${ENABLED_TRUST_FRAMEWORKS:-}"
-      FEDERATED_CATALOGUE_VERIFICATION_SCHEMA: "${VERIFY_SCHEMA:-false}"
+      # Verification toggles: see arc42 chapter 5 "Verification toggle interactions"
+      # for how SEMANTICS and signature flags compose.
+      # VP/VC envelope semantic checks — 422 on violation.
+      FEDERATED_CATALOGUE_VERIFICATION_SEMANTICS: "${VERIFY_SEMANTICS:-true}"
       # Filesystem bundle overrides (by id). The mock-2026 bundle here redirects its
       # service_url to the compliance-mock container; gaia-x-2511 can override the trust anchor.
       FEDERATED_CATALOGUE_TRUST_FRAMEWORKS_OVERRIDE_PATH: /app/trustframeworks-override
