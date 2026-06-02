@@ -3530,17 +3530,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: requireBaseClass
-          in: query
-          description: >-
-            When true, the credential must resolve to a base class declared by at least one active
-            trust-framework bundle, otherwise the request is rejected. When false (the default),
-            an unresolvable type is accepted; this preserves backwards compatibility for credential
-            families that intentionally do not advertise a base class.
-          required: false
-          schema:
-            type: boolean
-            default: false
       requestBody:
         description: >-
           The credential to verify. For JSON-LD credentials, use application/json,
