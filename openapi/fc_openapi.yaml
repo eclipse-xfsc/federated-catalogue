@@ -2208,10 +2208,35 @@ paths:
         is stored as an independent asset with its own IRI.
 
 
-        The uploaded part's Content-Type must be one of the configured human-readable types
-        (currently application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document,
-        text/html, text/plain); any other value is rejected with 400. Linking a companion does not
-        advance the machine-readable asset's version counter.
+        The uploaded part's Content-Type is matched against a family-aware allowlist intersected
+        with a script-execution denylist. Admitted by default:
+
+
+          - inert document and structured-data types — `application/pdf`, the Office Open XML word
+            document type, `application/json`, `application/ld+json`, `application/xml`, and the
+            YAML media types (`application/yaml`, `application/x-yaml`);
+          - the entire `text/*` family (e.g. `text/plain`, `text/html`, `text/markdown`,
+            `text/csv`);
+          - the entire `image/*`, `audio/*`, and `video/*` families (e.g. `image/png`,
+            `audio/mpeg`, `video/mp4`).
+
+
+        Refused regardless of family — these types either execute in the browser when echoed
+        back as the stored `Content-Type`, or carry opaque-binary risk:
+
+
+          - scripting media types (`text/javascript`, `text/ecmascript`, `text/vbscript`,
+            `application/javascript`, `application/ecmascript`, `application/x-javascript`);
+          - `image/svg+xml` (SVG can carry inline script);
+          - opaque or native-executable types (`application/octet-stream`,
+            `application/x-msdownload`, `application/x-executable`, `application/x-sh`,
+            `application/x-shockwave-flash`, `application/x-httpd-php`).
+
+
+        Any other value is rejected with `400`. Operators can override both the allowlist and the
+        denylist via the `federated-catalogue.assets.human-readable-content-types` and
+        `human-readable-content-type-denylist` properties. Linking a companion does not advance
+        the machine-readable asset's version counter.
 
 
         Multipart uploads are handled by the server outside the generated delegate pattern.
@@ -2949,6 +2974,16 @@ paths:
 
         Asserted (non-reified) triples emitted by the catalogue itself — such as the
         machine-readable ↔ human-readable link predicates — are queryable with plain SPARQL.
+
+
+        Content negotiation: the response body shape is selected by the `Accept` header.
+        `application/json` (the default) returns the catalogue's legacy `Results` envelope
+        with a flat `items` array of variable→value maps. `application/sparql-results+json`
+        returns the W3C SPARQL 1.1 Results JSON document (`head.vars` and
+        `results.bindings` with typed `{type, value, datatype?, "xml:lang"?}` entries) as
+        defined in https://www.w3.org/TR/sparql11-results-json/. The W3C format is only
+        available when the active graph store is SPARQL-capable; other backends return
+        `406 Not Acceptable`.
       operationId: query
       parameters:
         - in: query
@@ -2982,12 +3017,43 @@ paths:
               example: "MATCH (n:Resource) RETURN n.uri AS id, n.name AS name LIMIT 10"
       responses:
         '200':
-          description: successful query
+          description: >-
+            successful query. The response media type is selected by the
+            client's `Accept` header: `application/json` returns the catalogue's
+            legacy `Results` envelope, `application/sparql-results+json` returns
+            the W3C SPARQL 1.1 Results JSON document.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Results'
+            application/sparql-results+json:
+              schema:
+                type: string
+                description: >-
+                  W3C SPARQL 1.1 Results JSON document. The body is a JSON
+                  object with `head.vars` (list of projected variables) and
+                  `results.bindings` (array of solution objects). Each binding
+                  value is `{type, value}` with optional `datatype` or
+                  `xml:lang`. See
+                  https://www.w3.org/TR/sparql11-results-json/ for the full
+                  schema.
+                example: |
+                  {
+                    "head": { "vars": ["s","p","o"] },
+                    "results": {
+                      "bindings": [
+                        {
+                          "s": {"type":"uri","value":"http://example.org/service1"},
+                          "p": {"type":"uri","value":"http://example.org/name"},
+                          "o": {"type":"literal","value":"Example Service"}
+                        }
+                      ]
+                    }
+                  }
         '400': ## Malformed Message: The receveived request cannot be processed, either because its syntax is ## incorrect or forbidden query clauses are used. For instance, it is not allowed to manipulate data ## through the query endpoint
+          $ref: '#/components/responses/ClientError'
+        '406': ## Accept header asks for a representation the active graph store cannot produce
+          ## (e.g. application/sparql-results+json against a non-SPARQL backend).
           $ref: '#/components/responses/ClientError'
         '408': ## Query Timeout: the query took longer than the configured timeout
           ## interval. The client needs to rewrite the query so it can be

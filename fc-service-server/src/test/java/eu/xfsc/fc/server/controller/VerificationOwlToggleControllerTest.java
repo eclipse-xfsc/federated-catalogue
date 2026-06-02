@@ -132,6 +132,7 @@ class VerificationOwlToggleControllerTest {
             .queryParam("verifySemantics", "false")
             .queryParam("verifyVPSignature", "false")
             .queryParam("verifyVCSignature", "false")
+            .queryParam("requireBaseClass", "true")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(CUSTOM_PARTICIPANT_VP)

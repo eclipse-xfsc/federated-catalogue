@@ -84,6 +84,7 @@ public class AssetService implements AssetsApiDelegate {
   private final AssetUploadService assetUploadService;
   @Qualifier("assetFileStore") private final FileStore assetFileStore;
   private final AssetProperties assetProperties;
+  private final HumanReadableContentTypeMatcher humanReadableContentTypeMatcher;
   private final ValidationResultStore validationResultStore;
   private final AssetValidationService assetValidationService;
   private final ProvenanceService provenanceService;
@@ -570,16 +571,17 @@ public class AssetService implements AssetsApiDelegate {
   }
 
   /**
-   * Validate that the given MIME type is an accepted human-readable content type.
+   * Validate that the given MIME type is admissible for the human-readable companion endpoint.
    *
-   * @param contentType the MIME type to validate
-   * @throws ClientException if the type is not in {@code federated-catalogue.assets.hr-content-types}
+   * @param contentType the MIME type to validate; parameters such as {@code charset=…} are stripped
+   *                    before matching
+   * @throws ClientException when the matcher refuses the type
    */
   void validateHumanReadableContentType(String contentType) {
-    if (contentType == null || !assetProperties.getHumanReadableContentTypes().contains(contentType)) {
+    if (!humanReadableContentTypeMatcher.isAccepted(contentType)) {
       throw new ClientException(String.format(
-          "Unsupported content type '%s'. Accepted types: %s", contentType,
-          String.join(", ", new TreeSet<>(assetProperties.getHumanReadableContentTypes()))));
+          "Unsupported content type '%s'. %s",
+          contentType, humanReadableContentTypeMatcher.describeAllowlist()));
     }
   }
 
