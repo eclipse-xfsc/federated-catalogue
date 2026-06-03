@@ -128,12 +128,13 @@ Authorization:  Bearer {{token}}
 Content-Type: application/sparql-query
 Accept:  application/sparql-results+json
 ```
+PREFIX cred:   <https://www.w3.org/2018/credentials#>
 PREFIX gx:     <https://w3id.org/gaia-x/2511#>
 PREFIX schema: <https://schema.org/>
 SELECT ?service ?name WHERE {
-  ?service a gx:ServiceOffering ;
-           gx:providedBy <https://www.example.org/participants/test-issuer-1> ;
-           schema:name ?name .
+  <<(?service a gx:ServiceOffering)>>                                                 cred:credentialSubject ?service .
+  <<(?service gx:providedBy <https://www.example.org/participants/test-issuer-1>)>>   cred:credentialSubject ?service .
+  <<(?service schema:name ?name)>>                                                    cred:credentialSubject ?service .
 }
 ORDER BY ?service
 ```
@@ -149,18 +150,19 @@ Authorization:  Bearer {{token}}
 Content-Type:  application/sparql-query
 Accept:  application/sparql-results+json
 ```
+PREFIX cred:   <https://www.w3.org/2018/credentials#>
 PREFIX gx:     <https://w3id.org/gaia-x/2511#>
 PREFIX schema: <https://schema.org/>
 PREFIX vcard:  <http://www.w3.org/2006/vcard/ns#>
 SELECT ?name ?countryCode ?region ?locality ?postalCode ?streetAddress WHERE {
-  <https://www.example.org/participants/test-issuer-2> a gx:LegalPerson ;
-    schema:name ?name ;
-    gx:legalAddress ?addr .
-  ?addr gx:countryCode      ?countryCode ;
-        vcard:locality      ?locality ;
-        vcard:postal-code   ?postalCode ;
-        vcard:street-address ?streetAddress .
-  OPTIONAL { ?addr vcard:region ?region . }
+  <<(<https://www.example.org/participants/test-issuer-2> a gx:LegalPerson)>>             cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  <<(<https://www.example.org/participants/test-issuer-2> schema:name ?name)>>            cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  <<(<https://www.example.org/participants/test-issuer-2> gx:legalAddress ?addr)>>        cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  <<(?addr gx:countryCode      ?countryCode)>>      cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  <<(?addr vcard:locality      ?locality)>>         cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  <<(?addr vcard:postal-code   ?postalCode)>>       cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  <<(?addr vcard:street-address ?streetAddress)>>   cred:credentialSubject <https://www.example.org/participants/test-issuer-2> .
+  OPTIONAL { <<(?addr vcard:region ?region)>>       cred:credentialSubject <https://www.example.org/participants/test-issuer-2> . }
 }
 ```
 HTTP 200
@@ -180,11 +182,12 @@ Authorization:  Bearer {{token}}
 Content-Type:  application/sparql-query
 Accept: application/sparql-results+json
 ```
-PREFIX gx: <https://w3id.org/gaia-x/2511#>
+PREFIX cred: <https://www.w3.org/2018/credentials#>
+PREFIX gx:   <https://w3id.org/gaia-x/2511#>
 SELECT ?dependent ?dependency WHERE {
-  ?dependent a gx:ServiceOffering ;
-             gx:dependsOn ?dependency .
-  ?dependency a gx:ServiceOffering .
+  <<(?dependent a gx:ServiceOffering)>>           cred:credentialSubject ?dependent .
+  <<(?dependent gx:dependsOn ?dependency)>>       cred:credentialSubject ?dependent .
+  <<(?dependency a gx:ServiceOffering)>>          cred:credentialSubject ?dependency .
 }
 ```
 HTTP 200
@@ -200,8 +203,11 @@ Authorization:  Bearer {{token}}
 Content-Type:  application/sparql-query
 Accept: application/sparql-results+json
 ```
+PREFIX cred:   <https://www.w3.org/2018/credentials#>
 PREFIX schema: <https://schema.org/>
-SELECT ?entity WHERE { ?entity schema:name "Elastic Search DB" } LIMIT 25
+SELECT ?entity WHERE {
+  <<(?entity schema:name "Elastic Search DB")>> cred:credentialSubject ?entity
+} LIMIT 25
 ```
 HTTP 200
 [Asserts]
