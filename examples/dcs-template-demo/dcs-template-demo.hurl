@@ -36,6 +36,20 @@ HTTP 200
 jsonpath "$.activeBackend" == "FUSEKI"
 
 # ============================================================================
+# 1a. Idempotency — cascade-delete any leftover templates from prior runs.
+#     DELETE /assets/{id} is idempotent (204 for unknown id) and removes the
+#     asset together with all versions, human-readable companions, and
+#     provenance credentials.
+# ============================================================================
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fdeltadao.example.org%2Ftemplates%2Fdpa%2Fv1
+Authorization:   Bearer {{token}}
+HTTP 204
+
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fdeltadao.example.org%2Ftemplates%2Fdpa%2Fv2
+Authorization:   Bearer {{token}}
+HTTP 204
+
+# ============================================================================
 # 2. Upload the machine-readable template (v1)
 # ============================================================================
 POST {{baseUrl}}/assets

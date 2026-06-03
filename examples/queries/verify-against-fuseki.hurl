@@ -34,6 +34,31 @@ HTTP 200
 jsonpath "$.activeBackend" == "FUSEKI"
 
 # ----------------------------------------------------------------------------
+# Idempotency — cascade-delete any leftover assets from prior runs.
+# DELETE /assets/{id} returns 204 for unknown ids and removes the asset
+# along with every version and provenance credential linked to it.
+# ----------------------------------------------------------------------------
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fwww.example.org%2Fparticipants%2Ftest-issuer-1
+Authorization:   Bearer {{token}}
+HTTP 204
+
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fwww.example.org%2Fparticipants%2Ftest-issuer-2
+Authorization:   Bearer {{token}}
+HTTP 204
+
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fwww.example.org%2Fparticipants%2Ftest-issuer-3
+Authorization:   Bearer {{token}}
+HTTP 204
+
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fwww.example.org%2Fservice-offerings%2Fservice-1
+Authorization:  Bearer {{token}}
+HTTP 204
+
+DELETE {{baseUrl}}/assets/by-id/https%3A%2F%2Fwww.example.org%2Fservice-offerings%2Felasticsearch
+Authorization:   Bearer {{token}}
+HTTP 204
+
+# ----------------------------------------------------------------------------
 # Upload the five Loire payloads
 # ----------------------------------------------------------------------------
 POST {{baseUrl}}/assets
