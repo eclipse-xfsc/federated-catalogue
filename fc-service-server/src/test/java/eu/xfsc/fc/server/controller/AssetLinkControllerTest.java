@@ -60,7 +60,7 @@ import org.springframework.web.context.WebApplicationContext;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"graphstore.impl=fuseki"})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
+@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.EMBEDDED)
 public class AssetLinkControllerTest {
 
   private static final String PARTICIPANT_ID = "participant_id";
@@ -149,8 +149,8 @@ public class AssetLinkControllerTest {
     mrIri = mrAsset.getId();
     mrHash = mrAsset.getAssetHash();
 
-    final var file = new MockMultipartFile("file", "img.png", "image/png",
-        "fake png data".getBytes(StandardCharsets.UTF_8));
+    final var file = new MockMultipartFile("file", "sneaky.svg", "image/svg+xml",
+        "<svg/>".getBytes(StandardCharsets.UTF_8));
 
     final var result = mockMvc.perform(MockMvcRequestBuilders
             .multipart(String.format(HR_URL_TEMPLATE, encode(mrIri)))
