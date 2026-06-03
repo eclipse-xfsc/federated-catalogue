@@ -154,10 +154,17 @@ federated-catalogue:
     max-assets-per-request: 20  # Maximum number of asset IDs allowed in a single validateAssets request
   assets:
     human-readable-content-types:
+      - text/*
+      - image/*
+      - audio/*
+      - video/*
       - application/pdf
       - application/vnd.openxmlformats-officedocument.wordprocessingml.document
-      - text/html
-      - text/plain
+      - application/json
+      - application/ld+json
+      - application/xml
+      - application/yaml
+      - application/x-yaml
   file-store:
     cached: true
     cache-size: 128
