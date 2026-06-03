@@ -115,30 +115,37 @@ public class ProvenanceServiceImpl implements ProvenanceService {
    *
    * <p>Two shapes are accepted:
    * <ul>
-   *   <li><b>Entity-centric</b> — {@code credentialSubject.id == expectedSubjectId}
-   *       ({@code assetId:vN}); the versioned-asset IRI is the graph subject. This is the
-   *       backwards-compatible shape used by the simple "fact about a version" credential.</li>
+   *   <li><b>Entity-centric</b> — {@code credentialSubject.id} identifies the asset, either as the
+   *       bare asset IRI ({@code assetId}) or the catalogue-internal versioned form
+   *       ({@code assetId:vN}). Triples are always anchored on the versioned form so SPARQL
+   *       queries can join provenance to a specific version.</li>
    *   <li><b>Activity-centric</b> — {@code credentialSubject.id} is the activity's own IRI; the
    *       credential must declare {@code prov:generated} or {@code prov:used} (compact or
-   *       expanded) pointing at {@code expectedSubjectId} so the activity can be linked back to a
-   *       versioned asset. The activity IRI becomes the graph subject and the projected triples
-   *       form the activity's star of relations.</li>
+   *       expanded) pointing at either {@code assetId} or {@code assetId:vN} so the activity can
+   *       be linked back to the targeted asset version. The activity IRI becomes the graph
+   *       subject and the projected triples form the activity's star of relations.</li>
    * </ul>
+   *
+   * <p>The bare-IRI form follows W3C PROV-DM, where the asset's own IRI identifies the resource;
+   * issuers should not have to know the catalogue's internal version-pin scheme to mint a valid
+   * credential.
    */
   private String resolveGraphSubject(String subjectId, String expectedSubjectId,
                                       ProvenanceCredentialInfo credentialInfo) {
-    if (expectedSubjectId.equals(subjectId)) {
+    String assetId = expectedSubjectId.substring(0, expectedSubjectId.lastIndexOf(":v"));
+    if (expectedSubjectId.equals(subjectId) || assetId.equals(subjectId)) {
       return expectedSubjectId;
     }
-    boolean linksToVersionedAsset = credentialInfo.facts().stream()
+    boolean linksToTargetAsset = credentialInfo.facts().stream()
         .anyMatch(fact -> (fact.type() == ProvenanceType.GENERATION
                           || fact.type() == ProvenanceType.USAGE)
-                          && expectedSubjectId.equals(fact.objectValue()));
-    if (!linksToVersionedAsset) {
+            && (expectedSubjectId.equals(fact.objectValue())
+            || assetId.equals(fact.objectValue())));
+    if (!linksToTargetAsset) {
       throw new ClientException(
           "credentialSubject.id '" + subjectId + "' must either equal '" + expectedSubjectId
-              + "' (entity-centric form) or declare prov:generated/prov:used pointing at '"
-              + expectedSubjectId + "' (activity-centric form).");
+              + "' or '" + assetId + "' (entity-centric form), or declare prov:generated/"
+              + "prov:used pointing at one of those IRIs (activity-centric form).");
     }
     return subjectId;
   }
