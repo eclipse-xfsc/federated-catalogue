@@ -53,7 +53,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"graphstore.impl=fuseki"})
-@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
+@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.EMBEDDED)
 class ProvenanceServiceTest {
 
   private static final String ASSET_ID = "did:web:example:asset";
