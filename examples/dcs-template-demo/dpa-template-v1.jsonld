@@ -25,8 +25,5 @@
     "schema:description": "Standard GDPR-compliant DPA template for B2B data sharing.",
     "schema:version": "1.0.0",
     "schema:inLanguage": "en",
-    "dcs:humanReadableMimeType": "text/markdown",
-    "dcs:humanReadableHashAlgorithm": "SHA-256",
-    "dcs:humanReadableHash": "4542119cd53c96408c8225d658d8f0d40b75a12d9be240a24e7b24f3ad977f51"
   }
 }
