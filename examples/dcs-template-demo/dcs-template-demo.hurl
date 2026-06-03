@@ -94,23 +94,25 @@ Authorization:  Bearer {{token}}
 Content-Type:  application/sparql-query
 Accept:  application/sparql-results+json
 ```
+PREFIX cred:   <https://www.w3.org/2018/credentials#>
 PREFIX dcs:    <https://w3id.org/facis/dcs/1#>
 PREFIX schema: <https://schema.org/>
 PREFIX prov:   <http://www.w3.org/ns/prov#>
 SELECT ?template ?version ?hash WHERE {
-  ?template a dcs:ContractTemplate ;
-            dcs:category    "data-processing-agreement" ;
-            dcs:jurisdiction "DE" ;
-            schema:version  ?version ;
-            dcs:humanReadableHash ?hash .
-  ?act a prov:Activity ;
-       prov:used ?template ;
-       dcs:action "approved" ;
-       prov:endedAtTime ?approvedAt .
+  <<(?template a dcs:ContractTemplate)>>                       cred:credentialSubject ?template .
+  <<(?template dcs:category    "data-processing-agreement")>>  cred:credentialSubject ?template .
+  <<(?template dcs:jurisdiction "DE")>>                        cred:credentialSubject ?template .
+  <<(?template schema:version  ?version)>>                     cred:credentialSubject ?template .
+  <<(?template dcs:humanReadableHash ?hash)>>                  cred:credentialSubject ?template .
+  <<(?act a prov:Activity)>>                                   cred:credentialSubject ?act .
+  <<(?act prov:used ?template)>>                               cred:credentialSubject ?act .
+  <<(?act dcs:action "approved")>>                             cred:credentialSubject ?act .
+  <<(?act prov:endedAtTime ?approvedAt)>>                      cred:credentialSubject ?act .
   FILTER NOT EXISTS {
-    ?newer a dcs:ContractTemplate ;
-           prov:wasDerivedFrom+ ?template ;
-           ^prov:used / dcs:action "approved" .
+    <<(?newer a dcs:ContractTemplate)>>                         cred:credentialSubject ?newer .
+    <<(?newer prov:wasDerivedFrom ?template)>>                  cred:credentialSubject ?newer .
+    <<(?newerAct prov:used ?newer)>>                            cred:credentialSubject ?newerAct .
+    <<(?newerAct dcs:action "approved")>>                       cred:credentialSubject ?newerAct .
   }
 }
 ORDER BY DESC(?approvedAt)
@@ -162,23 +164,25 @@ Authorization:  Bearer {{token}}
 Content-Type:  application/sparql-query
 Accept:  application/sparql-results+json
 ```
+PREFIX cred:   <https://www.w3.org/2018/credentials#>
 PREFIX dcs:    <https://w3id.org/facis/dcs/1#>
 PREFIX schema: <https://schema.org/>
 PREFIX prov:   <http://www.w3.org/ns/prov#>
 SELECT ?template ?version ?hash WHERE {
-  ?template a dcs:ContractTemplate ;
-            dcs:category    "data-processing-agreement" ;
-            dcs:jurisdiction "DE" ;
-            schema:version  ?version ;
-            dcs:humanReadableHash ?hash .
-  ?act a prov:Activity ;
-       prov:used ?template ;
-       dcs:action "approved" ;
-       prov:endedAtTime ?approvedAt .
+  <<(?template a dcs:ContractTemplate)>>                       cred:credentialSubject ?template .
+  <<(?template dcs:category    "data-processing-agreement")>>  cred:credentialSubject ?template .
+  <<(?template dcs:jurisdiction "DE")>>                        cred:credentialSubject ?template .
+  <<(?template schema:version  ?version)>>                     cred:credentialSubject ?template .
+  <<(?template dcs:humanReadableHash ?hash)>>                  cred:credentialSubject ?template .
+  <<(?act a prov:Activity)>>                                   cred:credentialSubject ?act .
+  <<(?act prov:used ?template)>>                               cred:credentialSubject ?act .
+  <<(?act dcs:action "approved")>>                             cred:credentialSubject ?act .
+  <<(?act prov:endedAtTime ?approvedAt)>>                      cred:credentialSubject ?act .
   FILTER NOT EXISTS {
-    ?newer a dcs:ContractTemplate ;
-           prov:wasDerivedFrom+ ?template ;
-           ^prov:used / dcs:action "approved" .
+    <<(?newer a dcs:ContractTemplate)>>                         cred:credentialSubject ?newer .
+    <<(?newer prov:wasDerivedFrom ?template)>>                  cred:credentialSubject ?newer .
+    <<(?newerAct prov:used ?newer)>>                            cred:credentialSubject ?newerAct .
+    <<(?newerAct dcs:action "approved")>>                       cred:credentialSubject ?newerAct .
   }
 }
 ORDER BY DESC(?approvedAt)
