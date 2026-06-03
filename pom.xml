@@ -106,6 +106,12 @@
         <!-- plexus-utils (test-scope, transitive via spring-cloud-contract-wiremock -> maven-resolver):
              pin to 3.6.1 to close CVE-2025-67030 (9.8, Expand.extractFile directory traversal). -->
         <plexus-utils.version>3.6.1</plexus-utils.version>
+        <!-- commons-lang3: Spring Boot 3.5.14 BOM pins 3.17.0, but commons-compress 1.28.0
+             (pulled in by Zonky embedded Postgres for tar extraction) calls
+             SystemProperties.getUserName(String), which was added in 3.18.0. Without this override
+             every @SpringBootTest using an embedded DB fails at context load with
+             NoSuchMethodError. -->
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <plugin.jacoco.version>0.8.14</plugin.jacoco.version>
