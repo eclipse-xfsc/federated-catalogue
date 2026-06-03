@@ -64,7 +64,7 @@ HTTP 201
 POST {{baseUrl}}/assets/https%3A%2F%2Fdeltadao.example.org%2Ftemplates%2Fdpa%2Fv1/human-readable
 Authorization: Bearer {{token}}
 [Multipart]
-file: file,dpa-template-v1.md; type=text/markdown
+file: file,dpa-template-v1.md; text/markdown
 HTTP 201
 
 # ============================================================================
@@ -144,7 +144,7 @@ HTTP 201
 POST {{baseUrl}}/assets/https%3A%2F%2Fdeltadao.example.org%2Ftemplates%2Fdpa%2Fv2/human-readable
 Authorization:  Bearer {{token}}
 [Multipart]
-file: file,dpa-template-v2.md; type=text/markdown
+file: file,dpa-template-v2.md; text/markdown
 HTTP 201
 
 # 8c. Approval provenance for v2
