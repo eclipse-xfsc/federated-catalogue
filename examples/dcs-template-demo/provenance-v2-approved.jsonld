@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    {
+      "prov": "http://www.w3.org/ns/prov#",
+      "dcs": "https://w3id.org/facis/dcs/1#"
+    }
+  ],
+  "id": "https://deltadao.example.org/credentials/provenance/dpa-v2-approved.json",
+  "type": [
+    "VerifiableCredential"
+  ],
+  "issuer": "did:web:deltadao.example.org",
+  "validFrom": "2026-06-02T17:45:00Z",
+  "credentialSubject": {
+    "id": "https://deltadao.example.org/templates/dpa/v2#prov-approved",
+    "type": "prov:Activity",
+    "prov:wasAssociatedWith": {
+      "id": "did:web:deltadao.example.org:users:bob",
+      "type": "prov:Agent",
+      "prov:actedOnBehalfOf": {
+        "id": "did:web:deltadao.example.org",
+        "type": "prov:Organization"
+      }
+    },
+    "prov:used": {
+      "id": "https://deltadao.example.org/templates/dpa/v2"
+    },
+    "prov:wasInformedBy": {
+      "id": "https://deltadao.example.org/templates/dpa/v1#prov-approved"
+    },
+    "prov:startedAtTime": "2026-06-02T17:30:00Z",
+    "prov:endedAtTime": "2026-06-02T17:45:00Z",
+    "dcs:action": "approved",
+    "dcs:newState": "approved"
+  }
+}

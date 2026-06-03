@@ -1,0 +1,32 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    {
+      "dcs": "https://w3id.org/facis/dcs/1#",
+      "schema": "https://schema.org/",
+      "prov": "http://www.w3.org/ns/prov#"
+    }
+  ],
+  "id": "https://deltadao.example.org/credentials/dpa-template-v1.json",
+  "type": [
+    "VerifiableCredential",
+    "dcs:ContractTemplate"
+  ],
+  "issuer": "did:web:deltadao.example.org",
+  "validFrom": "2026-06-01T09:30:00Z",
+  "credentialSubject": {
+    "id": "https://deltadao.example.org/templates/dpa/v1",
+    "type": "dcs:ContractTemplate",
+    "dcs:templateUuid": "f4a7d3b2-1c8e-4a5b-9d2e-7f8a6b3c2d1e",
+    "dcs:category": "data-processing-agreement",
+    "dcs:jurisdiction": "DE",
+    "dcs:state": "draft",
+    "schema:name": "Data Processing Agreement Template",
+    "schema:description": "Standard GDPR-compliant DPA template for B2B data sharing.",
+    "schema:version": "1.0.0",
+    "schema:inLanguage": "en",
+    "dcs:humanReadableMimeType": "text/markdown",
+    "dcs:humanReadableHashAlgorithm": "SHA-256",
+    "dcs:humanReadableHash": "4542119cd53c96408c8225d658d8f0d40b75a12d9be240a24e7b24f3ad977f51"
+  }
+}

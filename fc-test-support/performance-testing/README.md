@@ -1,13 +1,17 @@
 # Performance testing
 
 ## Description
-The Gatling performance testing scripts for Gaia-X Catalogue Service.
 
-This is an implementation of performance testing scripts for the Gaia-X Federation Services Lot 5 [Federated Catalogue](https://gitlab.com/gaia-x/data-infrastructure-federation-services/cat).
+The Gatling performance testing scripts for the XFSC Federated Catalogue.
+
+This is an implementation of performance testing scripts for
+the [Federated Catalogue](https://github.com/eclipse-xfsc/federated-catalogue), the Gaia-X Federation Services catalogue
+component.
 
 ## Installation
 
-For performance testing need to install the [Gatling](https://gatling.io/open-source/) testing tool and JDK. Gatling supports JDK versions: 8, 11 and 17.
+For performance testing you need to install the [Gatling](https://gatling.io/open-source/) testing tool and a JDK
+supported by Gatling and by the version of this project (see the project's `pom.xml`).
 
 1. Unzip the archive locally.
 

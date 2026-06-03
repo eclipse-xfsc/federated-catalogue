@@ -1,88 +1,43 @@
 {
   "@context": [
-    "https://www.w3.org/ns/credentials/v2"
-  ],
-  "@id": "http://example.edu/verifiablePresentation/self-description1",
-  "type": [
-    "VerifiablePresentation"
-  ],
-  "verifiableCredential": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://w3id.org/gaia-x/2511#",
     {
-      "@context": [
-        "https://www.w3.org/ns/credentials/v2"
-      ],
-      "@id": "https://www.example.org/legalPerson.json",
-      "issuer": "http://gaiax.de",
-      "validFrom": "2022-10-19T18:48:09Z",
-      "type": [
-        "VerifiableCredential"
-      ],
-      "credentialSubject": {
-        "@context": {
-          "gx": "https://w3id.org/gaia-x/2511#",
-          "xsd": "http://www.w3.org/2001/XMLSchema#",
-          "vcard": "http://www.w3.org/2006/vcard/ns#"
-        },
-        "id": "http://example.org/test-issuer",
-        "@type": "gx:LegalPerson",
-        "gx:registrationNumber": {
-          "@value": "1234",
-          "@type": "xsd:string"
-        },
-        "gx:legalAddress": {
-          "@type": "vcard:Address",
-          "vcard:country-name": {
-            "@value": "DE",
-            "@type": "xsd:string"
-          },
-          "vcard:locality": {
-            "@value": "Hamburg",
-            "@type": "xsd:string"
-          },
-          "vcard:postal-code": {
-            "@value": "22303",
-            "@type": "xsd:string"
-          },
-          "vcard:street-address": {
-            "@value": "Geibelstraße 46b",
-            "@type": "xsd:string"
-          }
-        },
-        "gx:headquarterAddress": {
-          "@type": "vcard:Address",
-          "vcard:country-name": {
-            "@value": "DE",
-            "@type": "xsd:string"
-          },
-          "vcard:locality": {
-            "@value": "Hamburg",
-            "@type": "xsd:string"
-          },
-          "vcard:postal-code": {
-            "@value": "22303",
-            "@type": "xsd:string"
-          },
-          "vcard:street-address": {
-            "@value": "Geibelstraße 46b",
-            "@type": "xsd:string"
-          }
-        },
-        "gx:termsAndConditions": {
-          "@type": "gx:TermsAndConditions",
-          "gx:content": {
-            "@value": "http://example.org/tac",
-            "@type": "xsd:anyURI"
-          },
-          "gx:hash": {
-            "@value": "1234",
-            "@type": "xsd:string"
-          }
-        },
-        "gx:legalName": {
-          "@value": "deltaDAO AG",
-          "@type": "xsd:string"
-        }
-      }
+      "schema": "https://schema.org/",
+      "vcard": "http://www.w3.org/2006/vcard/ns#"
     }
-  ]
+  ],
+  "id": "https://www.example.org/credentials/legal-person-1.json",
+  "type": [
+    "VerifiableCredential",
+    "gx:LegalPerson"
+  ],
+  "issuer": "did:web:example.org",
+  "validFrom": "2026-01-01T00:00:00Z",
+  "validUntil": "2027-01-01T00:00:00Z",
+  "credentialSubject": {
+    "id": "https://www.example.org/participants/test-issuer-1",
+    "type": "gx:LegalPerson",
+    "schema:name": "deltaDAO AG",
+    "schema:description": "Hamburg-based example participant used for catalogue ingestion tests.",
+    "gx:registrationNumber": {
+      "id": "https://www.example.org/participants/test-issuer-1/registration"
+    },
+    "gx:legalAddress": {
+      "type": "gx:Address",
+      "gx:countryCode": "DE",
+      "gx:countryName": "Germany",
+      "vcard:locality": "Hamburg",
+      "vcard:postal-code": "22303",
+      "vcard:street-address": "Geibelstraße 46b"
+    },
+    "gx:headquartersAddress": {
+      "type": "gx:Address",
+      "gx:countryCode": "DE",
+      "gx:countryName": "Germany",
+      "vcard:locality": "Hamburg",
+      "vcard:postal-code": "22303",
+      "vcard:street-address": "Geibelstraße 46b"
+    }
+  }
 }

@@ -4,15 +4,16 @@ Deploys the full Federated Catalogue stack to Kubernetes.
 
 ## Components
 
-| Component      | Image                                            | Port |
-|----------------|--------------------------------------------------|------|
-| fc-service     | ghcr.io/eclipse-xfsc/federated-catalogue/fc-service-server | 8081 |
-| fc-demo-portal | ghcr.io/eclipse-xfsc/federated-catalogue/fc-demo-portal    | 8088 |
-| Keycloak 26    | quay.io/keycloak/keycloak:26.6.0 (keycloakx 7.1.9) | 8080 |
-| PostgreSQL 18  | postgres:18.3                                    | 5432 |
-| Fuseki         | ghcr.io/eclipse-xfsc/federated-catalogue/fc-fuseki:5.5.0   | 3030 |
+| Component      | Image                                                        | Port |
+|----------------|--------------------------------------------------------------|------|
+| fc-service     | `ghcr.io/eclipse-xfsc/federated-catalogue/fc-service-server` | 8081 |
+| fc-demo-portal | `ghcr.io/eclipse-xfsc/federated-catalogue/fc-demo-portal`    | 8088 |
+| Keycloak       | `quay.io/keycloak/keycloak` (sub-chart: `keycloakx`)         | 8080 |
+| PostgreSQL     | `postgres`                                                   | 5432 |
+| Fuseki         | `ghcr.io/eclipse-xfsc/federated-catalogue/fc-fuseki`         | 3030 |
 
-Sub-chart dependency: `keycloakx 7.1.9`. All GHCR images are public — no pull secret required.
+The authoritative pinned versions live in `Chart.yaml` (sub-chart versions) and `values.yaml` (image tags) — consult
+those rather than this table. All GHCR images are public; no pull secret is required.
 
 ---
 
