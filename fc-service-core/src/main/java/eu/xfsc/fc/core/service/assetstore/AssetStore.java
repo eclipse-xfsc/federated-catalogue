@@ -70,6 +70,17 @@ public interface AssetStore {
   void deleteAsset(String hash);
 
   /**
+   * Cascade-delete every content version of the asset identified by its IRI, along with linked
+   * human-readable companions and the rows in dependent stores that listen on
+   * {@code AssetDeletedEvent}. Idempotent: a call against an unknown IRI is a no-op and reports
+   * {@code 0} deletions.
+   *
+   * @param id the asset IRI (subject identifier)
+   * @return number of versions removed
+   */
+  int deleteByAssetId(String id);
+
+  /**
    * Invalidate expired assets in the store.
    *
    * @return Number of expired assets found.

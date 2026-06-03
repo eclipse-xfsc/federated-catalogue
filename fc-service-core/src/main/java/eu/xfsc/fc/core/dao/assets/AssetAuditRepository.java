@@ -14,7 +14,9 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.hibernate.envers.query.AuditQuery;
 
@@ -43,16 +45,33 @@ public class AssetAuditRepository {
    */
   @SuppressWarnings("unchecked") // Envers API returns raw List<Object[]>; cast is safe per forRevisionsOfEntity contract
   List<AssetRecord> findAllVersions(Long entityId) {
-    List<Object[]> revisions = baseRevisionsQuery(entityId).getResultList();
+    List<Object[]> contentRevisions = dedupeByAssetHash(baseRevisionsQuery(entityId).getResultList());
 
-    int total = revisions.size();
+    int total = contentRevisions.size();
     List<AssetRecord> result = new ArrayList<>(total);
     for (int i = 0; i < total; i++) {
       int version = total - i;
       boolean isCurrent = (i == 0);
-      result.add(toRecord(revisions.get(i), version, isCurrent));
+      result.add(toRecord(contentRevisions.get(i), version, isCurrent));
     }
     return result;
+  }
+
+  /**
+   * Collapse a newest-first revision list to one entry per distinct {@code asset_hash}.
+   *
+   * <p>Revisions that share a hash with a newer revision represent non-content changes (linkage,
+   * lifecycle status, last-modified bookkeeping) and are folded away: the most recent revision
+   * carrying each hash is retained so the displayed snapshot reflects the freshest state of that
+   * content version.</p>
+   */
+  private List<Object[]> dedupeByAssetHash(List<Object[]> revisionsNewestFirst) {
+    Map<String, Object[]> firstSeenPerHash = new LinkedHashMap<>();
+    for (Object[] revision : revisionsNewestFirst) {
+      String hash = ((Asset) revision[0]).getAssetHash();
+      firstSeenPerHash.putIfAbsent(hash, revision);
+    }
+    return new ArrayList<>(firstSeenPerHash.values());
   }
 
   @SuppressWarnings("unchecked") // Envers API returns raw List<Object[]>; cast is safe per forRevisionsOfEntity contract
@@ -66,16 +85,13 @@ public class AssetAuditRepository {
       return List.of();
     }
 
-    List<Object[]> revisions = baseRevisionsQuery(entityId)
-        .setFirstResult(offset)
-        .setMaxResults(maxResults)
-        .getResultList();
-
-    List<AssetRecord> result = new ArrayList<>(revisions.size());
-    for (int i = 0; i < revisions.size(); i++) {
-      int version = total - (offset + i);
+    List<Object[]> contentRevisions = dedupeByAssetHash(baseRevisionsQuery(entityId).getResultList());
+    int end = Math.min(offset + maxResults, contentRevisions.size());
+    List<AssetRecord> result = new ArrayList<>(end - offset);
+    for (int i = offset; i < end; i++) {
+      int version = total - i;
       boolean isCurrent = (version == total);
-      result.add(toRecord(revisions.get(i), version, isCurrent));
+      result.add(toRecord(contentRevisions.get(i), version, isCurrent));
     }
     return result;
   }
@@ -92,38 +108,31 @@ public class AssetAuditRepository {
     if (version < 1) {
       return Optional.empty();
     }
-    // Pre-count is required to compute isCurrent and previousVersion/nextVersion navigation links.
-    // Unlike SchemaAuditRepository, asset versions carry link metadata that needs the total.
-    int total = countVersions(entityId);
+
+    List<Object[]> contentRevisions = dedupeByAssetHash(baseRevisionsQuery(entityId).getResultList());
+    int total = contentRevisions.size();
     if (version > total) {
       return Optional.empty();
     }
-
-    List<Object[]> revisions = baseRevisionsQuery(entityId)
-        .setFirstResult(total - version)
-        .setMaxResults(1)
-        .getResultList();
-
-    if (revisions.isEmpty()) {
-      return Optional.empty();
-    }
+    int index = total - version;
     boolean isCurrent = (version == total);
-    return Optional.of(toRecord(revisions.getFirst(), version, isCurrent));
+    return Optional.of(toRecord(contentRevisions.get(index), version, isCurrent));
   }
 
   /**
-   * Count the number of Envers revisions for an asset entity.
+   * Count the number of content versions for an asset entity.
    *
-   * @param entityId the surrogate PK of the Asset
-   * @return revision count
+   * <p>A content version corresponds to a distinct {@code asset_hash} observed in the audit history.
+   * Revisions that only mutate non-content metadata (linkage to a human-readable companion,
+   * lifecycle status, or last-modified bookkeeping) reuse an existing hash and therefore do not
+   * advance the count. This matches the SRS rule that attaching sub-resources to an asset must not
+   * produce a new version of the asset.</p>
+   *
+   * @param entityId the surrogate PK of the asset
+   * @return number of distinct content hashes in the audit history
    */
   int countVersions(Long entityId) {
-    Long count = (Long) AuditReaderFactory.get(entityManager).createQuery()
-        .forRevisionsOfEntity(Asset.class, false, true)
-        .add(AuditEntity.id().eq(entityId))
-        .addProjection(AuditEntity.revisionNumber().count())
-        .getSingleResult();
-    return count.intValue();
+    return dedupeByAssetHash(baseRevisionsQuery(entityId).getResultList()).size();
   }
 
   /**

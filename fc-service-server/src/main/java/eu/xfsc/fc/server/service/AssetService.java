@@ -84,6 +84,7 @@ public class AssetService implements AssetsApiDelegate {
   private final AssetUploadService assetUploadService;
   @Qualifier("assetFileStore") private final FileStore assetFileStore;
   private final AssetProperties assetProperties;
+  private final HumanReadableContentTypeMatcher humanReadableContentTypeMatcher;
   private final ValidationResultStore validationResultStore;
   private final AssetValidationService assetValidationService;
   private final ProvenanceService provenanceService;
@@ -215,6 +216,24 @@ public class AssetService implements AssetsApiDelegate {
     checkParticipantAccess(assetMetadata.getIssuer());
     assetStorePublisher.deleteAsset(assetHash);
     return new ResponseEntity<>(HttpStatus.OK);
+  }
+
+  /**
+   * Cascade-delete every version, every human-readable companion, and every provenance credential
+   * for the asset identified by the URL-encoded IRI. The operation is idempotent — repeated calls
+   * for an unknown id return {@code 204} without an error. When an asset is present, the issuer
+   * recorded on it must match the calling participant.
+   */
+  @Override
+  @Transactional
+  public ResponseEntity<Void> deleteAssetById(String id) {
+    String decodedId = UriUtils.decode(id, StandardCharsets.UTF_8);
+    if (assetStorePublisher.existsById(decodedId)) {
+      AssetMetadata live = assetStorePublisher.getById(decodedId);
+      checkParticipantAccess(live.getIssuer());
+    }
+    assetStorePublisher.deleteByAssetId(decodedId);
+    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 
   /**
@@ -552,16 +571,17 @@ public class AssetService implements AssetsApiDelegate {
   }
 
   /**
-   * Validate that the given MIME type is an accepted human-readable content type.
+   * Validate that the given MIME type is admissible for the human-readable companion endpoint.
    *
-   * @param contentType the MIME type to validate
-   * @throws ClientException if the type is not in {@code federated-catalogue.assets.hr-content-types}
+   * @param contentType the MIME type to validate; parameters such as {@code charset=…} are stripped
+   *                    before matching
+   * @throws ClientException when the matcher refuses the type
    */
   void validateHumanReadableContentType(String contentType) {
-    if (contentType == null || !assetProperties.getHumanReadableContentTypes().contains(contentType)) {
+    if (!humanReadableContentTypeMatcher.isAccepted(contentType)) {
       throw new ClientException(String.format(
-          "Unsupported content type '%s'. Accepted types: %s", contentType,
-          String.join(", ", new TreeSet<>(assetProperties.getHumanReadableContentTypes()))));
+          "Unsupported content type '%s'. %s",
+          contentType, humanReadableContentTypeMatcher.describeAllowlist()));
     }
   }
 

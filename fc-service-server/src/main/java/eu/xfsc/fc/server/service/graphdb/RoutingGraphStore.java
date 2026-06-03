@@ -157,6 +157,11 @@ public class RoutingGraphStore implements GraphStore {
   }
 
   @Override
+  public Optional<String> queryDataAsSparqlResultsJson(GraphQuery query) {
+    return activeAdapter.queryDataAsSparqlResultsJson(query);
+  }
+
+  @Override
   public Optional<QueryLanguage> getSupportedQueryLanguage() {
     return activeAdapter.getSupportedQueryLanguage();
   }

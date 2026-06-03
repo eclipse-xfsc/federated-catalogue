@@ -53,6 +53,23 @@ public interface GraphStore {
     PaginatedResults<Map<String, Object>> queryData(GraphQuery query);
 
     /**
+     * Executes a SELECT-style query and serializes the result set as the W3C
+     * SPARQL 1.1 Results JSON envelope (head/results.bindings with typed values).
+     *
+     * <p>This method is meaningful only for graph stores whose native query
+     * language is SPARQL. Implementations that do not support SPARQL must
+     * return {@link Optional#empty()} so the calling layer can negotiate an
+     * appropriate HTTP response (typically 406 Not Acceptable).</p>
+     *
+     * @param query the query to execute
+     * @return the serialized W3C SPARQL Results JSON document, or empty if
+     *         this graph store cannot produce that format
+     */
+    default Optional<String> queryDataAsSparqlResultsJson(GraphQuery query) {
+        return Optional.empty();
+    }
+
+    /**
      * Returns the query language supported by this graph store implementation.
      *
      * @return the supported {@link QueryLanguage}, or empty if the store is disabled

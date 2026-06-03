@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -94,31 +95,91 @@ public class QueryService implements QueryApiDelegate {
         .build();
   }
   
+  /** W3C SPARQL 1.1 Results JSON media type — selected via the {@code Accept} header. */
+  public static final String SPARQL_RESULTS_JSON_VALUE = "application/sparql-results+json";
+  private static final MediaType SPARQL_RESULTS_JSON =
+      MediaType.parseMediaType(SPARQL_RESULTS_JSON_VALUE);
+
   /**
-   * Get List of results from catalogue for provided raw query text.
-   * The query language is determined from the Content-Type header.
+   * Get List of results from catalogue for provided raw query text. The query language is
+   * determined from the {@code Content-Type} header; the response shape is negotiated via
+   * the {@code Accept} header.
    *
-   * @param timeout query timeout in seconds
-   * @param withTotalCount whether to include total count
+   * <p>When the client lists {@code application/sparql-results+json} in the {@code Accept}
+   * header and the active graph store is SPARQL-capable, the response is the W3C SPARQL
+   * 1.1 Results JSON document ({@code head.vars} / {@code results.bindings} with typed
+   * value entries) as defined in https://www.w3.org/TR/sparql11-results-json/.
+   *
+   * <p>Otherwise the legacy {@link Results} envelope ({@code totalCount} + flat
+   * {@code items} list of variable→value maps) is returned under
+   * {@code application/json}. If the W3C representation is requested against a
+   * non-SPARQL backend, the response is {@code 406 Not Acceptable}.
+   *
    * @param body raw query text
-   * @return List of {@link Results}
+   * @param timeout query timeout in seconds
+   * @param withTotalCount whether to include total count (ignored for the W3C envelope)
+   * @return the negotiated response envelope; the runtime body type is {@link Results}
+   *         for the legacy envelope and {@link String} for the W3C envelope
    */
   @Override
+  @SuppressWarnings("unchecked") // Generic body widened at runtime to honour Accept negotiation:
+                                 // the W3C path returns a String body, the legacy path Results.
   public ResponseEntity<Results> query(String body, Integer timeout, Boolean withTotalCount) {
     String contentType = httpServletRequest.getContentType();
+    String acceptHeader = httpServletRequest.getHeader(HttpHeaders.ACCEPT);
     QueryLanguage queryLanguage = QueryLanguageProperties.fromContentType(contentType);
-    log.debug("query.enter; got contentType: {}, queryLanguage: {}, timeout: {}, withTotalCount: {}, body: {}",
-        contentType, queryLanguage, timeout, withTotalCount, body);
+    log.debug("query.enter; got contentType: {}, accept: {}, queryLanguage: {}, timeout: {}, withTotalCount: {}, body: {}",
+        contentType, acceptHeader, queryLanguage, timeout, withTotalCount, body);
     queryLanguageValidator.validateLanguageSupport(queryLanguage);
     String queryText = body;
     if (checkIfLimitAbsent(queryText)) {
       queryText = queryText + " LIMIT " + DEFAULT_LIMIT;
     }
-    PaginatedResults<Map<String, Object>> queryResultList = graphStore.queryData(
-        new GraphQuery(queryText, null, queryLanguage, timeout, withTotalCount));
+    GraphQuery graphQuery = new GraphQuery(queryText, null, queryLanguage, timeout, withTotalCount);
+
+    if (clientPrefersSparqlResultsJson(acceptHeader)) {
+      Optional<String> sparqlResultsJson = graphStore.queryDataAsSparqlResultsJson(graphQuery);
+      if (sparqlResultsJson.isEmpty()) {
+        return (ResponseEntity) ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(new eu.xfsc.fc.api.generated.model.Error("unsupported_accept_header",
+                "The active graph store does not support the " + SPARQL_RESULTS_JSON_VALUE
+                    + " response format. Use Accept: " + MediaType.APPLICATION_JSON_VALUE
+                    + " instead."));
+      }
+      log.debug("query.exit; returning W3C SPARQL Results JSON envelope");
+      return (ResponseEntity) ResponseEntity.ok()
+          .contentType(SPARQL_RESULTS_JSON)
+          .body(sparqlResultsJson.get());
+    }
+
+    PaginatedResults<Map<String, Object>> queryResultList = graphStore.queryData(graphQuery);
     Results result = new Results((int) queryResultList.getTotalCount(), queryResultList.getResults());
-    log.debug("query.exit; returning results: {}", result);
+    log.debug("query.exit; returning legacy results envelope: {}", result);
     return ResponseEntity.ok(result);
+  }
+
+  /**
+   * Returns {@code true} when the supplied {@code Accept} header explicitly lists the
+   * W3C SPARQL Results JSON media type. Parses comma-separated values with q-weights via
+   * {@link MediaType#parseMediaTypes(String)}; the W3C format is selected only when the
+   * client mentions it by name (a generic {@code application/json} or {@code *}/{@code *}
+   * keeps the legacy envelope as the backward-compatible default).
+   *
+   * @param acceptHeader the raw {@code Accept} header value (may be {@code null})
+   * @return whether the W3C envelope should be returned
+   */
+  private static boolean clientPrefersSparqlResultsJson(String acceptHeader) {
+    if (acceptHeader == null || acceptHeader.isBlank()) {
+      return false;
+    }
+    try {
+      return MediaType.parseMediaTypes(acceptHeader).stream()
+          .anyMatch(SPARQL_RESULTS_JSON::equalsTypeAndSubtype);
+    } catch (InvalidMediaTypeException ex) {
+      log.debug("query; ignoring malformed Accept header '{}'", acceptHeader, ex);
+      return false;
+    }
   }
   
   

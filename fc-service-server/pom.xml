@@ -43,6 +43,20 @@
             <groupId>eu.xfsc.cat</groupId>
             <artifactId>fc-service-core</artifactId>
         </dependency>
+        <!-- Must be declared before fc-graphdb-neo4j: neosemantics (pulled in by the neo4j module)
+             is a fat-jar that bundles old copies of commons-lang3 and commons-io, lacking newer
+             methods (e.g. SystemProperties.getUserName(String), IOUtils.skip(InputStream, long,
+             Supplier)). Without these explicit declarations the shaded versions win classpath
+             order and every embedded-DB @SpringBootTest fails at context load with
+             NoSuchMethodError. -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
         <dependency>
             <groupId>eu.xfsc.cat</groupId>
             <artifactId>fc-graphdb-neo4j</artifactId>

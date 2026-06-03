@@ -53,7 +53,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {"graphstore.impl=fuseki"})
-@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.ZONKY)
+@AutoConfigureEmbeddedDatabase(provider = DatabaseProvider.EMBEDDED)
 class ProvenanceServiceTest {
 
   private static final String ASSET_ID = "did:web:example:asset";
@@ -182,6 +182,145 @@ class ProvenanceServiceTest {
 
     assertThrows(ClientException.class, () ->
         provenanceService.add(ASSET_ID, null, VALID_VC, null));
+  }
+
+  @Test
+  void add_activityCentricVc_pointingToVersionedAsset_isAccepted() {
+    // The activity declares its own IRI as credentialSubject.id and links back to the asset
+    // version through prov:generated, matching the W3C-PROV-O idiom for an activity-as-subject
+    // credential. The relational row is keyed on (assetId, version) extracted from the link.
+    String activityIri = "did:web:issuer.example:activity-creation-v1";
+    String activityVc = """
+        {
+          "id": "did:vc:prov-activity-001",
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasAssociatedWith": "did:web:alice",
+            "prov:generated": "%s"
+          }
+        }
+        """.formatted(activityIri, ASSET_IRI);
+    when(verificationService.verifyCredential(any(), eq(false)))
+        .thenReturn(successResult(activityIri, ISSUER));
+
+    ProvenanceCredential result = provenanceService.add(ASSET_ID, null, activityVc, null);
+
+    assertNotNull(result);
+    assertEquals("did:vc:prov-activity-001", result.getCredentialId());
+    assertTrue(provenanceRepository.existsByCredentialId("did:vc:prov-activity-001"));
+  }
+
+  @Test
+  void add_activityCentricVc_projectsTriplesUnderActivityIri() {
+    String activityIri = "did:web:issuer.example:activity-creation-v2";
+    String activityVc = """
+        {
+          "id": "did:vc:prov-activity-002",
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasAssociatedWith": "did:web:alice",
+            "prov:generated": "%s"
+          }
+        }
+        """.formatted(activityIri, ASSET_IRI);
+    when(verificationService.verifyCredential(any(), eq(false)))
+        .thenReturn(successResult(activityIri, ISSUER));
+
+    provenanceService.add(ASSET_ID, null, activityVc, null);
+
+    // Triples must be projected under the activity IRI, not the versioned-asset IRI.
+    String activityScopedSparql = "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <%s> <%s> }"
+        .formatted(CRED_SUBJECT_URI, activityIri);
+    List<Map<String, Object>> activityRows = graphStore.queryData(
+        new GraphQuery(activityScopedSparql, Map.of(), QueryLanguage.SPARQL,
+            GraphQuery.QUERY_TIMEOUT, false)).getResults();
+
+    assertEquals(2, activityRows.size(),
+        "All recognised PROV-O predicates on credentialSubject must be projected");
+    assertTrue(activityRows.stream().allMatch(row -> activityIri.equals(row.get("s"))),
+        "Every triple must use the activity IRI as subject, not the versioned-asset IRI");
+  }
+
+  @Test
+  void add_entityCentricVc_subjectIsBareAssetId_isAccepted() {
+    // Issuers don't know the catalogue's internal :vN suffix; PROV-DM treats the asset IRI
+    // (e.g. https://example/templates/dpa/v1) as the resource identifier. Accepting the bare
+    // assetId as credentialSubject.id keeps issued VCs portable across catalogue instances.
+    String bareSubjectVc = """
+        {
+          "id": "did:vc:prov-bare-entity",
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasGeneratedBy": "%s"
+          }
+        }
+        """.formatted(ASSET_ID, ACTIVITY_IRI);
+    when(verificationService.verifyCredential(any(), eq(false)))
+        .thenReturn(successResult(ASSET_ID, ISSUER));
+
+    ProvenanceCredential result = provenanceService.add(ASSET_ID, null, bareSubjectVc, null);
+
+    assertNotNull(result);
+    assertTrue(provenanceRepository.existsByCredentialId("did:vc:prov-bare-entity"));
+
+    // Graph projection still anchors on the canonical versioned form so SPARQL queries
+    // joining provenance to a specific asset version keep working.
+    String sparql = "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <%s> <%s> }"
+        .formatted(CRED_SUBJECT_URI, ASSET_IRI);
+    List<Map<String, Object>> rows = graphStore.queryData(
+        new GraphQuery(sparql, Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)
+    ).getResults();
+    assertEquals(1, rows.size());
+    assertEquals(ASSET_IRI, rows.getFirst().get("s"));
+  }
+
+  @Test
+  void add_activityCentricVc_pointingToBareAssetId_isAccepted() {
+    String activityIri = "did:web:issuer.example:activity-creation-bare";
+    String activityVc = """
+        {
+          "id": "did:vc:prov-bare-activity",
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasAssociatedWith": "did:web:alice",
+            "prov:generated": "%s"
+          }
+        }
+        """.formatted(activityIri, ASSET_ID);
+    when(verificationService.verifyCredential(any(), eq(false)))
+        .thenReturn(successResult(activityIri, ISSUER));
+
+    ProvenanceCredential result = provenanceService.add(ASSET_ID, null, activityVc, null);
+
+    assertNotNull(result);
+    assertTrue(provenanceRepository.existsByCredentialId("did:vc:prov-bare-activity"));
+  }
+
+  @Test
+  void add_activityCentricVc_withoutReferenceToTargetVersion_throwsClientException() {
+    // An activity-centric VC that names neither prov:generated nor prov:used pointing back to
+    // the target asset version cannot be linked to a relational row, so the request must be
+    // refused with a 400 — guards against orphaned graph triples.
+    String activityIri = "did:web:issuer.example:unrelated-activity";
+    String activityVc = """
+        {
+          "id": "did:vc:prov-activity-orphan",
+          "@context": ["https://www.w3.org/2018/credentials/v1"],
+          "credentialSubject": {
+            "id": "%s",
+            "prov:wasAssociatedWith": "did:web:alice"
+          }
+        }
+        """.formatted(activityIri);
+    when(verificationService.verifyCredential(any(), eq(false)))
+        .thenReturn(successResult(activityIri, ISSUER));
+
+    assertThrows(ClientException.class, () ->
+        provenanceService.add(ASSET_ID, null, activityVc, null));
   }
 
   @Test

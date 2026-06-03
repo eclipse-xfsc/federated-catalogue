@@ -30,7 +30,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.net.http.HttpConnectTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -228,6 +230,46 @@ public class SparqlGraphStore implements GraphStore {
                 }
             }
         });
+    }
+
+    /**
+     * Executes the supplied SELECT query and serializes the typed result set as a
+     * W3C SPARQL 1.1 Results JSON document (head/results.bindings, with each value
+     * carrying its {@code type}, {@code value} and, where applicable,
+     * {@code datatype} or {@code xml:lang}). Delegates the JSON encoding to
+     * Jena's {@link ResultSetFormatter#outputAsJSON(java.io.OutputStream,
+     * ResultSet)} so the output exactly matches the W3C specification and
+     * preserves RDF type information lost by the legacy flat-map shape.
+     *
+     * @param query the query to execute; must declare {@link QueryLanguage#SPARQL}
+     * @return the serialized W3C SPARQL Results JSON document
+     */
+    @Override
+    public Optional<String> queryDataAsSparqlResultsJson(GraphQuery query) {
+        log.debug("queryDataAsSparqlResultsJson.enter; got query: {}", query);
+        if (query.getQueryLanguage() != QueryLanguage.SPARQL) {
+            // The W3C SPARQL Results JSON envelope is only defined for SPARQL; opt out so the
+            // controller can fall back to its 406 path rather than producing a spec-violating body.
+            return Optional.empty();
+        }
+        return Optional.of(Txn.calculateRead(rdfConnection, () -> {
+            final QueryExecutionBuilder queryExecutionBuilder = rdfConnection.newQuery()
+                    .query(query.getQuery())
+                    .timeout(query.getTimeout(), TimeUnit.SECONDS);
+            try (final QueryExecution queryResults = queryExecutionBuilder.build();
+                 final ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+                final ResultSet rs = queryResults.execSelect();
+                ResultSetFormatter.outputAsJSON(buffer, rs);
+                return buffer.toString(StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                if (e.getCause() instanceof HttpConnectTimeoutException) {
+                    log.error("Timeout while executing query: {}", query.getQuery(), e);
+                    throw new TimeoutException("Timeout while executing query");
+                }
+                log.error("Error while executing query: {}", query.getQuery(), e);
+                throw new ServerException("error querying data " + e.getMessage(), e);
+            }
+        }));
     }
 
     /**

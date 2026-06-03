@@ -494,11 +494,15 @@ components:
           description: issuedDateTime extracted from the VC.
         provenanceType:
           type: string
-          enum: [ CREATION, DERIVATION, ATTRIBUTION, MODIFICATION ]
+          enum: [ CREATION, DERIVATION, ATTRIBUTION, MODIFICATION, GENERATION, USAGE, ASSOCIATION, DELEGATION ]
           description: >
-            Provenance relation type, derived by detecting the PROV-O predicate present in
-            credentialSubject. CREATION=wasGeneratedBy, DERIVATION=wasDerivedFrom,
-            ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf.
+            Provenance relation type of the primary PROV-O predicate detected on
+            credentialSubject. A single credential may carry several recognised predicates; every
+            recognised predicate is projected to the graph store, while this field records the type
+            of the first one for relational filtering. Predicate mapping: CREATION=wasGeneratedBy,
+            DERIVATION=wasDerivedFrom, ATTRIBUTION=wasAttributedTo, MODIFICATION=wasRevisionOf,
+            GENERATION=generated, USAGE=used, ASSOCIATION=wasAssociatedWith,
+            DELEGATION=actedOnBehalfOf.
         credentialFormat:
           type: string
           enum: [ JSONLD, JSONLD_JWT, JWT ]
@@ -2106,6 +2110,15 @@ paths:
       summary: Get version history for an asset.
       description: >
         Returns a paginated list of all versions of the asset, ordered descending (newest first).
+
+
+        A "version" is one distinct content hash observed in the asset's audit history. Saves that
+        only change non-content fields (linking a human-readable companion, lifecycle-status
+        transitions, last-modified bookkeeping) reuse an existing hash and do not produce a new
+        version entry — so attaching a provenance credential or a human-readable companion never
+        advances the version count.
+
+
         Required permission: ASSET_READ or ADMIN_ALL
       operationId: readAssetVersions
       parameters:
@@ -2205,6 +2218,39 @@ paths:
         Uploads a human-readable document (e.g. PDF) and links it bidirectionally
         to the existing machine-readable asset identified by {id}. The human-readable document
         is stored as an independent asset with its own IRI.
+
+
+        The uploaded part's Content-Type is matched against a family-aware allowlist intersected
+        with a script-execution denylist. Admitted by default:
+
+
+          - inert document and structured-data types — `application/pdf`, the Office Open XML word
+            document type, `application/json`, `application/ld+json`, `application/xml`, and the
+            YAML media types (`application/yaml`, `application/x-yaml`);
+          - the entire `text/*` family (e.g. `text/plain`, `text/html`, `text/markdown`,
+            `text/csv`);
+          - the entire `image/*`, `audio/*`, and `video/*` families (e.g. `image/png`,
+            `audio/mpeg`, `video/mp4`).
+
+
+        Refused regardless of family — these types either execute in the browser when echoed
+        back as the stored `Content-Type`, or carry opaque-binary risk:
+
+
+          - scripting media types (`text/javascript`, `text/ecmascript`, `text/vbscript`,
+            `application/javascript`, `application/ecmascript`, `application/x-javascript`);
+          - `image/svg+xml` (SVG can carry inline script);
+          - opaque or native-executable types (`application/octet-stream`,
+            `application/x-msdownload`, `application/x-executable`, `application/x-sh`,
+            `application/x-shockwave-flash`, `application/x-httpd-php`).
+
+
+        Any other value is rejected with `400`. Operators can override both the allowlist and the
+        denylist via the `federated-catalogue.assets.human-readable-content-types` and
+        `human-readable-content-type-denylist` properties. Linking a companion does not advance
+        the machine-readable asset's version counter.
+
+
         Multipart uploads are handled by the server outside the generated delegate pattern.
         Required permission: ASSET_CREATE or ADMIN_ALL
       operationId: uploadHumanReadable
@@ -2495,12 +2541,33 @@ paths:
       summary: Attach a provenance credential to an asset version.
       description: >
         Stores a VC 2.0 JSON-LD or VC-JWT provenance credential against the given asset version.
-        If version is omitted the current version is used. credentialSubject.id MUST equal
-        {assetId}:v{N}. The credentialSubject MUST contain exactly one of the supported W3C PROV-O
-        predicates: prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, or
-        prov:wasRevisionOf (compact or expanded IRI form). The predicate value becomes the PROV-O
-        triple object stored in the graph. VC 1.1 payloads or credentials using the CAT-internal
-        namespace are rejected with 400. Duplicate credentialId returns 409.
+        If version is omitted the current version is used.
+
+
+        Two `credentialSubject` shapes are accepted:
+
+
+          - *Entity-centric* — `credentialSubject.id` equals `{assetId}:v{N}`. The versioned-asset
+            IRI becomes the graph subject; the projected PROV-O triples decorate that subject.
+          - *Activity-centric* — `credentialSubject.id` is the activity's own IRI (any absolute
+            IRI). The credential MUST then declare `prov:generated` or `prov:used` (compact or
+            expanded form) pointing at `{assetId}:v{N}` so the activity links back to a versioned
+            asset. The activity IRI becomes the graph subject; the projected triples form the
+            activity's star of relations.
+
+
+        credentialSubject MUST declare at least one — and MAY declare several — of the supported
+        W3C PROV-O predicates: prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo,
+        prov:wasRevisionOf, prov:generated, prov:used, prov:wasAssociatedWith,
+        prov:actedOnBehalfOf (compact prov:X or expanded http://www.w3.org/ns/prov#X form). Every
+        recognised predicate is projected to the graph store as its own triple under the resolved
+        graph subject; the predicate that appears first on credentialSubject is also recorded as
+        the row's provenanceType for relational filtering.
+
+
+        Attaching a provenance credential does not advance the asset version counter (the counter
+        reflects distinct content hashes, not metadata events). VC 1.1 payloads and credentials
+        using the CAT-internal namespace are rejected with 400. Duplicate credentialId returns 409.
         Required permission: ASSET_UPDATE or ADMIN_ALL
       operationId: addProvenanceCredential
       security:
@@ -2742,6 +2809,10 @@ paths:
         Unlike other asset endpoints which use IRI-based identification (/assets/{id}),
         the delete operation uses the SHA-256 content hash to guarantee unambiguous
         single-row targeting. See ADR 7 — Delete Operation Exception.
+
+
+        For idempotent cascade-by-IRI semantics (every version, every linked companion, every
+        provenance row), prefer DELETE /assets/by-id/{id}.
       operationId: deleteAsset
       security:
         - jwt: [ ]
@@ -2763,6 +2834,43 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /assets/by-id/{id}:
+    delete:
+      tags:
+        - Assets
+      summary: Delete an asset and its linked companions by IRI
+      description: >
+        Removes the live asset row, any linked human-readable companion, and all associated
+        provenance credentials for the asset identified by `id` (URL-encoded asset IRI).
+        Historical audit revisions are preserved by design — see
+        chapter 05_building_block_view of the architecture document.
+        Data-subject-erasure requirements that demand audit-row removal are out of scope of this
+        endpoint. The operation is idempotent — repeated calls on the same id return 204 even if
+        no rows remain.
+
+        Cross-participant scoping: when a live row is present, the caller's `participant_id` claim
+        must match the issuer recorded on that row, otherwise the request is refused with 403.
+        Requests against an unknown id always succeed with 204 and reveal nothing about the
+        catalogue's contents.
+      operationId: deleteAssetById
+      security:
+        - jwt: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: URL-encoded asset IRI (subject identifier).
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deletion accepted (idempotent; no body)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
   /assets/{asset_hash}/revoke:
@@ -2867,7 +2975,34 @@ paths:
       tags:
         - Query
       summary: Send a query to the Catalogue
-      description: 'Required permission: QUERY_EXECUTE or ADMIN_ALL'
+      description: >
+        Required permission: QUERY_EXECUTE or ADMIN_ALL.
+
+
+        The SPARQL backend is RDF-star (SPARQL-Star) aware. Credential claims are projected as
+        reified triples annotated with `cred:credentialSubject`
+        (`http://www.w3.org/2018/credentials#credentialSubject`): each claim triple `s p o`
+        appears in the graph as `<< s p o >> <cred:credentialSubject> <subject>`. Discovery
+        queries that target the credential claims must therefore reach into the reification, for
+        example:
+
+
+        `SELECT ?subject WHERE { << ?subject a <https://example.org/dcs/1#ContractTemplate> >>
+        <http://www.w3.org/2018/credentials#credentialSubject> ?subject }`.
+
+
+        Asserted (non-reified) triples emitted by the catalogue itself — such as the
+        machine-readable ↔ human-readable link predicates — are queryable with plain SPARQL.
+
+
+        Content negotiation: the response body shape is selected by the `Accept` header.
+        `application/json` (the default) returns the catalogue's legacy `Results` envelope
+        with a flat `items` array of variable→value maps. `application/sparql-results+json`
+        returns the W3C SPARQL 1.1 Results JSON document (`head.vars` and
+        `results.bindings` with typed `{type, value, datatype?, "xml:lang"?}` entries) as
+        defined in https://www.w3.org/TR/sparql11-results-json/. The W3C format is only
+        available when the active graph store is SPARQL-capable; other backends return
+        `406 Not Acceptable`.
       operationId: query
       parameters:
         - in: query
@@ -2901,12 +3036,43 @@ paths:
               example: "MATCH (n:Resource) RETURN n.uri AS id, n.name AS name LIMIT 10"
       responses:
         '200':
-          description: successful query
+          description: >-
+            successful query. The response media type is selected by the
+            client's `Accept` header: `application/json` returns the catalogue's
+            legacy `Results` envelope, `application/sparql-results+json` returns
+            the W3C SPARQL 1.1 Results JSON document.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Results'
+            application/sparql-results+json:
+              schema:
+                type: string
+                description: >-
+                  W3C SPARQL 1.1 Results JSON document. The body is a JSON
+                  object with `head.vars` (list of projected variables) and
+                  `results.bindings` (array of solution objects). Each binding
+                  value is `{type, value}` with optional `datatype` or
+                  `xml:lang`. See
+                  https://www.w3.org/TR/sparql11-results-json/ for the full
+                  schema.
+                example: |
+                  {
+                    "head": { "vars": ["s","p","o"] },
+                    "results": {
+                      "bindings": [
+                        {
+                          "s": {"type":"uri","value":"http://example.org/service1"},
+                          "p": {"type":"uri","value":"http://example.org/name"},
+                          "o": {"type":"literal","value":"Example Service"}
+                        }
+                      ]
+                    }
+                  }
         '400': ## Malformed Message: The receveived request cannot be processed, either because its syntax is ## incorrect or forbidden query clauses are used. For instance, it is not allowed to manipulate data ## through the query endpoint
+          $ref: '#/components/responses/ClientError'
+        '406': ## Accept header asks for a representation the active graph store cannot produce
+          ## (e.g. application/sparql-results+json against a non-SPARQL backend).
           $ref: '#/components/responses/ClientError'
         '408': ## Query Timeout: the query took longer than the configured timeout
           ## interval. The client needs to rewrite the query so it can be

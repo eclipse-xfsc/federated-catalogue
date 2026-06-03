@@ -152,6 +152,100 @@ public class SparqlGraphStoreTest {
         assertEquals("Charlie", rows.get(2).get("o"));
     }
 
+    // ----- W3C SPARQL 1.1 Results JSON envelope ----------------------------
+
+    @Test
+    void queryDataAsSparqlResultsJson_select_returnsW3cHeadAndBindingsShape() throws Exception {
+        graphStore.addClaims(List.of(
+            typeClaim("http://example.org/subjectA", "http://example.org/Resource"),
+            literalClaim("http://example.org/subjectA", "http://example.org/name", "Alpha")
+        ), "http://example.org/credentialW3c");
+
+        String json = graphStore.queryDataAsSparqlResultsJson(new GraphQuery(
+            "SELECT ?s ?p ?o WHERE { <<(?s ?p ?o)>> <" + CRED_SUBJECT_URI + "> ?cs }",
+            Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)).orElseThrow();
+
+        com.fasterxml.jackson.databind.JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+
+        assertTrue(root.has("head"), "W3C envelope must carry a head object");
+        assertTrue(root.path("head").has("vars"), "head must carry a vars array");
+        List<String> vars = new java.util.ArrayList<>();
+        root.path("head").path("vars").forEach(v -> vars.add(v.asText()));
+        assertEquals(List.of("s", "p", "o"), vars,
+            "head.vars must list the projected variables in query order");
+
+        assertTrue(root.has("results"), "W3C envelope must carry a results object");
+        com.fasterxml.jackson.databind.JsonNode bindings = root.path("results").path("bindings");
+        assertTrue(bindings.isArray() && bindings.size() == 2,
+            "results.bindings must list one entry per solution row");
+        // Each binding must declare the W3C-required typed shape: a "type" and "value" per variable.
+        bindings.forEach(binding -> {
+            assertTrue(binding.path("s").has("type") && binding.path("s").has("value"),
+                "Each ?s binding must be a typed RDF term object");
+            assertTrue(binding.path("p").has("type") && binding.path("p").has("value"),
+                "Each ?p binding must be a typed RDF term object");
+            assertTrue(binding.path("o").has("type") && binding.path("o").has("value"),
+                "Each ?o binding must be a typed RDF term object");
+        });
+    }
+
+    @Test
+    void queryDataAsSparqlResultsJson_uriObjectBinding_typeUri() throws Exception {
+        graphStore.addClaims(List.of(
+            typeClaim("http://example.org/subjectUri", "http://example.org/SomeType")
+        ), "http://example.org/credentialUriBinding");
+
+        String json = graphStore.queryDataAsSparqlResultsJson(new GraphQuery(
+            "SELECT ?o WHERE { <<(<http://example.org/subjectUri> "
+                + RDF_TYPE + " ?o)>> <" + CRED_SUBJECT_URI + "> ?cs }",
+            Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)).orElseThrow();
+
+        com.fasterxml.jackson.databind.JsonNode binding = new com.fasterxml.jackson.databind.ObjectMapper()
+            .readTree(json).path("results").path("bindings").path(0).path("o");
+        assertEquals("uri", binding.path("type").asText(),
+            "An object value that resolves to an IRI must be tagged type='uri'");
+        assertEquals("http://example.org/SomeType", binding.path("value").asText());
+    }
+
+    @Test
+    void queryDataAsSparqlResultsJson_literalObjectBinding_typeLiteral() throws Exception {
+        graphStore.addClaims(List.of(
+            literalClaim("http://example.org/subjectLit", "http://example.org/name", "Bravo")
+        ), "http://example.org/credentialLiteralBinding");
+
+        String json = graphStore.queryDataAsSparqlResultsJson(new GraphQuery(
+            "SELECT ?o WHERE { <<(<http://example.org/subjectLit> "
+                + "<http://example.org/name> ?o)>> <" + CRED_SUBJECT_URI + "> ?cs }",
+            Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)).orElseThrow();
+
+        com.fasterxml.jackson.databind.JsonNode binding = new com.fasterxml.jackson.databind.ObjectMapper()
+            .readTree(json).path("results").path("bindings").path(0).path("o");
+        assertEquals("literal", binding.path("type").asText(),
+            "A plain string object must be tagged type='literal'");
+        assertEquals("Bravo", binding.path("value").asText());
+    }
+
+    @Test
+    void queryDataAsSparqlResultsJson_emptyResult_emitsEmptyBindings() throws Exception {
+        String json = graphStore.queryDataAsSparqlResultsJson(new GraphQuery(
+            "SELECT ?s WHERE { ?s <http://example.org/never-present> ?o }",
+            Map.of(), QueryLanguage.SPARQL, GraphQuery.QUERY_TIMEOUT, false)).orElseThrow();
+
+        com.fasterxml.jackson.databind.JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+        assertTrue(root.path("results").path("bindings").isArray()
+                && root.path("results").path("bindings").isEmpty(),
+            "An empty result set must still emit an empty bindings array, not a missing field");
+    }
+
+    @Test
+    void queryDataAsSparqlResultsJson_openCypherQuery_returnsEmptyOptional() {
+        // SPARQL-only contract — openCypher queries are not representable in the W3C SPARQL JSON
+        // envelope, so the store opts out rather than fabricating a translation.
+        assertTrue(graphStore.queryDataAsSparqlResultsJson(new GraphQuery(
+            "MATCH (n) RETURN n LIMIT 1",
+            Map.of(), QueryLanguage.OPENCYPHER, GraphQuery.QUERY_TIMEOUT, false)).isEmpty());
+    }
+
     @Test
     void addClaims_withValidClaim_persistsInStore() {
         graphStore.addClaims(
