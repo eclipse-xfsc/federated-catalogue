@@ -8,6 +8,7 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.VerificationException;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.CredentialVerificationResult;
+import eu.xfsc.fc.core.service.provenance.ProvenanceInfo.ObjectKind;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -29,31 +30,59 @@ public class ProvenanceCredentialParser {
   private static final String CONTEXT_KEY = "@context";
   private static final String ACCEPTED_PREDICATES =
       "prov:wasGeneratedBy, prov:wasDerivedFrom, prov:wasAttributedTo, prov:wasRevisionOf, "
-          + "prov:generated, prov:used, prov:wasAssociatedWith, prov:actedOnBehalfOf";
+          + "prov:generated, prov:used, prov:wasAssociatedWith, prov:actedOnBehalfOf, "
+          + "prov:wasInformedBy, prov:startedAtTime, prov:endedAtTime, dcs:action, rdf:type";
+
+  private static final Map<String, String> KNOWN_PREFIXES = Map.of(
+      "prov", ProvOConstants.NAMESPACE,
+      "dcs", ProvOConstants.DCS_NAMESPACE,
+      "rdf", ProvOConstants.RDF_NAMESPACE);
 
   /**
-   * Recognizes both compact ({@code prov:X}) and expanded ({@code http://www.w3.org/ns/prov#X})
-   * forms of every supported PROV-O predicate. Insertion order is preserved to make the parsed
-   * fact list deterministic.
+   * Recognises compact ({@code prov:X}) and expanded ({@code http://www.w3.org/ns/prov#X}) forms of
+   * every supported predicate. Insertion order is preserved to make the parsed fact list
+   * deterministic.
    */
-  private static final Map<String, ProvenanceType> PREDICATE_MAP = buildPredicateMap();
+  private static final Map<String, PredicateMeta> PREDICATE_MAP = buildPredicateMap();
 
-  private static Map<String, ProvenanceType> buildPredicateMap() {
-    Map<String, ProvenanceType> map = new LinkedHashMap<>();
-    register(map, "wasGeneratedBy", ProvenanceType.CREATION);
-    register(map, "wasDerivedFrom", ProvenanceType.DERIVATION);
-    register(map, "wasAttributedTo", ProvenanceType.ATTRIBUTION);
-    register(map, "wasRevisionOf", ProvenanceType.MODIFICATION);
-    register(map, "generated", ProvenanceType.GENERATION);
-    register(map, "used", ProvenanceType.USAGE);
-    register(map, "wasAssociatedWith", ProvenanceType.ASSOCIATION);
-    register(map, "actedOnBehalfOf", ProvenanceType.DELEGATION);
+  private static Map<String, PredicateMeta> buildPredicateMap() {
+    Map<String, PredicateMeta> map = new LinkedHashMap<>();
+    registerProv(map, "wasGeneratedBy", ProvenanceType.CREATION, ObjectKind.IRI, null);
+    registerProv(map, "wasDerivedFrom", ProvenanceType.DERIVATION, ObjectKind.IRI, null);
+    registerProv(map, "wasAttributedTo", ProvenanceType.ATTRIBUTION, ObjectKind.IRI, null);
+    registerProv(map, "wasRevisionOf", ProvenanceType.MODIFICATION, ObjectKind.IRI, null);
+    registerProv(map, "generated", ProvenanceType.GENERATION, ObjectKind.IRI, null);
+    registerProv(map, "used", ProvenanceType.USAGE, ObjectKind.IRI, null);
+    registerProv(map, "wasAssociatedWith", ProvenanceType.ASSOCIATION, ObjectKind.IRI, null);
+    registerProv(map, "actedOnBehalfOf", ProvenanceType.DELEGATION, ObjectKind.IRI, null);
+    registerProv(map, "wasInformedBy", ProvenanceType.INFORMATION, ObjectKind.IRI, null);
+    registerProv(map, "startedAtTime", ProvenanceType.STARTED_AT_TIME,
+        ObjectKind.LITERAL, ProvOConstants.XSD_DATETIME);
+    registerProv(map, "endedAtTime", ProvenanceType.ENDED_AT_TIME,
+        ObjectKind.LITERAL, ProvOConstants.XSD_DATETIME);
+    register(map, "dcs:action", ProvOConstants.DCS_ACTION,
+        ProvenanceType.ACTION, ObjectKind.LITERAL, null);
+    // rdf:type is the activity's class declaration. JSON-LD aliases "type" and "@type" to rdf:type
+    // when the @context provides the standard credentials-v2 mapping, so all three keys must be
+    // recognised. The expanded form is also accepted for callers that produce already-canonical JSON.
+    PredicateMeta typeMeta = new PredicateMeta(ProvenanceType.TYPE, ObjectKind.IRI, null);
+    map.put("type", typeMeta);
+    map.put("@type", typeMeta);
+    map.put("rdf:type", typeMeta);
+    map.put(ProvOConstants.RDF_TYPE, typeMeta);
     return Map.copyOf(map);
   }
 
-  private static void register(Map<String, ProvenanceType> map, String localName, ProvenanceType type) {
-    map.put("prov:" + localName, type);
-    map.put(ProvOConstants.NAMESPACE + localName, type);
+  private static void registerProv(Map<String, PredicateMeta> map, String localName,
+                                   ProvenanceType type, ObjectKind kind, String datatype) {
+    register(map, "prov:" + localName, ProvOConstants.NAMESPACE + localName, type, kind, datatype);
+  }
+
+  private static void register(Map<String, PredicateMeta> map, String compactKey, String fullIri,
+                               ProvenanceType type, ObjectKind kind, String datatype) {
+    PredicateMeta meta = new PredicateMeta(type, kind, datatype);
+    map.put(compactKey, meta);
+    map.put(fullIri, meta);
   }
 
   private final VerificationService verificationService;
@@ -121,28 +150,44 @@ public class ProvenanceCredentialParser {
     }
     List<ProvenanceInfo> facts = new ArrayList<>();
     for (Map.Entry<String, JsonNode> field : subject.properties()) {
-      ProvenanceType type = PREDICATE_MAP.get(field.getKey());
-      if (type == null) {
+      PredicateMeta meta = PREDICATE_MAP.get(field.getKey());
+      if (meta == null) {
         continue;
       }
-      String objectValue = extractIriReference(field.getValue());
-      if (objectValue == null) {
-        throw new ClientException(
-            "PROV-O predicate '" + field.getKey() + "' must reference an IRI — either as a "
-                + "string or as an object with '@id' or 'id'.");
-      }
-      facts.add(new ProvenanceInfo(type, objectValue));
+      facts.add(buildFact(field.getKey(), field.getValue(), meta));
     }
     if (facts.isEmpty()) {
       throw new ClientException(
-          "credentialSubject must contain one of the supported PROV-O predicates: "
-              + ACCEPTED_PREDICATES);
+          "credentialSubject must contain one of the supported predicates: " + ACCEPTED_PREDICATES);
     }
     return List.copyOf(facts);
   }
 
+  private ProvenanceInfo buildFact(String fieldName, JsonNode value, PredicateMeta meta) {
+    return switch (meta.kind()) {
+      case IRI -> {
+        String iri = extractIriReference(value);
+        if (iri == null) {
+          throw new ClientException(
+              "Predicate '" + fieldName + "' must reference an IRI — either as a string or as "
+                  + "an object with '@id' or 'id'.");
+        }
+        yield new ProvenanceInfo(meta.type(), expandCurie(iri), ObjectKind.IRI, null);
+      }
+      case LITERAL -> {
+        String lexical = extractLiteralValue(value);
+        if (lexical == null) {
+          throw new ClientException(
+              "Predicate '" + fieldName + "' must carry a literal value (string, number, "
+                  + "or {\"@value\": ...}).");
+        }
+        yield new ProvenanceInfo(meta.type(), lexical, ObjectKind.LITERAL, meta.datatypeIri());
+      }
+    };
+  }
+
   /**
-   * Returns the IRI a PROV-O predicate points at. PROV-O object properties relate resources to
+   * Returns the IRI a predicate points at. PROV-O object properties relate resources to
    * resources (W3C PROV-DM), so the JSON-LD payload may carry either the compacted string IRI
    * (when the context declares the predicate as {@code "@type": "@id"}) or an object node with
    * {@code @id}/{@code id}. Datatyped/literal values return {@code null}.
@@ -162,11 +207,57 @@ public class ProvenanceCredentialParser {
     return null;
   }
 
+  /**
+   * Extracts the literal value of a JSON-LD scalar field. Accepts the compact string form (the
+   * JSON-LD context declares the predicate as a literal datatype), numeric and boolean scalars,
+   * and the expanded {@code {"@value": "..."}} object form.
+   */
+  private static String extractLiteralValue(JsonNode value) {
+    if (value == null || value.isNull()) {
+      return null;
+    }
+    if (value.isTextual()) {
+      return value.asText();
+    }
+    if (value.isNumber() || value.isBoolean()) {
+      return value.asText();
+    }
+    if (value.isObject()) {
+      JsonNode v = value.get("@value");
+      return (v != null && (v.isTextual() || v.isNumber() || v.isBoolean())) ? v.asText() : null;
+    }
+    return null;
+  }
+
+  /**
+   * Expands a compact prefix-form IRI ({@code prov:Activity}) using the parser's known prefix
+   * map. Inputs that are already absolute IRIs, contain no colon, or use an unknown prefix are
+   * returned unchanged so the downstream IRI validator can flag them.
+   */
+  private static String expandCurie(String value) {
+    int colon = value.indexOf(':');
+    if (colon <= 0) {
+      return value;
+    }
+    String prefix = value.substring(0, colon);
+    String ns = KNOWN_PREFIXES.get(prefix);
+    if (ns == null) {
+      return value;
+    }
+    return ns + value.substring(colon + 1);
+  }
+
   private JsonNode parseJson(String rawVc) {
     try {
       return objectMapper.readTree(rawVc);
     } catch (JsonProcessingException ex) {
       throw new ClientException("Invalid JSON in provenance credential: " + ex.getMessage(), ex);
     }
+  }
+
+  /**
+   * Predicate metadata: the mapped enum, the expected object kind, and an optional datatype IRI.
+   */
+  private record PredicateMeta(ProvenanceType type, ObjectKind kind, String datatypeIri) {
   }
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -327,6 +328,63 @@ class ProvenanceCredentialParserTest {
         """.formatted(SUBJECT_ID);
 
     assertThrows(ClientException.class, () -> parser.extractCredentialInfo(vc));
+  }
+
+  @Test
+  void extractCredentialInfo_activityCentricVc_returnsTypeInformedByTimestampAndActionFacts() {
+    String activityIri = "https://example.org/templates/dpa/v1#prov-approved";
+    String vc = """
+        {
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            { "prov": "http://www.w3.org/ns/prov#",
+              "dcs": "https://w3id.org/facis/dcs/1#" }
+          ],
+          "id": "did:vc:activity-approved",
+          "credentialSubject": {
+            "id": "%s",
+            "type": "prov:Activity",
+            "prov:wasAssociatedWith": "did:web:example:bob",
+            "prov:used": "https://example.org/templates/dpa/v1",
+            "prov:wasInformedBy": "https://example.org/templates/dpa/v1#prov-created",
+            "prov:startedAtTime": "2026-06-02T14:00:00Z",
+            "prov:endedAtTime": "2026-06-02T14:15:00Z",
+            "dcs:action": "approved"
+          }
+        }
+        """.formatted(activityIri);
+
+    ProvenanceCredentialInfo info = parser.extractCredentialInfo(vc);
+
+    java.util.List<ProvenanceType> types = info.facts().stream()
+        .map(ProvenanceInfo::type)
+        .toList();
+    assertTrue(types.contains(ProvenanceType.TYPE));
+    assertTrue(types.contains(ProvenanceType.ASSOCIATION));
+    assertTrue(types.contains(ProvenanceType.USAGE));
+    assertTrue(types.contains(ProvenanceType.INFORMATION));
+    assertTrue(types.contains(ProvenanceType.STARTED_AT_TIME));
+    assertTrue(types.contains(ProvenanceType.ENDED_AT_TIME));
+    assertTrue(types.contains(ProvenanceType.ACTION));
+
+    ProvenanceInfo typeFact = info.facts().stream()
+        .filter(f -> f.type() == ProvenanceType.TYPE).findFirst().orElseThrow();
+    assertEquals(ProvenanceInfo.ObjectKind.IRI, typeFact.objectKind());
+    assertEquals(PROV_NS + "Activity", typeFact.objectValue());
+
+    ProvenanceInfo startedFact = info.facts().stream()
+        .filter(f -> f.type() == ProvenanceType.STARTED_AT_TIME).findFirst().orElseThrow();
+    assertEquals(ProvenanceInfo.ObjectKind.LITERAL, startedFact.objectKind());
+    assertEquals("2026-06-02T14:00:00Z", startedFact.objectValue());
+    assertEquals("http://www.w3.org/2001/XMLSchema#dateTime", startedFact.datatypeIri());
+
+    ProvenanceInfo actionFact = info.facts().stream()
+        .filter(f -> f.type() == ProvenanceType.ACTION).findFirst().orElseThrow();
+    assertEquals(ProvenanceInfo.ObjectKind.LITERAL, actionFact.objectKind());
+    assertEquals("approved", actionFact.objectValue());
+    assertNull(actionFact.datatypeIri());
+
+    assertEquals(ProvenanceType.ASSOCIATION, info.primary().type());
   }
 
   @Test

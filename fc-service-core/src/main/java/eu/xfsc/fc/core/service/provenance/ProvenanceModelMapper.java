@@ -73,6 +73,9 @@ public class ProvenanceModelMapper {
       case USAGE -> ProvenanceCredential.ProvenanceTypeEnum.USAGE;
       case ASSOCIATION -> ProvenanceCredential.ProvenanceTypeEnum.ASSOCIATION;
       case DELEGATION -> ProvenanceCredential.ProvenanceTypeEnum.DELEGATION;
+      // Activity-centric auxiliary predicates are projected to the graph but never selected as the
+      // primary relational fact (see ProvenanceCredentialInfo#primary), so they cannot reach here.
+      case TYPE, INFORMATION, STARTED_AT_TIME, ENDED_AT_TIME, ACTION -> null;
     };
   }
 
