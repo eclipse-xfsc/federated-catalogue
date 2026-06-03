@@ -108,10 +108,14 @@
         <plexus-utils.version>3.6.1</plexus-utils.version>
         <!-- commons-lang3: Spring Boot 3.5.14 BOM pins 3.17.0, but commons-compress 1.28.0
              (pulled in by Zonky embedded Postgres for tar extraction) calls
-             SystemProperties.getUserName(String), which was added in 3.18.0. Without this override
-             every @SpringBootTest using an embedded DB fails at context load with
-             NoSuchMethodError. -->
+             SystemProperties.getUserName(String), added in 3.18.0. NOTE: neosemantics fat-jar
+             (see jena.version comment above) bundles its own older commons-lang3.SystemProperties
+             and can still win on the classpath at test runtime — fully resolving the
+             NoSuchMethodError requires un-shadowing neosemantics, not just this version bump. -->
         <commons-lang3.version>3.18.0</commons-lang3.version>
+        <!-- commons-io: pinned so neosemantics' bundled-and-older copy doesn't break Zonky's
+             tarball extraction (IOUtils.skip(InputStream, long, Supplier) missing in older). -->
+        <commons-io.version>2.21.0</commons-io.version>
         <!-- plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <plugin.jacoco.version>0.8.14</plugin.jacoco.version>
@@ -406,6 +410,13 @@
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-utils</artifactId>
                 <version>${plexus-utils.version}</version>
+            </dependency>
+            <!-- commons-io: declared explicitly in fc-service-server before fc-graphdb-neo4j so
+                 the real jar wins classpath order over the older copy shaded into neosemantics. -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
