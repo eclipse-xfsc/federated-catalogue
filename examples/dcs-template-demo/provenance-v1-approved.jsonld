@@ -11,7 +11,7 @@
     "VerifiableCredential"
   ],
   "issuer": "did:web:deltadao.example.org",
-  "validFrom": "2026-06-03T14:15:00Z",
+  "validFrom": "2026-06-02T14:15:00Z",
   "credentialSubject": {
     "id": "https://deltadao.example.org/templates/dpa/v1#prov-approved",
     "type": "prov:Activity",
@@ -29,8 +29,8 @@
     "prov:wasInformedBy": {
       "id": "https://deltadao.example.org/templates/dpa/v1#prov-created"
     },
-    "prov:startedAtTime": "2026-06-03T14:00:00Z",
-    "prov:endedAtTime": "2026-06-03T14:15:00Z",
+    "prov:startedAtTime": "2026-06-02T14:00:00Z",
+    "prov:endedAtTime": "2026-06-02T14:15:00Z",
     "dcs:action": "approved",
     "dcs:newState": "approved"
   }

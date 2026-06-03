@@ -13,7 +13,7 @@
     "dcs:ContractTemplate"
   ],
   "issuer": "did:web:deltadao.example.org",
-  "validFrom": "2026-06-15T11:00:00Z",
+  "validFrom": "2026-06-02T16:00:00Z",
   "credentialSubject": {
     "id": "https://deltadao.example.org/templates/dpa/v2",
     "type": "dcs:ContractTemplate",
