@@ -1,6 +1,16 @@
 # Development profile overrides.
 # Activated via: -Dspring-boot.run.profiles=dev
 
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/${keycloak.realm}
+
+keycloak:
+  auth-server-url: http://localhost:8080
+
 federated-catalogue:
   verification:
     doc-loader:

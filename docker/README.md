@@ -59,13 +59,10 @@ certificates, trust anchor registry).
 
 ### Keycloak setup
 
-When all components started you should setup Keycloak which is used as Identity and Access Management layer in the project. Add keycloak host to your local `hosts` file:
+When all components started you should setup Keycloak which is used as Identity and Access Management layer in the project.
 
-```
-127.0.0.1	key-server
-```
-
-Open keycloak admin console at `http://key-server:8080/admin` with `admin/admin` credentials, select `gaia-x` realm.
+Open the Keycloak admin console at `http://localhost:8080/admin` with `admin/admin` credentials and select the
+`federated-catalogue-realm` realm (or `gaia-x` if you set `KEYCLOAK_REALM=gaia-x`).
 
 #### Client secret
 
