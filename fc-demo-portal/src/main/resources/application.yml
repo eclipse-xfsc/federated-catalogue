@@ -27,10 +27,6 @@ spring:
             # No issuer-uri: Spring Boot always prefers it and fetches OIDC discovery at startup.
             # Keycloak advertises localhost (KC_HOSTNAME) while containers reach it via key-server,
             # so issuer-uri cannot work in Docker. Deployments (K8s) set issuer-uri via env instead.
-            authorization-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/auth
-            token-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/token
-            jwk-set-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/certs
-            user-info-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/userinfo
 
 federated-catalogue:
   base-uri: http://fc-server
