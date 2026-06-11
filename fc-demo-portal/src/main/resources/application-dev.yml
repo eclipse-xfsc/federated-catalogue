@@ -1,0 +1,20 @@
+# Docker dev profile — split-horizon Keycloak (see docker-compose portal env).
+#
+# Without issuer-uri, Spring cannot infer user-name-attribute from OIDC discovery.
+# Token/JWKS/userinfo use KEYCLOAK_INTERNAL_URL from inside the container; the browser
+# uses KEYCLOAK_PUBLIC_URL for the authorization redirect.
+
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            user-name-attribute: preferred_username
+            authorization-uri: ${KEYCLOAK_PUBLIC_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/auth
+            token-uri: ${KEYCLOAK_INTERNAL_URL:http://key-server:8080}/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/token
+            jwk-set-uri: ${KEYCLOAK_INTERNAL_URL:http://key-server:8080}/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/certs
+            user-info-uri: ${KEYCLOAK_INTERNAL_URL:http://key-server:8080}/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/userinfo
+
+federated-catalogue:
+  base-uri: http://fc-server:8081

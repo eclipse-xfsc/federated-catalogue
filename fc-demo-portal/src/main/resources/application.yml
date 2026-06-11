@@ -17,13 +17,20 @@ spring:
             client-id: federated-catalogue 
             client-secret: "**********"
             authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - openid
               - profile
               - email
         provider:
           keycloak:
-            issuer-uri: http://key-server/realms/${KEYCLOAK_REALM:federated-catalogue-realm}
+            # No issuer-uri: Spring Boot always prefers it and fetches OIDC discovery at startup.
+            # Keycloak advertises localhost (KC_HOSTNAME) while containers reach it via key-server,
+            # so issuer-uri cannot work in Docker. Deployments (K8s) set issuer-uri via env instead.
+            authorization-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/auth
+            token-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/token
+            jwk-set-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/certs
+            user-info-uri: http://localhost:8080/realms/${KEYCLOAK_REALM:federated-catalogue-realm}/protocol/openid-connect/userinfo
 
 federated-catalogue:
   base-uri: http://fc-server
@@ -34,4 +41,3 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web.client.RestTemplate: DEBUG
-

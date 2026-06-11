@@ -66,6 +66,10 @@ services:
       KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN}"
       KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD}"
       PROXY_ADDRESS_FORWARDING: "true"
+      # Advertise localhost in OIDC discovery / tokens; containers reach Keycloak via key-server.
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
     image: quay.io/keycloak/keycloak:26.0
     ports:
       - "8080:8080"
@@ -165,6 +169,9 @@ services:
     environment:
       KEYCLOAK_CREDENTIALS_SECRET: "${FC_CLIENT_SECRET}"
       KEYCLOAK_ADMIN_CONSOLE_URL: "${KEYCLOAK_ADMIN_CONSOLE_URL}"
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM:-federated-catalogue-realm}"
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}/realms/${KEYCLOAK_REALM:-federated-catalogue-realm}"
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "${KEYCLOAK_INTERNAL_URL:-http://key-server:8080}/realms/${KEYCLOAK_REALM:-federated-catalogue-realm}/protocol/openid-connect/certs"
       SPRING_DATASOURCE_URL: "${DB_URL}"
       # Cold-boot fallback only. After the first admin "Switch Backend" action,
       # admin_config[graphstore.preferred.backend] takes precedence — this env
@@ -246,10 +253,11 @@ services:
       dockerfile: "${FC_DOCKERFILE:-Dockerfile}"
       target: "${FC_DEMO_PORTAL_DOCKER_TARGET}"
     environment:
+      SPRING_PROFILES_ACTIVE: dev
       SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_FC_CLIENT_OIDC_CLIENT_SECRET: "${FC_CLIENT_SECRET}"
       KEYCLOAK_REALM: "${KEYCLOAK_REALM:-federated-catalogue-realm}"
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI: http://key-server:8080/realms/${KEYCLOAK_REALM:-federated-catalogue-realm}
-      FEDERATED_CATALOGUE_BASE_URI: http://fc-server:8081
+      KEYCLOAK_PUBLIC_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}"
+      KEYCLOAK_INTERNAL_URL: "${KEYCLOAK_INTERNAL_URL:-http://key-server:8080}"
     ports:
       - "8088:8088"
     networks:
