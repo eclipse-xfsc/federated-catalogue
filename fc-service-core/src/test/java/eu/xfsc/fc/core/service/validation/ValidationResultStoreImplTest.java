@@ -92,6 +92,28 @@ class ValidationResultStoreImplTest {
     assertEquals(GraphSyncStatus.FAILED, saved.getGraphSyncStatus());
   }
 
+  // ===== storeWithoutGraphSync =====
+
+  @Test
+  void storeWithoutGraphSync_neverInteractsWithGraph() {
+    ValidationResultRecord record = buildRecord(false);
+    ValidationResult saved = buildEntityWithId(3L);
+    when(hasher.hash(any())).thenReturn("ddeeff");
+    when(repository.save(any())).thenReturn(saved);
+
+    Long id = service.storeWithoutGraphSync(record);
+
+    assertEquals(3L, id);
+    // Exactly one save: the relational INSERT, with graphSyncStatus already EXCLUDED. No
+    // status-update save, because no graph write (successful or failed) is ever attempted —
+    // proving no triples are produced, and marking the row so graph rebuild skips it too.
+    ArgumentCaptor<ValidationResult> captor = ArgumentCaptor.forClass(ValidationResult.class);
+    verify(repository, org.mockito.Mockito.times(1)).save(captor.capture());
+    assertEquals(GraphSyncStatus.EXCLUDED, captor.getValue().getGraphSyncStatus());
+    org.mockito.Mockito.verifyNoInteractions(graphWriter);
+    org.mockito.Mockito.verifyNoInteractions(graphStore);
+  }
+
   // ===== getByAssetId =====
 
   @Test

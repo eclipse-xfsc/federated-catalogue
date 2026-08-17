@@ -22,6 +22,7 @@ import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import okhttp3.mockwebserver.SocketPolicy;
 
 /**
  * Unit tests for {@link JwtVcComplianceClient} against a local HTTP stub.
@@ -189,6 +190,19 @@ class JwtVcComplianceClientTest {
     server.enqueue(new MockResponse()
         .setResponseCode(500)
         .setBody("Internal Server Error"));
+
+    var credential = new ContentAccessorDirect(TEST_VP_JWT);
+
+    assertThrows(ServiceUnavailableException.class, () -> client.check(credential, config));
+  }
+
+  @Test
+  void check_connectionResetAtStart_throwsServiceUnavailableException() {
+
+    // Simulates a trust service that is unreachable (connection reset), rather than a mocked
+    // Java exception, so the resulting failure path is exercised exactly as it would occur
+    // against a real, unreachable external service.
+    server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
 
     var credential = new ContentAccessorDirect(TEST_VP_JWT);
 

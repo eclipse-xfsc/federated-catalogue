@@ -253,7 +253,13 @@ components:
         failureCategory:
           type: string
           nullable: true
-          description: Set when conforms is false; describes how the check failed (currently UNVERIFIABLE_ATTESTATION)
+          description: >-
+            Set when conforms is false; describes how the check failed. Currently only
+            UNVERIFIABLE_ATTESTATION appears in this field, meaning the trust service was reached and
+            responded but the attestation could not be verified. A trust service that could not be
+            reached at all, or that timed out, is surfaced as an HTTP 503/504 response instead of a
+            200 response with this field set; that failed attempt is recorded separately in the
+            stored validation report (see the compliance-checks history endpoint), not here.
         attestationCredential:
           type: string
           nullable: true
@@ -780,7 +786,11 @@ components:
           description: Distinguishes on-demand schema validation from external trust framework validation results
         conforms:
           type: boolean
-          description: True if the asset passed validation
+          description: >-
+            True if the asset passed validation. A false value can also mean the check could not
+            be performed at all (e.g. an unreachable or timed-out trust service) rather than a
+            negative verdict on the asset; for TRUST_FRAMEWORK rows, the failureCategory key in
+            the report field distinguishes the two.
         validatedAt:
           type: string
           format: date-time
@@ -788,15 +798,23 @@ components:
         report:
           type: string
           nullable: true
-          description: Serialised validation report (SHACL Turtle / JSON violations / XSD error)
+          description: >-
+            Serialised validation report (SHACL Turtle / JSON violations / XSD error). For
+            TRUST_FRAMEWORK rows this is a JSON object; a failureCategory key is present whenever
+            conforms is false, distinguishing a genuine non-compliant verdict from a failed
+            check attempt.
         contentHash:
           type: string
           description: SHA-256 hex digest of core fields for offline tamper detection
         graphSyncStatus:
           type: string
-          enum: [SYNCED, FAILED]
+          enum: [SYNCED, FAILED, EXCLUDED]
           nullable: true
-          description: Graph database synchronization status. FAILED indicates the result could not be written to the triple store and requires manual intervention.
+          description: >-
+            Graph database synchronization status. FAILED indicates the result could not be
+            written to the triple store and requires manual intervention. EXCLUDED indicates the
+            result was deliberately never written to the graph because it is not a claim about an
+            asset (e.g. a failed compliance-check attempt) — this is expected, not an error.
         createdAt:
           type: string
           format: date-time
