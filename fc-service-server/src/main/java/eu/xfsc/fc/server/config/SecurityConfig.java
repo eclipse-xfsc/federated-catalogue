@@ -63,10 +63,19 @@ public class SecurityConfig {
       //.csrf().disable()
       .authorizeHttpRequests(authorization -> authorization
           .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-          .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
           .requestMatchers(HttpMethod.GET, "/swagger-ui/**").permitAll()
-          .requestMatchers(HttpMethod.GET, "/actuator", "/actuator/**").permitAll()
           .requestMatchers(HttpMethod.GET, "/js/**", "/css/**").permitAll()
+          // Container/orchestrator healthcheck and the BDD suite's "server is up" precondition both
+          // poll GET /actuator/health anonymously and expect 200. management.endpoint.health.show-details
+          // is set to when_authorized, so anonymous callers only ever see the UP/DOWN summary, never
+          // component details — safe to leave public. Must be declared BEFORE the broader /actuator/**
+          // matcher below, since Spring Security uses first-match-wins ordering.
+          .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+          .requestMatchers(HttpMethod.GET, "/actuator", "/actuator/**").authenticated()
+          // The generated OpenAPI document backs the deliberately-public Swagger UI; without it the
+          // UI has nothing to render. Everything else under /api/** (nothing else is mounted there
+          // today) falls through to anyRequest().authenticated() below.
+          .requestMatchers(HttpMethod.GET, "/api/docs", "/api/docs/**").permitAll()
 
           // Schema APIs
           .requestMatchers(HttpMethod.POST, "/schemas").hasAnyRole(SCHEMA_CREATE, ADMIN_ALL)
@@ -78,8 +87,9 @@ public class SecurityConfig {
           .requestMatchers("/query", "/query/**").hasAnyRole(QUERY_EXECUTE, ADMIN_ALL)
 
           // Verification APIs
-          .requestMatchers("/verification").permitAll()
-          
+          // Triggers signature verification work and is a DoS surface when left open to anonymous callers.
+          .requestMatchers("/verification").authenticated()
+
           // Asset APIs
           .requestMatchers(HttpMethod.PUT, "/assets/*").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
           .requestMatchers(HttpMethod.POST, "/assets/*/versions/*/revoke").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)

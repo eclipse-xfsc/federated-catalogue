@@ -3,6 +3,7 @@ package eu.xfsc.fc.server.controller;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.AfterEach;
@@ -125,6 +126,19 @@ class VerificationOwlToggleControllerTest {
   }
 
   @Test
+  void verify_unauthenticated_returns401() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders.post("/verification")
+            .queryParam("verifySemantics", "false")
+            .queryParam("verifyVPSignature", "false")
+            .queryParam("verifyVCSignature", "false")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(CUSTOM_PARTICIPANT_VP)
+            .with(csrf()))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
   void verify_customSubclassWithOwlDisabled_returns400() throws Exception {
     when(schemaModuleConfigService.isModuleEnabled(SchemaModuleType.OWL)).thenReturn(false);
 
@@ -136,7 +150,7 @@ class VerificationOwlToggleControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(CUSTOM_PARTICIPANT_VP)
-            .with(csrf()))
+            .with(csrf()).with(jwt()))
         .andExpect(status().isBadRequest())
         .andReturn()
         .getResponse()
@@ -159,7 +173,7 @@ class VerificationOwlToggleControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .content(CUSTOM_PARTICIPANT_VP)
-            .with(csrf()))
+            .with(csrf()).with(jwt()))
         .andExpect(status().isOk());
   }
 }
