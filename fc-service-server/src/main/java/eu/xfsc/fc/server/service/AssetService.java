@@ -13,6 +13,7 @@ import eu.xfsc.fc.api.generated.model.ProvenanceVerificationResult;
 import eu.xfsc.fc.api.generated.model.StoredValidationResult;
 import eu.xfsc.fc.api.generated.model.ValidationRequest;
 import eu.xfsc.fc.api.generated.model.ValidationResponse;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
@@ -136,16 +137,14 @@ public class AssetService implements AssetsApiDelegate {
     if (withMeta) {
         if (withContent) {
             results = assets.getResults().stream().map((AssetMetadata asset) ->
-                new AssetResult(asset, asset.getContentAccessor() != null
-                    ? asset.getContentAccessor().getContentAsString() : null)).collect(Collectors.toList());
+                new AssetResult(asset, resolveRawContentForListItem(asset))).collect(Collectors.toList());
         } else {
             results = assets.getResults().stream().map((AssetMetadata asset) ->
                 new AssetResult(asset, null)).collect(Collectors.toList());
         }
     } else if (withContent) {
         results = assets.getResults().stream().map((AssetMetadata asset) ->
-            new AssetResult(null, asset.getContentAccessor() != null
-                ? asset.getContentAccessor().getContentAsString() : null)).collect(Collectors.toList());
+            new AssetResult(null, resolveRawContentForListItem(asset))).collect(Collectors.toList());
     }
     return ResponseEntity.ok(new Assets((int) assets.getTotalCount(), results));
   }
@@ -168,15 +167,77 @@ public class AssetService implements AssetsApiDelegate {
         ? assetStorePublisher.getByIdAndVersion(decodedId, version)
         : assetStorePublisher.getById(decodedId);
 
-    ContentAccessor content = assetMetadata.getContentAccessor();
-    if (content != null) {
-      // RDF asset: embed raw JSON-LD in rawContent field so all paths return AssetMetadata.
-      assetMetadata.setRawContent(content.getContentAsString());
-    }
+    assetMetadata.setRawContent(resolveRawContent(assetMetadata));
 
     populateLinkFields(decodedId, assetMetadata);
     log.debug("readAssetById; returning metadata for id: {}", decodedId);
     return ResponseEntity.ok(assetMetadata);
+  }
+
+  /**
+   * Resolves the raw content to report for the given asset metadata, choosing the source that
+   * matches what the persisted content field actually holds.
+   *
+   * <p>For an RDF asset, the persisted content field is the asset's own payload and is returned
+   * as-is. For a non-RDF asset, the persisted content field instead holds the most recent
+   * metadata-enrichment RDF document (kept there so a graph rebuild can replay it); the original
+   * payload is read from the file store by content hash instead, so an enrichment never leaks out
+   * as the asset body.</p>
+   *
+   * <p>A file store read fault is not swallowed here: it surfaces as a {@link ServerException} so
+   * a response is never returned whose reported size and hash describe content that could not
+   * actually be read — the same inconsistency this content sourcing exists to remove. Reporting
+   * that fault, or degrading gracefully for it, is a decision left to the caller.</p>
+   *
+   * @param assetMetadata metadata identifying the asset whose content is resolved
+   * @return the resolved content, or {@code null} if there is none to report
+   * @throws ServerException if the asset is non-RDF and its file store content could not be read
+   */
+  private String resolveRawContent(AssetMetadata assetMetadata) {
+    ContentAccessor content = assetMetadata.getContentAccessor();
+    if (content == null) {
+      return null;
+    }
+    if (assetMetadata instanceof AssetRecord record && record.getContentKind() == ContentKind.NON_RDF) {
+      return readNonRdfFileContent(assetMetadata);
+    }
+    return content.getContentAsString();
+  }
+
+  /**
+   * Resolves the raw content for one asset in a paginated list response.
+   *
+   * <p>Unlike resolving content for a single requested asset, a file store read fault here is
+   * logged and yields no content for that asset only, rather than propagating: one unreadable
+   * asset must not fail an entire page of otherwise-readable results.</p>
+   *
+   * @param assetMetadata metadata identifying the asset whose content is resolved
+   * @return the resolved content, or {@code null} if there is none to report or it could not be read
+   */
+  private String resolveRawContentForListItem(AssetMetadata assetMetadata) {
+    try {
+      return resolveRawContent(assetMetadata);
+    } catch (ServerException ex) {
+      log.warn("resolveRawContentForListItem; omitting content for asset hash {} after a file store"
+          + " read failure", assetMetadata.getAssetHash(), ex);
+      return null;
+    }
+  }
+
+  /**
+   * Reads a non-RDF asset's original payload from the file store by content hash.
+   *
+   * @param assetMetadata metadata identifying the asset whose file store content is read
+   * @return the original content as a string
+   * @throws ServerException if the file store read fails
+   */
+  private String readNonRdfFileContent(AssetMetadata assetMetadata) {
+    try {
+      return assetFileStore.readFile(assetMetadata.getAssetHash()).getContentAsString();
+    } catch (IOException ex) {
+      throw new ServerException(
+          "Failed to read asset file for hash: " + assetMetadata.getAssetHash(), ex);
+    }
   }
 
   /**

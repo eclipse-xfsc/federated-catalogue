@@ -155,12 +155,15 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
             uploadtime, statustime, expirationtime, validators, \
             content_type, file_size, original_filename, content_kind""");
       } else {
+        // content_kind is selected as its real value even when full metadata is suppressed:
+        // distinguishing RDF from non-RDF content is required to correctly source an asset's
+        // body, independently of whether metadata is returned to the API consumer.
         query = new StringBuilder("""
             select asset_hash, null as subjectid, status, \
             null as issuer, null as uploadtime, null as statustime, \
             null as expirationtime, null as validators, \
             null as content_type, null::bigint as file_size, \
-            null as original_filename, null as content_kind""");
+            null as original_filename, content_kind""");
       }
       if (returnContent) {
         query.append(", content");
