@@ -40,8 +40,8 @@ import org.springframework.stereotype.Service;
  * </ul>
  *
  * <p>The helper methods {@link #isJsonLd(AssetMetadata)} and {@link #isRdfXml(AssetMetadata)}
- * are separate from parse-branching and are used only by validation strategies to determine
- * applicability.</p>
+ * are separate from parse-branching: they classify an asset's RDF serialisation format for
+ * schema-applicability decisions, without parsing or validating its content.</p>
  */
 @Slf4j
 @Service
@@ -118,8 +118,11 @@ public class RdfAssetParser {
   /**
    * Returns {@code true} if the asset content is JSON-LD (content starts with '{').
    * Falls back to content-type inspection for assets without a content accessor.
+   *
+   * <p>Stateless: depends on no instance fields, so it is declared {@code static} and can
+   * be invoked without an instance of this Spring-managed bean.</p>
    */
-  public boolean isJsonLd(AssetMetadata asset) {
+  public static boolean isJsonLd(AssetMetadata asset) {
     ContentAccessor content = asset.getContentAccessor();
     if (content != null) {
       return content.getContentAsString().strip().startsWith(FormatDetectionConstants.JSON_LD_PREFIX);
@@ -133,8 +136,11 @@ public class RdfAssetParser {
   /**
    * Returns {@code true} if the asset content is RDF/XML (content starts with {@code "<?xml"}
    * or {@code "<rdf:RDF"}). Falls back to content-type inspection for assets without a content accessor.
+   *
+   * <p>Stateless: depends on no instance fields, so it is declared {@code static} and can
+   * be invoked without an instance of this Spring-managed bean.</p>
    */
-  public boolean isRdfXml(AssetMetadata asset) {
+  public static boolean isRdfXml(AssetMetadata asset) {
     ContentAccessor content = asset.getContentAccessor();
     if (content != null) {
       String raw = content.getContentAsString().strip();

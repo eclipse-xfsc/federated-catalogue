@@ -24,6 +24,18 @@ class JsonSchemaValidationStrategyTest {
 
   private static final String NON_CONFORMING_JSON = "{\"value\":\"missing-id-field\"}";
 
+  // A JSON-LD-serialised RDF asset (has @context) — the JSON Schema part of a combined
+  // SHACL + JSON Schema validation request runs against this representation as-is.
+  private static final String JSON_LD_CREDENTIAL_CONTENT =
+      "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
+      + "\"type\":[\"VerifiableCredential\"],\"issuer\":\"did:web:example.org\"}";
+
+  private static final String JSON_SCHEMA_REQUIRING_ISSUER =
+      "{\"type\":\"object\",\"required\":[\"issuer\"],\"properties\":{\"issuer\":{\"type\":\"string\"}}}";
+
+  private static final String JSON_SCHEMA_REQUIRING_CREDENTIAL_SUBJECT =
+      "{\"type\":\"object\",\"required\":[\"credentialSubject\"]}";
+
   // FileStore is not called in these tests — assets have contentAccessor pre-loaded.
   private final JsonSchemaValidationStrategy strategy =
       new JsonSchemaValidationStrategy(mock(FileStore.class), new ObjectMapper());
@@ -99,6 +111,29 @@ class JsonSchemaValidationStrategyTest {
     assertTrue(report.getConforms());
     assertNotNull(report.getViolations());
     assertTrue(report.getViolations().isEmpty());
+  }
+
+  @Test
+  void validate_jsonLdRepresentation_conformingSchema_returnsConforming() {
+    ValidationReport report = strategy.validate(
+        List.of(buildAsset(JSON_LD_CREDENTIAL_CONTENT)),
+        List.of(new ContentAccessorDirect(JSON_SCHEMA_REQUIRING_ISSUER)));
+
+    assertTrue(report.getConforms());
+    assertNotNull(report.getViolations());
+    assertTrue(report.getViolations().isEmpty());
+  }
+
+  @Test
+  void validate_jsonLdRepresentation_nonConformingSchema_returnsViolation() {
+    ValidationReport report = strategy.validate(
+        List.of(buildAsset(JSON_LD_CREDENTIAL_CONTENT)),
+        List.of(new ContentAccessorDirect(JSON_SCHEMA_REQUIRING_CREDENTIAL_SUBJECT)));
+
+    assertFalse(report.getConforms());
+    assertFalse(report.getViolations().isEmpty());
+    assertTrue(report.getViolations().get(0).getMessage().contains("credentialSubject"),
+        "Violation should name the missing required property: " + report.getViolations().get(0).getMessage());
   }
 
   @Test

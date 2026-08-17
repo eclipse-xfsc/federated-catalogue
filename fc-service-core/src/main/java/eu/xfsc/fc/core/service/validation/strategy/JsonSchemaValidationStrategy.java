@@ -14,6 +14,7 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.service.filestore.FileStore;
+import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
 import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
@@ -56,18 +57,19 @@ public class JsonSchemaValidationStrategy implements ValidationStrategy {
   }
 
   /**
-   * Returns {@code true} for non-RDF JSON assets only.
-   * RDF assets (including JSON-LD) should use SHACL validation.
+   * Returns {@code true} for non-RDF JSON assets, and for RDF assets serialised as JSON-LD
+   * (SRS 3.1.6). Other RDF serialisations (Turtle, RDF/XML, ...) remain SHACL-only.
    */
   @Override
   public boolean appliesTo(AssetMetadata asset) {
     ContentAccessor content = asset.getContentAccessor();
 
     // A non-null ContentAccessor marks an RDF asset (the content is held as a pre-parsed object).
-    // RDF assets - including JSON-LD - must be validated via SHACL, not JSON Schema.
+    // Per SRS 3.1.6, a JSON Schema is applicable to an RDF asset serialised in JSON-LD;
+    // every other RDF serialisation stays SHACL-only.
     // Non-RDF JSON assets have no ContentAccessor; their type is identified by content-type below.
     if (content != null) {
-      return false;
+      return RdfAssetParser.isJsonLd(asset);
     }
     String ct = asset.getContentType();
     return ct != null

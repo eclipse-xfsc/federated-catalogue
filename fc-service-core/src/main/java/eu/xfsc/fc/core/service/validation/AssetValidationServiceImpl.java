@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Default implementation of {@link AssetValidationService}.
@@ -172,8 +173,7 @@ public class AssetValidationServiceImpl implements AssetValidationService {
       if (!strategy.appliesTo(asset)) {
         throw new ClientException(
             "Schema type " + records.get(0).type() + " is not applicable to asset " + asset.getId()
-                + ". RDF assets must be validated via SHACL (SHAPE schema type)."
-                + " Non-RDF assets use JSON or XML schemas.");
+                + ". Applicable schema types for this asset: " + describeApplicableTypes(asset) + ".");
       }
       requireModuleEnabled(strategy.moduleType());
 
@@ -304,6 +304,18 @@ public class AssetValidationServiceImpl implements AssetValidationService {
         .orElseThrow(() -> new ClientException(
             "Schema " + record.getId() + " has type " + record.type()
                 + " which is not supported for on-demand validation. Supported types: SHAPE, JSON, XML."));
+  }
+
+  /**
+   * Lists the validator types applicable to the given asset, for use in error messages.
+   *
+   * @return comma-separated {@link ValidatorType} names, or an empty string if none apply
+   */
+  private String describeApplicableTypes(AssetMetadata asset) {
+    return strategies.stream()
+        .filter(s -> s.appliesTo(asset))
+        .map(s -> s.type().toString())
+        .collect(Collectors.joining(", "));
   }
 
   private SchemaType resolveSchemaStoreType(ValidationStrategy strategy) {
