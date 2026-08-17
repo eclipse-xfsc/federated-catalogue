@@ -7,8 +7,6 @@ import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -35,7 +33,6 @@ import eu.xfsc.fc.api.generated.model.Assets;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
-import eu.xfsc.fc.core.pojo.RdfClaim;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.filestore.FileStore;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
@@ -49,7 +46,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -69,13 +65,21 @@ import org.springframework.web.context.WebApplicationContext;
  * Integration tests reproducing the content-swap defect on {@code GET /assets/{id}}: after a
  * non-RDF asset receives one or more metadata enrichments, the read path must keep returning the
  * original asset content with metadata that is internally consistent (reported file size and hash
- * must describe the content that is actually returned), and the enrichment triples must still reach
- * the graph store rather than being silently discarded as a side effect of the fix.
+ * must describe the content that is actually returned).
  *
  * <p>The graph store bean is replaced with a mock so the enrichment write path can be exercised
  * end-to-end over HTTP without a real Fuseki/Neo4j backend; only {@link GraphStore#getBackendType()}
  * is stubbed to report an enabled backend, so the enrichment code path is not short-circuited by the
- * disabled-backend guard.</p>
+ * disabled-backend guard. Enrichment content and metadata consistency is this class's concern; it is
+ * deliberately decoupled from graph-store correctness (see {@link AssetEnrichmentGraphStoreTest}).</p>
+ *
+ * <p>AC-3 — that enrichment triples genuinely reach and remain retrievable from the graph store, not
+ * merely that they are forwarded to a mock — is verified against a real embedded Fuseki backend in
+ * {@link AssetEnrichmentGraphStoreTest}, which also re-covers this class's original-content
+ * assertion for a single enrichment against that real backend. A mocked "was addClaims() called"
+ * check was previously kept here as a stand-in for that AC; it added no coverage beyond what the
+ * real-backend test now proves more strongly (that the triples survive and are actually queryable),
+ * so it was removed rather than kept as a duplicate, weaker assertion of the same requirement.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -88,7 +92,6 @@ class AssetEnrichmentReadContentTest {
   private static final String ORIGINAL_CONTENT = "original standalone asset content, unchanged by enrichment";
   private static final String NON_RDF_CONTENT_TYPE = "text/plain";
   private static final String ENRICHMENT_CONTENT_TYPE = "application/ld+json";
-  private static final String ENRICHMENT_TITLE_PREDICATE = "http://example.org/title";
   private static final String RDF_ASSET_FILE_NAME = "default-credential.json";
   private static final String RDF_ASSET_ID = "did:web:example.org:enrichment-content-test-rdf-asset";
 
@@ -319,37 +322,6 @@ class AssetEnrichmentReadContentTest {
             + " from the file store, not the persisted enrichment document");
     assertNull(item.getMeta(),
         "withMeta=false must suppress metadata in the response");
-  }
-
-  // ===== AC-3 regression guard: enrichment triples must still reach the graph store =====
-
-  @Test
-  @SuppressWarnings("unchecked") // Mockito ArgumentCaptor generic type erasure for List<RdfClaim>
-  @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX, ASSET_READ_WITH_PREFIX},
-      claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
-          @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
-  void enrichAsset_singleEnrichment_stillForwardsClaimsToGraphStore() throws Exception {
-    final Asset created = uploadNonRdfAsset(ORIGINAL_CONTENT);
-    final String assetId = created.getId();
-    final String titleValue = "Regression guard title";
-
-    final AssetEnrichmentResponse response = enrichAsset(assetId, enrichmentPayload(assetId, titleValue));
-
-    assertEquals(assetId, response.getAssetId());
-    assertTrue(response.getTriplesAdded() > 0, "enrichment must report at least one triple added");
-
-    final ArgumentCaptor<List<RdfClaim>> captor = ArgumentCaptor.forClass(List.class);
-    verify(graphStore).addClaims(captor.capture(), eq(assetId));
-
-    final List<RdfClaim> addedClaims = captor.getValue();
-    final boolean titleClaimForwarded = addedClaims.stream().anyMatch(claim ->
-        assetId.equals(claim.getSubjectValue())
-            && ENRICHMENT_TITLE_PREDICATE.equals(claim.getPredicateValue())
-            && titleValue.equals(claim.getObjectValue()));
-
-    assertTrue(titleClaimForwarded,
-        "a fix for the read-path content swap must not discard the enrichment write path;"
-            + " the RDF claim must still reach the graph store");
   }
 
   // ===== Security =====
