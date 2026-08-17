@@ -534,24 +534,44 @@ components:
       properties:
         isValid:
           type: boolean
-          description: Overall validity of the credential.
+          description: >-
+            Overall validity of the credential(s). For the aggregated (verify-all) result, `false`
+            with `verificationTimestamp` set to `null` and `errors` naming the reason (e.g. "No
+            provenance credentials present for this asset") indicates there was nothing to verify —
+            distinct from `false` with a non-null `verificationTimestamp`, which means at least one
+            credential was actually verified and found invalid.
         verificationTimestamp:
           type: string
           format: date-time
+          nullable: true
+          description: >-
+            When this verification ran. For the aggregated (verify-all) result, `null` means no
+            provenance credential existed to verify; a non-null value means at least one was
+            inspected, whatever the outcome.
         verificationMethod:
           type: string
+          nullable: true
           description: DID verification method used.
         issuerResolutionStatus:
           type: string
+          nullable: true
           enum: [ RESOLVED, UNRESOLVABLE, TEMPORARILY_UNAVAILABLE ]
-          description: Result of DID resolution for the issuer.
+          description: >-
+            Result of DID resolution for the issuer. Set for single-credential verification; `null`
+            on the aggregated (verify-all) result.
         issuedDateTime:
           type: string
           format: date-time
+          nullable: true
         signatureValid:
           type: boolean
+          nullable: true
+          description: >-
+            Whether the credential signature verified. Set for single-credential verification;
+            `null` on the aggregated (verify-all) result.
         credentialExpiryValid:
           type: boolean
+          nullable: true
         validatorDids:
           type: array
           items:
