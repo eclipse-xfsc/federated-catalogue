@@ -71,6 +71,11 @@ public class SecurityConfig {
           // component details — safe to leave public. Must be declared BEFORE the broader /actuator/**
           // matcher below, since Spring Security uses first-match-wins ordering.
           .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+          // GET-only: management.endpoints.web.exposure.include=health,info,graph-rebuild exposes no
+          // other GET-style actuator endpoint today, and POST /actuator/graph-rebuild is separately
+          // role-gated below (line ~169). If a future exposed endpoint accepts a non-GET verb, it would
+          // fall through to anyRequest().authenticated() (login-only, no role check) — add an explicit
+          // method-agnostic matcher here if that ever happens.
           .requestMatchers(HttpMethod.GET, "/actuator", "/actuator/**").authenticated()
           // The generated OpenAPI document backs the deliberately-public Swagger UI; without it the
           // UI has nothing to render. Everything else under /api/** (nothing else is mounted there

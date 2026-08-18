@@ -64,7 +64,7 @@ public class VerificationControllerTest {
   }
 
   @Test
-  public void getVerification_unauthenticated_returnsUnauthorized() throws Exception {
+  public void getVerification_unauthenticated_isRejected() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.get("/verification")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)

@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import ch.qos.logback.classic.Level;
@@ -38,7 +39,7 @@ import ch.qos.logback.core.read.ListAppender;
  *
  * <p>Directly exercises {@code convert()} — the only public entry point, and thereby the only way to reach
  * the private {@code extractResourceRoles()} — against constructed JWTs, to determine which
- * {@link org.springframework.security.core.GrantedAuthority} set a given {@code resource_access} (or realm-level
+ * {@link GrantedAuthority} set a given {@code resource_access} (or realm-level
  * {@code roles}) claim actually produces.</p>
  */
 class CustomJwtAuthenticationConverterTest {
@@ -218,7 +219,7 @@ class CustomJwtAuthenticationConverterTest {
 
   private static Set<String> authorityStrings(AbstractAuthenticationToken token) {
     return token.getAuthorities().stream()
-        .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+        .map(GrantedAuthority::getAuthority)
         .collect(Collectors.toSet());
   }
 

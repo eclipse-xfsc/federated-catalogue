@@ -1,7 +1,7 @@
 package eu.xfsc.fc.server.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
@@ -64,11 +64,8 @@ class SecurityConfigTest {
     // Backs the deliberately-public Swagger UI (/swagger-ui/**); without it the UI has nothing to render.
     MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/docs").with(csrf())).andReturn();
 
-    int actualStatus = result.getResponse().getStatus();
-    assertNotEquals(HttpStatus.UNAUTHORIZED.value(), actualStatus,
-        "/api/docs must remain publicly accessible (401 would mean it got swept into the auth requirement)");
-    assertNotEquals(HttpStatus.FORBIDDEN.value(), actualStatus,
-        "/api/docs must remain publicly accessible (403 would mean it got swept into the auth requirement)");
+    assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
+        "/api/docs must remain publicly accessible and actually serve the OpenAPI document");
   }
 
   @Test
@@ -86,11 +83,10 @@ class SecurityConfigTest {
     // the UP/DOWN summary, never component details, so leaving this open does not leak internals.
     MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/actuator/health").with(csrf())).andReturn();
 
-    int actualStatus = result.getResponse().getStatus();
-    assertNotEquals(HttpStatus.UNAUTHORIZED.value(), actualStatus,
-        "/actuator/health must remain publicly accessible (401 would mean it got swept into the auth requirement)");
-    assertNotEquals(HttpStatus.FORBIDDEN.value(), actualStatus,
-        "/actuator/health must remain publicly accessible (403 would mean it got swept into the auth requirement)");
+    assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
+        "/actuator/health must remain publicly accessible and actually respond");
+    assertFalse(result.getResponse().getContentAsString().contains("components"),
+        "anonymous callers must only see the UP/DOWN summary, never component health details");
   }
 
   @Test

@@ -3476,6 +3476,8 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
     post:
@@ -3575,6 +3577,8 @@ paths:
                 $ref: '#/components/schemas/VerificationResult'
         '400':
           $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '422':
           $ref: '#/components/responses/Unprocessible'
         '500':

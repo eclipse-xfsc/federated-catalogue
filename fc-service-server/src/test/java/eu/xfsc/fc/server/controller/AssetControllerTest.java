@@ -1,8 +1,5 @@
 package eu.xfsc.fc.server.controller;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static eu.xfsc.fc.server.helper.FileReaderHelper.getMockFileDataAsString;
 import static eu.xfsc.fc.server.util.CommonConstants.ADMIN_ALL_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.CommonConstants.ASSET_CREATE;
@@ -63,14 +60,9 @@ import eu.xfsc.fc.core.service.validation.AssetValidationService;
 import eu.xfsc.fc.core.service.verification.VerificationService;
 import eu.xfsc.fc.core.util.HashUtils;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
+import eu.xfsc.fc.server.helper.KeycloakJwtTestSupport;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
-import org.jose4j.jwk.JsonWebKeySet;
-import org.jose4j.jwk.RsaJsonWebKey;
-import org.jose4j.jwk.RsaJwkGenerator;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
 import org.jose4j.lang.JoseException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -118,6 +110,8 @@ public class AssetControllerTest {
     private static final byte[] NON_RDF_PDF_BYTES = "%PDF-1.4 fake".getBytes(StandardCharsets.UTF_8);
     private static final String NON_RDF_PDF_HASH = HashUtils.calculateSha256AsHex(NON_RDF_PDF_BYTES);
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final boolean WITH_CSRF_TOKEN = true;
+    private static final boolean WITHOUT_CSRF_TOKEN = false;
 
     @Autowired
     private Neo4j embeddedDatabaseServer;
@@ -152,7 +146,7 @@ public class AssetControllerTest {
     private String keycloakBaseUrl;
     @Value("${keycloak.resource}")
     private String resourceId;
-    private static RsaJsonWebKey rbacRsaKey;
+    private KeycloakJwtTestSupport jwtSupport;
 
     // credential-resource.json's credentialSubject "@id" is DID-style (no forward slashes), so it
     // round-trips safely as a single MockMvc path segment on PUT /assets/{id} — unlike TEST_ISSUER's
@@ -165,130 +159,12 @@ public class AssetControllerTest {
     @BeforeAll
     public void setup() throws IOException {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        jwtSupport = new KeycloakJwtTestSupport(keycloakBaseUrl);
         assetMeta = createAssetMetadata();
         String resourceCredential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
         resourceAssetHash = HashUtils.calculateSha256AsHex(resourceCredential);
         updatedResourceAssetHash = HashUtils.calculateSha256AsHex(updatedResourceCredential(resourceCredential));
         setUpRbacJwtIssuer();
-    }
-
-    /**
-     * Produces a byte-distinct variant of the credential-resource.json fixture (same asset IRI and
-     * issuer, different literal value) so PUT /assets/{id} tests exercise a genuine content update
-     * rather than resubmitting a byte-identical payload, which the store layer treats as a duplicate.
-     */
-    private static String updatedResourceCredential(String originalCredential) {
-        return originalCredential.replace("ExampleResourceForFederatedCatalogue",
-            "ExampleResourceForFederatedCatalogue (updated)");
-    }
-
-    /**
-     * Directly stores the {@code credential-resource.json} fixture (bypassing HTTP/authorization),
-     * so role-isolation tests can assert a single operation's authorization outcome without first
-     * needing the ASSET_CREATE role to establish that precondition.
-     */
-    private void storeResourceAsset(String credentialContent) {
-        AssetMetadata meta = new AssetMetadata(UPDATABLE_ASSET_ID, RESOURCE_ISSUER, new ArrayList<>(),
-            new ContentAccessorDirect(credentialContent));
-        meta.setStatus(AssetStatus.ACTIVE);
-        Instant now = Instant.now();
-        meta.setStatusDatetime(now);
-        meta.setUploadDatetime(now);
-        assetStorePublisher.storeCredential(meta, verificationService.verifyCredential(meta.getContentAccessor()));
-    }
-
-    /**
-     * Registers a WireMock-backed OIDC discovery document and JWKS so that real, RSA-signed JWTs
-     * (minted by {@link #mintFineGrainedAssetToken}) are decoded and converted by the production
-     * {@code CustomJwtAuthenticationConverter} pipeline — unlike {@code @WithMockJwtAuth}, which
-     * injects a pre-built authority list directly into the security context.
-     */
-    private void setUpRbacJwtIssuer() throws IOException {
-        try {
-            rbacRsaKey = RsaJwkGenerator.generateJwk(2048);
-        } catch (JoseException ex) {
-            throw new IllegalStateException("Failed to generate RSA test signing key", ex);
-        }
-        rbacRsaKey.setKeyId("rbac-test-k1");
-        rbacRsaKey.setAlgorithm(AlgorithmIdentifiers.RSA_USING_SHA256);
-        rbacRsaKey.setUse("sig");
-
-        String openidConfig = getMockFileDataAsString("openid-configs.json").replace("keycloakBaseUrl", keycloakBaseUrl);
-
-        stubFor(WireMock.get(urlEqualTo("/auth/realms/gaia-x/.well-known/openid-configuration"))
-            .willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).withBody(openidConfig)));
-        stubFor(WireMock.get(urlEqualTo("/auth/realms/gaia-x/protocol/openid-connect/certs"))
-            .willReturn(aResponse().withHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .withBody(new JsonWebKeySet(rbacRsaKey).toJson())));
-    }
-
-    /**
-     * Mints a real, RSA-signed JWT carrying the given fine-grained roles under
-     * {@code resource_access.<keycloak.resource>.roles}, matching the shape a Keycloak-issued
-     * access token has in production. Routed through the WireMock JWKS registered in
-     * {@link #setUpRbacJwtIssuer()}, so requests bearing this token exercise the real
-     * {@code CustomJwtAuthenticationConverter}, not a test double.
-     */
-    private String mintFineGrainedAssetToken(String participantId, String... roles) throws JoseException {
-        JwtClaims claims = new JwtClaims();
-        claims.setJwtId(UUID.randomUUID().toString());
-        claims.setExpirationTimeMinutesInTheFuture(10);
-        claims.setNotBeforeMinutesInThePast(0);
-        claims.setIssuedAtToNow();
-        claims.setAudience("account");
-        claims.setIssuer(String.format("%s/auth/realms/gaia-x", keycloakBaseUrl));
-        claims.setSubject(UUID.randomUUID().toString());
-        claims.setClaim("typ", "Bearer");
-        claims.setClaim("azp", resourceId);
-        claims.setClaim("resource_access", Map.of(resourceId, Map.of("roles", List.of(roles))));
-        claims.setClaim("participant_id", participantId);
-        claims.setClaim("scope", "openid gaia-x");
-
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setPayload(claims.toJson());
-        jws.setKey(rbacRsaKey.getPrivateKey());
-        jws.setKeyIdHeaderValue(rbacRsaKey.getKeyId());
-        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-        jws.setHeader("typ", "JWT");
-        return jws.getCompactSerialization();
-    }
-
-    /**
-     * Builds and executes a real-JWT POST /assets request. {@code includeCsrfToken} isolates the
-     * CSRF-filter dimension from the RBAC dimension: a real bearer-token client never holds a
-     * Spring-session CSRF token, so {@code false} reproduces genuine client behavior while
-     * {@code true} isolates whether the role check itself behaves correctly once CSRF is out of the way.
-     */
-    private MvcResult performCreateAsset(String token, String credential, boolean includeCsrfToken) throws Exception {
-        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.post("/assets")
-            .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token)
-            .content(credential)
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON);
-        return mockMvc.perform(includeCsrfToken ? request.with(csrf()) : request).andReturn();
-    }
-
-    private MvcResult performReadAsset(String id, String token) throws Exception {
-        return mockMvc.perform(MockMvcRequestBuilders.get("/assets/{id}", id)
-                .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token))
-            .andReturn();
-    }
-
-    private MvcResult performUpdateAsset(String id, String token, String credential, boolean includeCsrfToken) throws Exception {
-        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.put("/assets/{id}", id)
-            .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token)
-            .content(credential)
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON);
-        return mockMvc.perform(includeCsrfToken ? request.with(csrf()) : request).andReturn();
-    }
-
-    private MvcResult performDeleteAsset(String assetHash, String token, boolean includeCsrfToken) throws Exception {
-        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete("/assets/{asset_hash}", assetHash)
-            .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token)
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON);
-        return mockMvc.perform(includeCsrfToken ? request.with(csrf()) : request).andReturn();
     }
 
     @AfterAll
@@ -1223,24 +1099,24 @@ public class AssetControllerTest {
     }
 
     // ===== Real-JWT fine-grained role matrix =====
-    // The single-role and no-roles tests below include a Spring-session CSRF token (.with(csrf()))
-    // on every write, to isolate the RBAC dimension from CSRF entirely. The tests further down that
-    // exercise all four roles together omit the CSRF token, matching how a real bearer-token API
-    // client actually calls this service in production.
+    // The single-role, no-roles, and role-combination tests below include a Spring-session CSRF
+    // token (.with(csrf())) on every write, to isolate the RBAC dimension from CSRF entirely. The
+    // tests further down that exercise all four roles together omit the CSRF token, matching how a
+    // real bearer-token API client actually calls this service in production.
 
     @Test
     public void assetOperations_assetCreateRoleOnlyRealJwt_grantsOnlyCreateOperation() throws Exception {
         String token = mintFineGrainedAssetToken(RESOURCE_ISSUER, ASSET_CREATE);
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
 
-        MvcResult createResult = performCreateAsset(token, credential, true);
+        MvcResult createResult = performCreateAsset(token, credential, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.CREATED.value(), createResult.getResponse().getStatus(),
             "ASSET_CREATE role via real JWT must grant POST /assets");
 
         MvcResult readResult = performReadAsset(UPDATABLE_ASSET_ID, token);
-        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, true);
-        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, true);
+        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, WITH_CSRF_TOKEN);
+        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), readResult.getResponse().getStatus(),
             "ASSET_CREATE alone must not grant GET /assets/{id}");
@@ -1261,9 +1137,9 @@ public class AssetControllerTest {
         assertEquals(HttpStatus.OK.value(), readResult.getResponse().getStatus(),
             "ASSET_READ role via real JWT must grant GET /assets/{id}");
 
-        MvcResult createResult = performCreateAsset(token, credential, true);
-        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, true);
-        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, true);
+        MvcResult createResult = performCreateAsset(token, credential, WITH_CSRF_TOKEN);
+        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, WITH_CSRF_TOKEN);
+        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), createResult.getResponse().getStatus(),
             "ASSET_READ alone must not grant POST /assets");
@@ -1279,14 +1155,14 @@ public class AssetControllerTest {
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
         storeResourceAsset(credential);
 
-        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, updatedResourceCredential(credential), true);
+        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, updatedResourceCredential(credential), WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.OK.value(), updateResult.getResponse().getStatus(),
             "ASSET_UPDATE role via real JWT must grant PUT /assets/{id}");
 
-        MvcResult createResult = performCreateAsset(token, credential, true);
+        MvcResult createResult = performCreateAsset(token, credential, WITH_CSRF_TOKEN);
         MvcResult readResult = performReadAsset(UPDATABLE_ASSET_ID, token);
-        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, true);
+        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), createResult.getResponse().getStatus(),
             "ASSET_UPDATE alone must not grant POST /assets");
@@ -1302,14 +1178,14 @@ public class AssetControllerTest {
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
         storeResourceAsset(credential);
 
-        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, true);
+        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.OK.value(), deleteResult.getResponse().getStatus(),
             "ASSET_DELETE role via real JWT must grant DELETE /assets/{asset_hash}");
 
-        MvcResult createResult = performCreateAsset(token, credential, true);
+        MvcResult createResult = performCreateAsset(token, credential, WITH_CSRF_TOKEN);
         MvcResult readResult = performReadAsset(UPDATABLE_ASSET_ID, token);
-        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, true);
+        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), createResult.getResponse().getStatus(),
             "ASSET_DELETE alone must not grant POST /assets");
@@ -1325,10 +1201,10 @@ public class AssetControllerTest {
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
         storeResourceAsset(credential);
 
-        MvcResult createResult = performCreateAsset(token, credential, true);
+        MvcResult createResult = performCreateAsset(token, credential, WITH_CSRF_TOKEN);
         MvcResult readResult = performReadAsset(UPDATABLE_ASSET_ID, token);
-        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, true);
-        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, true);
+        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, credential, WITH_CSRF_TOKEN);
+        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, WITH_CSRF_TOKEN);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), createResult.getResponse().getStatus(),
             "A user with none of the four fine-grained roles must not be able to create an asset");
@@ -1338,6 +1214,36 @@ public class AssetControllerTest {
             "A user with none of the four fine-grained roles must not be able to update an asset");
         assertEquals(HttpStatus.FORBIDDEN.value(), deleteResult.getResponse().getStatus(),
             "A user with none of the four fine-grained roles must not be able to delete an asset");
+    }
+
+    /**
+     * Neither the single-role tests above nor the all-four-roles tests below prove that a
+     * genuine subset of roles grants exactly the union of its operations. This test grants
+     * ASSET_CREATE and ASSET_READ together and asserts POST/GET succeed while PUT/DELETE
+     * (the ungranted roles) are forbidden, closing that coverage gap.
+     */
+    @Test
+    public void assetOperations_createAndReadRolesOnlyRealJwt_grantsOnlyCreateAndReadOperations() throws Exception {
+        String token = mintFineGrainedAssetToken(RESOURCE_ISSUER, ASSET_CREATE, ASSET_READ);
+        String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
+
+        MvcResult createResult = performCreateAsset(token, credential, WITH_CSRF_TOKEN);
+
+        assertEquals(HttpStatus.CREATED.value(), createResult.getResponse().getStatus(),
+            "ASSET_CREATE + ASSET_READ together must grant POST /assets");
+
+        MvcResult readResult = performReadAsset(UPDATABLE_ASSET_ID, token);
+
+        assertEquals(HttpStatus.OK.value(), readResult.getResponse().getStatus(),
+            "ASSET_CREATE + ASSET_READ together must grant GET /assets/{id}");
+
+        MvcResult updateResult = performUpdateAsset(UPDATABLE_ASSET_ID, token, updatedResourceCredential(credential), WITH_CSRF_TOKEN);
+        MvcResult deleteResult = performDeleteAsset(resourceAssetHash, token, WITH_CSRF_TOKEN);
+
+        assertEquals(HttpStatus.FORBIDDEN.value(), updateResult.getResponse().getStatus(),
+            "ASSET_CREATE + ASSET_READ together must not grant PUT /assets/{id}");
+        assertEquals(HttpStatus.FORBIDDEN.value(), deleteResult.getResponse().getStatus(),
+            "ASSET_CREATE + ASSET_READ together must not grant DELETE /assets/{asset_hash}");
     }
 
     // ===== All four fine-grained roles together — no simulated CSRF token, matching a real =====
@@ -1352,10 +1258,25 @@ public class AssetControllerTest {
         String token = mintFineGrainedAssetToken(RESOURCE_ISSUER, ASSET_CREATE, ASSET_READ, ASSET_UPDATE, ASSET_DELETE);
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
 
-        MvcResult result = performCreateAsset(token, credential, false);
+        MvcResult result = performCreateAsset(token, credential, WITHOUT_CSRF_TOKEN);
 
         assertEquals(HttpStatus.CREATED.value(), result.getResponse().getStatus(),
             "A real bearer-token client (no Spring-session CSRF token) with ASSET_CREATE must be able to create an asset");
+    }
+
+    /**
+     * A real bearer-token client with all four fine-grained roles must be able to read an asset.
+     */
+    @Test
+    public void getAsset_realBearerTokenClientWithAllFourRoles_succeeds() throws Exception {
+        String token = mintFineGrainedAssetToken(RESOURCE_ISSUER, ASSET_CREATE, ASSET_READ, ASSET_UPDATE, ASSET_DELETE);
+        String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
+        storeResourceAsset(credential);
+
+        MvcResult result = performReadAsset(UPDATABLE_ASSET_ID, token);
+
+        assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
+            "A real bearer-token client with ASSET_READ must be able to read an asset");
     }
 
     /**
@@ -1367,7 +1288,7 @@ public class AssetControllerTest {
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
         storeResourceAsset(credential);
 
-        MvcResult result = performUpdateAsset(UPDATABLE_ASSET_ID, token, updatedResourceCredential(credential), false);
+        MvcResult result = performUpdateAsset(UPDATABLE_ASSET_ID, token, updatedResourceCredential(credential), WITHOUT_CSRF_TOKEN);
 
         assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
             "A real bearer-token client (no Spring-session CSRF token) with ASSET_UPDATE must be able to update an asset");
@@ -1382,7 +1303,7 @@ public class AssetControllerTest {
         String credential = getMockFileDataAsString(RESOURCE_CREDENTIAL_FILE);
         storeResourceAsset(credential);
 
-        MvcResult result = performDeleteAsset(resourceAssetHash, token, false);
+        MvcResult result = performDeleteAsset(resourceAssetHash, token, WITHOUT_CSRF_TOKEN);
 
         assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
             "A real bearer-token client (no Spring-session CSRF token) with ASSET_DELETE must be able to delete an asset");
@@ -1408,7 +1329,96 @@ public class AssetControllerTest {
         return assetMeta;
     }
 
+    /**
+     * Produces a byte-distinct variant of the credential-resource.json fixture (same asset IRI and
+     * issuer, different literal value) so PUT /assets/{id} tests exercise a genuine content update
+     * rather than resubmitting a byte-identical payload, which the store layer treats as a duplicate.
+     */
+    private static String updatedResourceCredential(String originalCredential) {
+        return originalCredential.replace("ExampleResourceForFederatedCatalogue",
+                "ExampleResourceForFederatedCatalogue (updated)");
+    }
+
     private CredentialVerificationResult getStaticVerificationResult() {
-      return verificationService.verifyCredential(assetMeta.getContentAccessor());
+        return verificationService.verifyCredential(assetMeta.getContentAccessor());
+    }
+
+    /**
+     * Directly stores the {@code credential-resource.json} fixture (bypassing HTTP/authorization),
+     * so role-isolation tests can assert a single operation's authorization outcome without first
+     * needing the ASSET_CREATE role to establish that precondition.
+     */
+    private void storeResourceAsset(String credentialContent) {
+        AssetMetadata meta = new AssetMetadata(UPDATABLE_ASSET_ID, RESOURCE_ISSUER, new ArrayList<>(),
+                new ContentAccessorDirect(credentialContent));
+        meta.setStatus(AssetStatus.ACTIVE);
+        Instant now = Instant.now();
+        meta.setStatusDatetime(now);
+        meta.setUploadDatetime(now);
+        assetStorePublisher.storeCredential(meta, verificationService.verifyCredential(meta.getContentAccessor()));
+    }
+
+    /**
+     * Registers a WireMock-backed OIDC discovery document and JWKS so that real, RSA-signed JWTs
+     * (minted by {@link #mintFineGrainedAssetToken}) are decoded and converted by the production
+     * {@code CustomJwtAuthenticationConverter} pipeline — unlike {@code @WithMockJwtAuth}, which
+     * injects a pre-built authority list directly into the security context.
+     */
+    private void setUpRbacJwtIssuer() throws IOException {
+        try {
+            jwtSupport.setUpOidcAndJwks("rbac-test-k1");
+        } catch (JoseException ex) {
+            throw new IllegalStateException("Failed to set up OIDC and JWKS", ex);
+        }
+    }
+
+    /**
+     * Mints a real, RSA-signed JWT carrying the given fine-grained roles under
+     * {@code resource_access.<keycloak.resource>.roles}, matching the shape a Keycloak-issued
+     * access token has in production. Routed through the WireMock JWKS registered in
+     * {@link #setUpRbacJwtIssuer()}, so requests bearing this token exercise the real
+     * {@code CustomJwtAuthenticationConverter}, not a test double.
+     */
+    private String mintFineGrainedAssetToken(String participantId, String... roles) throws JoseException {
+        return jwtSupport.mintToken(resourceId, List.of(roles), participantId);
+    }
+
+    /**
+     * Builds and executes a real-JWT POST /assets request. {@code includeCsrfToken} isolates the
+     * CSRF-filter dimension from the RBAC dimension: a real bearer-token client never holds a
+     * Spring-session CSRF token, so {@code false} reproduces genuine client behavior while
+     * {@code true} isolates whether the role check itself behaves correctly once CSRF is out of the way.
+     */
+    private MvcResult performCreateAsset(String token, String credential, boolean includeCsrfToken) throws Exception {
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.post("/assets")
+                .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token)
+                .content(credential)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON);
+        return mockMvc.perform(includeCsrfToken ? request.with(csrf()) : request).andReturn();
+    }
+
+    private MvcResult performReadAsset(String id, String token) throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders.get("/assets/{id}", id)
+                        .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token))
+                .andReturn();
+    }
+
+    private MvcResult performUpdateAsset(String id, String token, String credential, boolean includeCsrfToken) throws
+            Exception {
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.put("/assets/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token)
+                .content(credential)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON);
+        return mockMvc.perform(includeCsrfToken ? request.with(csrf()) : request).andReturn();
+    }
+
+    private MvcResult performDeleteAsset(String assetHash, String token, boolean includeCsrfToken) throws Exception {
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.delete("/assets/{asset_hash}", assetHash)
+                .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON);
+        return mockMvc.perform(includeCsrfToken ? request.with(csrf()) : request).andReturn();
     }
 }

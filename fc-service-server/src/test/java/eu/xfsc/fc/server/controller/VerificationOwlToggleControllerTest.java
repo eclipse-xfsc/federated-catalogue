@@ -126,7 +126,7 @@ class VerificationOwlToggleControllerTest {
   }
 
   @Test
-  void verify_unauthenticated_returns401() throws Exception {
+  void verify_unauthenticated_isRejected() throws Exception {
     mockMvc.perform(MockMvcRequestBuilders.post("/verification")
             .queryParam("verifySemantics", "false")
             .queryParam("verifyVPSignature", "false")
