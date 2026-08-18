@@ -546,6 +546,14 @@ public class ProvenanceControllerTest {
     assertEquals(Boolean.FALSE, verResult.getIsValid());
     assertNull(verResult.getVerificationTimestamp());
     assertEquals(List.of(NO_CREDENTIALS_REASON), verResult.getErrors());
+
+    /* every other nullable field is unset on the aggregated result too — pinned so a mapper
+     * regression can't accidentally default one of them to non-null without a test noticing. */
+    assertNull(verResult.getVerificationMethod());
+    assertNull(verResult.getIssuerResolutionStatus());
+    assertNull(verResult.getIssuedDateTime());
+    assertNull(verResult.getSignatureValid());
+    assertNull(verResult.getCredentialExpiryValid());
   }
 
   // ===== POST /assets/{id}/provenance/verify — boundary tests =====

@@ -563,6 +563,10 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: >-
+            Issuance time extracted from the credential. Set only on a successful single-credential
+            verification; `null` when that verification failed, and `null` on the aggregated
+            (verify-all) result.
         signatureValid:
           type: boolean
           nullable: true
