@@ -39,8 +39,10 @@ import java.util.stream.Collectors;
  * {@link ValidationResultStore}.</p>
  *
  * <p>Multi-asset requests are restricted to SHACL validation. Single-asset requests support
- * all registered strategies (SHACL for RDF assets, JSON Schema for non-RDF JSON,
- * XML Schema for non-RDF XML). Each applicable strategy stores an independent
+ * all registered strategies whose {@link ValidationStrategy#appliesTo(AssetMetadata)} the asset
+ * matches: SHACL for any RDF asset, JSON Schema for non-RDF JSON assets and for RDF assets
+ * serialised in JSON-LD, and XML Schema for non-RDF XML assets and for RDF assets serialised in
+ * RDF/XML (SRS §3.1.6). Each applicable strategy stores an independent
  * {@link eu.xfsc.fc.core.dao.validation.ValidationResult}.</p>
  */
 @Service
@@ -309,13 +311,19 @@ public class AssetValidationServiceImpl implements AssetValidationService {
   /**
    * Lists the validator types applicable to the given asset, for use in error messages.
    *
-   * @return comma-separated {@link ValidatorType} names, or an empty string if none apply
+   * <p>Every RDF asset has at least SHACL applicable, and every non-RDF asset is rejected by
+   * the caller before this method is reached, so the empty-list branch below is not expected to
+   * be hit today — it exists only to keep this message well-formed if that invariant is ever
+   * broken by a future change to strategy applicability.</p>
+   *
+   * @return comma-separated {@link ValidatorType} names, or {@code "none"} if none apply
    */
   private String describeApplicableTypes(AssetMetadata asset) {
-    return strategies.stream()
+    String applicable = strategies.stream()
         .filter(s -> s.appliesTo(asset))
         .map(s -> s.type().toString())
         .collect(Collectors.joining(", "));
+    return applicable.isEmpty() ? "none" : applicable;
   }
 
   private SchemaType resolveSchemaStoreType(ValidationStrategy strategy) {

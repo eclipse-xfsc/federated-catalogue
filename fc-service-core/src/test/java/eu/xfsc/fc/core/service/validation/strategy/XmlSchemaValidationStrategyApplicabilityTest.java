@@ -39,6 +39,11 @@ class XmlSchemaValidationStrategyApplicabilityTest {
   private static final String TURTLE_CONTENT =
       "@prefix ex: <https://example.org/> . ex:Alice ex:name \"Alice\" .";
 
+  // A JSON-LD-serialised RDF asset — not RDF/XML, must never be routed to XML Schema.
+  private static final String JSON_LD_CONTENT =
+      "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
+      + "\"type\":[\"VerifiableCredential\"],\"issuer\":\"did:web:example.org\"}";
+
   // Non-RDF/XML-shaped RDF content with no content type at all.
   private static final String OPAQUE_RDF_CONTENT = "dummy rdf";
 
@@ -74,6 +79,9 @@ class XmlSchemaValidationStrategyApplicabilityTest {
         Arguments.of(
             "RDF asset serialised as Turtle does not apply to XML Schema",
             new ContentAccessorDirect(TURTLE_CONTENT), VerificationConstants.MEDIA_TYPE_TURTLE, false),
+        Arguments.of(
+            "RDF asset serialised as JSON-LD does not apply to XML Schema",
+            new ContentAccessorDirect(JSON_LD_CONTENT), VerificationConstants.MEDIA_TYPE_LD_JSON, false),
         Arguments.of(
             "RDF asset with no content type still routes to SHACL",
             opaqueRdf, null, false),

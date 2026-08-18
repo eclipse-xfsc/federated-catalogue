@@ -224,6 +224,7 @@ class AssetValidationServiceImplTest {
   @Test
   void validateAsset_turtleRdfAsset_withExplicitJsonSchema_notApplicable_throwsClientException() {
     registerStrategyList();
+    registerShaclStrategy();
     registerJsonStrategy();
     when(assetStore.getById(ASSET_ID)).thenReturn(buildTurtleRdfAsset(ASSET_ID));
     when(schemaStore.getSchemaRecord(JSON_SCHEMA_ID)).thenReturn(buildJsonRecord(JSON_SCHEMA_ID));
@@ -232,11 +233,13 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(JSON_SCHEMA_ID));
 
-    // Regression guard (AC-2): a non-JSON-LD RDF serialisation (Turtle) must remain
-    // inapplicable to JSON Schema even after JSON-LD is made applicable.
+    // Regression guard: a non-JSON-LD RDF serialisation (Turtle) must remain inapplicable
+    // to JSON Schema even after JSON-LD is made applicable.
     ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
     assertTrue(ex.getMessage().contains("not applicable"),
         "Turtle-serialised RDF must stay inapplicable to JSON Schema: " + ex.getMessage());
+    assertTrue(ex.getMessage().contains("SHACL"),
+        "Rejection message should name SHACL as the type actually applicable to this asset: " + ex.getMessage());
   }
 
   // === validateAsset — JSON-LD RDF asset: SHACL + JSON Schema combined (SRS 5, validation request 1) ===
@@ -436,6 +439,7 @@ class AssetValidationServiceImplTest {
   @Test
   void validateAsset_turtleRdfAsset_withExplicitXmlSchema_notApplicable_throwsClientException() {
     registerStrategyList();
+    registerShaclStrategy();
     registerXmlStrategy();
     when(assetStore.getById(ASSET_ID)).thenReturn(buildTurtleRdfAsset(ASSET_ID));
     when(schemaStore.getSchemaRecord(XML_SCHEMA_ID)).thenReturn(buildXmlRecord(XML_SCHEMA_ID));
@@ -444,11 +448,13 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(XML_SCHEMA_ID));
 
-    // Regression guard (AC-2): a non-RDF/XML RDF serialisation (Turtle) must remain
-    // inapplicable to XML Schema even after RDF/XML is made applicable.
+    // Regression guard: a non-RDF/XML RDF serialisation (Turtle) must remain inapplicable
+    // to XML Schema even after RDF/XML is made applicable.
     ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
     assertTrue(ex.getMessage().contains("not applicable"),
         "Turtle-serialised RDF must stay inapplicable to XML Schema: " + ex.getMessage());
+    assertTrue(ex.getMessage().contains("SHACL"),
+        "Rejection message should name SHACL as the type actually applicable to this asset: " + ex.getMessage());
   }
 
   @Test

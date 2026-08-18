@@ -45,6 +45,11 @@ class JsonSchemaValidationStrategyApplicabilityTest {
   // Non-JSON-LD-shaped RDF content with no content type at all.
   private static final String OPAQUE_RDF_CONTENT = "dummy rdf";
 
+  // Brace-prefixed but malformed/incomplete content — isJsonLd() is a naive startsWith("{")
+  // check, so this is classified applicable even though it is not valid JSON-LD. Documents a
+  // known limitation of the heuristic rather than a behavior this test is asserting is correct.
+  private static final String MALFORMED_BRACE_PREFIXED_CONTENT = "{this is not valid json-ld at all";
+
   private final JsonSchemaValidationStrategy strategy =
       new JsonSchemaValidationStrategy(mock(FileStore.class), new ObjectMapper());
 
@@ -63,6 +68,9 @@ class JsonSchemaValidationStrategyApplicabilityTest {
         Arguments.of(
             "RDF asset serialised as JSON-LD applies to JSON Schema (SRS 3.1.6)",
             new ContentAccessorDirect(JSON_LD_CONTENT), VerificationConstants.MEDIA_TYPE_LD_JSON, true),
+        Arguments.of(
+            "RDF asset with brace-prefixed but malformed content applies (naive prefix heuristic, not a JSON-LD validity check)",
+            new ContentAccessorDirect(MALFORMED_BRACE_PREFIXED_CONTENT), null, true),
         Arguments.of(
             "RDF asset serialised as Turtle does not apply to JSON Schema",
             new ContentAccessorDirect(TURTLE_CONTENT), VerificationConstants.MEDIA_TYPE_TURTLE, false),
