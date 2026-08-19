@@ -1,0 +1,44 @@
+name: Vendored Assets License Scan
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/*.jar'
+      - '**pom.xml'
+      - '**/static/**'
+      - '**/webapp/**'
+      - '**/public/**'
+      - 'fc-tools/scan-vendored-assets.sh'
+      - 'fc-tools/vendored-assets-baseline.txt'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.jar'
+      - '**pom.xml'
+      - '**/static/**'
+      - '**/webapp/**'
+      - '**/public/**'
+      - 'fc-tools/scan-vendored-assets.sh'
+      - 'fc-tools/vendored-assets-baseline.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Diff against checked-in baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Fails on drift: a jar, system-scope dependency, or vendored front-end
+      # asset was added/removed/moved without updating the baseline and the
+      # licence inventory in design-documents. See fc-tools/scan-vendored-assets.sh
+      # for how to regenerate the baseline after reviewing the change.
+      - name: Check vendored-asset inventory against baseline
+        run: ./fc-tools/scan-vendored-assets.sh --check
