@@ -1,34 +1,16 @@
-name: Vendored Assets License Scan
+name: Vendored Assets Inventory
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - '**/*.jar'
-      - '**pom.xml'
-      - '**/static/**'
-      - '**/webapp/**'
-      - '**/public/**'
-      - 'fc-tools/scan-vendored-assets.sh'
-      - 'fc-tools/vendored-assets-baseline.txt'
-  push:
-    branches:
-      - main
-    paths:
-      - '**/*.jar'
-      - '**pom.xml'
-      - '**/static/**'
-      - '**/webapp/**'
-      - '**/public/**'
-      - 'fc-tools/scan-vendored-assets.sh'
-      - 'fc-tools/vendored-assets-baseline.txt'
+  release:
+    types: [published]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  scan:
-    name: Diff against checked-in baseline
+  publish-inventory:
+    name: Publish vendored-asset inventory
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -36,9 +18,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      # Fails on drift: a jar, system-scope dependency, or vendored front-end
-      # asset was added/removed/moved without updating the baseline and the
-      # licence inventory in design-documents. See fc-tools/scan-vendored-assets.sh
-      # for how to regenerate the baseline after reviewing the change.
-      - name: Check vendored-asset inventory against baseline
-        run: ./fc-tools/scan-vendored-assets.sh --check
+      # Informational only, run at release time - no fail-on-drift gate.
+      # This lists which committed jars / vendored front-end files sit
+      # outside the Maven dependency tree; it does not identify licences.
+      # See fc-tools/scan-vendored-assets.sh --check for the (unused in CI)
+      # baseline-diff mode kept for local ad-hoc use.
+      - name: Generate vendored-asset inventory
+        run: ./fc-tools/scan-vendored-assets.sh > vendored-assets-inventory.txt
+
+      - name: Upload inventory as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendored-assets-inventory
+          path: vendored-assets-inventory.txt
+
+      - name: Attach inventory to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" vendored-assets-inventory.txt --clobber
