@@ -179,10 +179,14 @@ public class AssetService implements AssetsApiDelegate {
    * matches what the persisted content field actually holds.
    *
    * <p>For an RDF asset, the persisted content field is the asset's own payload and is returned
-   * as-is. For a non-RDF asset, the persisted content field instead holds the most recent
-   * metadata-enrichment RDF document (kept there so a graph rebuild can replay it); the original
-   * payload is read from the file store by content hash instead, so an enrichment never leaks out
-   * as the asset body.</p>
+   * as-is, or {@code null} if there is none. For a non-RDF asset, the original payload always
+   * lives in the file store, keyed by content hash — the persisted content field, when present,
+   * instead holds the most recent metadata-enrichment RDF document (kept there so a graph rebuild
+   * can replay it), so it is never consulted here. This holds for any asset version, not only the
+   * current one: a version's own persisted content field is null until that specific version is
+   * itself enriched, but its file store entry exists from the moment it was uploaded, so gating the
+   * file store read on that field being non-null would wrongly report no content for every version
+   * that predates a later enrichment.</p>
    *
    * <p>A file store read fault is not swallowed here: it surfaces as a {@link ServerException} so
    * a response is never returned whose reported size and hash describe content that could not
@@ -194,14 +198,11 @@ public class AssetService implements AssetsApiDelegate {
    * @throws ServerException if the asset is non-RDF and its file store content could not be read
    */
   private String resolveRawContent(AssetMetadata assetMetadata) {
-    ContentAccessor content = assetMetadata.getContentAccessor();
-    if (content == null) {
-      return null;
-    }
     if (assetMetadata instanceof AssetRecord record && record.getContentKind() == ContentKind.NON_RDF) {
       return readNonRdfFileContent(assetMetadata);
     }
-    return content.getContentAsString();
+    ContentAccessor content = assetMetadata.getContentAccessor();
+    return content == null ? null : content.getContentAsString();
   }
 
   /**

@@ -31,6 +31,7 @@ import eu.xfsc.fc.api.generated.model.AssetResult;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.api.generated.model.Assets;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.ContentAccessorBinary;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
@@ -73,13 +74,14 @@ import org.springframework.web.context.WebApplicationContext;
  * disabled-backend guard. Enrichment content and metadata consistency is this class's concern; it is
  * deliberately decoupled from graph-store correctness (see {@link AssetEnrichmentGraphStoreTest}).</p>
  *
- * <p>AC-3 — that enrichment triples genuinely reach and remain retrievable from the graph store, not
- * merely that they are forwarded to a mock — is verified against a real embedded Fuseki backend in
+ * <p>That enrichment triples genuinely reach and remain retrievable from the graph store, not merely
+ * that they are forwarded to a mock, is verified against a real embedded Fuseki backend in
  * {@link AssetEnrichmentGraphStoreTest}, which also re-covers this class's original-content
  * assertion for a single enrichment against that real backend. A mocked "was addClaims() called"
- * check was previously kept here as a stand-in for that AC; it added no coverage beyond what the
- * real-backend test now proves more strongly (that the triples survive and are actually queryable),
- * so it was removed rather than kept as a duplicate, weaker assertion of the same requirement.</p>
+ * check was previously kept here as a stand-in for that graph-store guarantee; it added no coverage
+ * beyond what the real-backend test now proves more strongly (that the triples survive and are
+ * actually queryable), so it was removed rather than kept as a duplicate, weaker assertion of the
+ * same requirement.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -124,7 +126,8 @@ class AssetEnrichmentReadContentTest {
   void stubGraphStoreEnabled() {
     // Report an enabled backend so the enrichment path isn't short-circuited by the
     // disabled-graph-store guard (that behaviour is covered separately). addClaims/deleteClaims
-    // remain unconfigured no-op mocks; AC-3 verifies their invocation directly.
+    // remain unconfigured no-op mocks; AssetEnrichmentGraphStoreTest verifies their invocation
+    // against a real backend.
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
   }
 
@@ -133,7 +136,7 @@ class AssetEnrichmentReadContentTest {
     assetStore.clear();
   }
 
-  // ===== AC-1: original content survives enrichment =====
+  // ===== Original content survives enrichment =====
 
   @Test
   @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX, ASSET_READ_WITH_PREFIX},
@@ -169,7 +172,35 @@ class AssetEnrichmentReadContentTest {
             + " not the most recent enrichment document");
   }
 
-  // ===== AC-2: reported metadata must describe the content actually returned =====
+  // ===== A version-specific read must not lose an older version's own content =====
+
+  @Test
+  @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX, ASSET_READ_WITH_PREFIX},
+      claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
+          @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
+  void readAssetById_withVersionPredatingLaterEnrichment_returnsThatVersionsOriginalContent() throws Exception {
+    final Asset v1 = uploadNonRdfAsset(ORIGINAL_CONTENT);
+    storeSecondNonRdfContentVersion(v1.getId(), "second content version, uploaded before any enrichment");
+
+    // Enrichment always targets the current (latest) version; v1's own audit snapshot never gets
+    // a persisted content field, unlike the current-version case the tests above cover.
+    enrichAsset(v1.getId(), enrichmentPayload(v1.getId(), "Enrichment applied to the latest version only"));
+
+    final Map<String, Object> returnedV1 = readAssetByIdAtVersion(v1.getId(), 1);
+    final long reportedFileSize = ((Number) returnedV1.get("fileSize")).longValue();
+    final int actualContentLength = ORIGINAL_CONTENT.getBytes(StandardCharsets.UTF_8).length;
+
+    assertEquals(ORIGINAL_CONTENT, returnedV1.get("rawContent"),
+        "GET /assets/{id}?version=1 must return that version's own original content from the file"
+            + " store, even though only a later version of the same asset was enriched");
+    assertEquals(v1.getAssetHash(), returnedV1.get("assetHash"),
+        "reported assetHash for a version-specific read must be version 1's own hash, not the"
+            + " current (enriched) version's");
+    assertEquals(actualContentLength, reportedFileSize,
+        "reported fileSize for a version-specific read must match version 1's own content length");
+  }
+
+  // ===== Reported metadata must describe the content actually returned =====
 
   @Test
   @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX, ASSET_READ_WITH_PREFIX},
@@ -217,15 +248,16 @@ class AssetEnrichmentReadContentTest {
   @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX, ASSET_READ_WITH_PREFIX},
       claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
           @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
-  void readAssetById_withoutEnrichment_metadataAndContentUnaffected() throws Exception {
+  void readAssetById_withoutEnrichment_metadataUnaffectedAndContentStillSourcedFromFileStore() throws Exception {
     final Asset created = uploadNonRdfAsset(ORIGINAL_CONTENT);
 
     final Map<String, Object> returned = readAssetById(created.getId());
 
     assertEquals(created.getAssetHash(), returned.get("assetHash"));
     assertEquals(created.getFileSize(), ((Number) returned.get("fileSize")).longValue());
-    assertNull(returned.get("rawContent"),
-        "A non-RDF asset that was never enriched must not expose enrichment content it never received");
+    assertEquals(ORIGINAL_CONTENT, returned.get("rawContent"),
+        "A non-RDF asset that was never enriched must still report its own file store content,"
+            + " not an absent enrichment document mistaken for absent content");
   }
 
   // ===== Fault handling: a single-asset read must fail loudly, not silently =====
@@ -376,6 +408,35 @@ class AssetEnrichmentReadContentTest {
         .andReturn();
 
     return objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+  }
+
+  @SuppressWarnings("unchecked") // see readAssetById above
+  private Map<String, Object> readAssetByIdAtVersion(String assetId, int version) throws Exception {
+    final MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+            .get("/assets/" + encode(assetId))
+            .param("version", String.valueOf(version))
+            .with(csrf())
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andReturn();
+
+    return objectMapper.readValue(result.getResponse().getContentAsString(), Map.class);
+  }
+
+  /**
+   * Stores a second content version for an existing non-RDF asset directly via
+   * {@link AssetStore#storeUnverified}, bypassing HTTP: the multipart upload controller always
+   * mints a fresh IRI, so it cannot itself add a version to an existing standalone asset.
+   */
+  private void storeSecondNonRdfContentVersion(String id, String contentText) throws Exception {
+    final byte[] content = contentText.getBytes(StandardCharsets.UTF_8);
+    final Instant now = Instant.now();
+    final AssetMetadata meta = new AssetMetadata(calculateSha256AsHex(content), id, AssetStatus.ACTIVE,
+        TEST_ISSUER, null, now, now, new ContentAccessorBinary(content));
+    meta.setContentType(NON_RDF_CONTENT_TYPE);
+    meta.setFileSize((long) content.length);
+
+    assetStore.storeUnverified(meta, "second-version.txt");
   }
 
   /**
