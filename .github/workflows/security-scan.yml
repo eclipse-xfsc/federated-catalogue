@@ -15,3 +15,57 @@ permissions:
 jobs:
   osv-scan:
     uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
+    with:
+      # gating is done by the severity-gate job below; osv-scanner has no built-in severity threshold
+      fail-on-vuln: false
+
+  severity-gate:
+    name: Fail on CVSS > 7.0
+    needs: osv-scan
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Download OSV-Scanner SARIF
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: OSV Scanner SARIF file
+
+      - name: Fail if any finding exceeds severity threshold
+        env:
+          SEVERITY_THRESHOLD: "7.0"
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          threshold = float(os.environ["SEVERITY_THRESHOLD"])
+
+          with open("results.sarif") as f:
+              data = json.load(f)
+
+          failures = []
+          for run in data.get("runs", []):
+              rules = {r["id"]: r for r in run.get("tool", {}).get("driver", {}).get("rules", [])}
+              for result in run.get("results", []):
+                  rule = rules.get(result.get("ruleId"), {})
+                  severity = rule.get("properties", {}).get("security-severity")
+                  try:
+                      score = float(severity)
+                  except (TypeError, ValueError):
+                      continue
+                  if score > threshold:
+                      location = result.get("locations", [{}])[0].get("physicalLocation", {}) \
+                          .get("artifactLocation", {}).get("uri", "unknown")
+                      failures.append((score, result.get("ruleId"), location))
+
+          if failures:
+              failures.sort(key=lambda entry: -entry[0])
+              print(f"::error::{len(failures)} finding(s) exceed severity {threshold}:")
+              for score, rule_id, location in failures:
+                  print(f"  {score}  {rule_id}  {location}")
+              sys.exit(1)
+
+          print(f"No findings above severity {threshold}.")
+          PY
