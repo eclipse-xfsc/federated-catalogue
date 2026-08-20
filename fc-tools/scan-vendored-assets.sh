@@ -26,7 +26,7 @@
 #
 # CI only ever runs --check; it reads and diffs, it never writes. Regenerating
 # the baseline after a reviewed vendored-asset change, and updating
-# design-documents/02-insights/legal/oss-inventory-vendored-assets.md with the
+# fc-tools/oss-inventory-vendored-assets.csv with the
 # licence findings for that change, is a manual step for whoever makes it:
 #
 #   ./fc-tools/scan-vendored-assets.sh --list > fc-tools/vendored-assets-baseline.txt
@@ -119,7 +119,7 @@ if [[ "$MODE" == "check" ]]; then
   diff -u "$BASELINE" <(echo "$current") >&2
   echo >&2
   echo "A committed jar, system-scope dependency, or vendored front-end asset was added, removed, or moved." >&2
-  echo "Review its licence, update design-documents/02-insights/legal/oss-inventory-vendored-assets.md," >&2
+  echo "Review its licence, update fc-tools/oss-inventory-vendored-assets.csv," >&2
   echo "then regenerate the baseline: ./$(basename "$0") --list > $BASELINE" >&2
   exit 1
 fi
@@ -182,4 +182,4 @@ fi
 hr
 
 echo "Done. Cross-check results against:"
-echo "  design-documents/02-insights/legal/oss-inventory-vendored-assets.md"
+echo "  fc-tools/oss-inventory-vendored-assets.csv"

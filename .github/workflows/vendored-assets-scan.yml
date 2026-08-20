@@ -23,17 +23,27 @@ jobs:
       # outside the Maven dependency tree; it does not identify licences.
       # See fc-tools/scan-vendored-assets.sh --check for the (unused in CI)
       # baseline-diff mode kept for local ad-hoc use.
-      - name: Generate vendored-asset inventory
+      - name: Generate vendored-asset file list
         run: ./fc-tools/scan-vendored-assets.sh > vendored-assets-inventory.txt
 
+      # fc-tools/oss-inventory-vendored-assets.csv is the actual dependency
+      # + version + licence inventory (hand-maintained, not generated) - the
+      # file list above only tells you *that* something changed, not what
+      # it is or under what licence. Publish both.
       - name: Upload inventory as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: vendored-assets-inventory
-          path: vendored-assets-inventory.txt
+          path: |
+            vendored-assets-inventory.txt
+            fc-tools/oss-inventory-vendored-assets.csv
 
       - name: Attach inventory to the release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" vendored-assets-inventory.txt --clobber
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            vendored-assets-inventory.txt \
+            fc-tools/oss-inventory-vendored-assets.csv \
+            --clobber
