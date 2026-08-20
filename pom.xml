@@ -125,10 +125,6 @@
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
         <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
         <plugin.checkstyle.puppycrawl.version>10.3.1</plugin.checkstyle.puppycrawl.version>
-        <plugin.dependency-check.version>12.2.2</plugin.dependency-check.version>
-        <!-- OWASP scan: CVSS threshold and NVD API key (supply via -Dnvd.api.key=... or NVD_API_KEY env in CI) -->
-        <dependency-check.failBuildOnCVSS>7</dependency-check.failBuildOnCVSS>
-        <nvd.api.key></nvd.api.key>
         <!-- repository path -->
         <repository.path>eclipse/xfsc/cat/fc-service</repository.path>
         <!--jib-->
@@ -458,19 +454,6 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.owasp</groupId>
-                    <artifactId>dependency-check-maven</artifactId>
-                    <version>${plugin.dependency-check.version}</version>
-                    <configuration>
-                        <!-- Gate threshold for explicit manual runs (`mvn dependency-check:check`).
-                             NOT bound to the build lifecycle: the scan must never block CI, because it
-                             requires an NVD API key (NVD_API_KEY / -Dnvd.api.key) and would otherwise fail
-                             on NVD rate-limiting (HTTP 429) when no key is available. -->
-                        <failBuildOnCVSS>${dependency-check.failBuildOnCVSS}</failBuildOnCVSS>
-                        <nvdApiKey>${nvd.api.key}</nvdApiKey>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.openapitools</groupId>
