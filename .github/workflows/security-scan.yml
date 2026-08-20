@@ -6,9 +6,6 @@ on:
   schedule:
     - cron: '0 0 1 * *'
   workflow_dispatch:
-  push:
-    branches:
-      - feature/TDR-10-17_ci-security-scanning   # TEMP: verification only — remove before opening the PR
 
 permissions:
   contents: read
