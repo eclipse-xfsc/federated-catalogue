@@ -2,11 +2,9 @@ frontend	fc-demo-portal/src/main/resources/static/css/lib/bootstrap-icons.min.cs
 frontend	fc-demo-portal/src/main/resources/static/css/lib/dataTables.min.css
 frontend	fc-demo-portal/src/main/resources/static/css/lib/fonts/bootstrap-icons.woff
 frontend	fc-demo-portal/src/main/resources/static/css/lib/fonts/bootstrap-icons.woff2
-frontend	fc-demo-portal/src/main/resources/static/css/lib/jquery.dataTables.min.css
 frontend	fc-demo-portal/src/main/resources/static/css/lib/styles.css
 frontend	fc-demo-portal/src/main/resources/static/js/lib/bootstrap.bundle.min.js
 frontend	fc-demo-portal/src/main/resources/static/js/lib/dataTables.min.js
-frontend	fc-demo-portal/src/main/resources/static/js/lib/jquery.dataTables.min.js
 frontend	fc-demo-portal/src/main/resources/static/js/lib/jquery.min.js
 frontend	fc-service-server/src/main/resources/static/css/bootstrap.min.css
 frontend	fc-service-server/src/main/resources/static/css/jquery-ui.min.css
