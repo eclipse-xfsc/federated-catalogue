@@ -491,9 +491,9 @@ public class TrustFrameworkAdminControllerTest {
   }
 
   // --- Bundle config URL allowlist (SSRF guard) ---
-  // These three tests are the RED half of a TDD pair: TrustFrameworkBundleUrlValidator is not
-  // yet wired into TrustFrameworkAdminService, so today's actual response is 200 (unvalidated).
-  // They are expected to fail against the 400 expectation below until the validator is wired.
+  // TrustFrameworkBundleUrlValidator is wired into TrustFrameworkAdminService.coerce();
+  // these three cases assert the rejection of a private-IP host, a non-https scheme, and
+  // the cloud-metadata address.
 
   @Test
   @WithMockUser(roles = {ADMIN_ALL})
