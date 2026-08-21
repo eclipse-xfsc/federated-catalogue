@@ -14,6 +14,21 @@ import org.junit.jupiter.api.Test;
 
 class ValidationResultHasherTest {
 
+  private static final Instant VALIDATED_AT = Instant.parse("2024-06-01T12:00:00Z");
+
+  private static final String ASSET_1 = "https://example.org/asset/1";
+  private static final String VALIDATOR_REF_1 = "ref/1";
+
+  private static final String SCHEMA_A = "schema/A";
+  private static final String SCHEMA_B = "schema/B";
+  private static final String SCHEMA_C = "schema/C";
+
+  private static final String ASSET_ORDER_1 = "asset/1";
+  private static final String ASSET_ORDER_2 = "asset/2";
+
+  private static final String SERVICE_UNREACHABLE = "SERVICE_UNREACHABLE";
+  private static final String SERVICE_TIMEOUT = "SERVICE_TIMEOUT";
+
   private ValidationResultHasher hasher;
 
   @BeforeEach
@@ -38,11 +53,11 @@ class ValidationResultHasherTest {
   @Test
   void hash_basicInput_returns64CharHexString() {
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
+        new String[]{ASSET_1},
         new String[]{"https://example.org/schema/1"},
         ValidatorType.SHACL,
         true,
-        Instant.parse("2024-06-01T12:00:00Z"));
+        VALIDATED_AT);
 
     String hash = hasher.hash(result);
 
@@ -52,33 +67,30 @@ class ValidationResultHasherTest {
 
   @Test
   void hash_sameInput_returnsSameHash() {
-    Instant ts = Instant.parse("2024-06-01T12:00:00Z");
-    ValidationResult r1 = buildResult(new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true, ts);
-    ValidationResult r2 = buildResult(new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true, ts);
+    ValidationResult r1 = buildResult(new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true, VALIDATED_AT);
+    ValidationResult r2 = buildResult(new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true, VALIDATED_AT);
 
     assertEquals(hasher.hash(r1), hasher.hash(r2));
   }
 
   @Test
   void hash_differentConforms_returnsDifferentHash() {
-    Instant ts = Instant.parse("2024-06-01T12:00:00Z");
-    ValidationResult passing = buildResult(new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true, ts);
-    ValidationResult failing = buildResult(new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, false, ts);
+    ValidationResult passing = buildResult(new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true, VALIDATED_AT);
+    ValidationResult failing = buildResult(new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, false, VALIDATED_AT);
 
     assertNotEquals(hasher.hash(passing), hasher.hash(failing));
   }
 
   @Test
   void hash_differentAssetIds_returnsDifferentHash() {
-    Instant ts = Instant.parse("2024-06-01T12:00:00Z");
-    ValidationResult r1 = buildResult(new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true, ts);
+    ValidationResult r1 = buildResult(new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true, VALIDATED_AT);
     ValidationResult r2 = buildResult(new String[]{"https://example.org/asset/2"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true, ts);
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true, VALIDATED_AT);
 
     assertNotEquals(hasher.hash(r1), hasher.hash(r2));
   }
@@ -88,9 +100,9 @@ class ValidationResultHasherTest {
   @Test
   void verify_correctHash_returnsTrue() {
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true,
-        Instant.parse("2024-06-01T12:00:00Z"));
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true,
+        VALIDATED_AT);
     result.setContentHash(hasher.hash(result));
 
     assertTrue(hasher.verify(result));
@@ -99,9 +111,9 @@ class ValidationResultHasherTest {
   @Test
   void verify_tamperedConforms_returnsFalse() {
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true,
-        Instant.parse("2024-06-01T12:00:00Z"));
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true,
+        VALIDATED_AT);
     result.setContentHash(hasher.hash(result));
 
     // Tamper after hash was set
@@ -113,9 +125,9 @@ class ValidationResultHasherTest {
   @Test
   void verify_nullHash_returnsFalse() {
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true,
-        Instant.parse("2024-06-01T12:00:00Z"));
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true,
+        VALIDATED_AT);
     result.setContentHash(null);
 
     assertFalse(hasher.verify(result));
@@ -125,8 +137,8 @@ class ValidationResultHasherTest {
   void verify_hashComputationThrows_returnsFalse() {
     // null validatedAt causes NPE in canonicalize() — caught by verify(), which returns false
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, true,
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, true,
         null);
     result.setContentHash("anything");
 
@@ -136,15 +148,14 @@ class ValidationResultHasherTest {
   @Test
   void hash_differentReferenceOrderSameContent_returnsSameHash() {
     // Verify array element ordering is normalized (sorted) before hashing
-    Instant ts = Instant.parse("2024-06-01T12:00:00Z");
     ValidationResult r1 = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"schema/A", "schema/B", "schema/C"},
-        ValidatorType.SHACL, true, ts);
+        new String[]{ASSET_1},
+        new String[]{SCHEMA_A, SCHEMA_B, SCHEMA_C},
+        ValidatorType.SHACL, true, VALIDATED_AT);
     ValidationResult r2 = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"schema/C", "schema/A", "schema/B"},  // different order
-        ValidatorType.SHACL, true, ts);
+        new String[]{ASSET_1},
+        new String[]{SCHEMA_C, SCHEMA_A, SCHEMA_B},  // different order
+        ValidatorType.SHACL, true, VALIDATED_AT);
 
     assertEquals(hasher.hash(r1), hasher.hash(r2),
         "Hash must be stable regardless of validatorIds array element order");
@@ -153,15 +164,14 @@ class ValidationResultHasherTest {
   @Test
   void hash_differentAssetOrderSameContent_returnsSameHash() {
     // Same test for assetIds array
-    Instant ts = Instant.parse("2024-06-01T12:00:00Z");
     ValidationResult r1 = buildResult(
-        new String[]{"asset/1", "asset/2"},
-        new String[]{"schema/A"},
-        ValidatorType.SHACL, true, ts);
+        new String[]{ASSET_ORDER_1, ASSET_ORDER_2},
+        new String[]{SCHEMA_A},
+        ValidatorType.SHACL, true, VALIDATED_AT);
     ValidationResult r2 = buildResult(
-        new String[]{"asset/2", "asset/1"},  // different order
-        new String[]{"schema/A"},
-        ValidatorType.SHACL, true, ts);
+        new String[]{ASSET_ORDER_2, ASSET_ORDER_1},  // different order
+        new String[]{SCHEMA_A},
+        ValidatorType.SHACL, true, VALIDATED_AT);
 
     assertEquals(hasher.hash(r1), hasher.hash(r2),
         "Hash must be stable regardless of assetIds array element order");
@@ -175,9 +185,9 @@ class ValidationResultHasherTest {
     // Guards the "legacy rows keep verifying" promise against silent changes to canonicalize()
     // (field additions, reordering, encoding) that a same-input/same-input comparison can't catch.
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.SHACL, false,
-        Instant.parse("2024-06-01T12:00:00Z"));
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.SHACL, false,
+        VALIDATED_AT);
 
     assertEquals("28f4c40fc2304bbd2ad8bb7d42782275bf681e11ba89aaa2eaf39c8e41a8b583", hasher.hash(result));
   }
@@ -185,14 +195,14 @@ class ValidationResultHasherTest {
   @Test
   void hash_setVsNullFailureCategory_returnsDifferentHash() {
     ValidationResult withCategory = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.TRUST_FRAMEWORK, false,
-        Instant.parse("2024-06-01T12:00:00Z"));
-    withCategory.setFailureCategory("SERVICE_UNREACHABLE");
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.TRUST_FRAMEWORK, false,
+        VALIDATED_AT);
+    withCategory.setFailureCategory(SERVICE_UNREACHABLE);
     ValidationResult withoutCategory = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.TRUST_FRAMEWORK, false,
-        Instant.parse("2024-06-01T12:00:00Z"));
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.TRUST_FRAMEWORK, false,
+        VALIDATED_AT);
 
     assertNotEquals(hasher.hash(withCategory), hasher.hash(withoutCategory));
   }
@@ -200,15 +210,15 @@ class ValidationResultHasherTest {
   @Test
   void hash_differentFailureCategory_returnsDifferentHash() {
     ValidationResult unreachable = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.TRUST_FRAMEWORK, false,
-        Instant.parse("2024-06-01T12:00:00Z"));
-    unreachable.setFailureCategory("SERVICE_UNREACHABLE");
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.TRUST_FRAMEWORK, false,
+        VALIDATED_AT);
+    unreachable.setFailureCategory(SERVICE_UNREACHABLE);
     ValidationResult timeout = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.TRUST_FRAMEWORK, false,
-        Instant.parse("2024-06-01T12:00:00Z"));
-    timeout.setFailureCategory("SERVICE_TIMEOUT");
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.TRUST_FRAMEWORK, false,
+        VALIDATED_AT);
+    timeout.setFailureCategory(SERVICE_TIMEOUT);
 
     assertNotEquals(hasher.hash(unreachable), hasher.hash(timeout));
   }
@@ -216,14 +226,14 @@ class ValidationResultHasherTest {
   @Test
   void verify_tamperedFailureCategory_returnsFalse() {
     ValidationResult result = buildResult(
-        new String[]{"https://example.org/asset/1"},
-        new String[]{"ref/1"}, ValidatorType.TRUST_FRAMEWORK, false,
-        Instant.parse("2024-06-01T12:00:00Z"));
-    result.setFailureCategory("SERVICE_UNREACHABLE");
+        new String[]{ASSET_1},
+        new String[]{VALIDATOR_REF_1}, ValidatorType.TRUST_FRAMEWORK, false,
+        VALIDATED_AT);
+    result.setFailureCategory(SERVICE_UNREACHABLE);
     result.setContentHash(hasher.hash(result));
 
     // Tamper after hash was set — swapping the discriminator must be caught, not just conforms.
-    result.setFailureCategory("SERVICE_TIMEOUT");
+    result.setFailureCategory(SERVICE_TIMEOUT);
 
     assertFalse(hasher.verify(result));
   }
