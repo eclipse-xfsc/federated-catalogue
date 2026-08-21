@@ -63,6 +63,15 @@ public class TrustFrameworkAdminControllerTest {
         "trustAnchorUrl":"https://registry.test/v1/trust-anchors"
       }
       """;
+  public static final String BUNDLE_CONFIG_PRIVATE_IP_SERVICE_URL = """
+      {"serviceUrl":"https://10.0.0.5/x"}
+      """;
+  public static final String BUNDLE_CONFIG_HTTP_SCHEME_SERVICE_URL = """
+      {"serviceUrl":"http://mock.test/v2"}
+      """;
+  public static final String BUNDLE_CONFIG_METADATA_IP_TRUST_ANCHOR_URL = """
+      {"trustAnchorUrl":"https://169.254.169.254/latest/meta-data/"}
+      """;
   @Autowired
   private MockMvc mockMvc;
 
@@ -479,5 +488,43 @@ public class TrustFrameworkAdminControllerTest {
             .content(ENABLED_FALSE)
             .with(csrf()))
         .andExpect(status().isOk());
+  }
+
+  // --- Bundle config URL allowlist (SSRF guard) ---
+  // These three tests are the RED half of a TDD pair: TrustFrameworkBundleUrlValidator is not
+  // yet wired into TrustFrameworkAdminService, so today's actual response is 200 (unvalidated).
+  // They are expected to fail against the 400 expectation below until the validator is wired.
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_privateIpServiceUrl_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_PRIVATE_IP_SERVICE_URL)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_httpSchemeServiceUrl_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_HTTP_SCHEME_SERVICE_URL)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void patchTrustFrameworkBundleConfig_metadataIpTrustAnchorUrl_returns400() throws Exception {
+    mockMvc.perform(MockMvcRequestBuilders
+            .patch("/admin/trust-frameworks/bundles/gaia-x-2511")
+            .contentType(MERGE_PATCH_JSON_VALUE)
+            .content(BUNDLE_CONFIG_METADATA_IP_TRUST_ANCHOR_URL)
+            .with(csrf()))
+        .andExpect(status().isBadRequest());
   }
 }

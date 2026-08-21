@@ -1418,7 +1418,9 @@ paths:
                 YAML for that field. Setting a key's value to JSON null clears the
                 override for that field (the YAML value is used again). Omitting a
                 key leaves any existing override or YAML value unchanged. At least
-                one key must be present.
+                one key must be present. serviceUrl and trustAnchorUrl must be
+                https:// URLs with a public, non-reserved host; other values are
+                rejected with 400.
       responses:
         '200':
           description: Bundle configuration updated
