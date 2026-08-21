@@ -789,8 +789,8 @@ components:
           description: >-
             True if the asset passed validation. A false value can also mean the check could not
             be performed at all (e.g. an unreachable or timed-out trust service) rather than a
-            negative verdict on the asset; for TRUST_FRAMEWORK rows, the failureCategory key in
-            the report field distinguishes the two.
+            negative verdict on the asset; for TRUST_FRAMEWORK rows, the failureCategory field
+            distinguishes the two.
         validatedAt:
           type: string
           format: date-time
@@ -800,12 +800,22 @@ components:
           nullable: true
           description: >-
             Serialised validation report (SHACL Turtle / JSON violations / XSD error). For
-            TRUST_FRAMEWORK rows this is a JSON object; a failureCategory key is present whenever
-            conforms is false, distinguishing a genuine non-compliant verdict from a failed
-            check attempt.
+            TRUST_FRAMEWORK rows this is a JSON object that also carries a copy of
+            failureCategory; the structured failureCategory field below is the authoritative,
+            tamper-detected value — this JSON copy is informational only.
+        failureCategory:
+          type: string
+          nullable: true
+          description: >-
+            Failure classification for a TRUST_FRAMEWORK row that could not produce a verdict
+            (SERVICE_UNREACHABLE, SERVICE_TIMEOUT, UNVERIFIABLE_ATTESTATION). Null for schema
+            validations and for TRUST_FRAMEWORK rows that did produce a verdict. Covered by
+            contentHash, unlike the copy of the same value inside report.
         contentHash:
           type: string
-          description: SHA-256 hex digest of core fields for offline tamper detection
+          description: >-
+            SHA-256 hex digest of core fields, including failureCategory when non-null, for
+            offline tamper detection
         graphSyncStatus:
           type: string
           enum: [SYNCED, FAILED, EXCLUDED]

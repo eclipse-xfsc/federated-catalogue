@@ -2,6 +2,7 @@ package eu.xfsc.fc.core.service.trustframework.compliance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -65,6 +66,7 @@ class ComplianceResultStoreImplTest {
     assertNotNull(record.validatedAt());
     assertNotNull(record.report());
     assertTrue(record.report().contains("attestationCredential"));
+    assertNull(record.failureCategory());
   }
 
   @Test
@@ -86,6 +88,7 @@ class ComplianceResultStoreImplTest {
     assertFalse(record.conforms());
     assertNotNull(record.report());
     assertTrue(record.report().contains("UNVERIFIABLE_ATTESTATION"));
+    assertEquals(FailureCategory.UNVERIFIABLE_ATTESTATION.name(), record.failureCategory());
   }
 
   @Test
@@ -154,6 +157,7 @@ class ComplianceResultStoreImplTest {
     assertNotNull(record.validatedAt());
     assertTrue(record.report().contains("\"failureCategory\":\"SERVICE_UNREACHABLE\""));
     assertTrue(record.report().contains("connection reset"));
+    assertEquals(FailureCategory.SERVICE_UNREACHABLE.name(), record.failureCategory());
   }
 
   @Test
@@ -166,6 +170,7 @@ class ComplianceResultStoreImplTest {
     ArgumentCaptor<ValidationResultRecord> captor = forClass(ValidationResultRecord.class);
     verify(validationResultStore).storeWithoutGraphSync(captor.capture());
     assertTrue(captor.getValue().report().contains("\"failureCategory\":\"SERVICE_TIMEOUT\""));
+    assertEquals(FailureCategory.SERVICE_TIMEOUT.name(), captor.getValue().failureCategory());
   }
 
   @Test

@@ -17,5 +17,6 @@ public record ValidationResultRecord(
     ValidatorType validatorType,
     boolean conforms,
     Instant validatedAt,
-    String report             // nullable; SHACL Turtle / JSON violations / XSD error
+    String report,             // nullable; SHACL Turtle / JSON violations / XSD error
+    String failureCategory     // nullable; set only for trust-framework checks that could not produce a verdict
 ) {}
