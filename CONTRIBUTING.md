@@ -9,14 +9,15 @@ Thank you for your interest in contributing to the Eclipse XFSC Federated Catalo
 Before any contribution can be accepted, you must electronically sign the
 [Eclipse Contributor Agreement (ECA)](https://www.eclipse.org/legal/ECA.php).
 
-The commit author's e-mail address must match the e-mail on the signed ECA, and every commit must be signed off:
+The binding criterion is that the commit author's e-mail address matches the e-mail address on your signed ECA. As a
+recommended good practice, we encourage (but do not require) signing off your commits:
 
 ```
 git commit -s -m "Your commit message"
 ```
 
-The `Signed-off-by` line certifies your compliance with the
-[Developer Certificate of Origin](https://developercertificate.org/).
+The `Signed-off-by` line documents your compliance with the
+[Developer Certificate of Origin](https://developercertificate.org/), which the ECA already covers.
 
 ## How to contribute
 
