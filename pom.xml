@@ -513,16 +513,107 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <includes>**/*.java</includes>
-                    <copyrightOwners>${project.organization.name} and all other contributors</copyrightOwners>
+                    <!-- Custom repo-local resolver: the plugin's bundled "apache_v2" template has no
+                         SPDX line (confirmed by extracting the plugin jar), so a project-local
+                         license-template/ directory (licenses.properties + eclipse_apache_v2/header.txt)
+                         supplies the Eclipse Foundation SPDX header text instead. The license name is
+                         deliberately NOT "apache_v2": that name collides with the plugin's bundled
+                         classpath template, which takes priority over the external resolver and would
+                         silently defeat this custom header. -->
+                    <licenseResolver>file:${maven.multiModuleProjectDirectory}/license-template</licenseResolver>
+                    <licenseName>eclipse_apache_v2</licenseName>
+                    <copyrightOwners>Contributors to the Eclipse Foundation</copyrightOwners>
+                    <copyrightStringFormat>Copyright (c) %1$s %2$s</copyrightStringFormat>
                     <processStartTag>---license-start</processStartTag>
                     <processEndTag>---license-end</processEndTag>
                     <sectionDelimiter>---</sectionDelimiter>
-                    <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+                    <addJavaLicenseAfterPackage>true</addJavaLicenseAfterPackage>
                     <trimHeaderLine>true</trimHeaderLine>
                     <emptyLineAfterHeader>true</emptyLineAfterHeader>
+                    <!-- lineSeparator intentionally left unset: it defaults to the JVM's
+                         line.separator (LF on the build machines used for this project), which
+                         matches the dominant convention in this codebase. A handful of pre-existing
+                         files use CRLF; those are normalized to LF as a side effect of the plugin
+                         rewriting the file, with no logic or content change. -->
                     <outputDirectory>.</outputDirectory>
                     <thirdPartyFilename>THIRD-PARTY.txt</thirdPartyFilename>
+                    <!-- Restrict to src only: the default roots also include
+                         target/generated-sources, which would header-stamp OpenAPI-generated
+                         classes on every build. -->
+                    <roots>
+                        <root>${project.basedir}/src</root>
+                    </roots>
                 </configuration>
+                <executions>
+                    <!-- Dry-run validation gate: fails the build if a source file under src/ is
+                         missing the header entirely. Does not rewrite files here (dryRun=true); the
+                         actual header sweep is applied out-of-band via `mvn license:update-file-header`
+                         and committed, so this execution only guards against future regressions
+                         (e.g. a new file added without running the sweep first).
+                         failOnNotUptodateHeader is intentionally NOT set: the copyright line renders
+                         as an inceptionYear-currentYear range ("2022 - 2026"), so every header would
+                         flip to "not up to date", failing every build, the moment the calendar year
+                         rolls over, until someone re-runs the sweep. failOnMissingHeader alone
+                         already covers the regression this gate exists for. -->
+                    <execution>
+                        <id>validate-license-headers</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <configuration>
+                            <dryRun>true</dryRun>
+                            <failOnMissingHeader>true</failOnMissingHeader>
+                        </configuration>
+                    </execution>
+                    <!-- Manual, unbound sweep for this module's web static assets (fc-demo-portal
+                         only; harmless no-op elsewhere since the include patterns won't match).
+                         Invoke explicitly: `mvn -pl fc-demo-portal license:update-file-header@sweep-web-assets`.
+                         Vendored third-party scripts under .../static/**/lib/** are excluded, since
+                         they are not project IP. -->
+                    <execution>
+                        <id>sweep-web-assets</id>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <configuration>
+                            <includes combine.self="override">
+                                <include>**/*.html</include>
+                                <include>**/*.js</include>
+                            </includes>
+                            <excludes combine.self="override">
+                                <exclude>**/lib/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <!-- Manual, unbound sweep for repo-root assets that live outside any module's
+                         src/ tree: shell scripts and docker-compose files under docker/, and Helm
+                         chart YAML under deployment/helm/. Run once from the repo root (module -N):
+                         `mvn -N license:update-file-header@sweep-docker-and-helm`.
+                         .claude/hooks/ is a different subtree entirely (not under docker/ or
+                         deployment/), so it is never reached by this execution's roots. -->
+                    <execution>
+                        <id>sweep-docker-and-helm</id>
+                        <goals>
+                            <goal>update-file-header</goal>
+                        </goals>
+                        <configuration>
+                            <roots combine.self="override">
+                                <root>${maven.multiModuleProjectDirectory}/docker</root>
+                                <root>${maven.multiModuleProjectDirectory}/deployment/helm</root>
+                            </roots>
+                            <includes combine.self="override">
+                                <include>**/*.sh</include>
+                                <include>**/*.yaml</include>
+                                <include>**/*.yml</include>
+                            </includes>
+                            <extraExtensions>
+                                <yaml>properties</yaml>
+                                <yml>properties</yml>
+                            </extraExtensions>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
