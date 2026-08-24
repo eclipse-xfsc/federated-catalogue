@@ -76,6 +76,14 @@
         <!-- most recent 5.x.x version 5.6.0 caused problems with neosemantics 5.18 fat-jar that bundles a conflicting apache-commons-lang3 version -->
         <jena.version>5.5.0</jena.version>
         <topbraid.version>1.4.4</topbraid.version>
+        <!-- Neo4j: only the Bolt driver (Apache-2.0) is used by production code, and its version
+             is managed by the Spring Boot BOM. The embedded server stack (harness/neosemantics/apoc)
+             is test scope only — the harness pulls in Neo4j Community, which is GPL-3.0-or-later and
+             must not be redistributed inside this Apache-2.0 project's artifacts. -->
+        <neo4j.neosemantics.version>5.18.0</neo4j.neosemantics.version>
+        <neo4j.apoc.version>5.18.0</neo4j.apoc.version>
+        <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
+        <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
         <vc.version>1.29.0</vc.version>
         <key-format.version>1.32.0</key-format.version>
         <did.version>1.20.0</did.version>
@@ -176,6 +184,54 @@
                 <groupId>eu.xfsc.cat</groupId>
                 <artifactId>fc-graphdb-fuseki</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <!-- Test fixtures of the Neo4j adapter (embedded-server configuration). -->
+            <dependency>
+                <groupId>eu.xfsc.cat</groupId>
+                <artifactId>fc-graphdb-neo4j</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Embedded Neo4j test stack. Scope test is managed here on purpose: the harness
+                 pulls Neo4j Community (GPL-3.0-or-later), so it must never widen to compile or
+                 runtime scope. neosemantics and apoc-core are only needed to register the n10s.*
+                 and apoc.* procedures in the embedded server; in production those plugins are
+                 installed in the external Neo4j server. -->
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neosemantics</artifactId>
+                <version>${neo4j.neosemantics.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j.procedure</groupId>
+                <artifactId>apoc-core</artifactId>
+                <version>${neo4j.apoc.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j.test</groupId>
+                <artifactId>neo4j-harness</artifactId>
+                <version>${neo4j.test-harness.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-nop</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.neo4j</groupId>
+                        <artifactId>neo4j-slf4j-provider</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j.driver</groupId>
+                <artifactId>neo4j-java-driver-test-harness-spring-boot-autoconfigure</artifactId>
+                <version>${neo4j.test-spring.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
