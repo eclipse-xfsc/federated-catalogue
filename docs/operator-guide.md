@@ -117,10 +117,10 @@ The Federated Catalogue supports the current Loire (Gaia-X 2511) credential form
 
 ### Bundled Ontology and SHACL Shapes
 
-| File                                                                        | Source                                                                                                                                | Purpose                                                            |
-|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| `fc-service-core/src/main/resources/defaultschema/ontology/gx-2511.ttl`     | Stripped from Gaia-X 2511 OWL                                                                                                         | Class hierarchy for Loire type resolution (`rdfs:subClassOf` only) |
-| `fc-service-core/src/main/resources/defaultschema/shacl/gx-2511-shapes.ttl` | [Gaia-X Trust Shape Registry](https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#) | SHACL validation shapes for Loire credentials                      |
+| File                                                                          | Source                                                                                                                                | Purpose                                                            |
+|-------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| `fc-service-core/src/main/resources/trustframeworks/gaia-x-2511/ontology.ttl` | Stripped from Gaia-X 2511 OWL                                                                                                         | Class hierarchy for Loire type resolution (`rdfs:subClassOf` only) |
+| `fc-service-core/src/main/resources/trustframeworks/gaia-x-2511/shapes.ttl`   | [Gaia-X Trust Shape Registry](https://registry.lab.gaia-x.eu/development/api/trusted-shape-registry/v1/shapes/jsonld/trustframework#) | SHACL validation shapes for Loire credentials                      |
 
 New submissions in Tagus credential format (VC 1.1 JSON-LD with Linked Data Proof) are not accepted and return a `400`
 error at format detection.
@@ -149,8 +149,8 @@ federated-catalogue:
 
 ### Updating the bundled ontology
 
-To update to a future 2511 release: replace `gx-2511.ttl` (run `fc-tools/extract-ontology-hierarchy.py` against the new
-OWL file) and `gx-2511-shapes.ttl` (download from the registry), then update the `doc-loader.additional-context`
+To update to a future 2511 release: replace `ontology.ttl` (run `fc-tools/extract-ontology-hierarchy.py` against the new
+OWL file) and `shapes.ttl` (download from the registry), then update the `doc-loader.additional-context`
 mapping.
 
 ## Asset / Credential terminology (CAT-NFR-01)

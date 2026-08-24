@@ -4,7 +4,7 @@
 #   id             — unique profile identifier; used as the key in TrustFrameworkRegistry
 #   family         — groups related profiles (e.g. "gaia-x" groups all Gaia-X versions)
 #   namespace      — base URI prefix used to construct base-class root URIs (must end with '/' or '#')
-#   validation_type — "shacl" | "json-schema" (non-shacl values are accepted-but-deferred per ADR-12)
+#   validation_type — "shacl" | "json-schema" (non-shacl values are accepted-but-deferred per ADR 10)
 #   base_classes   — CURATED set of root classes the catalogue dispatches on. NOT auto-derivable
 #                    from the ontology: the Gaia-X 2511 ontology does not mark any class as a
 #                    "catalogue base class" — verified against gx-2511.ttl, no such annotation
@@ -58,7 +58,7 @@ properties:
   api_version: "v2"
   service_url: "https://compliance.gaia-x.eu/v2"
   # Endpoint path appended to service_url. Required — no default. Per-framework value because
-  # the client family is path-agnostic; see ADR-12.
+  # the client family is path-agnostic; see ADR 19.
   compliance_path: "/api/credential-offers/standard-compliance"
   timeout_seconds: 30
   # URL of the Gaia-X Trust Anchor Registry used during Loire x5u trust-chain validation.
