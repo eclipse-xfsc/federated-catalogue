@@ -93,6 +93,8 @@ class AssetEnrichmentReadContentTest {
   private static final String TEST_ISSUER = "http://example.org/enrichment-content-test-issuer";
   private static final String ORIGINAL_CONTENT = "original standalone asset content, unchanged by enrichment";
   private static final String NON_RDF_CONTENT_TYPE = "text/plain";
+  private static final String BINARY_CONTENT_TYPE = "image/png";
+  private static final byte[] BINARY_CONTENT = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0x00, 0x10};
   private static final String ENRICHMENT_CONTENT_TYPE = "application/ld+json";
   private static final String RDF_ASSET_FILE_NAME = "default-credential.json";
   private static final String RDF_ASSET_ID = "did:web:example.org:enrichment-content-test-rdf-asset";
@@ -260,6 +262,24 @@ class AssetEnrichmentReadContentTest {
             + " not an absent enrichment document mistaken for absent content");
   }
 
+  // ===== Binary content must not be corrupted by a lossy UTF-8 decode =====
+
+  @Test
+  @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX, ASSET_READ_WITH_PREFIX},
+      claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
+          @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
+  void readAssetById_forBinaryNonRdfAsset_returnsNullRawContentInsteadOfCorruptedContent() throws Exception {
+    final Asset created = uploadNonRdfBinaryAsset(BINARY_CONTENT, BINARY_CONTENT_TYPE);
+
+    final Map<String, Object> returned = readAssetById(created.getId());
+
+    assertNull(returned.get("rawContent"),
+        "GET /assets/{id} must not decode a binary non-RDF asset's content as UTF-8; a lossy decode"
+            + " would both corrupt the payload and desynchronize it from the reported fileSize");
+    assertEquals(BINARY_CONTENT.length, ((Number) returned.get("fileSize")).longValue(),
+        "reported fileSize must still describe the actual stored binary content");
+  }
+
   // ===== Fault handling: a single-asset read must fail loudly, not silently =====
 
   @Test
@@ -372,6 +392,19 @@ class AssetEnrichmentReadContentTest {
   private Asset uploadNonRdfAsset(String text) throws Exception {
     final byte[] content = text.getBytes(StandardCharsets.UTF_8);
     final MockMultipartFile file = new MockMultipartFile("file", "standalone.txt", NON_RDF_CONTENT_TYPE, content);
+
+    final MvcResult result = mockMvc.perform(MockMvcRequestBuilders.multipart("/assets")
+            .file(file)
+            .with(csrf())
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isCreated())
+        .andReturn();
+
+    return objectMapper.readValue(result.getResponse().getContentAsString(), Asset.class);
+  }
+
+  private Asset uploadNonRdfBinaryAsset(byte[] content, String contentType) throws Exception {
+    final MockMultipartFile file = new MockMultipartFile("file", "standalone.bin", contentType, content);
 
     final MvcResult result = mockMvc.perform(MockMvcRequestBuilders.multipart("/assets")
             .file(file)

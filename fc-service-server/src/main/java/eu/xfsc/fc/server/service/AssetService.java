@@ -199,10 +199,35 @@ public class AssetService implements AssetsApiDelegate {
    */
   private String resolveRawContent(AssetMetadata assetMetadata) {
     if (assetMetadata instanceof AssetRecord record && record.getContentKind() == ContentKind.NON_RDF) {
-      return readNonRdfFileContent(assetMetadata);
+      // readNonRdfFileContent performs a lossy UTF-8 conversion; report no content rather than
+      // corrupted content for a binary payload.
+      return isTextualContentType(assetMetadata.getContentType()) ? readNonRdfFileContent(assetMetadata) : null;
     }
     ContentAccessor content = assetMetadata.getContentAccessor();
     return content == null ? null : content.getContentAsString();
+  }
+
+  /**
+   * Determines whether a MIME type denotes textual content safe to decode as a UTF-8 string.
+   *
+   * @param contentType MIME type to check, or {@code null}
+   * @return {@code true} for a text, JSON, or XML type; {@code false} otherwise, including for an
+   *         absent or unparseable type
+   */
+  private static boolean isTextualContentType(String contentType) {
+    if (contentType == null) {
+      return false;
+    }
+    try {
+      final MediaType mediaType = MediaType.parseMediaType(contentType);
+      return "text".equalsIgnoreCase(mediaType.getType())
+          || "json".equalsIgnoreCase(mediaType.getSubtype())
+          || "xml".equalsIgnoreCase(mediaType.getSubtype())
+          || mediaType.getSubtype().endsWith("+json")
+          || mediaType.getSubtype().endsWith("+xml");
+    } catch (IllegalArgumentException ex) {
+      return false;
+    }
   }
 
   /**
