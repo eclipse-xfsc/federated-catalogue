@@ -211,6 +211,15 @@ public class AssetValidationServiceImpl implements AssetValidationService {
         continue;
       }
 
+      // For RDF assets (JSON-LD, RDF/XML), only SHACL auto-selects a schema here: its composite
+      // is a principled union of all stored shapes, but JSON/XML Schema has no equivalent notion
+      // of "the applicable one" - getLatestSchemaByType would apply an arbitrary, possibly
+      // unrelated schema to the asset. JSON/XML Schema for an RDF asset requires an explicit
+      // schemaId instead (see planExplicit).
+      if (strategy.type() != ValidatorType.SHACL && asset.getContentAccessor() != null) {
+        continue;
+      }
+
       anyApplicableEnabled = true;
       SchemaType schemaType = resolveSchemaStoreType(strategy);
       ContentAccessor content = resolveAllSchemasContent(strategy, schemaType);

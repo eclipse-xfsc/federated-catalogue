@@ -26,9 +26,9 @@ class JsonSchemaValidationStrategyTest {
 
   // A JSON-LD-serialised RDF asset (has @context) — the JSON Schema part of a combined
   // SHACL + JSON Schema validation request runs against this representation as-is.
-  private static final String JSON_LD_CREDENTIAL_CONTENT =
-      "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
-      + "\"type\":[\"VerifiableCredential\"],\"issuer\":\"did:web:example.org\"}";
+  private static final String JSON_LD_CREDENTIAL_CONTENT = """
+      {"@context":"https://www.w3.org/ns/credentials/v2",\
+      "type":["VerifiableCredential"],"issuer":"did:web:example.org"}""";
 
   private static final String JSON_SCHEMA_REQUIRING_ISSUER =
       "{\"type\":\"object\",\"required\":[\"issuer\"],\"properties\":{\"issuer\":{\"type\":\"string\"}}}";

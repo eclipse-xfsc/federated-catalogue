@@ -611,6 +611,34 @@ class AssetValidationServiceImplTest {
     assertEquals(List.of(53L), response.getValidationResultIds());
   }
 
+  @Test
+  void validateAsset_jsonLdRdfAsset_validateAll_jsonModuleAlsoEnabled_stillRunsShaclOnly() {
+    AssetMetadata asset = buildRdfAsset(ASSET_ID);
+    ContentAccessor composite = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    givenShaclAndJsonModulesEnabled();
+    when(schemaStore.getCompositeSchema(SchemaType.SHAPE)).thenReturn(composite);
+    when(schemaStore.getSchemaList()).thenReturn(Map.of(SchemaType.SHAPE, List.of(SCHEMA_ID)));
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(54L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setValidateAgainstAllSchemas(true);
+
+    ValidationResponse response = service.validateAssets(request);
+
+    assertTrue(response.getConforms());
+    assertEquals(List.of(SCHEMA_ID), response.getSchemaIds());
+    assertEquals(List.of(54L), response.getValidationResultIds());
+    // Regression guard: with JSON_SCHEMA also enabled, "validate against all schemas" must not
+    // auto-pick an arbitrary stored JSON schema for a JSON-LD asset — schemaStore.getLatestSchemaByType
+    // is never even consulted, and the JSON Schema strategy never runs.
+    verify(schemaStore, never()).getLatestSchemaByType(any());
+    verify(jsonSchemaValidationStrategy, never()).validate(anyList(), anyList());
+  }
+
   // === Negative tests for RDF serializations + non-SHACL schemas ===
 
   @Test

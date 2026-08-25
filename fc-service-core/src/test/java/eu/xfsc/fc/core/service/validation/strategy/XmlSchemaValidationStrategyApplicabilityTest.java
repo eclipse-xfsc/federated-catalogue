@@ -40,9 +40,9 @@ class XmlSchemaValidationStrategyApplicabilityTest {
       "@prefix ex: <https://example.org/> . ex:Alice ex:name \"Alice\" .";
 
   // A JSON-LD-serialised RDF asset — not RDF/XML, must never be routed to XML Schema.
-  private static final String JSON_LD_CONTENT =
-      "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
-      + "\"type\":[\"VerifiableCredential\"],\"issuer\":\"did:web:example.org\"}";
+  private static final String JSON_LD_CONTENT = """
+      {"@context":"https://www.w3.org/ns/credentials/v2",\
+      "type":["VerifiableCredential"],"issuer":"did:web:example.org"}""";
 
   // Non-RDF/XML-shaped RDF content with no content type at all.
   private static final String OPAQUE_RDF_CONTENT = "dummy rdf";

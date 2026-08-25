@@ -30,9 +30,9 @@ import org.springframework.http.MediaType;
 class JsonSchemaValidationStrategyApplicabilityTest {
 
   // A JSON-LD-serialised RDF asset: parses as RDF (has @context) and is valid JSON.
-  private static final String JSON_LD_CONTENT =
-      "{\"@context\":\"https://www.w3.org/ns/credentials/v2\","
-      + "\"type\":[\"VerifiableCredential\"],\"issuer\":\"did:web:example.org\"}";
+  private static final String JSON_LD_CONTENT = """
+      {"@context":"https://www.w3.org/ns/credentials/v2",\
+      "type":["VerifiableCredential"],"issuer":"did:web:example.org"}""";
 
   // A Turtle-serialised RDF asset — not JSON-LD, must never be routed to JSON Schema.
   private static final String TURTLE_CONTENT =
