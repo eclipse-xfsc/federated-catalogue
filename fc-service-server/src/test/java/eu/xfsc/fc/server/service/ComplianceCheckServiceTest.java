@@ -3,6 +3,7 @@ package eu.xfsc.fc.server.service;
 import eu.xfsc.fc.api.generated.model.ComplianceCheckRequest;
 import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import eu.xfsc.fc.core.dao.validation.ValidatorType;
+import eu.xfsc.fc.core.exception.ServiceErrorException;
 import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
@@ -201,6 +202,32 @@ class ComplianceCheckServiceTest {
       assertThat(record.conforms()).isFalse();
       assertThat(record.validatedAt()).isNotNull();
       assertThat(failureCategoryOf(record.report())).isEqualTo(FailureCategory.SERVICE_UNREACHABLE.name());
+    }
+  }
+
+  @Test
+  void runComplianceCheck_trustServiceRespondsWithServerError_persistsServiceErrorRecord() throws IOException {
+    try (MockWebServer erroringServer = new MockWebServer()) {
+      erroringServer.start();
+      erroringServer.enqueue(new MockResponse().setResponseCode(500).setBody("Internal Server Error"));
+      ValidationResultStore validationResultStore = mock(ValidationResultStore.class);
+      ComplianceCheckService serviceUnderTest = serviceWithRealOrchestrator(erroringServer, validationResultStore);
+
+      assertThrows(ServiceErrorException.class,
+          () -> serviceUnderTest.runComplianceCheck(ASSET_ID, request(PROFILE_ID, VP_JWT_WITH_ASSET_ID)));
+
+      ArgumentCaptor<ValidationResultRecord> captor = ArgumentCaptor.forClass(ValidationResultRecord.class);
+      // A failed attempt must never reach the graph: it is not a claim about the asset.
+      verify(validationResultStore).storeWithoutGraphSync(captor.capture());
+      verify(validationResultStore, never()).store(any());
+      ValidationResultRecord record = captor.getValue();
+      assertThat(record.assetIds()).containsExactly(ASSET_ID);
+      assertThat(record.validatorIds()).contains(PROFILE_ID);
+      assertThat(record.validatorIds()).contains(FAMILY_ID);
+      assertThat(record.conforms()).isFalse();
+      assertThat(record.validatedAt()).isNotNull();
+      // The trust service was reached but errored — must be distinguished from SERVICE_UNREACHABLE.
+      assertThat(failureCategoryOf(record.report())).isEqualTo(FailureCategory.SERVICE_ERROR.name());
     }
   }
 
