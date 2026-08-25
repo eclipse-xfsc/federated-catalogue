@@ -24,6 +24,11 @@ class TrustFrameworkBundleUrlValidatorTest {
   private static final String PRIVATE_IPV4_192_URL = "https://192.168.1.5/x";
   private static final String METADATA_IPV4_URL = "https://169.254.169.254/latest/meta-data/";
   private static final String LOCALHOST_HOSTNAME_URL = "https://localhost/x";
+  private static final String LOCALHOST_HOSTNAME_TRAILING_DOT_URL = "https://localhost./x";
+  private static final String UNIQUE_LOCAL_IPV6_RFC4193_URL = "https://[fd00::1]/x";
+  private static final String IPV4_COMPATIBLE_IPV6_LOOPBACK_URL = "https://[::127.0.0.1]/x";
+  private static final String LEADING_ZERO_OCTET_IPV4_URL = "https://0177.0.0.1/x";
+  private static final String HEX_PREFIXED_IPV4_URL = "https://0x7f000001/x";
   private static final String MALFORMED_URL = "not a url";
 
   private TrustFrameworkBundleUrlValidator validator;
@@ -138,6 +143,66 @@ class TrustFrameworkBundleUrlValidatorTest {
   @Test
   void isAllowed_localhostHostnameLiteral_returnsFalse() {
     boolean result = validator.isAllowed(LOCALHOST_HOSTNAME_URL);
+
+    assertFalse(result);
+  }
+
+  /**
+   * A trailing "." is a valid way to write a fully-qualified name; a resolver strips it before
+   * lookup, so {@code localhost.} must be recognized as {@code localhost}, not fall through to
+   * the "symbolic hostname, no DNS check" path.
+   */
+  @Test
+  void isAllowed_localhostHostnameWithTrailingDot_returnsFalse() {
+    boolean result = validator.isAllowed(LOCALHOST_HOSTNAME_TRAILING_DOT_URL);
+
+    assertFalse(result);
+  }
+
+  /**
+   * {@code fc00::/7} (RFC 4193) is the unique local address range in current use — e.g.
+   * dual-stack Kubernetes — unlike the deprecated {@code fec0::/10} predecessor that
+   * {@link java.net.Inet6Address#isSiteLocalAddress()} recognizes.
+   */
+  @Test
+  void isAllowed_uniqueLocalIpv6Rfc4193Literal_returnsFalse() {
+    boolean result = validator.isAllowed(UNIQUE_LOCAL_IPV6_RFC4193_URL);
+
+    assertFalse(result);
+  }
+
+  /**
+   * The deprecated IPv4-compatible IPv6 form ({@code ::a.b.c.d}) embeds an IPv4 address that
+   * none of {@link java.net.Inet6Address}'s own reserved-range predicates recognize.
+   */
+  @Test
+  void isAllowed_ipv4CompatibleIpv6LoopbackLiteral_returnsFalse() {
+    boolean result = validator.isAllowed(IPV4_COMPATIBLE_IPV6_LOOPBACK_URL);
+
+    assertFalse(result);
+  }
+
+  /**
+   * On this JDK (21), a {@code 0}-prefixed IPv4 octet is no longer parsed as octal — the leading
+   * zero is simply dropped, so this resolves to the public {@code 177.0.0.1}. It is rejected
+   * anyway as a defense against a downstream resolver or proxy that still applies octal
+   * semantics to a re-parsed URL.
+   */
+  @Test
+  void isAllowed_leadingZeroOctetIpv4Literal_returnsFalse() {
+    boolean result = validator.isAllowed(LEADING_ZERO_OCTET_IPV4_URL);
+
+    assertFalse(result);
+  }
+
+  /**
+   * A {@code 0x}-prefixed IPv4 literal fails to resolve on this JDK, but must still be recognized
+   * as an IP-literal candidate and rejected outright — not treated as an unresolvable symbolic
+   * hostname that is accepted without a DNS check.
+   */
+  @Test
+  void isAllowed_hexPrefixedIpv4Literal_returnsFalse() {
+    boolean result = validator.isAllowed(HEX_PREFIXED_IPV4_URL);
 
     assertFalse(result);
   }
