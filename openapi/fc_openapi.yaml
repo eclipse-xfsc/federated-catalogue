@@ -296,18 +296,28 @@ components:
         rebuildNeeded:
           type: boolean
           description: |
-            True when the active graph store has no claims but RDF assets exist in
-            storage — typical after a backend switch or fresh start. The admin UI
-            surfaces a rebuild prompt that calls `POST /admin/graph/rebuild`. Non-RDF
-            assets are excluded from this check because they do not produce graph
-            claims even after a successful rebuild.
+            True when the active graph store has no claims but assets carrying
+            indexable content exist in storage — typical after a backend switch or
+            fresh start. The admin UI surfaces a rebuild prompt that calls
+            `POST /admin/graph/rebuild`. Assets with no content are excluded because
+            they produce no graph claims even after a successful rebuild.
         rdfAssetCount:
           type: integer
           format: int64
           description: |
-            Number of active RDF assets in storage that would be re-indexed by a
-            rebuild. Surfaced alongside `rebuildNeeded` so the UI can show how many
-            assets the rebuild will process.
+            Number of active assets of content kind RDF, i.e. those uploaded as
+            credentials. This is a count of what the catalogue holds, not of what a
+            rebuild processes — see `rebuildableAssetCount`.
+        rebuildableAssetCount:
+          type: integer
+          format: int64
+          description: |
+            Number of active assets a rebuild would process: those that currently
+            carry content to extract claims from. This is `rdfAssetCount` plus any
+            non-RDF asset that has since been enriched, since enrichment adds RDF
+            content without changing the stored content kind. Surfaced alongside
+            `rebuildNeeded` so the UI can show how many assets the rebuild will
+            process, matching the `total` reported by the rebuild progress endpoint.
     GraphDatabaseSwitchResult:
       type: object
       properties:

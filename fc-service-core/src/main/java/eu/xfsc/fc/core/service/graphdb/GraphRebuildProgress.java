@@ -109,7 +109,10 @@ public class GraphRebuildProgress {
     if (total == 0) {
       return complete ? 100 : 0;
     }
-    return (int) (processed.get() * 100 / total);
+    // Clamped rather than reported raw: total is a snapshot taken before the walk begins, so an
+    // asset activated mid-rebuild is processed without having been counted. Aligning the counting
+    // and tick predicates removes the systematic overshoot; this bounds the residual race.
+    return (int) Math.min(100L, processed.get() * 100 / total);
   }
 
   /**

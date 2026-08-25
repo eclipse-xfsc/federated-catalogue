@@ -77,6 +77,17 @@ public class AssetFilter {
   private List<ContentKind> contentKinds;
 
   /**
+   * Filter on whether the asset currently holds content. {@code TRUE} matches assets with content,
+   * {@code FALSE} matches those without, {@code null} does not filter.
+   *
+   * <p>Distinct from {@link #contentKinds}: content kind records how an asset was uploaded and is
+   * not changed by later enrichment, so an asset uploaded as {@code NON_RDF} and subsequently
+   * enriched holds content while still being of kind {@code NON_RDF}.</p>
+   */
+  @lombok.Setter
+  private Boolean hasContent;
+
+  /**
    * The offset to start returning results when applying this filter.
    */
   @lombok.Setter

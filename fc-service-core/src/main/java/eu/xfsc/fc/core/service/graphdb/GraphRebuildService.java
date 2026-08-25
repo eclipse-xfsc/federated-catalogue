@@ -66,11 +66,13 @@ public class GraphRebuildService {
         try {
           AssetFilter filter = new AssetFilter();
           filter.setStatuses(List.of(AssetStatus.ACTIVE));
-          // The rebuilder only adds claims for RDF-content assets; non-RDF assets are
-          // skipped inside addAssetToGraph. Counting RDF only here keeps `total` in
-          // sync with the work actually performed and with the rdfAssetCount field
-          // returned by GET /admin/graph-database.
-          filter.setContentKinds(List.of(ContentKind.RDF));
+          // `total` must count exactly the assets that will tick the progress callback, and
+          // addAssetToGraph ticks for every walked asset that has content to extract claims from.
+          // Content kind is the wrong predicate for that: it records how an asset was uploaded and
+          // is left unchanged by enrichment, so an asset uploaded as NON_RDF and later enriched
+          // holds content and is processed while a content-kind filter excludes it — which is how
+          // processed came to exceed total. The asset walk itself filters on status only.
+          filter.setHasContent(true);
           filter.setLimit(0);
           filter.setOffset(0);
           long total = assetStore.getByFilter(filter, false, false).getTotalCount();
