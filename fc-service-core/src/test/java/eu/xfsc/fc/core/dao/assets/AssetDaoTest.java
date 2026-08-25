@@ -302,9 +302,11 @@ class AssetDaoTest {
     assertNull(result.getStatusDatetime());
     assertNull(result.getExpirationTime());
     assertNull(result.getValidatorDids());
-    assertNull(result.getContentType());
     assertNull(result.getFileSize());
     assertNull(result.getOriginalFilename());
+    // contentType, like contentKind, is sourced regardless of withMeta: content-sourcing needs
+    // the real value internally, independently of whether metadata is returned to the API consumer.
+    assertEquals("application/ld+json", result.getContentType());
     // Content should still be present
     assertNotNull(result.getContent());
   }
