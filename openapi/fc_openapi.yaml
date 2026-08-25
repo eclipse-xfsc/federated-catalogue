@@ -254,11 +254,13 @@ components:
           type: string
           nullable: true
           description: >-
-            Set when conforms is false; describes how the check failed. Currently only
-            UNVERIFIABLE_ATTESTATION appears in this field, meaning the trust service was reached and
-            responded but the attestation could not be verified. A trust service that could not be
-            reached at all, or that timed out, is surfaced as an HTTP 503/504 response instead of a
-            200 response with this field set; that failed attempt is recorded separately in the
+            Set when conforms is false; describes how the check failed. One of
+            UNVERIFIABLE_ATTESTATION (the trust service was reached and responded with a genuine
+            non-compliant verdict), MALFORMED_CREDENTIAL (the submitted credential was malformed, so
+            no request was sent to the trust service), or MALFORMED_ATTESTATION (the trust service
+            issued a positive attestation, but it could not be parsed). A trust service that could
+            not be reached at all, or that timed out, is surfaced as an HTTP 503/504 response instead
+            of a 200 response with this field set; that failed attempt is recorded separately in the
             stored validation report (see the compliance-checks history endpoint), not here.
         attestationCredential:
           type: string
@@ -808,9 +810,10 @@ components:
           nullable: true
           description: >-
             Failure classification for a TRUST_FRAMEWORK row that could not produce a verdict
-            (SERVICE_UNREACHABLE, SERVICE_TIMEOUT, UNVERIFIABLE_ATTESTATION). Null for schema
-            validations and for TRUST_FRAMEWORK rows that did produce a verdict. Covered by
-            contentHash, unlike the copy of the same value inside report.
+            (SERVICE_UNREACHABLE, SERVICE_TIMEOUT, UNVERIFIABLE_ATTESTATION, MALFORMED_CREDENTIAL,
+            MALFORMED_ATTESTATION). Null for schema validations and for TRUST_FRAMEWORK rows that
+            did produce a verdict. Covered by contentHash, unlike the copy of the same value inside
+            report.
         contentHash:
           type: string
           description: >-

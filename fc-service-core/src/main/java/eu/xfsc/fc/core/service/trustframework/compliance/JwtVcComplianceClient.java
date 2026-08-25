@@ -75,13 +75,15 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
    * Submits the VP JWT to the configured compliance endpoint and returns the outcome.
    *
    * <p>Short-circuits to {@link UnverifiableAttestation} with
-   * {@link FailureCategory#UNVERIFIABLE_ATTESTATION} when the VP JWT payload has no {@code id}
+   * {@link FailureCategory#MALFORMED_CREDENTIAL} when the VP JWT payload has no {@code id}
    * claim, without sending any HTTP request.
    *
    * <p>On HTTP 201, the response body is a compliance credential JWT mapped to
    * {@link IssuedAttestation}. A 201 body that is not a parseable JWT maps to
-   * {@link UnverifiableAttestation} rather than returning null-field attestation fields.
-   * On HTTP 400, the asset is non-compliant and an {@link UnverifiableAttestation} is returned.
+   * {@link UnverifiableAttestation} with {@link FailureCategory#MALFORMED_ATTESTATION} — the
+   * service did issue a positive verdict, but parsing it failed on our side.
+   * On HTTP 400, the asset is non-compliant and an {@link UnverifiableAttestation} with
+   * {@link FailureCategory#UNVERIFIABLE_ATTESTATION} is returned.
    * HTTP 5xx and I/O exceptions bubble to the orchestrator, which maps them to
    * {@link eu.xfsc.fc.core.exception.ServiceUnavailableException} /
    * {@link eu.xfsc.fc.core.exception.TimeoutException}.
@@ -96,7 +98,7 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
     String assetId = extractJwtClaim(vpJwt, "id");
     if (assetId.isBlank()) {
       return new UnverifiableAttestation(
-          FailureCategory.UNVERIFIABLE_ATTESTATION,
+          FailureCategory.MALFORMED_CREDENTIAL,
           vpJwt,
           "VP JWT has no 'id' claim"
       );
@@ -164,7 +166,7 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
     } catch (Exception e) {
       log.warn("Failed to parse compliance credential JWT", e);
       return new UnverifiableAttestation(
-          FailureCategory.UNVERIFIABLE_ATTESTATION,
+          FailureCategory.MALFORMED_ATTESTATION,
           jwt,
           "Compliance credential is not a parseable JWT"
       );

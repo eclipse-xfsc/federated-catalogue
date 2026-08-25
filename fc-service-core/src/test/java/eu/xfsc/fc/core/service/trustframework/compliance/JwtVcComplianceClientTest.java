@@ -152,7 +152,7 @@ class JwtVcComplianceClientTest {
   }
 
   @Test
-  void check_vpJwtWithNoIdClaim_returnsUnverifiableAttestation_withoutHttpCall() {
+  void check_vpJwtWithNoIdClaim_returnsMalformedCredential_withoutHttpCall() {
 
     var credential = new ContentAccessorDirect(VP_JWT_NO_ID);
 
@@ -161,7 +161,7 @@ class JwtVcComplianceClientTest {
     assertInstanceOf(UnverifiableAttestation.class, outcome);
     assertFalse(outcome.compliant());
     var unverifiable = (UnverifiableAttestation) outcome;
-    assertEquals(FailureCategory.UNVERIFIABLE_ATTESTATION, unverifiable.failureCategory());
+    assertEquals(FailureCategory.MALFORMED_CREDENTIAL, unverifiable.failureCategory());
     assertEquals(VP_JWT_NO_ID, unverifiable.rawAttestation());
     assertEquals("VP JWT has no 'id' claim", unverifiable.verificationError());
     assertEquals(0, server.getRequestCount(), "No HTTP request must be sent for missing id claim");
@@ -233,7 +233,7 @@ class JwtVcComplianceClientTest {
   }
 
   @Test
-  void check_malformedComplianceJwtOn201_returnsUnverifiableAttestation() {
+  void check_malformedComplianceJwtOn201_returnsMalformedAttestation() {
 
     server.enqueue(new MockResponse()
         .setResponseCode(201)
@@ -247,7 +247,7 @@ class JwtVcComplianceClientTest {
     assertInstanceOf(UnverifiableAttestation.class, outcome);
     assertFalse(outcome.compliant());
     var unverifiable = (UnverifiableAttestation) outcome;
-    assertEquals(FailureCategory.UNVERIFIABLE_ATTESTATION, unverifiable.failureCategory());
+    assertEquals(FailureCategory.MALFORMED_ATTESTATION, unverifiable.failureCategory());
     assertEquals("Compliance credential is not a parseable JWT", unverifiable.verificationError());
   }
 }
