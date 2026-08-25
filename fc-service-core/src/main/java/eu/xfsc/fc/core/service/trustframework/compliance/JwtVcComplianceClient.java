@@ -95,7 +95,20 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
   @Override
   public ComplianceCheckOutcome check(ContentAccessor credential, TrustFrameworkProfileConfig config) {
     String vpJwt = credential.getContentAsString();
-    String assetId = extractJwtClaim(vpJwt, "id");
+
+    JWTClaimsSet vpClaims;
+    try {
+      vpClaims = readJwtPayload(vpJwt);
+    } catch (ParseException e) {
+      log.error("VP JWT is not a parseable JWT", e);
+      return new UnverifiableAttestation(
+          FailureCategory.MALFORMED_CREDENTIAL,
+          vpJwt,
+          "VP JWT is not a parseable JWT"
+      );
+    }
+
+    String assetId = extractAssetId(vpClaims);
     if (assetId.isBlank()) {
       return new UnverifiableAttestation(
           FailureCategory.MALFORMED_CREDENTIAL,
@@ -148,13 +161,12 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
     });
   }
 
-  private String extractJwtClaim(String jwt, String claim) {
+  private String extractAssetId(JWTClaimsSet vpClaims) {
     try {
-      JWTClaimsSet claims = readJwtPayload(jwt);
-      String value = claims.getStringClaim(claim);
+      String value = vpClaims.getStringClaim("id");
       return value != null ? value : "";
-    } catch (Exception e) {
-      log.error("Failed to extract claim '{}' from JWT", claim, e);
+    } catch (ParseException e) {
+      log.error("VP JWT 'id' claim is not a string", e);
       return "";
     }
   }
