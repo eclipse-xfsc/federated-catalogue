@@ -706,6 +706,7 @@
           "temporary": false
         }
       ],
+      "attributes": { "participantId": ["did:web:compliance.lab.gaia-x.eu"] },
       "realmRoles": [
         "default-roles-federated-catalogue-realm"
       ],

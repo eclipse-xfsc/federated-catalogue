@@ -26,9 +26,9 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
  * Security-perimeter tests for {@link SecurityConfig}: unauthenticated
  * requests to {@code GET /api/**} (other than the generated OpenAPI document), {@code GET /actuator}
  * / {@code GET /actuator/**} (other than the health endpoint), and every method on
- * {@code /verification} must be rejected. {@code GET /actuator/health} and {@code GET /api/docs}
- * stay public — the former backs the container/orchestrator healthcheck and BDD "server is up"
- * precondition, the latter backs the deliberately-public Swagger UI.
+ * {@code /verification} must be rejected. {@code GET /actuator/health}, {@code GET /api/docs}, and
+ * {@code GET /api/docs.yaml} stay public — the former backs the container/orchestrator healthcheck
+ * and BDD "server is up" precondition, the latter two back the deliberately-public Swagger UI.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -66,6 +66,16 @@ class SecurityConfigTest {
 
     assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
         "/api/docs must remain publicly accessible and actually serve the OpenAPI document");
+  }
+
+  @Test
+  void getApiDocsYaml_unauthenticated_staysPublic() throws Exception {
+    // springdoc serves the YAML rendering of the OpenAPI document as a sibling path, not a child
+    // of /api/docs/** — it needs its own matcher or it silently falls through to authenticated().
+    MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/docs.yaml").with(csrf())).andReturn();
+
+    assertEquals(HttpStatus.OK.value(), result.getResponse().getStatus(),
+        "/api/docs.yaml must remain publicly accessible and actually serve the OpenAPI document");
   }
 
   @Test

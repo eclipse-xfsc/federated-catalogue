@@ -80,7 +80,7 @@ public class SecurityConfig {
           // The generated OpenAPI document backs the deliberately-public Swagger UI; without it the
           // UI has nothing to render. Everything else under /api/** (nothing else is mounted there
           // today) falls through to anyRequest().authenticated() below.
-          .requestMatchers(HttpMethod.GET, "/api/docs", "/api/docs/**").permitAll()
+          .requestMatchers(HttpMethod.GET, "/api/docs", "/api/docs.yaml", "/api/docs/**").permitAll()
 
           // Schema APIs
           .requestMatchers(HttpMethod.POST, "/schemas").hasAnyRole(SCHEMA_CREATE, ADMIN_ALL)
@@ -93,7 +93,9 @@ public class SecurityConfig {
 
           // Verification APIs
           // Triggers signature verification work and is a DoS surface when left open to anonymous callers.
-          .requestMatchers("/verification").authenticated()
+          // GET /verification (the HTML query page) is unmatched here and falls through to
+          // anyRequest().authenticated() below, so it stays authenticated too.
+          .requestMatchers(HttpMethod.POST, "/verification").authenticated()
 
           // Asset APIs
           .requestMatchers(HttpMethod.PUT, "/assets/*").hasAnyRole(ASSET_UPDATE, ADMIN_ALL)
