@@ -58,7 +58,7 @@ properties:
   api_version: "v2"
   service_url: "https://compliance.gaia-x.eu/v2"
   # Endpoint path appended to service_url. Required — no default. Per-framework value because
-  # the client family is path-agnostic; see ADR 19.
+  # the client family is path-agnostic; see ADR 17.
   compliance_path: "/api/credential-offers/standard-compliance"
   timeout_seconds: 30
   # URL of the Gaia-X Trust Anchor Registry used during Loire x5u trust-chain validation.
