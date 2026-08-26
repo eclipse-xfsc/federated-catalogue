@@ -15,15 +15,6 @@
     <name>fc-graphdb-neo4j</name>
     <description>Eclipse XFSC Federated Catalogue graph DB: Neo4j implementation</description>
 
-    <properties>
-        <neo4j.driver.version>5.18.0</neo4j.driver.version>
-        <neo4j.gds.version>2.6.6</neo4j.gds.version>
-        <neo4j.apoc.version>5.18.0</neo4j.apoc.version>
-        <neo4j.neosemantics.version>5.18.0</neo4j.neosemantics.version>
-        <neo4j.test-harness.version>5.19.0</neo4j.test-harness.version>
-        <neo4j.test-spring.version>4.3.6.0</neo4j.test-spring.version>
-    </properties>
-    
     <dependencies>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -50,48 +41,28 @@
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
-            <version>${neo4j.driver.version}</version>
         </dependency>
+
+        <!-- Embedded Neo4j, for tests only: see the scope note in the parent POM. -->
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neosemantics</artifactId>
-            <version>${neo4j.neosemantics.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.gds</groupId>
-            <artifactId>proc</artifactId>
-            <version>${neo4j.gds.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j.gds</groupId>
-            <artifactId>open-model-catalog</artifactId>
-            <version>${neo4j.gds.version}</version>
-            <!--scope>test</scope-->
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j.procedure</groupId>
             <artifactId>apoc-core</artifactId>
-            <version>${neo4j.apoc.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver-test-harness-spring-boot-autoconfigure</artifactId>
-            <version>${neo4j.test-spring.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j.test</groupId>
             <artifactId>neo4j-harness</artifactId>
-            <version>${neo4j.test-harness.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-nop</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.neo4j</groupId>
-                    <artifactId>neo4j-slf4j-provider</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -111,4 +82,24 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Publishes the embedded-Neo4j test configuration for downstream modules' tests,
+                 so it does not have to live in src/main and drag the GPL-licensed embedded
+                 server into the distributed artifacts. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>
