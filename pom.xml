@@ -569,8 +569,10 @@
                     <!-- Manual, unbound sweep for this module's web static assets (fc-demo-portal
                          only; harmless no-op elsewhere since the include patterns won't match).
                          Invoke explicitly: `mvn -pl fc-demo-portal license:update-file-header@sweep-web-assets`.
-                         Vendored third-party scripts under .../static/**/lib/** are excluded, since
-                         they are not project IP. -->
+                         Vendored third-party scripts are excluded, since they are not project IP:
+                         those under .../static/**/lib/** by directory, and minified vendor scripts
+                         elsewhere (e.g. fc-service-server's jquery-3.6.3.min.js, jquery-ui.min.js)
+                         by the **/*.min.js pattern. -->
                     <execution>
                         <id>sweep-web-assets</id>
                         <goals>
@@ -583,6 +585,7 @@
                             </includes>
                             <excludes combine.self="override">
                                 <exclude>**/lib/**</exclude>
+                                <exclude>**/*.min.js</exclude>
                             </excludes>
                         </configuration>
                     </execution>
