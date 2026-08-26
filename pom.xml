@@ -134,6 +134,7 @@
         <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
         <plugin.checkstyle.puppycrawl.version>10.3.1</plugin.checkstyle.puppycrawl.version>
         <plugin.dependency-check.version>12.2.2</plugin.dependency-check.version>
+        <plugin.enforcer.version>3.5.0</plugin.enforcer.version>
         <!-- OWASP scan: CVSS threshold and NVD API key (supply via -Dnvd.api.key=... or NVD_API_KEY env in CI) -->
         <dependency-check.failBuildOnCVSS>7</dependency-check.failBuildOnCVSS>
         <nvd.api.key></nvd.api.key>
@@ -497,6 +498,11 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${plugin.enforcer.version}</version>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>license-maven-plugin</artifactId>
                     <version>${plugin.maven-license.version}</version>
@@ -565,6 +571,59 @@
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-copyleft-neo4j-outside-test-scope</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <!-- The embedded Neo4j server stack is GPL-3.0-or-later and must never be
+                                         redistributed inside this Apache-2.0 project's jars or container images.
+                                         Test scope stays allowed: it is not packaged.
+
+                                         Only the entry points of that stack are listed. The rule resolves
+                                         transitively, and the GPL kernel/cypher tree is only reachable through
+                                         org.neo4j:neo4j or a direct neo4j-kernel dependency, so banning those two
+                                         plus the harness covers the whole tree. A blanket org.neo4j:neo4j* glob
+                                         would also hit org.neo4j:neo4j-cypher-dsl, which is Apache-2.0 and comes in
+                                         via spring-boot-starter-data-neo4j.
+
+                                         Unaffected: org.neo4j.driver:* (Apache-2.0, the only Neo4j code production
+                                         links against) and org.neo4j:neosemantics.
+
+                                         Exclude pattern: groupId:artifactId:version:type:scope:classifier -->
+                                    <excludes>
+                                        <exclude>org.neo4j.gds:*:*:*:compile</exclude>
+                                        <exclude>org.neo4j.gds:*:*:*:runtime</exclude>
+                                        <exclude>org.neo4j.gds:*:*:*:provided</exclude>
+                                        <exclude>org.neo4j.test:*:*:*:compile</exclude>
+                                        <exclude>org.neo4j.test:*:*:*:runtime</exclude>
+                                        <exclude>org.neo4j.test:*:*:*:provided</exclude>
+                                        <exclude>org.neo4j:neo4j:*:*:compile</exclude>
+                                        <exclude>org.neo4j:neo4j:*:*:runtime</exclude>
+                                        <exclude>org.neo4j:neo4j:*:*:provided</exclude>
+                                        <exclude>org.neo4j:neo4j-kernel:*:*:compile</exclude>
+                                        <exclude>org.neo4j:neo4j-kernel:*:*:runtime</exclude>
+                                        <exclude>org.neo4j:neo4j-kernel:*:*:provided</exclude>
+                                    </excludes>
+                                    <message>
+                                        GPL-3.0 Neo4j content outside test scope. The embedded Neo4j server
+                                        (neo4j-harness, Neo4j Community kernel) and Graph Data Science are
+                                        GPL-licensed and must not be packaged into this Apache-2.0 project.
+                                        Production code must use org.neo4j.driver:neo4j-java-driver only.
+                                    </message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
