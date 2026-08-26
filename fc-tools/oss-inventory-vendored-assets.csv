@@ -9,7 +9,8 @@ fc-test-support/performance-testing/user-files/lib/nimbus-jose-jwt-9.9.jar,Conne
 fc-test-support/performance-testing/user-files/lib/rdf-urdna-1.1.jar,rdf-urdna,1.1,unknown,unknown,no licence/vendor fields in manifest; no LICENSE file bundled
 fc-test-support/performance-testing/user-files/lib/titanium-json-ld-1.3.1.jar,Titanium JSON-LD,1.3.1,unknown,unknown,no licence/vendor fields in manifest; no LICENSE file bundled
 fc-test-support/performance-testing/user-files/lib/verifiable-credentials-java-1.0.0.jar,danubetech verifiable-credentials-java,1.0.0,unknown,unknown,no licence/vendor fields in manifest; no LICENSE file bundled
-fc-demo-portal/src/main/resources/static/css/lib/styles.css,Start Bootstrap Simple Sidebar,6.0.5,MIT,confirmed,in-file header comment states version/copyright/licence URL
+fc-demo-portal/src/main/resources/static/css/lib/styles.css,Start Bootstrap Simple Sidebar,6.0.5,MIT,confirmed,"in-file header comment; file is modified — first-party CSS appended"
+fc-demo-portal/src/main/resources/static/css/lib/styles.css,Bootstrap,5.1.3,MIT,confirmed,"second in-file header comment in the same file"
 fc-demo-portal/src/main/resources/static/css/lib/bootstrap-icons.min.css,Bootstrap Icons,1.11.3,MIT,confirmed,in-file header comment
 fc-demo-portal/src/main/resources/static/css/lib/dataTables.min.css,DataTables,2.3.7,MIT (datatables.net/license),partial,no banner in this file; version/licence inferred from paired dataTables.min.js
 fc-demo-portal/src/main/resources/static/css/lib/fonts/bootstrap-icons.woff,Bootstrap Icons,1.11.3,MIT,partial,grouped with bootstrap-icons.min.css; binary font carries no licence text

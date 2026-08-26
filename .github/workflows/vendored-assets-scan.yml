@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          lfs: true
 
       # Informational only, run at release time - no fail-on-drift gate.
       # This lists which committed jars / vendored front-end files sit
