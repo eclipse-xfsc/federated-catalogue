@@ -60,6 +60,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
@@ -565,7 +566,10 @@ public class AssetControllerTest {
     }
 
     // TODO: 05.09.2022 Need to add a test to check the correct scenario with graph storage when it is added
-    //@Test
+    @Test
+    @Disabled("Disabled since the initial code import 8effb886 (2025-05-20); original reason not recorded. The "
+        + "failure-injection stub (doThrow on fileStore.storeFile) is commented out in the body below, so the 500 this "
+        + "test expects is never provoked.")
     @WithMockJwtAuth(authorities = {ASSET_CREATE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(stringClaims = {
         @StringClaim(name = "participant_id", value = TEST_ISSUER)})))
     public void addAssetFailedThenAllTransactionRolledBack() throws Exception {

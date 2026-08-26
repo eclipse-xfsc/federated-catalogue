@@ -1,5 +1,6 @@
 package eu.xfsc.fc.core.util;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.dao.assets.AssetRepository;
 import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import eu.xfsc.fc.core.pojo.AssetType;
@@ -12,7 +13,6 @@ import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.CredentialFormatDetector;
 import eu.xfsc.fc.core.service.verification.EnvelopedCredentialResolver;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 
 import java.util.List;
@@ -195,9 +195,9 @@ public class GraphRebuilder {
 
   private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) {
         String contentType = assetMetaData.getContentType();
-        if (VerificationConstants.MEDIA_TYPE_NTRIPLES.equals(contentType)
-                || VerificationConstants.MEDIA_TYPE_TURTLE.equals(contentType)
-                || VerificationConstants.MEDIA_TYPE_RDF_XML.equals(contentType)) {
+        if (FcMediaTypes.NTRIPLES_VALUE.equals(contentType)
+                || FcMediaTypes.TURTLE_VALUE.equals(contentType)
+                || FcMediaTypes.RDF_XML_VALUE.equals(contentType)) {
             return claimExtractionService.extractAllTriples(assetMetaData.getContentAccessor());
         }
     // Parity with the upload path: JWT-secured credentials must be decoded to JSON-LD

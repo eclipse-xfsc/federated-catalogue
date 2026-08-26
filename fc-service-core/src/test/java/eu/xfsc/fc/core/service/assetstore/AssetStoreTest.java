@@ -35,6 +35,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -190,7 +191,10 @@ public class AssetStoreTest {
         assertThrows(NotFoundException.class, () -> assetStorePublisher.getByHash(hash2));
     }
 
-    //@Test
+    @Test
+    @Disabled("Commented out in 9af3f50d (2025-11-08, Neo4j split into fc-graphdb-neo4j); reason not recorded. Asserts "
+            + "graphStore.queryData node counts, and the DummyGraphStore wired into this test always returns an empty "
+            + "result. Counterpart test03StoreDuplicateCredential is live in fc-graphdb-neo4j AssetStoreTest.")
     void storeCredential_withDuplicateContent_throwsConflictException() {
         final String content1 = "Some Test Content";
 
@@ -227,7 +231,10 @@ public class AssetStoreTest {
     /**
      * Test storing an asset, and updating the status.
      */
-    //@Test
+    @Test
+    @Disabled("Commented out in 9af3f50d (2025-11-08, Neo4j split into fc-graphdb-neo4j); reason not recorded. Asserts "
+            + "graphStore.queryData node counts, and the DummyGraphStore wired into this test always returns an empty "
+            + "result. Counterpart test04ChangeAssetStatus is live in fc-graphdb-neo4j AssetStoreTest.")
     void updateAssetStatus_withValidTransition_changesStatus() throws Exception {
         final String content = "Some Test Content";
 

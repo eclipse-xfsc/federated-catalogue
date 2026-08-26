@@ -30,6 +30,7 @@ import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.api.generated.model.AssetEnrichmentResponse;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.pojo.ContentAccessorBinary;
@@ -44,7 +45,6 @@ import eu.xfsc.fc.core.service.assetstore.RdfDetector;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
 import eu.xfsc.fc.core.service.verification.VerificationService;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
@@ -327,9 +327,9 @@ public class AssetUploadService {
             return Lang.JSONLD;
         }
         return switch (contentType.strip().toLowerCase()) {
-            case VerificationConstants.MEDIA_TYPE_TURTLE -> Lang.TURTLE;
-            case VerificationConstants.MEDIA_TYPE_NTRIPLES -> Lang.NTRIPLES;
-            case VerificationConstants.MEDIA_TYPE_RDF_XML -> Lang.RDFXML;
+            case FcMediaTypes.TURTLE_VALUE -> Lang.TURTLE;
+            case FcMediaTypes.NTRIPLES_VALUE -> Lang.NTRIPLES;
+            case FcMediaTypes.RDF_XML_VALUE -> Lang.RDFXML;
             default -> Lang.JSONLD;
         };
     }
