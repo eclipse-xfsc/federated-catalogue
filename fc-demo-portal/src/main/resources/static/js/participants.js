@@ -139,5 +139,5 @@ function addSearchIcon() {
 }
 
 function format(d) {
-  return 'Self-Description: ' + d['asset'];
+  return 'Asset: ' + d['asset'];
 }

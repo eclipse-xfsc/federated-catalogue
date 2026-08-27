@@ -1022,7 +1022,7 @@
         "role",
         "phone",
         "query",
-        "self-description",
+        "asset",
         "profile",
         "offline_access",
         "microprofile-jwt",
@@ -1569,7 +1569,7 @@
     },
     {
       "id": "04dc57f5-1b19-4b3a-871d-e07af3a21d09",
-      "name": "self-description",
+      "name": "asset",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",
