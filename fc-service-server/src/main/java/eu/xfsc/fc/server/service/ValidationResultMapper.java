@@ -1,6 +1,8 @@
 package eu.xfsc.fc.server.service;
 
 import eu.xfsc.fc.api.generated.model.StoredValidationResult;
+import eu.xfsc.fc.api.generated.model.StoredValidationResult.GraphSyncStatusEnum;
+import eu.xfsc.fc.api.generated.model.StoredValidationResult.OutdatedReasonEnum;
 import eu.xfsc.fc.api.generated.model.StoredValidationResult.ValidatorTypeEnum;
 import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import java.util.Arrays;
@@ -23,6 +25,11 @@ class ValidationResultMapper {
         .report(entity.getReport())
         .failureCategory(entity.getFailureCategory())
         .contentHash(entity.getContentHash())
-        .createdAt(entity.getCreatedAt());
+        .createdAt(entity.getCreatedAt())
+        .graphSyncStatus(entity.getGraphSyncStatus() == null
+            ? null : GraphSyncStatusEnum.fromValue(entity.getGraphSyncStatus().name()))
+        .outdated(entity.isOutdated())
+        .outdatedReason(entity.getOutdatedReason() == null
+            ? null : OutdatedReasonEnum.fromValue(entity.getOutdatedReason().name()));
   }
 }

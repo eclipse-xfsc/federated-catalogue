@@ -3,6 +3,7 @@ package eu.xfsc.fc.core.service.trustframework.compliance;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
 import eu.xfsc.fc.api.FcMediaTypes;
+import eu.xfsc.fc.core.exception.ServiceErrorException;
 import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -80,13 +81,12 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
    *
    * <p>On HTTP 201, the response body is a compliance credential JWT mapped to
    * {@link IssuedAttestation}. A 201 body that is not a parseable JWT maps to
-   * {@link UnverifiableAttestation} with {@link FailureCategory#MALFORMED_ATTESTATION} — the
-   * service did issue a positive verdict, but parsing it failed on our side.
-   * On HTTP 400, the asset is non-compliant and an {@link UnverifiableAttestation} with
-   * {@link FailureCategory#UNVERIFIABLE_ATTESTATION} is returned.
-   * HTTP 5xx and I/O exceptions bubble to the orchestrator, which maps them to
-   * {@link eu.xfsc.fc.core.exception.ServiceUnavailableException} /
-   * {@link eu.xfsc.fc.core.exception.TimeoutException}.
+   * {@link UnverifiableAttestation} rather than returning null-field attestation fields.
+   * On HTTP 400, the asset is non-compliant and an {@link UnverifiableAttestation} is returned.
+   * HTTP 5xx bubbles to the orchestrator as {@link eu.xfsc.fc.core.exception.ServiceErrorException}
+   * (the service was reached but errored); connection-level I/O failures bubble as
+   * {@link eu.xfsc.fc.core.exception.ServiceUnavailableException} (never reached) or
+   * {@link eu.xfsc.fc.core.exception.TimeoutException} (timed out).
    *
    * @param credential the VP JWT to submit
    * @param config     profile configuration providing the service URL, compliance path, and timeout
@@ -147,7 +147,7 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
       throw new ServiceUnavailableException("Compliance service unreachable: " + e.getMessage(), e);
     } catch (HttpServerErrorException e) {
       log.error("Compliance service returned server error", e);
-      throw new ServiceUnavailableException("Compliance service error: " + e.getStatusCode(), e);
+      throw new ServiceErrorException("Compliance service error: " + e.getStatusCode(), e);
     }
   }
 

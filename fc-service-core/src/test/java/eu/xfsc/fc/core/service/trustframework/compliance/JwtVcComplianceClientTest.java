@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import eu.xfsc.fc.core.exception.ServiceErrorException;
 import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
@@ -185,15 +186,17 @@ class JwtVcComplianceClientTest {
   }
 
   @Test
-  void check_5xxResponse_throwsServiceUnavailableException() {
+  void check_5xxResponse_throwsServiceErrorException() {
 
+    // The service was reached and responded, just with an error — distinct from being
+    // unreachable, so this must throw the more specific ServiceErrorException subtype.
     server.enqueue(new MockResponse()
         .setResponseCode(500)
         .setBody("Internal Server Error"));
 
     var credential = new ContentAccessorDirect(TEST_VP_JWT);
 
-    assertThrows(ServiceUnavailableException.class, () -> client.check(credential, config));
+    assertThrows(ServiceErrorException.class, () -> client.check(credential, config));
   }
 
   @Test
@@ -201,12 +204,15 @@ class JwtVcComplianceClientTest {
 
     // Simulates a trust service that is unreachable (connection reset), rather than a mocked
     // Java exception, so the resulting failure path is exercised exactly as it would occur
-    // against a real, unreachable external service.
+    // against a real, unreachable external service. Must be exactly ServiceUnavailableException,
+    // not the ServiceErrorException subtype used for reached-but-erroring responses.
     server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
 
     var credential = new ContentAccessorDirect(TEST_VP_JWT);
 
-    assertThrows(ServiceUnavailableException.class, () -> client.check(credential, config));
+    ServiceUnavailableException exception = assertThrows(ServiceUnavailableException.class,
+        () -> client.check(credential, config));
+    assertEquals(ServiceUnavailableException.class, exception.getClass());
   }
 
   @Test

@@ -9,9 +9,9 @@ package eu.xfsc.fc.core.service.trustframework.compliance;
  * request was even sent), but no positive verdict could be established — never confuse this with
  * an actual attestation that the asset is compliant.
  *
- * <p>{@link #SERVICE_UNREACHABLE} and {@link #SERVICE_TIMEOUT} classify the opposite situation: the
- * compliance service was never reached, so no verdict about the asset exists at all. A prior review
- * of the external-trust-framework work deliberately removed transport/timeout categories from this
+ * <p>{@link #SERVICE_UNREACHABLE}, {@link #SERVICE_ERROR}, and {@link #SERVICE_TIMEOUT} classify the
+ * opposite situation: no verdict about the asset exists at all. A prior review of the
+ * external-trust-framework work deliberately removed transport/timeout categories from this
  * enum in favour of letting {@link eu.xfsc.fc.core.exception.ServiceUnavailableException} and
  * {@link eu.xfsc.fc.core.exception.TimeoutException} propagate as HTTP 503/504 — collapsing every
  * infrastructure failure into "no stored result" was an accepted trade-off at the time. They are
@@ -34,5 +34,12 @@ public enum FailureCategory {
   MALFORMED_ATTESTATION,
 
   SERVICE_UNREACHABLE,
+
+  /**
+   * The service was reached but responded with an error (e.g. HTTP 5xx), as opposed to
+   * {@link #SERVICE_UNREACHABLE}'s connection-level failure. See
+   * {@link eu.xfsc.fc.core.exception.ServiceErrorException}.
+   */
+  SERVICE_ERROR,
   SERVICE_TIMEOUT
 }
