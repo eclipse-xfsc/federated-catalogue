@@ -65,7 +65,9 @@ When all components started you should setup Keycloak which is used as Identity 
 127.0.0.1	key-server
 ```
 
-Open keycloak admin console at `http://key-server:8080/admin` with `admin/admin` credentials, select `gaia-x` realm.
+Open keycloak admin console at `http://key-server:8080/admin` with `admin/admin` credentials, select the
+`federated-catalogue-realm` realm (existing deployments with a pre-existing `gaia-x` realm keep working by setting
+`KEYCLOAK_REALM=gaia-x` — see [Keycloak Realm Configuration](../docs/operator-guide.md#keycloak-realm-configuration)).
 
 #### Client secret
 
