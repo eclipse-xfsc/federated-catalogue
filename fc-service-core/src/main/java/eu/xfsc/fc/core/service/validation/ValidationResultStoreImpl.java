@@ -140,6 +140,7 @@ public class ValidationResultStoreImpl implements ValidationResultStore {
     entity.setConforms(record.conforms());
     entity.setValidatedAt(record.validatedAt());
     entity.setReport(record.report());
+    entity.setFailureCategory(record.failureCategory());
     return entity;
   }
 

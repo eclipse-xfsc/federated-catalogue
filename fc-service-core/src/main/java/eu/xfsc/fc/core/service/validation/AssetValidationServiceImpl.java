@@ -337,7 +337,8 @@ public class AssetValidationServiceImpl implements AssetValidationService {
         validatorType,
         report.getConforms(),
         validatedAt,
-        rawReport));
+        rawReport,
+        null));
   }
 
 

@@ -23,6 +23,7 @@ class ValidationResultMapper {
         .conforms(entity.isConforms())
         .validatedAt(entity.getValidatedAt())
         .report(entity.getReport())
+        .failureCategory(entity.getFailureCategory())
         .contentHash(entity.getContentHash())
         .createdAt(entity.getCreatedAt())
         .graphSyncStatus(entity.getGraphSyncStatus() == null

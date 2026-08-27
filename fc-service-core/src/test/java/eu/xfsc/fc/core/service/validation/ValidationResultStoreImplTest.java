@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import eu.xfsc.fc.core.dao.validation.GraphSyncStatus;
@@ -56,7 +58,7 @@ class ValidationResultStoreImplTest {
 
     ArgumentCaptor<ValidationResult> captor = ArgumentCaptor.forClass(ValidationResult.class);
     // Called twice: first save (PostgreSQL commit), second save (status update to SYNCED)
-    verify(repository, org.mockito.Mockito.times(2)).save(captor.capture());
+    verify(repository, times(2)).save(captor.capture());
     List<ValidationResult> savedEntities = captor.getAllValues();
     assertEquals(GraphSyncStatus.SYNCED,
         savedEntities.get(1).getGraphSyncStatus());
@@ -88,7 +90,7 @@ class ValidationResultStoreImplTest {
     service.store(record);
 
     // Two saves: initial PG commit + FAILED status update
-    verify(repository, org.mockito.Mockito.times(2)).save(any());
+    verify(repository, times(2)).save(any());
     assertEquals(GraphSyncStatus.FAILED, saved.getGraphSyncStatus());
   }
 
@@ -108,10 +110,10 @@ class ValidationResultStoreImplTest {
     // status-update save, because no graph write (successful or failed) is ever attempted —
     // proving no triples are produced, and marking the row so graph rebuild skips it too.
     ArgumentCaptor<ValidationResult> captor = ArgumentCaptor.forClass(ValidationResult.class);
-    verify(repository, org.mockito.Mockito.times(1)).save(captor.capture());
+    verify(repository, times(1)).save(captor.capture());
     assertEquals(GraphSyncStatus.EXCLUDED, captor.getValue().getGraphSyncStatus());
-    org.mockito.Mockito.verifyNoInteractions(graphWriter);
-    org.mockito.Mockito.verifyNoInteractions(graphStore);
+    verifyNoInteractions(graphWriter);
+    verifyNoInteractions(graphStore);
   }
 
   // ===== getByAssetId =====
@@ -178,7 +180,7 @@ class ValidationResultStoreImplTest {
     service.deleteByAssetId("https://example.org/asset/unknown");
 
     verify(repository).deleteAllByAssetId("https://example.org/asset/unknown");
-    org.mockito.Mockito.verifyNoInteractions(graphStore);
+    verifyNoInteractions(graphStore);
   }
 
   @Test
@@ -203,6 +205,7 @@ class ValidationResultStoreImplTest {
         ValidatorType.SHACL,
         conforms,
         Instant.parse("2024-06-01T12:00:00Z"),
+        null,
         null);
   }
 

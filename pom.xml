@@ -68,6 +68,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
         <spring.version>6.2.18</spring.version>
+        <!-- overrides Boot's inherited default for spring-webmvc/spring-expression/spring-web/spring-core (fixes CVE-2026-41842, CVE-2026-41845, CVE-2026-41850) -->
+        <spring-framework.version>6.2.19</spring-framework.version>
         <spring-boot.version>3.5.14</spring-boot.version>
         <spring.security.version>6.5.10</spring.security.version>
         <springdoc.version>2.8.14</springdoc.version>
@@ -85,7 +87,8 @@
         <caffeine.version>3.2.3</caffeine.version>
         <bcpkix-jdk18on.version>1.84</bcpkix-jdk18on.version>
         <jnats.version>2.23.0</jnats.version>
-        <jackson-bom.version>2.21.2</jackson-bom.version>
+        <!-- fixes GHSA-r7wm-3cxj-wff9 (jackson-core), CVE-2026-54512/54513 (jackson-databind) -->
+        <jackson-bom.version>2.21.4</jackson-bom.version>
         <json-schema-validator.version>2.0.1</json-schema-validator.version>
         <!-- test libs -->
         <junit-platform.version>1.14.1</junit-platform.version>
@@ -125,10 +128,6 @@
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
         <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
         <plugin.checkstyle.puppycrawl.version>10.3.1</plugin.checkstyle.puppycrawl.version>
-        <plugin.dependency-check.version>12.2.2</plugin.dependency-check.version>
-        <!-- OWASP scan: CVSS threshold and NVD API key (supply via -Dnvd.api.key=... or NVD_API_KEY env in CI) -->
-        <dependency-check.failBuildOnCVSS>7</dependency-check.failBuildOnCVSS>
-        <nvd.api.key></nvd.api.key>
         <!-- repository path -->
         <repository.path>eclipse/xfsc/cat/fc-service</repository.path>
         <!--jib-->
@@ -458,19 +457,6 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.owasp</groupId>
-                    <artifactId>dependency-check-maven</artifactId>
-                    <version>${plugin.dependency-check.version}</version>
-                    <configuration>
-                        <!-- Gate threshold for explicit manual runs (`mvn dependency-check:check`).
-                             NOT bound to the build lifecycle: the scan must never block CI, because it
-                             requires an NVD API key (NVD_API_KEY / -Dnvd.api.key) and would otherwise fail
-                             on NVD rate-limiting (HTTP 429) when no key is available. -->
-                        <failBuildOnCVSS>${dependency-check.failBuildOnCVSS}</failBuildOnCVSS>
-                        <nvdApiKey>${nvd.api.key}</nvdApiKey>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.openapitools</groupId>

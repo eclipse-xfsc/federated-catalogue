@@ -3,9 +3,11 @@ package eu.xfsc.fc.core.service.trustframework.compliance;
 /**
  * Classifies the reason a compliance check could not produce a positive outcome.
  *
- * <p>{@link #UNVERIFIABLE_ATTESTATION} is the only constant ever carried by an
- * {@link UnverifiableAttestation} outcome; it always means the compliance service was reached and
- * responded, but the attestation it returned (or the input presented to it) could not be verified.
+ * <p>{@link #UNVERIFIABLE_ATTESTATION}, {@link #MALFORMED_CREDENTIAL}, and
+ * {@link #MALFORMED_ATTESTATION} are carried by an {@link UnverifiableAttestation} outcome; all
+ * three mean the compliance service was reached (except {@link #MALFORMED_CREDENTIAL}, where no
+ * request was even sent), but no positive verdict could be established — never confuse this with
+ * an actual attestation that the asset is compliant.
  *
  * <p>{@link #SERVICE_UNREACHABLE}, {@link #SERVICE_ERROR}, and {@link #SERVICE_TIMEOUT} classify the
  * opposite situation: no verdict about the asset exists at all. A prior review of the
@@ -20,7 +22,17 @@ package eu.xfsc.fc.core.service.trustframework.compliance;
  * never produces a {@link ComplianceCheckOutcome} instance.
  */
 public enum FailureCategory {
+
+  /**  The compliance service evaluated the asset and returned a genuine non-compliant verdict.  */
   UNVERIFIABLE_ATTESTATION,
+
+  /**  The input presented to the check was malformed, so no request was sent to the service at all.  */
+  MALFORMED_CREDENTIAL,
+
+  /**  The service issued an attestation (a positive verdict), but the response could not be parsed
+   *  on our side — this is our own defect, not evidence of non-compliance.  */
+  MALFORMED_ATTESTATION,
+
   SERVICE_UNREACHABLE,
 
   /**

@@ -230,6 +230,7 @@ public class ComplianceCheckControllerTest {
     assertThat(stored.isConforms()).isFalse();
     assertThat(stored.getValidatedAt()).isNotNull();
     assertThat(failureCategoryOf(stored.getReport())).isEqualTo(FailureCategory.SERVICE_TIMEOUT.name());
+    assertThat(stored.getFailureCategory()).isEqualTo(FailureCategory.SERVICE_TIMEOUT.name());
     assertThat(stored.getGraphSyncStatus()).isEqualTo(GraphSyncStatus.EXCLUDED);
     // A failed attempt must never reach the graph: it is not a claim about the asset.
     verify(graphWriter, never()).write(any(), any());
@@ -259,6 +260,7 @@ public class ComplianceCheckControllerTest {
     assertThat(stored.isConforms()).isFalse();
     assertThat(stored.getValidatedAt()).isNotNull();
     assertThat(failureCategoryOf(stored.getReport())).isEqualTo(FailureCategory.SERVICE_UNREACHABLE.name());
+    assertThat(stored.getFailureCategory()).isEqualTo(FailureCategory.SERVICE_UNREACHABLE.name());
     assertThat(stored.getGraphSyncStatus()).isEqualTo(GraphSyncStatus.EXCLUDED);
     // A failed attempt must never reach the graph: it is not a claim about the asset.
     verify(graphWriter, never()).write(any(), any());

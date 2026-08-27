@@ -51,6 +51,8 @@ public class ProvenanceServiceImpl implements ProvenanceService {
   private final ProvenanceCredentialParser parser;
   private final ProvenanceModelMapper mapper;
 
+  private static final String NO_CREDENTIALS_ERROR = "No provenance credentials present for this asset";
+
   /**
    * {@inheritDoc}
    *
@@ -205,6 +207,10 @@ public class ProvenanceServiceImpl implements ProvenanceService {
       entities = repository.findByAssetIdOrderByIssuedAtDesc(assetId, Pageable.unpaged()).getContent();
     }
 
+    if (entities.isEmpty()) {
+      return noCredentialsResult();
+    }
+
     boolean allValid = true;
     List<String> errors = new ArrayList<>();
     List<String> warnings = new ArrayList<>();
@@ -239,6 +245,26 @@ public class ProvenanceServiceImpl implements ProvenanceService {
         .validatorDids(List.of())
         .errors(errors)
         .warnings(warnings);
+  }
+
+  /**
+   * Builds the result reported when an asset (or the requested version of it) has no provenance
+   * credentials to verify at all.
+   *
+   * <p>This is deliberately distinct from a genuine "verified and invalid" result: no credential
+   * was ever inspected, so {@code verificationTimestamp} stays {@code null} here, whereas
+   * {@link #verifyEntity} always stamps a timestamp — on both its success and failure branches —
+   * once at least one credential was actually processed. A consumer distinguishes the two
+   * non-valid cases by checking {@code verificationTimestamp}: {@code null} means "nothing to
+   * verify" (see {@code errors} for the reason), a non-null timestamp with {@code isValid=false}
+   * means "verified and found invalid".</p>
+   */
+  private ProvenanceVerificationResult noCredentialsResult() {
+    return new ProvenanceVerificationResult()
+        .isValid(false)
+        .validatorDids(List.of())
+        .errors(List.of(NO_CREDENTIALS_ERROR))
+        .warnings(List.of());
   }
 
   private int resolveVersion(String assetId, Integer requestedVersion) {

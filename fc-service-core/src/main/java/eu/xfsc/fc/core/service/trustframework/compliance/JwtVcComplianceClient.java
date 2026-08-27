@@ -76,7 +76,7 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
    * Submits the VP JWT to the configured compliance endpoint and returns the outcome.
    *
    * <p>Short-circuits to {@link UnverifiableAttestation} with
-   * {@link FailureCategory#UNVERIFIABLE_ATTESTATION} when the VP JWT payload has no {@code id}
+   * {@link FailureCategory#MALFORMED_CREDENTIAL} when the VP JWT payload has no {@code id}
    * claim, without sending any HTTP request.
    *
    * <p>On HTTP 201, the response body is a compliance credential JWT mapped to
@@ -95,10 +95,23 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
   @Override
   public ComplianceCheckOutcome check(ContentAccessor credential, TrustFrameworkProfileConfig config) {
     String vpJwt = credential.getContentAsString();
-    String assetId = extractJwtClaim(vpJwt, "id");
+
+    JWTClaimsSet vpClaims;
+    try {
+      vpClaims = readJwtPayload(vpJwt);
+    } catch (ParseException e) {
+      log.error("VP JWT is not a parseable JWT", e);
+      return new UnverifiableAttestation(
+          FailureCategory.MALFORMED_CREDENTIAL,
+          vpJwt,
+          "VP JWT is not a parseable JWT"
+      );
+    }
+
+    String assetId = extractAssetId(vpClaims);
     if (assetId.isBlank()) {
       return new UnverifiableAttestation(
-          FailureCategory.UNVERIFIABLE_ATTESTATION,
+          FailureCategory.MALFORMED_CREDENTIAL,
           vpJwt,
           "VP JWT has no 'id' claim"
       );
@@ -148,13 +161,12 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
     });
   }
 
-  private String extractJwtClaim(String jwt, String claim) {
+  private String extractAssetId(JWTClaimsSet vpClaims) {
     try {
-      JWTClaimsSet claims = readJwtPayload(jwt);
-      String value = claims.getStringClaim(claim);
+      String value = vpClaims.getStringClaim("id");
       return value != null ? value : "";
-    } catch (Exception e) {
-      log.error("Failed to extract claim '{}' from JWT", claim, e);
+    } catch (ParseException e) {
+      log.error("VP JWT 'id' claim is not a string", e);
       return "";
     }
   }
@@ -166,7 +178,7 @@ public class JwtVcComplianceClient implements TrustFrameworkClient {
     } catch (Exception e) {
       log.warn("Failed to parse compliance credential JWT", e);
       return new UnverifiableAttestation(
-          FailureCategory.UNVERIFIABLE_ATTESTATION,
+          FailureCategory.MALFORMED_ATTESTATION,
           jwt,
           "Compliance credential is not a parseable JWT"
       );

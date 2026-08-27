@@ -254,11 +254,13 @@ components:
           type: string
           nullable: true
           description: >-
-            Set when conforms is false; describes how the check failed. Currently only
-            UNVERIFIABLE_ATTESTATION appears in this field, meaning the trust service was reached and
-            responded but the attestation could not be verified. A trust service that could not be
-            reached at all, or that timed out, is surfaced as an HTTP 503/504 response instead of a
-            200 response with this field set; that failed attempt is recorded separately in the
+            Set when conforms is false; describes how the check failed. One of
+            UNVERIFIABLE_ATTESTATION (the trust service was reached and responded with a genuine
+            non-compliant verdict), MALFORMED_CREDENTIAL (the submitted credential was malformed, so
+            no request was sent to the trust service), or MALFORMED_ATTESTATION (the trust service
+            issued a positive attestation, but it could not be parsed). A trust service that could
+            not be reached at all, or that timed out, is surfaced as an HTTP 503/504 response instead
+            of a 200 response with this field set; that failed attempt is recorded separately in the
             stored validation report (see the compliance-checks history endpoint), not here.
         attestationCredential:
           type: string
@@ -540,24 +542,48 @@ components:
       properties:
         isValid:
           type: boolean
-          description: Overall validity of the credential.
+          description: >-
+            Overall validity of the credential(s). For the aggregated (verify-all) result, `false`
+            with `verificationTimestamp` set to `null` and `errors` naming the reason (e.g. "No
+            provenance credentials present for this asset") indicates there was nothing to verify —
+            distinct from `false` with a non-null `verificationTimestamp`, which means at least one
+            credential was actually verified and found invalid.
         verificationTimestamp:
           type: string
           format: date-time
+          nullable: true
+          description: >-
+            When this verification ran. For the aggregated (verify-all) result, `null` means no
+            provenance credential existed to verify; a non-null value means at least one was
+            inspected, whatever the outcome.
         verificationMethod:
           type: string
+          nullable: true
           description: DID verification method used.
         issuerResolutionStatus:
           type: string
+          nullable: true
           enum: [ RESOLVED, UNRESOLVABLE, TEMPORARILY_UNAVAILABLE ]
-          description: Result of DID resolution for the issuer.
+          description: >-
+            Result of DID resolution for the issuer. Set for single-credential verification; `null`
+            on the aggregated (verify-all) result.
         issuedDateTime:
           type: string
           format: date-time
+          nullable: true
+          description: >-
+            Issuance time extracted from the credential. Set only on a successful single-credential
+            verification; `null` when that verification failed, and `null` on the aggregated
+            (verify-all) result.
         signatureValid:
           type: boolean
+          nullable: true
+          description: >-
+            Whether the credential signature verified. Set for single-credential verification;
+            `null` on the aggregated (verify-all) result.
         credentialExpiryValid:
           type: boolean
+          nullable: true
         validatorDids:
           type: array
           items:
@@ -789,8 +815,8 @@ components:
           description: >-
             True if the asset passed validation. A false value can also mean the check could not
             be performed at all (e.g. an unreachable or timed-out trust service) rather than a
-            negative verdict on the asset; for TRUST_FRAMEWORK rows, the failureCategory key in
-            the report field distinguishes the two.
+            negative verdict on the asset; for TRUST_FRAMEWORK rows, the failureCategory field
+            distinguishes the two.
         validatedAt:
           type: string
           format: date-time
@@ -800,12 +826,23 @@ components:
           nullable: true
           description: >-
             Serialised validation report (SHACL Turtle / JSON violations / XSD error). For
-            TRUST_FRAMEWORK rows this is a JSON object; a failureCategory key is present whenever
-            conforms is false, distinguishing a genuine non-compliant verdict from a failed
-            check attempt.
+            TRUST_FRAMEWORK rows this is a JSON object that also carries a copy of
+            failureCategory; the structured failureCategory field below is the authoritative,
+            tamper-detected value — this JSON copy is informational only.
+        failureCategory:
+          type: string
+          nullable: true
+          description: >-
+            Failure classification for a TRUST_FRAMEWORK row that could not produce a verdict
+            (SERVICE_UNREACHABLE, SERVICE_TIMEOUT, UNVERIFIABLE_ATTESTATION, MALFORMED_CREDENTIAL,
+            MALFORMED_ATTESTATION). Null for schema validations and for TRUST_FRAMEWORK rows that
+            did produce a verdict. Covered by contentHash, unlike the copy of the same value inside
+            report.
         contentHash:
           type: string
-          description: SHA-256 hex digest of core fields for offline tamper detection
+          description: >-
+            SHA-256 hex digest of core fields, including failureCategory when non-null, for
+            offline tamper detection
         graphSyncStatus:
           type: string
           enum: [SYNCED, FAILED, EXCLUDED]
@@ -1436,7 +1473,9 @@ paths:
                 YAML for that field. Setting a key's value to JSON null clears the
                 override for that field (the YAML value is used again). Omitting a
                 key leaves any existing override or YAML value unchanged. At least
-                one key must be present.
+                one key must be present. serviceUrl and trustAnchorUrl must be
+                https:// URLs with a public, non-reserved host; other values are
+                rejected with 400.
       responses:
         '200':
           description: Bundle configuration updated
@@ -3494,6 +3533,8 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
     post:
@@ -3593,6 +3634,8 @@ paths:
                 $ref: '#/components/schemas/VerificationResult'
         '400':
           $ref: '#/components/responses/ClientError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '422':
           $ref: '#/components/responses/Unprocessible'
         '500':

@@ -24,7 +24,9 @@ import org.springframework.stereotype.Service;
  * For issued attestations the raw credential JWT is stored; the issuing service is
  * identified by the JWT's standard {@code iss} claim and need not be extracted separately.
  * The report is always written; for issued attestations it carries positive evidence,
- * not just error detail.</p>
+ * not just error detail. The {@link FailureCategory}, when present, is additionally passed as
+ * {@code ValidationResultRecord.failureCategory()} so it lands on the entity's own sealed
+ * column instead of only inside the unsealed {@code report} blob.</p>
  *
  * <p>{@link #storeFailedAttempt} covers a separate case that never produces a
  * {@link ComplianceCheckOutcome}: a check attempt where the trust service could not be reached at
@@ -57,7 +59,8 @@ public class ComplianceResultStoreImpl implements ComplianceResultStore {
         ValidatorType.TRUST_FRAMEWORK,
         outcome.compliant(),
         Instant.now(),
-        report
+        report,
+        extractFailureCategory(outcome)
     );
     return validationResultStore.store(record);
   }
@@ -77,7 +80,8 @@ public class ComplianceResultStoreImpl implements ComplianceResultStore {
         ValidatorType.TRUST_FRAMEWORK,
         false,
         Instant.now(),
-        report
+        report,
+        category.name()
     );
     // Deliberately storeWithoutGraphSync, not store: "the trust service was unreachable" is not
     // a claim about the asset, so it must never appear as a triple on the federated query surface,
@@ -90,6 +94,13 @@ public class ComplianceResultStoreImpl implements ComplianceResultStore {
       return value;
     }
     return value.substring(0, MAX_RAW_ATTESTATION_SIZE) + TRUNCATION_MARKER;
+  }
+
+  private static String extractFailureCategory(ComplianceCheckOutcome outcome) {
+    return switch (outcome) {
+      case IssuedAttestation ia -> null;
+      case UnverifiableAttestation ua -> ua.failureCategory().name();
+    };
   }
 
   private String buildReport(ComplianceCheckOutcome outcome) {
