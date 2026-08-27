@@ -694,6 +694,27 @@
           "SCHEMA_READ"
         ]
       }
+    },
+    {
+      "username": "fc-asset-creator-test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CHANGE_ME_dev_only1",
+          "temporary": false
+        }
+      ],
+      "attributes": { "participantId": ["did:web:compliance.lab.gaia-x.eu"] },
+      "realmRoles": [
+        "default-roles-federated-catalogue-realm"
+      ],
+      "clientRoles": {
+        "federated-catalogue": [
+          "ASSET_CREATE"
+        ]
+      }
     }
   ],
   "scopeMappings": [
