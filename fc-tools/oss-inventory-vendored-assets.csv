@@ -18,9 +18,6 @@ fc-demo-portal/src/main/resources/static/css/lib/fonts/bootstrap-icons.woff2,Boo
 fc-demo-portal/src/main/resources/static/js/lib/bootstrap.bundle.min.js,Bootstrap (bundle incl. Popper),5.3.8,MIT,confirmed,in-file header comment
 fc-demo-portal/src/main/resources/static/js/lib/dataTables.min.js,DataTables,2.3.7,MIT (datatables.net/license),confirmed,in-file banner "/*! DataTables 2.3.7"; links to licence page rather than stating MIT verbatim
 fc-demo-portal/src/main/resources/static/js/lib/jquery.min.js,jQuery,3.7.1,MIT (jquery.org/license),confirmed,in-file banner confirms version; links to licence page rather than stating MIT verbatim
-fc-demo-portal/src/main/resources/static/images/sort_asc.png,DataTables default theme icon,2.3.7,MIT (datatables.net/license) - inferred,unknown,binary image carries no licence text; filename matches DataTables theme set
-fc-demo-portal/src/main/resources/static/images/sort_both.png,DataTables default theme icon,2.3.7,MIT (datatables.net/license) - inferred,unknown,binary image carries no licence text; filename matches DataTables theme set
-fc-demo-portal/src/main/resources/static/images/sort_desc.png,DataTables default theme icon,2.3.7,MIT (datatables.net/license) - inferred,unknown,binary image carries no licence text; filename matches DataTables theme set
 fc-demo-portal/src/main/resources/static/images/details_open.png,DataTables default theme icon,2.3.7,MIT (datatables.net/license) - inferred,unknown,binary image carries no licence text; filename matches DataTables theme set
 fc-demo-portal/src/main/resources/static/images/details_close.png,DataTables default theme icon,2.3.7,MIT (datatables.net/license) - inferred,unknown,binary image carries no licence text; filename matches DataTables theme set
 fc-service-server/src/main/resources/static/css/bootstrap.min.css,Bootstrap,5.2.3,MIT,confirmed,in-file header comment

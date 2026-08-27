@@ -12,9 +12,6 @@ frontend	fc-service-server/src/main/resources/static/js/jquery-3.6.3.min.js
 frontend	fc-service-server/src/main/resources/static/js/jquery-ui.min.js
 image	fc-demo-portal/src/main/resources/static/images/details_close.png
 image	fc-demo-portal/src/main/resources/static/images/details_open.png
-image	fc-demo-portal/src/main/resources/static/images/sort_asc.png
-image	fc-demo-portal/src/main/resources/static/images/sort_both.png
-image	fc-demo-portal/src/main/resources/static/images/sort_desc.png
 jar	fc-test-support/performance-testing/user-files/lib/bcpkix-jdk15on-1.70.jar
 jar	fc-test-support/performance-testing/user-files/lib/bcprov-jdk18on-1.71.jar
 jar	fc-test-support/performance-testing/user-files/lib/jakarta.json-2.0.0.jar
