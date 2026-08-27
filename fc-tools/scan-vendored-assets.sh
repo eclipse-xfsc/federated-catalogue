@@ -18,13 +18,17 @@
 #                                                   line per finding — the
 #                                                   format committed as
 #                                                   fc-tools/vendored-assets-baseline.txt
-#   ./fc-tools/scan-vendored-assets.sh --check     regenerate the --list output
-#                                                   and diff it against the
-#                                                   baseline; exit 1 on drift.
+#   ./fc-tools/scan-vendored-assets.sh --check     regenerate the --list output,
+#                                                   diff it against the baseline,
+#                                                   and verify every baselined
+#                                                   path has a matching row in
+#                                                   fc-tools/oss-inventory-vendored-assets.csv;
+#                                                   exit 1 on either kind of drift.
 #                                                   Wired into CI by
 #                                                   .github/workflows/vendored-assets-scan.yml
 #
-# CI only ever runs --check; it reads and diffs, it never writes. Regenerating
+# CI runs --check as a PR gate (reads and diffs, never writes) and the default
+# report mode at release time (informational artifact upload). Regenerating
 # the baseline after a reviewed vendored-asset change, and updating
 # fc-tools/oss-inventory-vendored-assets.csv with the
 # licence findings for that change, is a manual step for whoever makes it:
@@ -42,6 +46,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 BASELINE="fc-tools/vendored-assets-baseline.txt"
+CSV="fc-tools/oss-inventory-vendored-assets.csv"
 
 MODE="report"
 case "${1:-}" in
@@ -111,17 +116,31 @@ if [[ "$MODE" == "check" ]]; then
   fi
   current="$(emit_list | LC_ALL=C sort)"
   baseline_content="$(cat "$BASELINE")"
-  if [[ "$current" == "$baseline_content" ]]; then
-    echo "OK: vendored-asset inventory matches $BASELINE"
-    exit 0
+  if [[ "$current" != "$baseline_content" ]]; then
+    echo "Vendored-asset drift detected against $BASELINE:" >&2
+    diff -u "$BASELINE" <(echo "$current") >&2
+    echo >&2
+    echo "A committed jar, system-scope dependency, or vendored front-end asset was added, removed, or moved." >&2
+    echo "Review its licence, update $CSV," >&2
+    echo "then regenerate the baseline: ./$(basename "$0") --list > $BASELINE" >&2
+    exit 1
   fi
-  echo "Vendored-asset drift detected against $BASELINE:" >&2
-  diff -u "$BASELINE" <(echo "$current") >&2
-  echo >&2
-  echo "A committed jar, system-scope dependency, or vendored front-end asset was added, removed, or moved." >&2
-  echo "Review its licence, update fc-tools/oss-inventory-vendored-assets.csv," >&2
-  echo "then regenerate the baseline: ./$(basename "$0") --list > $BASELINE" >&2
-  exit 1
+
+  # The baseline only tracks paths, not licences - a CSV row can be deleted
+  # without changing it. Every baselined path must have a matching CSV row.
+  baseline_paths=$(cut -f2 "$BASELINE" | LC_ALL=C sort -u)
+  csv_paths=$(tail -n +2 "$CSV" | cut -d, -f1 | LC_ALL=C sort -u)
+  missing=$(comm -23 <(echo "$baseline_paths") <(echo "$csv_paths"))
+  if [[ -n "$missing" ]]; then
+    echo "Licence-inventory drift: baselined path(s) missing from $CSV:" >&2
+    echo "$missing" | sed 's/^/  /' >&2
+    echo >&2
+    echo "Add a licence-inventory row for each path, or explain the removal in the PR." >&2
+    exit 1
+  fi
+
+  echo "OK: vendored-asset inventory matches $BASELINE and $CSV covers every entry"
+  exit 0
 fi
 
 # --- report mode: human-readable, unchanged shape ---------------------------

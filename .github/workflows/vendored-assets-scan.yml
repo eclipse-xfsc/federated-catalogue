@@ -2,6 +2,7 @@ name: Vendored Assets Inventory
 
 on:
   workflow_dispatch:
+  pull_request:
   release:
     types: [published]
 
@@ -9,8 +10,27 @@ permissions:
   contents: write
 
 jobs:
+  check-drift:
+    name: Check vendored-asset inventory drift
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Gates every PR: diffs the file list against the baseline and checks
+      # that oss-inventory-vendored-assets.csv still covers every baselined
+      # path. No LFS needed - it reads paths and pom.xml text, not content.
+      - name: Check vendored-asset baseline and licence-inventory coverage
+        run: ./fc-tools/scan-vendored-assets.sh --check
+
   publish-inventory:
     name: Publish vendored-asset inventory
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -23,8 +43,8 @@ jobs:
       # Informational only, run at release time - no fail-on-drift gate.
       # This lists which committed jars / vendored front-end files sit
       # outside the Maven dependency tree; it does not identify licences.
-      # See fc-tools/scan-vendored-assets.sh --check for the (unused in CI)
-      # baseline-diff mode kept for local ad-hoc use.
+      # See the check-drift job above (fc-tools/scan-vendored-assets.sh
+      # --check) for the baseline-diff / CSV-coverage gate run on every PR.
       - name: Generate vendored-asset file list
         run: ./fc-tools/scan-vendored-assets.sh > vendored-assets-inventory.txt
 
