@@ -25,7 +25,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  *
  * <p>{@code contentHash} is a SHA-256 hex digest over the canonical JSON of
  * {@code assetIds}, {@code validatorIds}, {@code validatorType}, {@code conforms},
- * and {@code validatedAt}. Allows tamper detection without a public endpoint.</p>
+ * {@code validatedAt}, and {@code failureCategory} (when non-null). Allows tamper
+ * detection without a public endpoint.</p>
  *
  * <p>{@code graphSyncStatus} tracks whether this result has been written to the
  * graph DB as {@code fcmeta:} triples. Best-effort write: {@code FAILED} rows require
@@ -85,8 +86,18 @@ public class ValidationResult {
   private String report;
 
   /**
+   * Failure classification for a trust-framework check that could not produce a verdict
+   * (e.g. {@code SERVICE_UNREACHABLE}, {@code SERVICE_TIMEOUT}, {@code UNVERIFIABLE_ATTESTATION}).
+   * Null for schema validations and for trust-framework checks that did produce a verdict.
+   * Stored as plain text, not a JPA enum — the value's vocabulary is owned by the
+   * trust-framework compliance service, not by this generic store.
+   */
+  @Column(name = "failure_category", length = 64)
+  private String failureCategory;
+
+  /**
    * SHA-256 hex digest over canonical JSON of: assetIds, validatorIds, validatorType,
-   * conforms, validatedAt. Allows offline tamper detection.
+   * conforms, validatedAt, and failureCategory (when non-null). Allows offline tamper detection.
    */
   @Column(name = "content_hash", length = 64, nullable = false)
   private String contentHash;

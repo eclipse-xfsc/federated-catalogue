@@ -21,6 +21,21 @@ public interface ValidationResultStore {
   Long store(ValidationResultRecord result);
 
   /**
+   * Persists the validation result to the relational store only, without attempting a graph
+   * projection, and returns its storage ID.
+   *
+   * <p>The graph carries claims about assets; some records this store accepts are not claims
+   * about an asset at all (e.g. a note that a check could not be attempted), and writing those
+   * to the graph would misrepresent them as verdicts on the federated query surface. Use this
+   * method for such records; use {@link #store} for anything that is itself an asset-level
+   * result.</p>
+   *
+   * @param result the validation result to store
+   * @return the ID of the stored result; never null
+   */
+  Long storeWithoutGraphSync(ValidationResultRecord result);
+
+  /**
    * Returns a paginated list of validation results for the given asset ID.
    */
   Page<ValidationResult> getByAssetId(String assetId, Pageable pageable);

@@ -2,8 +2,11 @@ package eu.xfsc.fc.server.controller;
 
 import static eu.xfsc.fc.server.util.CommonConstants.ASSET_READ;
 import static eu.xfsc.fc.server.util.CommonConstants.ASSET_UPDATE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,7 +20,9 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -25,8 +30,12 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.xfsc.fc.core.dao.validation.GraphSyncStatus;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.pojo.TrustFrameworkConfig;
 import eu.xfsc.fc.core.service.trustframework.FrameworkBundleConfig;
@@ -35,7 +44,11 @@ import eu.xfsc.fc.core.service.trustframework.TrustFrameworkRegistry;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkService;
 import eu.xfsc.fc.core.service.trustframework.ValidationType;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOrchestrator;
+import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceResultStore;
+import eu.xfsc.fc.core.service.trustframework.compliance.FailureCategory;
 import eu.xfsc.fc.core.service.trustframework.compliance.IssuedAttestation;
+import eu.xfsc.fc.core.service.trustframework.compliance.UnverifiableAttestation;
+import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 
@@ -51,6 +64,9 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 public class ComplianceCheckControllerTest {
 
   private static final String ASSET_ID = "urn:example:test-asset-001";
+  private static final String ASSET_ID_UNREACHABLE = "urn:example:test-asset-unreachable";
+  private static final String ASSET_ID_TIMEOUT = "urn:example:test-asset-timeout";
+  private static final String ASSET_ID_NONCOMPLIANT = "urn:example:test-asset-noncompliant";
   private static final String MOCK_PROFILE_ID = "mock-2026";
   private static final String UNKNOWN_PROFILE_ID = "no-such-profile";
   private static final String CANNED_VC_JWT =
@@ -72,6 +88,15 @@ public class ComplianceCheckControllerTest {
 
   @MockitoBean
   private TrustFrameworkRegistry registry;
+
+  @Autowired
+  private ComplianceResultStore resultStore;
+
+  // Spies on the real graph writer bean (backed by the real Fuseki store configured for this
+  // class) so tests can assert whether a graph write was actually attempted, without needing to
+  // hand-construct SPARQL queries against the graph store.
+  @MockitoSpyBean
+  private ValidationResultGraphWriter graphWriter;
 
   @Test
   @WithMockUser(roles = {ASSET_UPDATE})
@@ -191,11 +216,84 @@ public class ComplianceCheckControllerTest {
         {"frameworkProfileId": "%s", "credential": "%s"}
         """.formatted(MOCK_PROFILE_ID, TEST_VP_JWT);
 
-    mockMvc.perform(MockMvcRequestBuilders.post("/assets/{id}/compliance-check", ASSET_ID)
+    mockMvc.perform(MockMvcRequestBuilders.post("/assets/{id}/compliance-check", ASSET_ID_TIMEOUT)
             .contentType(MediaType.APPLICATION_JSON)
             .content(body)
             .with(csrf()))
         .andExpect(status().isGatewayTimeout());
+
+    var persisted = resultStore.findByAssetId(ASSET_ID_TIMEOUT, Pageable.unpaged());
+    assertThat(persisted.getContent()).hasSize(1);
+    var stored = persisted.getContent().getFirst();
+    assertThat(stored.getAssetIds()).containsExactly(ASSET_ID_TIMEOUT);
+    assertThat(stored.getValidatorIds()).contains(MOCK_PROFILE_ID);
+    assertThat(stored.isConforms()).isFalse();
+    assertThat(stored.getValidatedAt()).isNotNull();
+    assertThat(failureCategoryOf(stored.getReport())).isEqualTo(FailureCategory.SERVICE_TIMEOUT.name());
+    assertThat(stored.getFailureCategory()).isEqualTo(FailureCategory.SERVICE_TIMEOUT.name());
+    assertThat(stored.getGraphSyncStatus()).isEqualTo(GraphSyncStatus.EXCLUDED);
+    // A failed attempt must never reach the graph: it is not a claim about the asset.
+    verify(graphWriter, never()).write(any(), any());
+  }
+
+  @Test
+  @WithMockUser(roles = {ASSET_UPDATE})
+  void runComplianceCheck_trustServiceUnreachable_returns503AndPersistsFailedAttemptRecord() throws Exception {
+    when(orchestrator.check(any(), eq(MOCK_PROFILE_ID), any()))
+        .thenThrow(new ServiceUnavailableException("Compliance service unreachable"));
+
+    String body = """
+        {"frameworkProfileId": "%s", "credential": "%s"}
+        """.formatted(MOCK_PROFILE_ID, TEST_VP_JWT);
+
+    mockMvc.perform(MockMvcRequestBuilders.post("/assets/{id}/compliance-check", ASSET_ID_UNREACHABLE)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .with(csrf()))
+        .andExpect(status().isServiceUnavailable());
+
+    var persisted = resultStore.findByAssetId(ASSET_ID_UNREACHABLE, Pageable.unpaged());
+    assertThat(persisted.getContent()).hasSize(1);
+    var stored = persisted.getContent().getFirst();
+    assertThat(stored.getAssetIds()).containsExactly(ASSET_ID_UNREACHABLE);
+    assertThat(stored.getValidatorIds()).contains(MOCK_PROFILE_ID);
+    assertThat(stored.isConforms()).isFalse();
+    assertThat(stored.getValidatedAt()).isNotNull();
+    assertThat(failureCategoryOf(stored.getReport())).isEqualTo(FailureCategory.SERVICE_UNREACHABLE.name());
+    assertThat(stored.getFailureCategory()).isEqualTo(FailureCategory.SERVICE_UNREACHABLE.name());
+    assertThat(stored.getGraphSyncStatus()).isEqualTo(GraphSyncStatus.EXCLUDED);
+    // A failed attempt must never reach the graph: it is not a claim about the asset.
+    verify(graphWriter, never()).write(any(), any());
+  }
+
+  @Test
+  @WithMockUser(roles = {ASSET_UPDATE})
+  void runComplianceCheck_nonCompliantOutcome_returns200AndWritesGraphTriples() throws Exception {
+    // Contrast case for the two tests above: a genuine non-compliant verdict IS a claim about
+    // the asset, so unlike a failed attempt, it must still reach the graph.
+    when(orchestrator.check(any(), eq(MOCK_PROFILE_ID), any()))
+        .thenReturn(new UnverifiableAttestation(FailureCategory.UNVERIFIABLE_ATTESTATION, "raw", "bad sig"));
+
+    String body = """
+        {"frameworkProfileId": "%s", "credential": "%s"}
+        """.formatted(MOCK_PROFILE_ID, TEST_VP_JWT);
+
+    mockMvc.perform(MockMvcRequestBuilders.post("/assets/{id}/compliance-check", ASSET_ID_NONCOMPLIANT)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(body)
+            .with(csrf()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.conforms").value(false))
+        .andExpect(jsonPath("$.failureCategory").value("UNVERIFIABLE_ATTESTATION"));
+
+    var persisted = resultStore.findByAssetId(ASSET_ID_NONCOMPLIANT, Pageable.unpaged());
+    assertThat(persisted.getContent()).hasSize(1);
+    assertThat(persisted.getContent().getFirst().getGraphSyncStatus()).isEqualTo(GraphSyncStatus.SYNCED);
+    verify(graphWriter).write(any(), any());
+  }
+
+  private static String failureCategoryOf(String report) throws JsonProcessingException {
+    return new ObjectMapper().readTree(report).get("failureCategory").asText();
   }
 
   // Security: unauthenticated POST → 401
