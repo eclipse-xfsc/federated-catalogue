@@ -66,11 +66,9 @@ public class GraphStoreStartupChecker implements ApplicationListener<Application
       return;
     }
 
-    AssetFilter filter = new AssetFilter();
+    AssetFilter filter = AssetFilter.forCountOnly();
     filter.setStatuses(List.of(AssetStatus.ACTIVE));
     filter.setContentKinds(List.of(ContentKind.RDF));
-    filter.setLimit(0);
-    filter.setOffset(0);
     long rdfAssetCount = assetStore.getByFilter(filter, false, false).getTotalCount();
 
     if (claimCount == 0 && rdfAssetCount > 0) {

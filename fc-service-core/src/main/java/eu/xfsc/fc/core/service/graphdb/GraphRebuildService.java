@@ -137,13 +137,10 @@ public class GraphRebuildService {
    * @return the number of matching active assets
    */
   private long countActive(List<ContentKind> contentKinds, Boolean hasContent) {
-    AssetFilter filter = new AssetFilter();
+    AssetFilter filter = AssetFilter.forCountOnly();
     filter.setStatuses(List.of(AssetStatus.ACTIVE));
     filter.setContentKinds(contentKinds);
     filter.setHasContent(hasContent);
-    // setLimit(0) means "no limit" and would run the data query unbounded alongside the COUNT.
-    filter.setLimit(1);
-    filter.setOffset(0);
     return assetStore.getByFilter(filter, false, false).getTotalCount();
   }
 

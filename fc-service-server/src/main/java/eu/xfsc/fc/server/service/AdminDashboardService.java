@@ -59,16 +59,12 @@ public class AdminDashboardService implements AdminApiDelegate {
   public ResponseEntity<AdminStats> getAdminStats() {
     AdminStats stats = new AdminStats();
 
-    AssetFilter allFilter = new AssetFilter();
-    allFilter.setLimit(0);
-    allFilter.setOffset(0);
+    AssetFilter allFilter = AssetFilter.forCountOnly();
     stats.setTotalAssets(safeGet(
         () -> assetStore.getByFilter(allFilter, false, false).getTotalCount(), -1L, "total asset count"));
 
-    AssetFilter activeFilter = new AssetFilter();
+    AssetFilter activeFilter = AssetFilter.forCountOnly();
     activeFilter.setStatuses(List.of(AssetStatus.ACTIVE));
-    activeFilter.setLimit(0);
-    activeFilter.setOffset(0);
     stats.setActiveAssets(safeGet(
         () -> assetStore.getByFilter(activeFilter, false, false).getTotalCount(), -1L, "active asset count"));
 

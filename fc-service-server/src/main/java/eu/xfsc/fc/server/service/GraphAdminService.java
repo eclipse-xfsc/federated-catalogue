@@ -126,10 +126,8 @@ public class GraphAdminService implements AdminGraphApiDelegate {
 
     dto.setHealthy(graphStore.isHealthy());
 
-    AssetFilter filter = new AssetFilter();
+    AssetFilter filter = AssetFilter.forCountOnly();
     filter.setStatuses(List.of(AssetStatus.ACTIVE));
-    filter.setLimit(0);
-    filter.setOffset(0);
     long activeAssetCount = assetStore.getByFilter(filter, false, false).getTotalCount();
     long claimCount = graphStore.getClaimCount();
     long assetCountInGraph = graphStore.getRDFAssetCountInGraph();

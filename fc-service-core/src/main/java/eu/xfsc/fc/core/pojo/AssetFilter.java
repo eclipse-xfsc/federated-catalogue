@@ -101,6 +101,22 @@ public class AssetFilter {
   private int limit;
 
   /**
+   * Creates a filter for a query whose caller wants only the total count.
+   *
+   * <p>A limit of 0 means "no limit", so a freshly constructed filter runs the data query
+   * unbounded alongside the COUNT and materialises every matching row for a caller that
+   * discards them. The smallest page yields the same total while reading one row.</p>
+   *
+   * @return a filter with the smallest page size, ready for further clauses
+   */
+  public static AssetFilter forCountOnly() {
+    AssetFilter filter = new AssetFilter();
+    filter.setLimit(1);
+    filter.setOffset(0);
+    return filter;
+  }
+
+  /**
    * Sets the upload time range that the filter will check for an asset
    * record to match. The upload time specifies when the asset was
    * uploaded to the catalogue. Start time and end time must be either both
