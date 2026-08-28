@@ -129,7 +129,7 @@ class GraphRebuildEnrichedAssetTest {
     final Asset created = uploadNonRdfAsset("rebuild original content " + UUID.randomUUID());
     final String titleValue = "Rebuild-restored enrichment title";
     final AssetEnrichmentResponse enrichment =
-        enrichAsset(created.getId(), enrichmentPayload(created.getId(), titleValue));
+        enrichAsset(enrichmentPayload(created.getId(), titleValue));
     assertTrue(enrichment.getTriplesAdded() > 0, "precondition: enrichment must add triples");
 
     // The asset kept its upload content type: enrichment writes content, never content_type.
@@ -196,7 +196,7 @@ class GraphRebuildEnrichedAssetTest {
     return asset;
   }
 
-  private AssetEnrichmentResponse enrichAsset(String assetId, String rdfPayload) throws Exception {
+  private AssetEnrichmentResponse enrichAsset(String rdfPayload) throws Exception {
     final MockMultipartFile file = new MockMultipartFile("file", "metadata.jsonld",
         ENRICHMENT_CONTENT_TYPE, rdfPayload.getBytes(StandardCharsets.UTF_8));
 
@@ -207,7 +207,7 @@ class GraphRebuildEnrichedAssetTest {
         .andExpect(status().isOk())
         .andReturn();
 
-    touchedSubjects.add(assetId);
+    // The subject is already registered by uploadNonRdfAsset; enrichment does not create one.
     return objectMapper.readValue(result.getResponse().getContentAsString(),
         AssetEnrichmentResponse.class);
   }

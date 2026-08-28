@@ -1,9 +1,9 @@
 package eu.xfsc.fc.core.service.graphdb;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
-import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.util.GraphRebuilder;
@@ -112,12 +112,17 @@ public class GraphRebuildService {
   /**
    * Counts the rebuildable set and its two parts in a single repeatable-read snapshot.
    *
-   * <p>The parts are a partition of the whole: an asset holding content was either uploaded as a
-   * credential or enriched afterwards. Callers therefore get numbers that add up. Deriving one part
-   * by subtracting the other from the total, across separately timed counts, does not: an upload
-   * landing between two reads makes the remainder wrong, and in the wrong order makes it negative.
-   * The graph-backend claim count is deliberately left out — it is not a database read and cannot
-   * join this snapshot.</p>
+   * <p>The parts sum to the rebuildable total under the invariant the upload path maintains, that
+   * an asset of content kind RDF always holds content. {@code rdfAssetCount} counts what the
+   * catalogue holds rather than what a rebuild processes, so it does not itself filter on content;
+   * a legacy row of kind RDF with no content would count towards it while being excluded from the
+   * total. Nothing enforces that, so treat the parts as a breakdown rather than an arithmetic
+   * identity.</p>
+   *
+   * <p>One snapshot rather than separately timed reads: deriving a part by subtracting another from
+   * the total goes wrong when an upload lands between two counts, and in the wrong order makes the
+   * remainder negative. The graph-backend claim count is deliberately left out — it is not a
+   * database read and cannot join this snapshot.</p>
    *
    * @return the rebuildable total together with its credential and enriched parts
    */

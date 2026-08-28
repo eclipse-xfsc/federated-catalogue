@@ -176,7 +176,7 @@ public class GraphAdminService implements AdminGraphApiDelegate {
     }
 
     // The asset counts come from the catalogue DB, not the graph backend — independent
-    // of graph-store health so we always try. One call, so the parts add up to the total.
+    // of graph-store health so we always try. One call, so all three describe the same instant.
     RebuildAssetCounts counts = new RebuildAssetCounts(0L, 0L, 0L);
     try {
       counts = graphRebuildService.countRebuildAssets();
@@ -277,8 +277,6 @@ public class GraphAdminService implements AdminGraphApiDelegate {
     }
     return rebuildableAssetCount > 0L;
   }
-
-
 
   private String buildVersionString(GraphBackendType backendType) {
     return backendType == GraphBackendType.NONE
