@@ -182,7 +182,7 @@ public class GraphAdminService implements AdminGraphApiDelegate {
     long rebuildableAssetCount = 0L;
     try {
       rdfAssetCount = countActiveRdfAssets();
-      rebuildableAssetCount = countRebuildableAssets();
+      rebuildableAssetCount = graphRebuildService.countRebuildableAssets();
     } catch (RuntimeException ex) {
       log.warn("Failed to count active assets", ex);
     }
@@ -291,24 +291,6 @@ public class GraphAdminService implements AdminGraphApiDelegate {
     return assetStore.getByFilter(filter, false, false).getTotalCount();
   }
 
-  /**
-   * Counts the assets a rebuild would process: active assets that currently carry content.
-   *
-   * <p>Wider than {@link #countActiveRdfAssets()}, which counts by content kind. Content kind
-   * records how an asset was uploaded and is not changed by enrichment, so an asset uploaded as
-   * non-RDF and later enriched holds RDF content the rebuild extracts claims from while still
-   * being of kind NON_RDF.</p>
-   *
-   * @return the number of active assets holding content
-   */
-  private long countRebuildableAssets() {
-    AssetFilter filter = new AssetFilter();
-    filter.setStatuses(List.of(AssetStatus.ACTIVE));
-    filter.setHasContent(true);
-    filter.setLimit(1);
-    filter.setOffset(0);
-    return assetStore.getByFilter(filter, false, false).getTotalCount();
-  }
 
   private String buildVersionString(GraphBackendType backendType) {
     return backendType == GraphBackendType.NONE

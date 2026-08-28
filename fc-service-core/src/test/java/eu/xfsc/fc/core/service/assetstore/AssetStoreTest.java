@@ -2,7 +2,6 @@ package eu.xfsc.fc.core.service.assetstore;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.config.DatabaseConfig;
-import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.config.DidResolverConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderConfig;
 import eu.xfsc.fc.core.config.DocumentLoaderProperties;
@@ -11,6 +10,7 @@ import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetFilter;

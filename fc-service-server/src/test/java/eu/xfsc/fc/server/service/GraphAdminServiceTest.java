@@ -1,6 +1,8 @@
 package eu.xfsc.fc.server.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphStatus;
 import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
@@ -187,9 +190,54 @@ class GraphAdminServiceTest {
   }
 
 
+  @Test
+  void getGraphDatabaseStatus_onlyEnrichedNonRdfAssets_reportsRebuildNeeded() {
+    // A catalogue holding no credentials but one enriched non-RDF asset: nothing matches a
+    // content-kind count, so rebuildNeeded used to be false while content awaiting indexing existed.
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(0L);
+    stubRdfAssetCount(0L);
+    when(graphRebuildService.countRebuildableAssets()).thenReturn(1L);
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertEquals(0L, body.getRdfAssetCount(), "no asset was uploaded as a credential");
+    assertEquals(1L, body.getRebuildableAssetCount(), "the enriched asset holds indexable content");
+    assertTrue(body.getRebuildNeeded(),
+        "an empty graph plus indexable content must prompt a rebuild");
+  }
+
+  @Test
+  void getGraphDatabaseStatus_noIndexableContent_reportsNoRebuildNeeded() {
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(0L);
+    stubRdfAssetCount(0L);
+    when(graphRebuildService.countRebuildableAssets()).thenReturn(0L);
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertFalse(body.getRebuildNeeded(), "an empty graph with nothing to index needs no rebuild");
+  }
+
   private void stubEnabledBackend(GraphBackendType type, boolean healthy) {
     when(graphStore.getBackendType()).thenReturn(type);
     when(graphStore.isHealthy()).thenReturn(healthy);
+  }
+
+  /**
+   * Stubs the content-kind count used for {@code rdfAssetCount}, leaving the rebuildable count to
+   * {@link GraphRebuildService#countRebuildableAssets()} so the two predicates stay distinguishable.
+   *
+   * @param count the number of active assets of content kind RDF
+   */
+  @SuppressWarnings("unchecked")
+  private void stubRdfAssetCount(long count) {
+    PaginatedResults<?> result = org.mockito.Mockito.mock(PaginatedResults.class);
+    when(result.getTotalCount()).thenReturn(count);
+    when(assetStore.getByFilter(any(AssetFilter.class), eq(false), eq(false)))
+        .thenReturn((PaginatedResults) result);
   }
 
   @SuppressWarnings("unchecked")

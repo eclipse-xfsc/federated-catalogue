@@ -52,6 +52,7 @@ public class GraphRebuildProgressOvershootTest {
   private static final String RDF_HASH_1 = "hash-rdf-1";
   private static final String RDF_HASH_2 = "hash-rdf-2";
   private static final String ENRICHED_NON_RDF_HASH = "hash-enriched-non-rdf";
+  private static final String BARE_NON_RDF_HASH = "hash-bare-non-rdf";
   private static final int SINGLE_CHUNK = 1;
   private static final int FIRST_CHUNK_ID = 0;
   private static final int SINGLE_THREAD = 1;
@@ -59,6 +60,8 @@ public class GraphRebuildProgressOvershootTest {
   private static final long COMPLETION_TIMEOUT_MS = 10_000L;
   private static final long POLL_INTERVAL_MS = 20L;
   private static final int EXPECTED_PROCESSED = 3;
+  private static final long OVERSHOOT_TOTAL = 9L;
+  private static final int OVERSHOOT_PROCESSED = 10;
 
   /**
    * One active asset as the fake store sees it: its content kind, and whether it currently holds
@@ -77,9 +80,13 @@ public class GraphRebuildProgressOvershootTest {
     assets.put(RDF_HASH_1, new StoredAsset(RDF_HASH_1, ContentKind.RDF, true));
     assets.put(RDF_HASH_2, new StoredAsset(RDF_HASH_2, ContentKind.RDF, true));
     // Uploaded as non-RDF, then enriched: saveEnrichedContent populates content and leaves
-    // contentKind at NON_RDF.
+    // contentKind at NON_RDF. Counted by a content predicate, missed by a content-kind one.
     assets.put(ENRICHED_NON_RDF_HASH,
         new StoredAsset(ENRICHED_NON_RDF_HASH, ContentKind.NON_RDF, true));
+    // Uploaded as non-RDF and never enriched: walked, but skipped by addAssetToGraph and so never
+    // ticked. Present so that dropping the content predicate entirely counts 4 and fails too —
+    // without it, no-predicate and correct-predicate both land on 3.
+    assets.put(BARE_NON_RDF_HASH, new StoredAsset(BARE_NON_RDF_HASH, ContentKind.NON_RDF, false));
 
     GraphRebuildService service = buildService(assets);
 
@@ -88,9 +95,9 @@ public class GraphRebuildProgressOvershootTest {
     GraphRebuildProgress status = awaitCompletion(service);
 
     assertEquals(EXPECTED_PROCESSED, status.getProcessedCount(),
-        "the walk filters on status only, so every active asset with content is processed");
-    assertTrue(status.getProcessedCount() <= status.getTotal(),
-        "every asset that ticks the counter must also be counted in total — total="
+        "the walk filters on status only, so every active asset holding content is processed");
+    assertEquals(status.getTotal(), status.getProcessedCount(),
+        "the counting predicate must select exactly the assets that tick — total="
             + status.getTotal() + ", processed=" + status.getProcessedCount());
     assertTrue(status.getPercentComplete() <= 100,
         "reported progress must never exceed 100% — actual: " + status.getPercentComplete() + "%");
@@ -98,9 +105,9 @@ public class GraphRebuildProgressOvershootTest {
 
   @Test
   public void getPercentComplete_processedExceedsTotal_isCappedAtHundred() {
-    GraphRebuildProgress progress = new GraphRebuildProgress(9);
+    GraphRebuildProgress progress = new GraphRebuildProgress(OVERSHOOT_TOTAL);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < OVERSHOOT_PROCESSED; i++) {
       progress.incrementProcessed();
     }
 
@@ -119,7 +126,7 @@ public class GraphRebuildProgressOvershootTest {
   private GraphRebuildService buildService(Map<String, StoredAsset> assets) {
     AssetStore assetStore = mock(AssetStore.class);
     GraphStore graphStore = mock(GraphStore.class);
-    ClaimExtractionServiceStubs stubs = new ClaimExtractionServiceStubs();
+    GraphRebuilderStubs stubs = new GraphRebuilderStubs();
 
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.NEO4J);
 
@@ -154,6 +161,9 @@ public class GraphRebuildProgressOvershootTest {
    */
   private static boolean matchesFilter(AssetFilter filter, StoredAsset asset) {
     if (filter.getContentKinds() != null && !filter.getContentKinds().contains(asset.contentKind())) {
+      return false;
+    }
+    if (filter.getHasContent() != null && filter.getHasContent() != asset.hasContent()) {
       return false;
     }
     return filter.getStatuses() == null || filter.getStatuses().contains(AssetStatus.ACTIVE);
@@ -193,7 +203,7 @@ public class GraphRebuildProgressOvershootTest {
   }
 
   /** Collaborators the rebuilder needs but whose behaviour this test does not vary. */
-  private static final class ClaimExtractionServiceStubs {
+  private static final class GraphRebuilderStubs {
     private final ContentAccessor content = mock(ContentAccessor.class);
     private final ClaimExtractionService claimExtractionService = mock(ClaimExtractionService.class);
     private final ProtectedNamespaceFilter protectedNamespaceFilter =
@@ -205,7 +215,7 @@ public class GraphRebuildProgressOvershootTest {
     private final EnvelopedCredentialResolver envelopedCredentialResolver =
         mock(EnvelopedCredentialResolver.class);
 
-    private ClaimExtractionServiceStubs() {
+    private GraphRebuilderStubs() {
       List<RdfClaim> claims = List.of(new RdfClaim("<s>", "<p>", "<o>"));
       when(claimExtractionService.extractAllTriples(content)).thenReturn(claims);
       when(protectedNamespaceFilter.filterClaims(eq(claims), anyString()))

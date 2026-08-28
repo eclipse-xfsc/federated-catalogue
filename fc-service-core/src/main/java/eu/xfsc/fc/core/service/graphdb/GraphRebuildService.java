@@ -1,7 +1,6 @@
 package eu.xfsc.fc.core.service.graphdb;
 
 import eu.xfsc.fc.api.generated.model.AssetStatus;
-import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.pojo.AssetFilter;
@@ -64,19 +63,7 @@ public class GraphRebuildService {
     try {
       executor.submit(() -> {
         try {
-          AssetFilter filter = new AssetFilter();
-          filter.setStatuses(List.of(AssetStatus.ACTIVE));
-          // `total` must count exactly the assets that will tick the progress callback, and
-          // addAssetToGraph ticks for every walked asset that has content to extract claims from.
-          // Content kind is the wrong predicate for that: it records how an asset was uploaded and
-          // is left unchanged by enrichment, so an asset uploaded as NON_RDF and later enriched
-          // holds content and is processed while a content-kind filter excludes it — which is how
-          // processed came to exceed total. The asset walk itself filters on status only.
-          filter.setHasContent(true);
-          filter.setLimit(0);
-          filter.setOffset(0);
-          long total = assetStore.getByFilter(filter, false, false).getTotalCount();
-          status.setTotal(total);
+          status.setTotal(countRebuildableAssets());
           graphRebuilder.rebuildGraphDb(chunkCount, chunkId, threads, batchSize,
               (count, error) -> {
                 status.incrementProcessed();
@@ -98,6 +85,31 @@ public class GraphRebuildService {
       throw e;
     }
     return true;
+  }
+
+  /**
+   * Counts the assets a rebuild would process.
+   *
+   * <p>This is the {@code total} a rebuild reports, and it must select exactly the assets that tick
+   * the progress callback: {@code addAssetToGraph} ticks for every walked asset that holds content
+   * to extract claims from. Content kind is the wrong predicate for that — it records how an asset
+   * was uploaded and is left unchanged by enrichment, so an asset uploaded as NON_RDF and later
+   * enriched holds content and is processed while a content-kind filter excludes it, which is how
+   * processed came to exceed total. The asset walk itself filters on status only.</p>
+   *
+   * <p>Callers needing this count outside a rebuild use this method rather than rebuilding the
+   * filter, so the predicate keeps a single definition.</p>
+   *
+   * @return the number of active assets holding content
+   */
+  public long countRebuildableAssets() {
+    AssetFilter filter = new AssetFilter();
+    filter.setStatuses(List.of(AssetStatus.ACTIVE));
+    filter.setHasContent(true);
+    // setLimit(0) means "no limit" and would run the data query unbounded alongside the COUNT.
+    filter.setLimit(1);
+    filter.setOffset(0);
+    return assetStore.getByFilter(filter, false, false).getTotalCount();
   }
 
   /**
