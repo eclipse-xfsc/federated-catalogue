@@ -24,6 +24,7 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildProgress;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
+import eu.xfsc.fc.core.service.graphdb.GraphRebuildService.RebuildAssetCounts;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 
@@ -197,8 +198,7 @@ class GraphAdminServiceTest {
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
     when(graphStore.isHealthy()).thenReturn(true);
     when(graphStore.getClaimCount()).thenReturn(0L);
-    stubRdfAssetCount(0L);
-    when(graphRebuildService.countRebuildableAssets()).thenReturn(1L);
+    stubRebuildAssetCounts(0L, 1L, 1L);
 
     GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
 
@@ -213,12 +213,44 @@ class GraphAdminServiceTest {
     when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
     when(graphStore.isHealthy()).thenReturn(true);
     when(graphStore.getClaimCount()).thenReturn(0L);
-    stubRdfAssetCount(0L);
-    when(graphRebuildService.countRebuildableAssets()).thenReturn(0L);
+    stubRebuildAssetCounts(0L, 0L, 0L);
 
     GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
 
     assertFalse(body.getRebuildNeeded(), "an empty graph with nothing to index needs no rebuild");
+  }
+
+  @Test
+  void getGraphDatabaseStatus_mixedCatalogue_reportsBothPartsOfTheRebuildableTotal() {
+    // The breakdown is served, not derived by the caller: a client subtracting rdfAssetCount from
+    // rebuildableAssetCount would have to trust that the two were counted at the same instant.
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(12L);
+    stubRebuildAssetCounts(7L, 10L, 3L);
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertEquals(7L, body.getRdfAssetCount(), "assets uploaded as credentials");
+    assertEquals(3L, body.getEnrichedAssetCount(), "assets enriched after a non-RDF upload");
+    assertEquals(10L, body.getRebuildableAssetCount(), "the total a rebuild would process");
+  }
+
+  @Test
+  void getGraphDatabaseStatus_countsUnavailable_reportsZeroesRatherThanFailing() {
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(0L);
+    when(graphRebuildService.countRebuildAssets())
+        .thenThrow(new IllegalStateException("database unavailable"));
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertEquals(0L, body.getRdfAssetCount(), "an unreadable count must not fail the status call");
+    assertEquals(0L, body.getRebuildableAssetCount(), "an unreadable count reports zero");
+    assertEquals(0L, body.getEnrichedAssetCount(), "an unreadable count reports zero");
+    assertFalse(body.getRebuildNeeded(),
+        "a rebuild must not be advertised on the strength of counts that could not be read");
   }
 
   private void stubEnabledBackend(GraphBackendType type, boolean healthy) {
@@ -227,17 +259,15 @@ class GraphAdminServiceTest {
   }
 
   /**
-   * Stubs the content-kind count used for {@code rdfAssetCount}, leaving the rebuildable count to
-   * {@link GraphRebuildService#countRebuildableAssets()} so the two predicates stay distinguishable.
+   * Stubs the single snapshot of asset counts the status endpoint reads.
    *
-   * @param count the number of active assets of content kind RDF
+   * @param rdf active assets uploaded as credentials
+   * @param rebuildable active assets holding content
+   * @param enriched active assets enriched after a non-RDF upload
    */
-  @SuppressWarnings("unchecked")
-  private void stubRdfAssetCount(long count) {
-    PaginatedResults<?> result = org.mockito.Mockito.mock(PaginatedResults.class);
-    when(result.getTotalCount()).thenReturn(count);
-    when(assetStore.getByFilter(any(AssetFilter.class), eq(false), eq(false)))
-        .thenReturn((PaginatedResults) result);
+  private void stubRebuildAssetCounts(long rdf, long rebuildable, long enriched) {
+    when(graphRebuildService.countRebuildAssets())
+        .thenReturn(new RebuildAssetCounts(rdf, rebuildable, enriched));
   }
 
   @SuppressWarnings("unchecked")

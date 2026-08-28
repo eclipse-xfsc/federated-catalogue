@@ -167,19 +167,21 @@ $(document).ready(function() {
   }
 
   // The banner must quote the same number the rebuild progress reports as its total, so
-  // rebuildableAssetCount is the source. rdfAssetCount is narrower — it counts only assets
-  // uploaded as credentials — so the difference is enriched non-RDF assets, shown as a
-  // breakdown to explain where the total comes from.
+  // rebuildableAssetCount is the source. Its two parts — assets uploaded as credentials and
+  // assets enriched afterwards — come from the same endpoint, read in one snapshot, so the
+  // breakdown is displayed as given rather than derived here.
   function buildRebuildSummary(data) {
     var rebuildable = typeof data.rebuildableAssetCount === 'number'
       ? data.rebuildableAssetCount
       : (typeof data.rdfAssetCount === 'number' ? data.rdfAssetCount : 0);
     var credentials = typeof data.rdfAssetCount === 'number' ? data.rdfAssetCount : 0;
-    var enriched = rebuildable - credentials;
+    var enriched = typeof data.enrichedAssetCount === 'number' ? data.enrichedAssetCount : 0;
 
     var summary = rebuildable.toLocaleString()
       + (rebuildable === 1 ? ' asset is ' : ' assets are ')
       + 'ready to be re-indexed.';
+    // Both parts are quoted only when both are present; with one part the total already
+    // says everything a breakdown would.
     if (enriched > 0 && credentials > 0) {
       summary += ' ' + credentials.toLocaleString()
         + (credentials === 1 ? ' credential and ' : ' credentials and ')

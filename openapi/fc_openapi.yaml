@@ -318,6 +318,15 @@ components:
             content without changing the stored content kind. Surfaced alongside
             `rebuildNeeded` so the UI can show how many assets the rebuild will
             process, matching the `total` reported by the rebuild progress endpoint.
+        enrichedAssetCount:
+          type: integer
+          format: int64
+          description: |
+            Number of active assets that were uploaded as non-RDF and have since been
+            enriched, so they carry content a rebuild will process. Together with
+            `rdfAssetCount` this partitions `rebuildableAssetCount`; all three are read
+            from one database snapshot, so a client can display the breakdown without
+            deriving it by subtraction across separately timed counts.
     GraphDatabaseSwitchResult:
       type: object
       properties:

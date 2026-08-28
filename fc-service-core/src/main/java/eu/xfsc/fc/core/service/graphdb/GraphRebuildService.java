@@ -3,6 +3,7 @@ package eu.xfsc.fc.core.service.graphdb;
 import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.core.exception.GraphStoreDisabledException;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.util.GraphRebuilder;
@@ -10,6 +11,8 @@ import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -97,15 +100,47 @@ public class GraphRebuildService {
    * enriched holds content and is processed while a content-kind filter excludes it, which is how
    * processed came to exceed total. The asset walk itself filters on status only.</p>
    *
-   * <p>Callers needing this count outside a rebuild use this method rather than rebuilding the
-   * filter, so the predicate keeps a single definition.</p>
+   * <p>The predicate keeps a single definition here; {@link #countRebuildAssets()} reuses it when a
+   * caller needs the same total broken down.</p>
    *
    * @return the number of active assets holding content
    */
   public long countRebuildableAssets() {
+    return countActive(null, true);
+  }
+
+  /**
+   * Counts the rebuildable set and its two parts in a single repeatable-read snapshot.
+   *
+   * <p>The parts are a partition of the whole: an asset holding content was either uploaded as a
+   * credential or enriched afterwards. Callers therefore get numbers that add up. Deriving one part
+   * by subtracting the other from the total, across separately timed counts, does not: an upload
+   * landing between two reads makes the remainder wrong, and in the wrong order makes it negative.
+   * The graph-backend claim count is deliberately left out — it is not a database read and cannot
+   * join this snapshot.</p>
+   *
+   * @return the rebuildable total together with its credential and enriched parts
+   */
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+  public RebuildAssetCounts countRebuildAssets() {
+    return new RebuildAssetCounts(
+        countActive(List.of(ContentKind.RDF), null),
+        countActive(null, true),
+        countActive(List.of(ContentKind.NON_RDF), true));
+  }
+
+  /**
+   * Counts active assets matching the given content predicate.
+   *
+   * @param contentKinds the content kinds to include, or {@code null} for any
+   * @param hasContent whether the asset must hold content, or {@code null} for either
+   * @return the number of matching active assets
+   */
+  private long countActive(List<ContentKind> contentKinds, Boolean hasContent) {
     AssetFilter filter = new AssetFilter();
     filter.setStatuses(List.of(AssetStatus.ACTIVE));
-    filter.setHasContent(true);
+    filter.setContentKinds(contentKinds);
+    filter.setHasContent(hasContent);
     // setLimit(0) means "no limit" and would run the data query unbounded alongside the COUNT.
     filter.setLimit(1);
     filter.setOffset(0);
@@ -135,4 +170,14 @@ public class GraphRebuildService {
       Thread.currentThread().interrupt();
     }
   }
+
+  /**
+   * The asset counts describing a rebuild, all read from one snapshot.
+   *
+   * @param rdfAssetCount active assets uploaded as credentials
+   * @param rebuildableAssetCount active assets holding content, which a rebuild processes
+   * @param enrichedAssetCount active assets uploaded as non-RDF that hold content from enrichment
+   */
+  public record RebuildAssetCounts(long rdfAssetCount, long rebuildableAssetCount,
+                                   long enrichedAssetCount) {}
 }
