@@ -648,11 +648,18 @@ components:
         total:
           type: integer
           format: int64
-          description: Total number of assets to process
+          description: |
+            Number of assets the rebuild will process: active assets that carry content
+            to extract claims from, which is `rebuildableAssetCount` on the graph status
+            endpoint. Counted once before the walk begins, so an asset activated while a
+            rebuild is running is processed without being counted here.
         processed:
           type: integer
           format: int64
-          description: Number of assets processed so far
+          description: |
+            Number of assets processed so far. Selected by the same predicate as `total`,
+            so the two converge; it can briefly exceed `total` only for an asset activated
+            mid-rebuild, which is why `percentComplete` is clamped.
         percentComplete:
           type: integer
           description: Completion percentage (0-100)
