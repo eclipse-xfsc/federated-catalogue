@@ -1,6 +1,8 @@
 package eu.xfsc.fc.server.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import eu.xfsc.fc.api.generated.model.GraphDatabaseStatus;
 import eu.xfsc.fc.api.generated.model.GraphStatus;
 import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
@@ -21,6 +24,7 @@ import eu.xfsc.fc.core.pojo.PaginatedResults;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildProgress;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
+import eu.xfsc.fc.core.service.graphdb.GraphRebuildService.RebuildAssetCounts;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 
@@ -187,9 +191,83 @@ class GraphAdminServiceTest {
   }
 
 
+  @Test
+  void getGraphDatabaseStatus_onlyEnrichedNonRdfAssets_reportsRebuildNeeded() {
+    // A catalogue holding no credentials but one enriched non-RDF asset: nothing matches a
+    // content-kind count, so rebuildNeeded used to be false while content awaiting indexing existed.
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(0L);
+    stubRebuildAssetCounts(0L, 1L, 1L);
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertEquals(0L, body.getRdfAssetCount(), "no asset was uploaded as a credential");
+    assertEquals(1L, body.getRebuildableAssetCount(), "the enriched asset holds indexable content");
+    assertTrue(body.getRebuildNeeded(),
+        "an empty graph plus indexable content must prompt a rebuild");
+  }
+
+  @Test
+  void getGraphDatabaseStatus_noIndexableContent_reportsNoRebuildNeeded() {
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(0L);
+    stubRebuildAssetCounts(0L, 0L, 0L);
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertFalse(body.getRebuildNeeded(), "an empty graph with nothing to index needs no rebuild");
+  }
+
+  @Test
+  void getGraphDatabaseStatus_mixedCatalogue_reportsBothPartsOfTheRebuildableTotal() {
+    // The breakdown is served, not derived by the caller: a client subtracting rdfAssetCount from
+    // rebuildableAssetCount would have to trust that the two were counted at the same instant.
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(12L);
+    stubRebuildAssetCounts(7L, 10L, 3L);
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertEquals(7L, body.getRdfAssetCount(), "assets uploaded as credentials");
+    assertEquals(3L, body.getEnrichedAssetCount(), "assets enriched after a non-RDF upload");
+    assertEquals(10L, body.getRebuildableAssetCount(), "the total a rebuild would process");
+  }
+
+  @Test
+  void getGraphDatabaseStatus_countsUnavailable_reportsZeroesRatherThanFailing() {
+    when(graphStore.getBackendType()).thenReturn(GraphBackendType.FUSEKI);
+    when(graphStore.isHealthy()).thenReturn(true);
+    when(graphStore.getClaimCount()).thenReturn(0L);
+    when(graphRebuildService.countRebuildAssets())
+        .thenThrow(new IllegalStateException("database unavailable"));
+
+    GraphDatabaseStatus body = service.getGraphDatabaseStatus().getBody();
+
+    assertEquals(0L, body.getRdfAssetCount(), "an unreadable count must not fail the status call");
+    assertEquals(0L, body.getRebuildableAssetCount(), "an unreadable count reports zero");
+    assertEquals(0L, body.getEnrichedAssetCount(), "an unreadable count reports zero");
+    assertFalse(body.getRebuildNeeded(),
+        "a rebuild must not be advertised on the strength of counts that could not be read");
+  }
+
   private void stubEnabledBackend(GraphBackendType type, boolean healthy) {
     when(graphStore.getBackendType()).thenReturn(type);
     when(graphStore.isHealthy()).thenReturn(healthy);
+  }
+
+  /**
+   * Stubs the single snapshot of asset counts the status endpoint reads.
+   *
+   * @param rdf active assets uploaded as credentials
+   * @param rebuildable active assets holding content
+   * @param enriched active assets enriched after a non-RDF upload
+   */
+  private void stubRebuildAssetCounts(long rdf, long rebuildable, long enriched) {
+    when(graphRebuildService.countRebuildAssets())
+        .thenReturn(new RebuildAssetCounts(rdf, rebuildable, enriched));
   }
 
   @SuppressWarnings("unchecked")

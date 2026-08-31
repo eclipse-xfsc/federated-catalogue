@@ -77,6 +77,17 @@ public class AssetFilter {
   private List<ContentKind> contentKinds;
 
   /**
+   * Filter on whether the asset currently holds content. {@code TRUE} matches assets with content,
+   * {@code FALSE} matches those without, {@code null} does not filter.
+   *
+   * <p>Distinct from {@link #contentKinds}: content kind records how an asset was uploaded and is
+   * not changed by later enrichment, so an asset uploaded as {@code NON_RDF} and subsequently
+   * enriched holds content while still being of kind {@code NON_RDF}.</p>
+   */
+  @lombok.Setter
+  private Boolean hasContent;
+
+  /**
    * The offset to start returning results when applying this filter.
    */
   @lombok.Setter
@@ -88,6 +99,22 @@ public class AssetFilter {
    */
   @lombok.Setter
   private int limit;
+
+  /**
+   * Creates a filter for a query whose caller wants only the total count.
+   *
+   * <p>A limit of 0 means "no limit", so a freshly constructed filter runs the data query
+   * unbounded alongside the COUNT and materialises every matching row for a caller that
+   * discards them. The smallest page yields the same total while reading one row.</p>
+   *
+   * @return a filter with the smallest page size, ready for further clauses
+   */
+  public static AssetFilter forCountOnly() {
+    AssetFilter filter = new AssetFilter();
+    filter.setLimit(1);
+    filter.setOffset(0);
+    return filter;
+  }
 
   /**
    * Sets the upload time range that the filter will check for an asset

@@ -47,11 +47,7 @@ $(document).ready(function() {
         $('#switchBtn').prop('disabled', true);
 
         if (data.rebuildNeeded) {
-          var count = typeof data.rdfAssetCount === 'number' ? data.rdfAssetCount : 0;
-          var summary = count === 1
-            ? '1 RDF asset is ready to be re-indexed.'
-            : count.toLocaleString() + ' RDF assets are ready to be re-indexed.';
-          $('#rebuildAssetSummary').text(summary);
+          $('#rebuildAssetSummary').text(buildRebuildSummary(data));
           $('#rebuildBanner').removeClass('d-none');
         } else {
           $('#rebuildBanner').addClass('d-none');
@@ -168,6 +164,31 @@ $(document).ready(function() {
     else if (s.running) parts.push('running');
     else if (s.complete) parts.push('done');
     return parts.join(' · ');
+  }
+
+  // The banner must quote the same number the rebuild progress reports as its total, so
+  // rebuildableAssetCount is the source. Its two parts — assets uploaded as credentials and
+  // assets enriched afterwards — come from the same endpoint, read in one snapshot, so the
+  // breakdown is displayed as given rather than derived here.
+  function buildRebuildSummary(data) {
+    var rebuildable = typeof data.rebuildableAssetCount === 'number'
+      ? data.rebuildableAssetCount
+      : (typeof data.rdfAssetCount === 'number' ? data.rdfAssetCount : 0);
+    var credentials = typeof data.rdfAssetCount === 'number' ? data.rdfAssetCount : 0;
+    var enriched = typeof data.enrichedAssetCount === 'number' ? data.enrichedAssetCount : 0;
+
+    var summary = rebuildable.toLocaleString()
+      + (rebuildable === 1 ? ' asset is ' : ' assets are ')
+      + 'ready to be re-indexed.';
+    // Both parts are quoted only when both are present; with one part the total already
+    // says everything a breakdown would.
+    if (enriched > 0 && credentials > 0) {
+      summary += ' ' + credentials.toLocaleString()
+        + (credentials === 1 ? ' credential and ' : ' credentials and ')
+        + enriched.toLocaleString()
+        + (enriched === 1 ? ' enriched asset.' : ' enriched assets.');
+    }
+    return summary;
   }
 
 });

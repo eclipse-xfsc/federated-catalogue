@@ -74,6 +74,9 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
           .map(Enum::name).collect(Collectors.toList());
       queryBuilder.addClause("content_kind in (?)", "contentKinds", kindNames);
     }
+    if (filter.getHasContent() != null) {
+      queryBuilder.addClause("(content is not null) = ?", "hasContent", filter.getHasContent());
+    }
 
     String query = queryBuilder.buildCountQuery();
     SqlParameterSource sps = new AssetQueryParameterSource(queryBuilder);

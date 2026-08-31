@@ -296,18 +296,39 @@ components:
         rebuildNeeded:
           type: boolean
           description: |
-            True when the active graph store has no claims but RDF assets exist in
-            storage — typical after a backend switch or fresh start. The admin UI
-            surfaces a rebuild prompt that calls `POST /admin/graph/rebuild`. Non-RDF
-            assets are excluded from this check because they do not produce graph
-            claims even after a successful rebuild.
+            True when the active graph store has no claims but assets carrying
+            indexable content exist in storage — typical after a backend switch or
+            fresh start. The admin UI surfaces a rebuild prompt that calls
+            `POST /admin/graph/rebuild`. Assets with no content are excluded because
+            they produce no graph claims even after a successful rebuild.
         rdfAssetCount:
           type: integer
           format: int64
           description: |
-            Number of active RDF assets in storage that would be re-indexed by a
-            rebuild. Surfaced alongside `rebuildNeeded` so the UI can show how many
-            assets the rebuild will process.
+            Number of active assets of content kind RDF, i.e. those uploaded as
+            credentials. This is a count of what the catalogue holds, not of what a
+            rebuild processes — see `rebuildableAssetCount`.
+        rebuildableAssetCount:
+          type: integer
+          format: int64
+          description: |
+            Number of active assets a rebuild would process: those that currently
+            carry content to extract claims from. This is `rdfAssetCount` plus any
+            non-RDF asset that has since been enriched, since enrichment adds RDF
+            content without changing the stored content kind. Surfaced alongside
+            `rebuildNeeded` so the UI can show how many assets the rebuild will
+            process, matching the `total` reported by the rebuild progress endpoint.
+        enrichedAssetCount:
+          type: integer
+          format: int64
+          description: |
+            Number of active assets that were uploaded as non-RDF and have since been
+            enriched, so they carry content a rebuild will process. Together with
+            `rdfAssetCount` this breaks down `rebuildableAssetCount`, though the three are
+            not guaranteed to balance arithmetically: `rdfAssetCount` reports catalogue
+            inventory and does not filter on content. All three are read from one database
+            snapshot, so a client can display the breakdown without deriving it by
+            subtraction across separately timed counts.
     GraphDatabaseSwitchResult:
       type: object
       properties:
@@ -627,11 +648,18 @@ components:
         total:
           type: integer
           format: int64
-          description: Total number of assets to process
+          description: |
+            Number of assets the rebuild will process: active assets that carry content
+            to extract claims from, which is `rebuildableAssetCount` on the graph status
+            endpoint. Counted once before the walk begins, so an asset activated while a
+            rebuild is running is processed without being counted here.
         processed:
           type: integer
           format: int64
-          description: Number of assets processed so far
+          description: |
+            Number of assets processed so far. Selected by the same predicate as `total`,
+            so the two converge; it can briefly exceed `total` only for an asset activated
+            mid-rebuild, which is why `percentComplete` is clamped.
         percentComplete:
           type: integer
           description: Completion percentage (0-100)
