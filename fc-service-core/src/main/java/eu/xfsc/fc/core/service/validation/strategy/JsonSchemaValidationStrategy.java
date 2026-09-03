@@ -7,6 +7,7 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaException;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.api.generated.model.ValidationReport;
 import eu.xfsc.fc.core.dao.validation.ValidatorType;
 import eu.xfsc.fc.core.service.validation.report.ValidationReportFactory;
@@ -72,7 +73,7 @@ public class JsonSchemaValidationStrategy implements ValidationStrategy {
     String ct = asset.getContentType();
     return ct != null
         && (ct.contains(MediaType.APPLICATION_JSON_VALUE)
-        || ct.contains(SchemaStore.MEDIA_TYPE_JSON_SCHEMA));
+        || ct.contains(FcMediaTypes.SCHEMA_JSON_VALUE));
   }
 
   @Override

@@ -7,11 +7,11 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.service.filestore.FileStore;
-import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,7 +41,7 @@ class JsonSchemaValidationStrategyApplicabilityTest {
             null, "application/json; charset=utf-8", true),
         Arguments.of(
             "non-RDF asset with JSON Schema media type",
-            null, SchemaStore.MEDIA_TYPE_JSON_SCHEMA, true),
+            null, FcMediaTypes.SCHEMA_JSON_VALUE, true),
         Arguments.of(
             "RDF asset with application/json content type",
             rdfClaim, MediaType.APPLICATION_JSON_VALUE, false),

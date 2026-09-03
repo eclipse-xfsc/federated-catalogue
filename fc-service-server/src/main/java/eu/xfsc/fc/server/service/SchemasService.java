@@ -1,5 +1,6 @@
 package eu.xfsc.fc.server.service;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.api.generated.model.OntologySchema;
 import eu.xfsc.fc.api.generated.model.SchemaResult;
 import eu.xfsc.fc.api.generated.model.SchemaVersion;
@@ -62,7 +63,7 @@ public class SchemasService implements SchemasApiDelegate {
         : schemaStore.getSchemaRecord(schemaId);
     var responseBuilder = ResponseEntity.ok();
     switch (record.type()) {
-      case JSON -> responseBuilder.contentType(MediaType.parseMediaType(SchemaStore.MEDIA_TYPE_JSON_SCHEMA));
+      case JSON -> responseBuilder.contentType(MediaType.parseMediaType(FcMediaTypes.SCHEMA_JSON_VALUE));
       case XML -> responseBuilder.contentType(MediaType.APPLICATION_XML);
       default -> {} // RDF types: preserve original content negotiation behavior
     }

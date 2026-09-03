@@ -1,8 +1,8 @@
 package eu.xfsc.fc.core.service.schemastore;
 
-import static eu.xfsc.fc.core.service.schemastore.SchemaStore.MEDIA_TYPE_LD_JSON;
-import static eu.xfsc.fc.core.service.schemastore.SchemaStore.MEDIA_TYPE_RDF_XML;
-import static eu.xfsc.fc.core.service.schemastore.SchemaStore.MEDIA_TYPE_TEXT_TURTLE;
+import static eu.xfsc.fc.api.FcMediaTypes.LD_JSON_VALUE;
+import static eu.xfsc.fc.api.FcMediaTypes.RDF_XML_VALUE;
+import static eu.xfsc.fc.api.FcMediaTypes.TURTLE_VALUE;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.JSON;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.ONTOLOGY;
 import static eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType.SHAPE;
@@ -650,9 +650,9 @@ public class SchemaStoreTest {
     List<String> types = SchemaType.ONTOLOGY.getCompatibleAssetContentTypes();
 
     assertEquals(3, types.size());
-    assertTrue(types.contains(MEDIA_TYPE_TEXT_TURTLE));
-    assertTrue(types.contains(MEDIA_TYPE_RDF_XML));
-    assertTrue(types.contains(MEDIA_TYPE_LD_JSON));
+    assertTrue(types.contains(TURTLE_VALUE));
+    assertTrue(types.contains(RDF_XML_VALUE));
+    assertTrue(types.contains(LD_JSON_VALUE));
   }
 
   @Test

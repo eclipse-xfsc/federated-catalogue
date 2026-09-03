@@ -7,16 +7,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import lombok.Getter;
 import org.springframework.http.MediaType;
 
 public interface SchemaStore {
-
-  String MEDIA_TYPE_TEXT_TURTLE = "text/turtle";
-  String MEDIA_TYPE_JSON_SCHEMA = "application/schema+json";
-  String MEDIA_TYPE_RDF_XML = "application/rdf+xml";
-  String MEDIA_TYPE_LD_JSON = "application/ld+json";
 
   /**
    * The different types of schema.
@@ -24,10 +20,10 @@ public interface SchemaStore {
    */
   @Getter
   enum SchemaType {
-    ONTOLOGY(MEDIA_TYPE_TEXT_TURTLE, MEDIA_TYPE_RDF_XML, MEDIA_TYPE_LD_JSON),
-    SHAPE(MEDIA_TYPE_TEXT_TURTLE, MEDIA_TYPE_RDF_XML, MEDIA_TYPE_LD_JSON),
-    VOCABULARY(MEDIA_TYPE_TEXT_TURTLE, MEDIA_TYPE_RDF_XML, MEDIA_TYPE_LD_JSON),
-    JSON(MediaType.APPLICATION_JSON_VALUE, MEDIA_TYPE_JSON_SCHEMA),
+    ONTOLOGY(FcMediaTypes.TURTLE_VALUE, FcMediaTypes.RDF_XML_VALUE, FcMediaTypes.LD_JSON_VALUE),
+    SHAPE(FcMediaTypes.TURTLE_VALUE, FcMediaTypes.RDF_XML_VALUE, FcMediaTypes.LD_JSON_VALUE),
+    VOCABULARY(FcMediaTypes.TURTLE_VALUE, FcMediaTypes.RDF_XML_VALUE, FcMediaTypes.LD_JSON_VALUE),
+    JSON(MediaType.APPLICATION_JSON_VALUE, FcMediaTypes.SCHEMA_JSON_VALUE),
     XML(MediaType.APPLICATION_XML_VALUE);
 
     private final List<String> compatibleAssetContentTypes;
@@ -44,7 +40,7 @@ public interface SchemaStore {
       if (contentType == null) {
         return Optional.empty();
       }
-      if (contentType.contains(MEDIA_TYPE_JSON_SCHEMA)) {
+      if (contentType.contains(FcMediaTypes.SCHEMA_JSON_VALUE)) {
         return Optional.of(JSON);
       }
       if (contentType.contains(MediaType.APPLICATION_XML_VALUE)) {
@@ -54,10 +50,10 @@ public interface SchemaStore {
     }
 
     private static final Set<String> RDF_CONTENT_TYPES = Set.of(
-            MEDIA_TYPE_TEXT_TURTLE, MEDIA_TYPE_RDF_XML, MEDIA_TYPE_LD_JSON);
+            FcMediaTypes.TURTLE_VALUE, FcMediaTypes.RDF_XML_VALUE, FcMediaTypes.LD_JSON_VALUE);
 
     private static final Set<String> NON_RDF_CONTENT_TYPES = Set.of(
-            MEDIA_TYPE_JSON_SCHEMA, MediaType.APPLICATION_XML_VALUE);
+            FcMediaTypes.SCHEMA_JSON_VALUE, MediaType.APPLICATION_XML_VALUE);
 
     public static boolean isRdfContentType(String contentType) {
       if (contentType == null) {

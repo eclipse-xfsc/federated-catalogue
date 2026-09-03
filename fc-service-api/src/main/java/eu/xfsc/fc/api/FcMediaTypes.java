@@ -67,6 +67,11 @@ public final class FcMediaTypes {
    */
   public static final String RDF_XML_VALUE = "application/rdf+xml";
 
+  /**
+   * JSON Schema content type.
+   */
+  public static final String SCHEMA_JSON_VALUE = "application/schema+json";
+
   private FcMediaTypes() {
   }
 }
