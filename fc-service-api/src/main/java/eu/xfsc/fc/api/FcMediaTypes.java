@@ -5,10 +5,10 @@ import org.springframework.http.MediaType;
 /**
  * Wire-format media types specific to the Federated Catalogue API.
  *
- * <p>Mirrors Spring's pattern of exposing both the {@link MediaType} instance and its
- * {@link String} value, so callers can pick the form their API needs (annotations and
- * MockMvc {@code .contentType(String)} use the string; WebClient and similar use the
- * {@code MediaType}).
+ * <p>Every media type is exposed as a {@link String} value. A {@link MediaType} companion is
+ * added only where a caller needs that form: annotations and MockMvc
+ * {@code .contentType(String)} take the string, WebClient and similar take the
+ * {@code MediaType}.
  */
 public final class FcMediaTypes {
 
@@ -31,6 +31,46 @@ public final class FcMediaTypes {
    * {@link MediaType} form of {@link #VP_JWT_VALUE}.
    */
   public static final MediaType VP_JWT = MediaType.valueOf(VP_JWT_VALUE);
+
+  /**
+   * Verifiable Credential JWT content type (W3C VC-JOSE-COSE).
+   */
+  public static final String VC_JWT_VALUE = "application/vc+jwt";
+
+  /**
+   * Verifiable Credential JSON-LD content type (W3C VC-JOSE-COSE).
+   */
+  public static final String VC_LD_JSON_VALUE = "application/vc+ld+json";
+
+  /**
+   * Verifiable Presentation JSON-LD content type (W3C VC-JOSE-COSE).
+   */
+  public static final String VP_LD_JSON_VALUE = "application/vp+ld+json";
+
+  /**
+   * JSON-LD content type.
+   */
+  public static final String LD_JSON_VALUE = "application/ld+json";
+
+  /**
+   * Turtle RDF serialisation content type.
+   */
+  public static final String TURTLE_VALUE = "text/turtle";
+
+  /**
+   * N-Triples RDF serialisation content type.
+   */
+  public static final String NTRIPLES_VALUE = "application/n-triples";
+
+  /**
+   * RDF/XML serialisation content type.
+   */
+  public static final String RDF_XML_VALUE = "application/rdf+xml";
+
+  /**
+   * JSON Schema content type.
+   */
+  public static final String SCHEMA_JSON_VALUE = "application/schema+json";
 
   private FcMediaTypes() {
   }

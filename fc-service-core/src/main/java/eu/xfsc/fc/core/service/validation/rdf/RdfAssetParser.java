@@ -2,6 +2,7 @@ package eu.xfsc.fc.core.service.validation.rdf;
 
 import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -125,9 +126,9 @@ public class RdfAssetParser {
       return content.getContentAsString().strip().startsWith(FormatDetectionConstants.JSON_LD_PREFIX);
     }
     String ct = asset.getContentType();
-    return ct != null && (ct.contains(VerificationConstants.MEDIA_TYPE_LD_JSON)
-        || ct.contains(VerificationConstants.MEDIA_TYPE_VC_LD_JSON)
-        || ct.contains(VerificationConstants.MEDIA_TYPE_VP_LD_JSON));
+    return ct != null && (ct.contains(FcMediaTypes.LD_JSON_VALUE)
+        || ct.contains(FcMediaTypes.VC_LD_JSON_VALUE)
+        || ct.contains(FcMediaTypes.VP_LD_JSON_VALUE));
   }
 
   /**
@@ -142,7 +143,7 @@ public class RdfAssetParser {
           || raw.startsWith(FormatDetectionConstants.RDF_XML_PREFIX_2);
     }
     String ct = asset.getContentType();
-    return ct != null && ct.contains(VerificationConstants.MEDIA_TYPE_RDF_XML);
+    return ct != null && ct.contains(FcMediaTypes.RDF_XML_VALUE);
   }
 
   private Model parseRdfContent(ContentAccessor content, Lang lang) {

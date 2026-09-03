@@ -355,7 +355,10 @@ public class UsersControllerTest {
     }
 
     @Test
-    @Disabled // TODO: fix me!!
+    @Disabled("Disabled since the initial code import 8effb886 (2025-05-20), recorded only as "
+        + "'TODO: fix me!!' with no reason. Asserts that userDao.delete propagates the JAX-RS "
+        + "NotFoundException stubbed on the Keycloak users resource and that the token grant "
+        + "then fails as unauthorized.")
     public void deleteUserAndKeycloakAccessShouldReturnUnauthorizedError() throws Exception {
         User user = getTestUser("newuser", "newuser").addRoleIdsItem(CATALOGUE_ADMIN_ROLE);
         String userId = UUID.randomUUID().toString();

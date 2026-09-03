@@ -33,6 +33,10 @@
             <groupId>eu.xfsc.cat</groupId>
             <artifactId>fc-service-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>eu.xfsc.cat</groupId>
+            <artifactId>fc-service-api</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

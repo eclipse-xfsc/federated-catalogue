@@ -45,7 +45,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 
 @Slf4j
-@Disabled // temporary disable to overcome embedded Neo4j connection issue.
+@Disabled("Temporary disable to overcome embedded Neo4j connection issue; in place since 8effb886 (2025-05-20).")
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

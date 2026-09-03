@@ -1,7 +1,7 @@
 package eu.xfsc.fc.core.util;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.exception.ClientException;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import lombok.experimental.UtilityClass;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
@@ -35,9 +35,9 @@ public class RdfFormatDetector {
         return mappedLang == Lang.JSONLD ? Lang.JSONLD11 : mappedLang;
       }
       // VC/VP-specific JSON-LD media types are not registered with Jena's mapper.
-      if (contentType.contains(VerificationConstants.MEDIA_TYPE_VC_LD_JSON)
-          || contentType.contains(VerificationConstants.MEDIA_TYPE_VP_LD_JSON)
-          || contentType.contains(VerificationConstants.MEDIA_TYPE_LD_JSON)
+      if (contentType.contains(FcMediaTypes.VC_LD_JSON_VALUE)
+          || contentType.contains(FcMediaTypes.VP_LD_JSON_VALUE)
+          || contentType.contains(FcMediaTypes.LD_JSON_VALUE)
           || contentType.contains(MediaType.APPLICATION_JSON_VALUE)) {
         return Lang.JSONLD11;
       }
