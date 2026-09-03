@@ -18,15 +18,34 @@ import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
 import eu.xfsc.fc.core.service.filestore.FileStore;
+import eu.xfsc.fc.core.service.verification.VerificationConstants;
 
 /**
  * Parameterised over the content-type / content combinations the on-demand validation
- * router can hand to {@link XmlSchemaValidationStrategy#appliesTo}. The strategy
- * intentionally only accepts non-RDF XML: RDF assets — including RDF/XML-serialised
- * credentials — must be routed through SHACL. That routing decision lives in the
- * applicability check; this class pins it.
+ * router can hand to {@link XmlSchemaValidationStrategy#appliesTo}.
+ *
+ * <p>Per SRS §3.1.6, an XML Schema is applicable to a non-RDF XML asset AND to an
+ * RDF asset that is serialized in RDF/XML — symmetric with the JSON Schema / JSON-LD rule.
+ * Every other RDF serialisation (Turtle, JSON-LD, ...) must remain inapplicable — SHACL is
+ * the only validator for those. This class pins both halves of that boundary.</p>
  */
 class XmlSchemaValidationStrategyApplicabilityTest {
+
+  // An RDF/XML-serialised RDF asset: parses as RDF and is valid RDF/XML.
+  private static final String RDF_XML_CONTENT =
+      "<?xml version=\"1.0\"?><rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"></rdf:RDF>";
+
+  // A Turtle-serialised RDF asset — not RDF/XML, must never be routed to XML Schema.
+  private static final String TURTLE_CONTENT =
+      "@prefix ex: <https://example.org/> . ex:Alice ex:name \"Alice\" .";
+
+  // A JSON-LD-serialised RDF asset — not RDF/XML, must never be routed to XML Schema.
+  private static final String JSON_LD_CONTENT = """
+      {"@context":"https://www.w3.org/ns/credentials/v2",\
+      "type":["VerifiableCredential"],"issuer":"did:web:example.org"}""";
+
+  // Non-RDF/XML-shaped RDF content with no content type at all.
+  private static final String OPAQUE_RDF_CONTENT = "dummy rdf";
 
   // Mockito's mock(Class) returns the raw type, so casting it back to the parameterised
   // ObjectProvider<T> is a checked-cast warning that cannot be avoided without changing
@@ -39,7 +58,7 @@ class XmlSchemaValidationStrategyApplicabilityTest {
           (ObjectProvider<SchemaFactory>) mock(ObjectProvider.class));
 
   static Stream<Arguments> applicabilityCases() {
-    ContentAccessor rdfClaim = new ContentAccessorDirect("dummy rdf");
+    ContentAccessor opaqueRdf = new ContentAccessorDirect(OPAQUE_RDF_CONTENT);
     return Stream.of(
         // (label, contentAccessor, contentType, expected)
         Arguments.of(
@@ -52,14 +71,20 @@ class XmlSchemaValidationStrategyApplicabilityTest {
             "non-RDF asset with text/xml content type",
             null, MediaType.TEXT_XML_VALUE, true),
         Arguments.of(
-            "RDF asset with application/xml content type",
-            rdfClaim, MediaType.APPLICATION_XML_VALUE, false),
+            "RDF asset with application/xml content type but non-RDF/XML-shaped content does not apply",
+            opaqueRdf, MediaType.APPLICATION_XML_VALUE, false),
         Arguments.of(
-            "RDF asset (RDF/XML) routes to SHACL, not XML Schema",
-            rdfClaim, "application/rdf+xml", false),
+            "RDF asset serialised as RDF/XML applies to XML Schema (SRS 3.1.6)",
+            new ContentAccessorDirect(RDF_XML_CONTENT), VerificationConstants.MEDIA_TYPE_RDF_XML, true),
+        Arguments.of(
+            "RDF asset serialised as Turtle does not apply to XML Schema",
+            new ContentAccessorDirect(TURTLE_CONTENT), VerificationConstants.MEDIA_TYPE_TURTLE, false),
+        Arguments.of(
+            "RDF asset serialised as JSON-LD does not apply to XML Schema",
+            new ContentAccessorDirect(JSON_LD_CONTENT), VerificationConstants.MEDIA_TYPE_LD_JSON, false),
         Arguments.of(
             "RDF asset with no content type still routes to SHACL",
-            rdfClaim, null, false),
+            opaqueRdf, null, false),
         Arguments.of(
             "non-RDF asset with JSON content type does not apply",
             null, MediaType.APPLICATION_JSON_VALUE, false),

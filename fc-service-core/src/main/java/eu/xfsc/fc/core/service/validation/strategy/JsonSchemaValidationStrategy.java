@@ -2,6 +2,7 @@ package eu.xfsc.fc.core.service.validation.strategy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.AbsoluteIri;
 import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaException;
@@ -14,12 +15,15 @@ import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
 import eu.xfsc.fc.core.service.filestore.FileStore;
+import eu.xfsc.fc.core.service.validation.rdf.RdfAssetParser;
 import eu.xfsc.fc.core.service.schemastore.SchemaRecord;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore;
 import eu.xfsc.fc.core.service.schemastore.SchemaStore.SchemaType;
 import eu.xfsc.fc.core.service.verification.SchemaModuleType;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,14 +36,49 @@ import org.springframework.stereotype.Service;
  * <p>Applies to non-RDF JSON assets ({@code application/json}, {@code application/schema+json})
  * and to JSON-LD serialized RDF assets. Enforces exactly one asset and one schema per call.</p>
  *
- * <p>Uses the networknt json-schema-validator 2.x API with {@link SchemaRegistry}.
- * External {@code $ref} URIs using {@code file://}, {@code http://}, {@code gopher://}, or
- * {@code ftp://} are rejected to prevent SSRF attacks.</p>
+ * <p>Uses the networknt json-schema-validator 2.x API with {@link SchemaRegistry}. An uploaded
+ * schema is untrusted input, so no {@code $ref}, {@code $dynamicRef}, or {@code $schema} in it may
+ * ever cause this service to fetch a resource outside the schema document — that would be a
+ * server-side request forgery (SSRF) vector. Two independent layers enforce this:</p>
+ * <ul>
+ *   <li>The {@link SchemaRegistry} is built with a {@code schemaLoader} whose resolver
+ *   unconditionally blocks every out-of-document resource IRI (see {@link #buildRegistry()}), so
+ *   even a reference that bypasses the pre-check below (e.g. a relative {@code $ref} combined with
+ *   an attacker-supplied {@code $id} base that resolves to an external IRI) fails without any
+ *   network, file, or classpath access. This is the actual security boundary.</li>
+ *   <li>{@link #validateNoExternalRefs(JsonNode)} pre-checks {@code $ref} and {@code $dynamicRef}
+ *   values for a fast, precise client error before the schema is ever loaded. It rejects any value
+ *   that carries a URI scheme (case-insensitively — {@code HTTP://}, {@code https://}, etc. are all
+ *   rejected, not just a fixed lowercase list) or is protocol-relative ({@code //host/path}, which
+ *   carries no scheme but still resolves to an external fetch), and permits only fragment-only
+ *   ({@code "#/..."}) or relative references resolved within the document.</li>
+ * </ul>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class JsonSchemaValidationStrategy implements ValidationStrategy {
+
+  private static final String REF_KEYWORD = "$ref";
+  private static final String DYNAMIC_REF_KEYWORD = "$dynamicRef";
+
+  // RFC 3986 scheme syntax: ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":" — matching this means
+  // the value is an absolute IRI, not a same-document fragment or relative reference. The
+  // character class already spans both cases, so this rejects "HTTP://" exactly like "http://".
+  private static final Pattern HAS_URI_SCHEME = Pattern.compile("^[A-Za-z][A-Za-z0-9+.-]*:.*");
+
+  // A protocol-relative reference ("//host/path", RFC 3986 §4.2) carries no URI scheme, so
+  // HAS_URI_SCHEME does not match it, yet it still resolves against whatever scheme the schema
+  // loader is running under — an external network fetch. The registry's block-all schemaLoader
+  // (see buildRegistry()) already stops this from being followed; this constant only makes the
+  // pre-check reject it too, for a precise client error instead of falling through to the
+  // registry's opaque block.
+  private static final String PROTOCOL_RELATIVE_PREFIX = "//";
+
+  // Blocks every schema resource IRI the registry's loader is asked to resolve outside the
+  // in-memory document (see the class Javadoc). This is the actual SSRF boundary; the predicate
+  // never inspects the IRI because there is no IRI a validator-supplied schema is allowed to fetch.
+  private static final Predicate<AbsoluteIri> BLOCK_ALL_EXTERNAL_SCHEMA_RESOURCES = iri -> true;
 
   @Qualifier("assetFileStore")
   private final FileStore fileStore;
@@ -56,18 +95,19 @@ public class JsonSchemaValidationStrategy implements ValidationStrategy {
   }
 
   /**
-   * Returns {@code true} for non-RDF JSON assets only.
-   * RDF assets (including JSON-LD) should use SHACL validation.
+   * Returns {@code true} for non-RDF JSON assets, and for RDF assets serialised as JSON-LD
+   * (SRS 3.1.6). Other RDF serialisations (Turtle, RDF/XML, ...) remain SHACL-only.
    */
   @Override
   public boolean appliesTo(AssetMetadata asset) {
     ContentAccessor content = asset.getContentAccessor();
 
     // A non-null ContentAccessor marks an RDF asset (the content is held as a pre-parsed object).
-    // RDF assets - including JSON-LD - must be validated via SHACL, not JSON Schema.
+    // Per SRS 3.1.6, a JSON Schema is applicable to an RDF asset serialised in JSON-LD;
+    // every other RDF serialisation stays SHACL-only.
     // Non-RDF JSON assets have no ContentAccessor; their type is identified by content-type below.
     if (content != null) {
-      return false;
+      return RdfAssetParser.isJsonLd(asset);
     }
     String ct = asset.getContentType();
     return ct != null
@@ -120,8 +160,7 @@ public class JsonSchemaValidationStrategy implements ValidationStrategy {
       JsonNode schemaNode = objectMapper.readTree(schemaContent.getContentAsString());
       validateNoExternalRefs(schemaNode);
       JsonNode contentNode = objectMapper.readTree(assetContent.getContentAsStream());
-      SchemaRegistry registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
-      Schema schema = registry.getSchema(schemaNode);
+      Schema schema = buildRegistry().getSchema(schemaNode);
       List<Error> errors = schema.validate(contentNode);
       return ValidationReportFactory.fromJsonErrors(errors);
     } catch (IOException e) {
@@ -132,22 +171,50 @@ public class JsonSchemaValidationStrategy implements ValidationStrategy {
   }
 
   /**
-   * Rejects schemas containing $ref URIs that enable SSRF — file://, http://, gopher://, ftp://.
-   * https:// is permitted as it is standard JSON Schema practice for referencing public schemas.
+   * Builds a registry whose schema loader is configured to never resolve a resource outside the
+   * in-memory schema document — no network fetch, no filesystem read, no classpath lookup of an
+   * IRI taken from an uploaded (untrusted) schema. This is the actual defence against SSRF via
+   * {@code $ref}, {@code $dynamicRef}, or a non-well-known {@code $schema}; see the class Javadoc.
+   */
+  private SchemaRegistry buildRegistry() {
+    return SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12,
+        builder -> builder.schemaLoader(loader -> loader.block(BLOCK_ALL_EXTERNAL_SCHEMA_RESOURCES)));
+  }
+
+  /**
+   * Pre-checks {@code $ref} and {@code $dynamicRef} values for a fast, precise client error.
+   * Rejects any value that carries a URI scheme (an absolute IRI, e.g. {@code https://...},
+   * {@code HTTP://...}, {@code file://...} — case does not affect matching) or is a
+   * protocol-relative reference ({@code //host/path}, which carries no scheme but still resolves
+   * to an external fetch); permits fragment-only ({@code "#/..."}) and relative references, which
+   * resolve within the document. This check is
+   * defence in depth: the actual SSRF boundary is {@link #buildRegistry()}, which also blocks
+   * references this check cannot see (for instance a relative {@code $ref} that only becomes an
+   * external IRI once resolved against an attacker-supplied {@code $id} base elsewhere in the
+   * document).
    */
   private void validateNoExternalRefs(JsonNode node) {
     if (node.isObject()) {
-      JsonNode ref = node.get("$ref");
-      if (ref != null && ref.isTextual()) {
-        String value = ref.asText();
-        if (value.startsWith("file://") || value.startsWith("http://")
-            || value.startsWith("gopher://") || value.startsWith("ftp://")) {
-          throw new ClientException("Schema contains $ref '" + value + "' which is not permitted");
-        }
-      }
+      rejectIfAbsolute(node, REF_KEYWORD);
+      rejectIfAbsolute(node, DYNAMIC_REF_KEYWORD);
       node.fields().forEachRemaining(entry -> validateNoExternalRefs(entry.getValue()));
     } else if (node.isArray()) {
       node.elements().forEachRemaining(this::validateNoExternalRefs);
+    }
+  }
+
+  private void rejectIfAbsolute(JsonNode node, String keyword) {
+    JsonNode ref = node.get(keyword);
+    if (ref == null || !ref.isTextual()) {
+      return;
+    }
+    String value = ref.asText();
+    if (!value.startsWith("#")
+        && (value.startsWith(PROTOCOL_RELATIVE_PREFIX) || HAS_URI_SCHEME.matcher(value).matches())) {
+      throw new ClientException(
+          "Schema contains " + keyword + " '" + value + "' which resolves outside the schema "
+              + "document; only fragment references (\"#/...\") and relative references within "
+              + "the document are permitted.");
     }
   }
 

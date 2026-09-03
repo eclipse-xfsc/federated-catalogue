@@ -215,9 +215,206 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(JSON_SCHEMA_ID));
 
-    // RDF assets (JSON-LD) are not applicable to JSON Schema validation - throws ClientException before module check
+    // A JSON-LD-serialised RDF asset IS applicable to JSON Schema (SRS 3.1.6) - the
+    // module-disabled check must be reached, not short-circuited by an inapplicability rejection.
     ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
-    assertTrue(ex.getMessage().contains("not applicable"), "Exception should explain why: " + ex.getMessage());
+    assertEquals("module_disabled:" + SchemaModuleType.JSON_SCHEMA, ex.getMessage());
+  }
+
+  @Test
+  void validateAsset_turtleRdfAsset_withExplicitJsonSchema_notApplicable_throwsClientException() {
+    registerStrategyList();
+    registerShaclStrategy();
+    registerJsonStrategy();
+    when(assetStore.getById(ASSET_ID)).thenReturn(buildTurtleRdfAsset(ASSET_ID));
+    when(schemaStore.getSchemaRecord(JSON_SCHEMA_ID)).thenReturn(buildJsonRecord(JSON_SCHEMA_ID));
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setSchemaIds(List.of(JSON_SCHEMA_ID));
+
+    // Regression guard: a non-JSON-LD RDF serialisation (Turtle) must remain inapplicable
+    // to JSON Schema even after JSON-LD is made applicable.
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertTrue(ex.getMessage().contains("not applicable"),
+        "Turtle-serialised RDF must stay inapplicable to JSON Schema: " + ex.getMessage());
+    assertTrue(ex.getMessage().contains("SHACL"),
+        "Rejection message should name SHACL as the type actually applicable to this asset: " + ex.getMessage());
+  }
+
+  // === validateAsset — JSON-LD RDF asset: SHACL + JSON Schema combined (SRS 5, validation request 1) ===
+
+  @Test
+  void validateAsset_jsonLdRdfAsset_shaclAndJsonSchemaTogether_bothConform_notRejected() {
+    AssetMetadata asset = buildRdfAsset(ASSET_ID);
+    ContentAccessor shapeContent = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+    ContentAccessor jsonSchemaContent = new ContentAccessorDirect("{\"$schema\":\"...\"}");
+
+    givenShaclAndJsonModulesEnabled();
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    when(schemaStore.getSchemaRecord(SCHEMA_ID)).thenReturn(buildShapeRecord(SCHEMA_ID));
+    when(schemaStore.getSchema(SCHEMA_ID)).thenReturn(shapeContent);
+    when(schemaStore.getSchemaRecord(JSON_SCHEMA_ID)).thenReturn(buildJsonRecord(JSON_SCHEMA_ID));
+    when(schemaStore.getSchema(JSON_SCHEMA_ID)).thenReturn(jsonSchemaContent);
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(jsonSchemaValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(60L, 61L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setSchemaIds(List.of(SCHEMA_ID, JSON_SCHEMA_ID));
+
+    ValidationResponse response = service.validateAssets(request);
+
+    // Not rejected - this is the defect: today planExplicit throws ClientException here.
+    assertTrue(response.getConforms());
+    assertNull(response.getReport());
+    assertEquals(List.of(60L, 61L), response.getValidationResultIds());
+    // SHACL is still evaluated via the existing data-graph-against-shapes-graph logic.
+    verify(shaclValidationStrategy).validate(anyList(), anyList());
+    // JSON Schema is additionally evaluated against the JSON-LD representation.
+    verify(jsonSchemaValidationStrategy).validate(anyList(), anyList());
+
+    ArgumentCaptor<ValidationResultRecord> captor = ArgumentCaptor.forClass(ValidationResultRecord.class);
+    verify(validationResultStore, times(2)).store(captor.capture());
+    List<ValidationResultRecord> stored = captor.getAllValues();
+    assertTrue(stored.stream().anyMatch(
+        r -> r.validatorType() == ValidatorType.SHACL && r.validatorIds().equals(List.of(SCHEMA_ID))),
+        "Expected a stored SHACL result for " + SCHEMA_ID);
+    assertTrue(stored.stream().anyMatch(
+        r -> r.validatorType() == ValidatorType.JSON_SCHEMA && r.validatorIds().equals(List.of(JSON_SCHEMA_ID))),
+        "Expected a stored JSON Schema result for " + JSON_SCHEMA_ID);
+  }
+
+  @Test
+  void validateAsset_jsonLdRdfAsset_shaclAndJsonSchemaTogether_jsonSchemaFails_responseNotConforming() {
+    AssetMetadata asset = buildRdfAsset(ASSET_ID);
+    ContentAccessor shapeContent = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+    ContentAccessor jsonSchemaContent = new ContentAccessorDirect("{\"$schema\":\"...\"}");
+
+    givenShaclAndJsonModulesEnabled();
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    when(schemaStore.getSchemaRecord(SCHEMA_ID)).thenReturn(buildShapeRecord(SCHEMA_ID));
+    when(schemaStore.getSchema(SCHEMA_ID)).thenReturn(shapeContent);
+    when(schemaStore.getSchemaRecord(JSON_SCHEMA_ID)).thenReturn(buildJsonRecord(JSON_SCHEMA_ID));
+    when(schemaStore.getSchema(JSON_SCHEMA_ID)).thenReturn(jsonSchemaContent);
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(jsonSchemaValidationStrategy.validate(anyList(), anyList())).thenReturn(NON_CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(62L, 63L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setSchemaIds(List.of(SCHEMA_ID, JSON_SCHEMA_ID));
+
+    ValidationResponse response = service.validateAssets(request);
+
+    assertFalse(response.getConforms());
+    assertNotNull(response.getReport());
+    assertEquals("constraint violation", response.getReport().getViolations().get(0).getMessage());
+    assertEquals(List.of(62L, 63L), response.getValidationResultIds());
+    // SHACL still ran despite the JSON Schema failure - both partial results are independent.
+    verify(shaclValidationStrategy).validate(anyList(), anyList());
+    verify(jsonSchemaValidationStrategy).validate(anyList(), anyList());
+  }
+
+  @Test
+  void validateAsset_jsonLdRdfAsset_shaclAndJsonSchemaTogether_bothFail_firstFailingReportSurfaces() {
+    AssetMetadata asset = buildRdfAsset(ASSET_ID);
+    ContentAccessor shapeContent = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+    ContentAccessor jsonSchemaContent = new ContentAccessorDirect("{\"$schema\":\"...\"}");
+    ValidationReport shaclFailingReport = new ValidationReport()
+        .conforms(false)
+        .violations(List.of(new ValidationViolation()
+            .message("shacl constraint violation")
+            .severity(ValidationViolation.SeverityEnum.VIOLATION)))
+        .rawReport("shacl constraint violation");
+    ValidationReport jsonFailingReport = new ValidationReport()
+        .conforms(false)
+        .violations(List.of(new ValidationViolation()
+            .message("json schema constraint violation")
+            .severity(ValidationViolation.SeverityEnum.VIOLATION)))
+        .rawReport("json schema constraint violation");
+
+    givenShaclAndJsonModulesEnabled();
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    when(schemaStore.getSchemaRecord(SCHEMA_ID)).thenReturn(buildShapeRecord(SCHEMA_ID));
+    when(schemaStore.getSchema(SCHEMA_ID)).thenReturn(shapeContent);
+    when(schemaStore.getSchemaRecord(JSON_SCHEMA_ID)).thenReturn(buildJsonRecord(JSON_SCHEMA_ID));
+    when(schemaStore.getSchema(JSON_SCHEMA_ID)).thenReturn(jsonSchemaContent);
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(shaclFailingReport);
+    when(jsonSchemaValidationStrategy.validate(anyList(), anyList())).thenReturn(jsonFailingReport);
+    when(validationResultStore.store(any())).thenReturn(70L, 71L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setSchemaIds(List.of(SCHEMA_ID, JSON_SCHEMA_ID));
+
+    ValidationResponse response = service.validateAssets(request);
+
+    assertFalse(response.getConforms());
+    assertNotNull(response.getReport());
+    // Pins current behaviour (not a design requirement to preserve): with both partial
+    // results failing, the response surfaces the first-planned job's report (SHACL, since
+    // it precedes JSON_SCHEMA in schemaIds order) - it is not a merge of both violation sets.
+    assertEquals("shacl constraint violation", response.getReport().getViolations().get(0).getMessage());
+    assertEquals(List.of(70L, 71L), response.getValidationResultIds());
+    // Both strategies still ran independently despite both failing.
+    verify(shaclValidationStrategy).validate(anyList(), anyList());
+    verify(jsonSchemaValidationStrategy).validate(anyList(), anyList());
+
+    ArgumentCaptor<ValidationResultRecord> captor = ArgumentCaptor.forClass(ValidationResultRecord.class);
+    verify(validationResultStore, times(2)).store(captor.capture());
+    List<ValidationResultRecord> stored = captor.getAllValues();
+    assertTrue(stored.stream().anyMatch(
+        r -> r.validatorType() == ValidatorType.SHACL && !r.conforms()),
+        "Expected a stored failing SHACL result");
+    assertTrue(stored.stream().anyMatch(
+        r -> r.validatorType() == ValidatorType.JSON_SCHEMA && !r.conforms()),
+        "Expected a stored failing JSON Schema result");
+  }
+
+  // === validateAsset — RDF/XML asset: SHACL + XML Schema combined (symmetric to JSON-LD) ===
+
+  @Test
+  void validateAsset_rdfXmlAsset_shaclAndXmlSchemaTogether_bothConform_notRejected() {
+    AssetMetadata asset = buildRdfXmlAsset(ASSET_ID);
+    ContentAccessor shapeContent = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+    ContentAccessor xmlSchemaContent = new ContentAccessorDirect("<xs:schema/>");
+
+    givenShaclAndXmlModulesEnabled();
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    when(schemaStore.getSchemaRecord(SCHEMA_ID)).thenReturn(buildShapeRecord(SCHEMA_ID));
+    when(schemaStore.getSchema(SCHEMA_ID)).thenReturn(shapeContent);
+    when(schemaStore.getSchemaRecord(XML_SCHEMA_ID)).thenReturn(buildXmlRecord(XML_SCHEMA_ID));
+    when(schemaStore.getSchema(XML_SCHEMA_ID)).thenReturn(xmlSchemaContent);
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(xmlSchemaValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(80L, 81L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setSchemaIds(List.of(SCHEMA_ID, XML_SCHEMA_ID));
+
+    ValidationResponse response = service.validateAssets(request);
+
+    // Not rejected - symmetric to the JSON-LD case: RDF/XML is applicable to XML Schema (SRS 3.1.6).
+    assertTrue(response.getConforms());
+    assertNull(response.getReport());
+    assertEquals(List.of(80L, 81L), response.getValidationResultIds());
+    // SHACL is still evaluated via the existing data-graph-against-shapes-graph logic.
+    verify(shaclValidationStrategy).validate(anyList(), anyList());
+    // XML Schema is additionally evaluated against the RDF/XML representation.
+    verify(xmlSchemaValidationStrategy).validate(anyList(), anyList());
+
+    ArgumentCaptor<ValidationResultRecord> captor = ArgumentCaptor.forClass(ValidationResultRecord.class);
+    verify(validationResultStore, times(2)).store(captor.capture());
+    List<ValidationResultRecord> stored = captor.getAllValues();
+    assertTrue(stored.stream().anyMatch(
+        r -> r.validatorType() == ValidatorType.SHACL && r.validatorIds().equals(List.of(SCHEMA_ID))),
+        "Expected a stored SHACL result for " + SCHEMA_ID);
+    assertTrue(stored.stream().anyMatch(
+        r -> r.validatorType() == ValidatorType.XML_SCHEMA && r.validatorIds().equals(List.of(XML_SCHEMA_ID))),
+        "Expected a stored XML Schema result for " + XML_SCHEMA_ID);
   }
 
   @Test
@@ -232,8 +429,32 @@ class AssetValidationServiceImplTest {
     request.setAssetIds(List.of(ASSET_ID));
     request.setSchemaIds(List.of(XML_SCHEMA_ID));
 
-    // RDF assets (RDF/XML) are not applicable to XML Schema validation - throws ClientException before module check
-    assertThrows(ClientException.class, () -> service.validateAssets(request));
+    // An RDF/XML-serialised RDF asset IS applicable to XML Schema (SRS 3.1.6, symmetric with
+    // the JSON Schema / JSON-LD rule) - the module-disabled check must be reached, not
+    // short-circuited by an inapplicability rejection.
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertEquals("module_disabled:" + SchemaModuleType.XML_SCHEMA, ex.getMessage());
+  }
+
+  @Test
+  void validateAsset_turtleRdfAsset_withExplicitXmlSchema_notApplicable_throwsClientException() {
+    registerStrategyList();
+    registerShaclStrategy();
+    registerXmlStrategy();
+    when(assetStore.getById(ASSET_ID)).thenReturn(buildTurtleRdfAsset(ASSET_ID));
+    when(schemaStore.getSchemaRecord(XML_SCHEMA_ID)).thenReturn(buildXmlRecord(XML_SCHEMA_ID));
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setSchemaIds(List.of(XML_SCHEMA_ID));
+
+    // Regression guard: a non-RDF/XML RDF serialisation (Turtle) must remain inapplicable
+    // to XML Schema even after RDF/XML is made applicable.
+    ClientException ex = assertThrows(ClientException.class, () -> service.validateAssets(request));
+    assertTrue(ex.getMessage().contains("not applicable"),
+        "Turtle-serialised RDF must stay inapplicable to XML Schema: " + ex.getMessage());
+    assertTrue(ex.getMessage().contains("SHACL"),
+        "Rejection message should name SHACL as the type actually applicable to this asset: " + ex.getMessage());
   }
 
   @Test
@@ -388,6 +609,62 @@ class AssetValidationServiceImplTest {
     assertNull(response.getReport());
     assertEquals(List.of(SCHEMA_ID), response.getSchemaIds());
     assertEquals(List.of(53L), response.getValidationResultIds());
+  }
+
+  @Test
+  void validateAsset_jsonLdRdfAsset_validateAll_jsonModuleAlsoEnabled_stillRunsShaclOnly() {
+    AssetMetadata asset = buildRdfAsset(ASSET_ID);
+    ContentAccessor composite = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    givenShaclAndJsonModulesEnabled();
+    when(schemaStore.getCompositeSchema(SchemaType.SHAPE)).thenReturn(composite);
+    when(schemaStore.getSchemaList()).thenReturn(Map.of(SchemaType.SHAPE, List.of(SCHEMA_ID)));
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(54L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setValidateAgainstAllSchemas(true);
+
+    ValidationResponse response = service.validateAssets(request);
+
+    assertTrue(response.getConforms());
+    assertEquals(List.of(SCHEMA_ID), response.getSchemaIds());
+    assertEquals(List.of(54L), response.getValidationResultIds());
+    // Regression guard: with JSON_SCHEMA also enabled, "validate against all schemas" must not
+    // auto-pick an arbitrary stored JSON schema for a JSON-LD asset — schemaStore.getLatestSchemaByType
+    // is never even consulted, and the JSON Schema strategy never runs.
+    verify(schemaStore, never()).getLatestSchemaByType(any());
+    verify(jsonSchemaValidationStrategy, never()).validate(anyList(), anyList());
+  }
+
+  @Test
+  void validateAsset_rdfXmlRdfAsset_validateAll_xmlModuleAlsoEnabled_stillRunsShaclOnly() {
+    AssetMetadata asset = buildRdfXmlAsset(ASSET_ID);
+    ContentAccessor composite = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    givenShaclAndXmlModulesEnabled();
+    when(schemaStore.getCompositeSchema(SchemaType.SHAPE)).thenReturn(composite);
+    when(schemaStore.getSchemaList()).thenReturn(Map.of(SchemaType.SHAPE, List.of(SCHEMA_ID)));
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(55L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setValidateAgainstAllSchemas(true);
+
+    ValidationResponse response = service.validateAssets(request);
+
+    assertTrue(response.getConforms());
+    assertEquals(List.of(SCHEMA_ID), response.getSchemaIds());
+    assertEquals(List.of(55L), response.getValidationResultIds());
+    // Regression guard: with XML_SCHEMA also enabled, "validate against all schemas" must not
+    // auto-pick an arbitrary stored XML schema for an RDF/XML asset — schemaStore.getLatestSchemaByType
+    // is never even consulted, and the XML Schema strategy never runs.
+    verify(schemaStore, never()).getLatestSchemaByType(any());
+    verify(xmlSchemaValidationStrategy, never()).validate(anyList(), anyList());
   }
 
   // === Negative tests for RDF serializations + non-SHACL schemas ===
@@ -1223,10 +1500,28 @@ class AssetValidationServiceImplTest {
     when(moduleConfigService.isModuleEnabled(SchemaModuleType.JSON_SCHEMA)).thenReturn(true);
   }
 
+  private void givenShaclAndJsonModulesEnabled() {
+    registerStrategyList();
+    registerShaclStrategy();
+    registerJsonStrategy();
+    when(moduleConfigService.isModuleEnabled(any())).thenReturn(false);
+    when(moduleConfigService.isModuleEnabled(SchemaModuleType.SHACL)).thenReturn(true);
+    when(moduleConfigService.isModuleEnabled(SchemaModuleType.JSON_SCHEMA)).thenReturn(true);
+  }
+
   private void givenXmlModuleEnabled() {
     registerStrategyList();
     registerXmlStrategy();
     when(moduleConfigService.isModuleEnabled(any())).thenReturn(false);
+    when(moduleConfigService.isModuleEnabled(SchemaModuleType.XML_SCHEMA)).thenReturn(true);
+  }
+
+  private void givenShaclAndXmlModulesEnabled() {
+    registerStrategyList();
+    registerShaclStrategy();
+    registerXmlStrategy();
+    when(moduleConfigService.isModuleEnabled(any())).thenReturn(false);
+    when(moduleConfigService.isModuleEnabled(SchemaModuleType.SHACL)).thenReturn(true);
     when(moduleConfigService.isModuleEnabled(SchemaModuleType.XML_SCHEMA)).thenReturn(true);
   }
 }
