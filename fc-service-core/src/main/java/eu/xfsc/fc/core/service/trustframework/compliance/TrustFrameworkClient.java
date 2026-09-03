@@ -20,7 +20,7 @@ public interface TrustFrameworkClient {
   /**
    * Performs a compliance check for the given credential against the specified profile configuration.
    *
-   * @param credential the credential payload to check (verifiable presentation or self-description)
+   * @param credential the credential payload to check (verifiable presentation or asset)
    * @param config     resolved profile configuration providing endpoint and trust-list parameters
    * @return the outcome of the compliance check; never {@code null}
    */

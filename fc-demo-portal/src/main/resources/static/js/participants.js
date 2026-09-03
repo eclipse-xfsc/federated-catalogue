@@ -139,5 +139,5 @@ function addSearchIcon() {
 }
 
 function format(d) {
-  return 'Asset: ' + d['asset'];
+  return $('<div>').text('Asset: ' + d['asset']).prop('outerHTML');
 }
