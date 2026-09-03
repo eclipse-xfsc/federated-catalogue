@@ -110,7 +110,7 @@ graphstore:
 publisher:
 #  impl: none #nats
 #  url: nats://localhost:4222 
-  subject: fc.sd
+  subject: fc.asset
 #  instance: http://localhost:8081
   send-content: false
   impl: none
@@ -121,11 +121,11 @@ publisher:
 subscriber:
 #  impl: none
 #  url: nats://localhost:4222
-#  subject: fc.sd.*
+#  subject: fc.asset.*
 #  instance: http://localhost:8082
-#  stream: fc-sd 
-#  queue: sd-processor
-#  group: sd-group
+#  stream: fc-asset 
+#  queue: asset-processor
+#  group: asset-group
   impl: none #ces
   instance: http://localhost:8081
   url: https://ces-v1.lab.gaia-x.eu 
@@ -169,7 +169,7 @@ federated-catalogue:
     cached: true
     cache-size: 128
     schema:
-      location: schemaFiles        # RDF schema definitions used for SD validation
+      location: schemaFiles        # RDF schema definitions used for asset validation
     asset:
       location: assetFiles         # Non-RDF file content (PDFs, images, binaries)
     context-cache:

@@ -18,18 +18,18 @@ graphstore:
 publisher:
   impl: none #nats
   url: nats://localhost:4222 
-  subject: fc.sd
+  subject: fc.asset
   instance: http://localhost:8081
   send-content: false
 
 subscriber:
   impl: none
 #  url: nats://localhost:4222
-#  subject: fc.sd.*
+#  subject: fc.asset.*
 #  instance: http://localhost:8082
-#  stream: fc-sd 
-#  queue: sd-processor
-#  group: sd-group
+#  stream: fc-asset 
+#  queue: asset-processor
+#  group: asset-group
 #  impl: ces
   instance: http://localhost:8082
   url: https://ces-server.test.org
