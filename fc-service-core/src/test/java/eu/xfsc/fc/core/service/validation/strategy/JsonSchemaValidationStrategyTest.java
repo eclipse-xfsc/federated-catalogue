@@ -98,6 +98,116 @@ class JsonSchemaValidationStrategyTest {
   }
 
   @Test
+  void validate_httpsRefInSchema_throwsClientException() {
+    // https:// must be rejected too — it is not a special case exempt from the SSRF check.
+    assertThrows(ClientException.class, () -> strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect("{\"$ref\":\"https://internal.example.org/schemas/v1\"}"))));
+  }
+
+  @Test
+  void validate_upperCaseHttpRefInSchema_throwsClientException() {
+    // The scheme check must be case-insensitive — "HTTP://" is the same scheme as "http://".
+    assertThrows(ClientException.class, () -> strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect("{\"$ref\":\"HTTP://169.254.169.254/latest/meta-data\"}"))));
+  }
+
+  @Test
+  void validate_protocolRelativeRefInSchema_throwsClientException() {
+    // "//evil.example/schema" carries no URI scheme, so it would slip past a scheme-only check,
+    // yet it still resolves to an external fetch (RFC 3986 §4.2) once given a scheme by whatever
+    // resolves it. The pre-check must reject it directly for a precise client error rather than
+    // falling through to the registry's load-time block (proven below by pinning the pre-check's
+    // own wording and ruling out the registry's "Schema could not be loaded:" wording — see
+    // validate_relativeRefResolvedAgainstExternalIdBase_failsWithoutNetworkAccess for the case
+    // that *is* expected to be caught only by the registry).
+    ClientException exception = assertThrows(ClientException.class, () -> strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect("{\"$ref\":\"//evil.example/schema\"}"))));
+
+    assertTrue(exception.getMessage().contains("//evil.example/schema")
+            && exception.getMessage().contains("resolves outside the schema document"),
+        "Expected the pre-check's own error, got: " + exception.getMessage());
+    assertFalse(exception.getMessage().startsWith("Schema could not be loaded:"),
+        "Expected the pre-check to reject this before the schema is ever loaded by the registry, "
+            + "got: " + exception.getMessage());
+  }
+
+  @Test
+  void validate_absoluteDynamicRefInSchema_throwsClientException() {
+    // $dynamicRef is a separate keyword from $ref (2020-12) and must be covered by the same
+    // out-of-document check, not just $ref.
+    assertThrows(ClientException.class, () -> strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect("{\"$dynamicRef\":\"https://internal.example.org/schemas/v1\"}"))));
+  }
+
+  @Test
+  void validate_conformingJson_withWellKnownMetaSchemaDeclared_returnsConforming() {
+    // A well-known "$schema" IRI resolves to a built-in dialect preset and must not be treated as
+    // an external resource by the registry's block-all schema loader.
+    String schemaWithMetaSchema =
+        "{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\","
+        + "\"type\":\"object\",\"required\":[\"id\"],\"properties\":{\"id\":{\"type\":\"string\"}}}";
+
+    ValidationReport report = strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect(schemaWithMetaSchema)));
+
+    assertTrue(report.getConforms());
+    assertTrue(report.getViolations().isEmpty());
+  }
+
+  @Test
+  void validate_conformingJson_withDefsFragmentRef_returnsConforming() {
+    // A fragment-only $ref into the schema's own $defs must still work — the pre-check and the
+    // registry-level block must both permit same-document references.
+    String schemaWithDefsRef =
+        "{\"type\":\"object\",\"required\":[\"id\"],"
+        + "\"properties\":{\"id\":{\"$ref\":\"#/$defs/x\"}},"
+        + "\"$defs\":{\"x\":{\"type\":\"string\"}}}";
+
+    ValidationReport report = strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect(schemaWithDefsRef)));
+
+    assertTrue(report.getConforms());
+    assertNotNull(report.getViolations());
+    assertTrue(report.getViolations().isEmpty());
+  }
+
+  @Test
+  void validate_relativeRefResolvedAgainstExternalIdBase_failsWithoutNetworkAccess() {
+    // "other.json" alone carries no URI scheme, so the textual pre-check lets it through — it
+    // only becomes the external IRI "http://192.0.2.1/base/other.json" once resolved against the
+    // schema's own $id. 192.0.2.1 is the TEST-NET-1 documentation range (RFC 5737): it is never
+    // routed, so if the registry attempted to actually connect, this call would hang rather than
+    // fail fast. Asserting a tight time bound proves no connection was attempted.
+    String schemaWithIdBaseBypass =
+        "{\"$id\":\"http://192.0.2.1/base/\",\"type\":\"object\","
+        + "\"properties\":{\"id\":{\"$ref\":\"other.json\"}}}";
+
+    long startNanos = System.nanoTime();
+    ClientException exception = assertThrows(ClientException.class, () -> strategy.validate(
+        List.of(buildAsset(CONFORMING_JSON)),
+        List.of(new ContentAccessorDirect(schemaWithIdBaseBypass))));
+    long elapsedMillis = (System.nanoTime() - startNanos) / 1_000_000;
+
+    assertTrue(elapsedMillis < 5_000,
+        "Validation must fail immediately with no network attempt; took " + elapsedMillis + "ms");
+    // Pin that this was rejected by the registry-level block (buildRegistry()'s schema loader),
+    // not by the textual pre-check — proving the load-time guard, not the pre-check, is what
+    // actually stops the bypass. If a future change made the pre-check itself catch this case,
+    // this assertion (and the "not allowed to be loaded" wording) would need to change with it.
+    assertTrue(exception.getMessage().startsWith("Schema could not be loaded:"),
+        "Expected the registry's load-time block to reject this, got: " + exception.getMessage());
+    assertTrue(exception.getMessage().contains("http://192.0.2.1/base/other.json")
+            && exception.getMessage().contains("not allowed to be loaded"),
+        "Expected the blocked, resolved IRI to be named in the failure, got: " + exception.getMessage());
+  }
+
+  @Test
   void validate_conformingJson_withLocalSchemaRef_returnsConforming() {
     String schemaWithLocalRef =
         "{\"type\":\"object\",\"required\":[\"id\"],"

@@ -639,6 +639,34 @@ class AssetValidationServiceImplTest {
     verify(jsonSchemaValidationStrategy, never()).validate(anyList(), anyList());
   }
 
+  @Test
+  void validateAsset_rdfXmlRdfAsset_validateAll_xmlModuleAlsoEnabled_stillRunsShaclOnly() {
+    AssetMetadata asset = buildRdfXmlAsset(ASSET_ID);
+    ContentAccessor composite = new ContentAccessorDirect("@prefix sh: <http://www.w3.org/ns/shacl#> .");
+
+    when(assetStore.getById(ASSET_ID)).thenReturn(asset);
+    givenShaclAndXmlModulesEnabled();
+    when(schemaStore.getCompositeSchema(SchemaType.SHAPE)).thenReturn(composite);
+    when(schemaStore.getSchemaList()).thenReturn(Map.of(SchemaType.SHAPE, List.of(SCHEMA_ID)));
+    when(shaclValidationStrategy.validate(anyList(), anyList())).thenReturn(CONFORMING_REPORT);
+    when(validationResultStore.store(any())).thenReturn(55L);
+
+    ValidationRequest request = new ValidationRequest();
+    request.setAssetIds(List.of(ASSET_ID));
+    request.setValidateAgainstAllSchemas(true);
+
+    ValidationResponse response = service.validateAssets(request);
+
+    assertTrue(response.getConforms());
+    assertEquals(List.of(SCHEMA_ID), response.getSchemaIds());
+    assertEquals(List.of(55L), response.getValidationResultIds());
+    // Regression guard: with XML_SCHEMA also enabled, "validate against all schemas" must not
+    // auto-pick an arbitrary stored XML schema for an RDF/XML asset — schemaStore.getLatestSchemaByType
+    // is never even consulted, and the XML Schema strategy never runs.
+    verify(schemaStore, never()).getLatestSchemaByType(any());
+    verify(xmlSchemaValidationStrategy, never()).validate(anyList(), anyList());
+  }
+
   // === Negative tests for RDF serializations + non-SHACL schemas ===
 
   @Test

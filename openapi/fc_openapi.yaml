@@ -985,25 +985,31 @@ components:
           maxItems: 20
           description: >
             Asset IRIs to validate (1 up to the configured maximum, default 20 - see
-            `federated-catalogue.validation.max-assets-per-request`). A single-ID request runs full type-based dispatch
-            (SHACL for RDF assets, JSON Schema for JSON, XML Schema for XML).
-            Multiple IDs merge all assets into a single data graph for SHACL-only validation;
-            all assets must be RDF assets in that case.
+            `federated-catalogue.validation.max-assets-per-request`). A single-ID request supports full
+            type-based dispatch, see `schemaIds` and `validateAgainstAllSchemas` below. Multiple IDs merge
+            all assets into a single data graph for SHACL-only validation; all assets must be RDF assets in
+            that case.
         schemaIds:
           type: array
           items:
             type: string
           description: >
-            Optional schema IDs to validate against. For single-asset requests, each schema
-            must match the asset type (SHACL shape for RDF, JSON Schema for JSON, XML Schema
-            for XML). For multi-asset requests, each must be a SHACL shape.
+            Optional schema IDs to validate against. For a single-asset request, each schema ID must be
+            applicable to the asset: a SHACL shape for any RDF asset, a JSON Schema for a JSON asset or an
+            RDF asset serialised in JSON-LD, or an XML Schema for an XML asset or an RDF asset serialised
+            in RDF/XML. For a multi-asset request, each schema ID must be a SHACL shape.
             Mutually exclusive with validateAgainstAllSchemas=true.
         validateAgainstAllSchemas:
           type: boolean
           default: false
           description: >
-            If true, validate against all stored schemas matching the asset type (single-asset)
-            or all stored SHACL shapes (multi-asset).
+            If true, validate without specifying schema IDs. For a single-asset request: an RDF asset
+            (JSON-LD or RDF/XML) is validated against the composite of all stored SHACL shapes only - JSON
+            Schema and XML Schema are never auto-selected for an RDF asset, even if those modules are
+            enabled and an explicit schemaId for one would have been accepted; a non-RDF JSON or XML asset
+            is validated against its latest stored JSON Schema or XML Schema, respectively. For a
+            multi-asset request, all assets are merged into a single data graph and validated against the
+            composite of all stored SHACL shapes.
 
     ValidationResponse:
       type: object
