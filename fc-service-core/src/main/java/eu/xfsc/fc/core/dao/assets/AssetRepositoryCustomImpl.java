@@ -218,6 +218,8 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
       Timestamp exp = rs.getTimestamp("expirationtime");
       String contentType = rs.getString("content_type");
       long fileSize = rs.getLong("file_size");
+      // wasNull() reflects the last column read, so capture it right after getLong
+      boolean fileSizeWasNull = rs.wasNull();
       String originalFilename = rs.getString("original_filename");
       String contentKindStr = rs.getString("content_kind");
       return AssetRecord.builder()
@@ -232,7 +234,7 @@ public class AssetRepositoryCustomImpl implements AssetRepositoryCustom {
           .content(content == null ? null : new ContentAccessorDirect(content))
           .expirationTime(exp == null ? null : exp.toInstant())
           .contentType(contentType)
-          .fileSize(rs.wasNull() ? null : fileSize)
+          .fileSize(fileSizeWasNull ? null : fileSize)
           .originalFilename(originalFilename)
           .contentKind(contentKindStr == null ? null : ContentKind.valueOf(contentKindStr))
           .build();
