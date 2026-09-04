@@ -1,5 +1,9 @@
 # Build & Test Procedure
 
+**Scope:** this Docker Compose stack is a developer tool for building and running the Federated Catalogue from a
+local source checkout — it is not a supported deployment path. For the demo / reference deployment, use the
+[Helm chart](../deployment/helm/fc-service/README.md) (`deployment/helm/fc-service/`).
+
 Ensure you have a recent JDK, Maven, and Git installed. The authoritative build-tool versions are pinned in `pom.xml` (
 `<java.version>`) and the project `Dockerfile` / `Dockerfile.dev`; check those if you are unsure which JDK / Maven
 version the project currently targets.
