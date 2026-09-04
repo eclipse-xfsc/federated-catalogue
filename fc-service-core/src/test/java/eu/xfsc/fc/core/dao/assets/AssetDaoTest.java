@@ -356,6 +356,22 @@ class AssetDaoTest {
     assertEquals("hash-a", list.get(2).getAssetHash());
   }
 
+  @Test
+  void selectByFilter_nullIssuer_stillReportsFileSize() {
+    AssetRecord record = buildRecord("hash-noissuer", "sub/1", null,
+        Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T00:00:00Z"), null,
+        AssetStatus.ACTIVE, "content", List.of("did:val:1"),
+        "application/pdf", 4096L, "file.pdf");
+    assetDao.insert(record);
+
+    PaginatedResults<AssetRecord> results = assetDao.selectByFilter(new AssetFilter(), true, true);
+
+    assertEquals(1, results.getResults().size());
+    AssetRecord result = results.getResults().getFirst();
+    assertNull(result.getIssuer());
+    assertEquals(4096L, result.getFileSize());
+  }
+
   // ===== selectHashes =====
 
   @Test
