@@ -638,7 +638,10 @@
                          supplies the Eclipse Foundation SPDX header text instead. The license name is
                          deliberately NOT "apache_v2": that name collides with the plugin's bundled
                          classpath template, which takes priority over the external resolver and would
-                         silently defeat this custom header. -->
+                         silently defeat this custom header.
+                         ${maven.multiModuleProjectDirectory} is anchored by the .mvn/ directory at the
+                         repo root; without it Maven resolves the property to the invocation directory,
+                         and a build started from a module directory would not find license-template/. -->
                     <licenseResolver>file:${maven.multiModuleProjectDirectory}/license-template</licenseResolver>
                     <licenseName>eclipse_apache_v2</licenseName>
                     <copyrightOwners>Contributors to the Eclipse Foundation</copyrightOwners>
@@ -713,7 +716,9 @@
                          chart YAML under deployment/helm/. Run once from the repo root (module -N):
                          `mvn -N license:update-file-header@sweep-docker-and-helm`.
                          .claude/hooks/ is a different subtree entirely (not under docker/ or
-                         deployment/), so it is never reached by this execution's roots. -->
+                         deployment/), so it is never reached by this execution's roots.
+                         Third-party files and files the properties transformer cannot handle
+                         are listed in the execution's <excludes> below. -->
                     <execution>
                         <id>sweep-docker-and-helm</id>
                         <goals>
@@ -729,6 +734,16 @@
                                 <include>**/*.yaml</include>
                                 <include>**/*.yml</include>
                             </includes>
+                            <excludes combine.self="override">
+                                <!-- Third-party Apache Software Foundation files (Jena Fuseki image build):
+                                     not project IP, already carry the ASF header. -->
+                                <exclude>**/fuseki/**</exclude>
+                                <!-- Helm configmap embedding a shell script with a shebang inside a YAML literal
+                                     block. The properties transformer treats any "#!" in the file as a shebang
+                                     prolog and inserts the header after it, mid-block, producing invalid YAML.
+                                     The header for this file is maintained by hand. -->
+                                <exclude>**/postgres-configmap.yaml</exclude>
+                            </excludes>
                             <extraExtensions>
                                 <yaml>properties</yaml>
                                 <yml>properties</yml>
