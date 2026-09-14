@@ -240,9 +240,11 @@ else
 fi
 hr
 
-# DataTables' default theme ships small PNG sort/detail icons alongside the
-# CSS/JS. They carry no text banner, so flag any PNG living next to a
-# dataTables*.css/js file for manual attribution.
+# DataTables publishes small PNG sort/detail icons as examples/resources in
+# its GitHub repos (DataTables/DataTables, DataTables/DataTablesSrc) - not in
+# the datatables.net npm package, so no Dash coordinate covers them. They
+# carry no text banner, so flag any PNG living next to a dataTables*.css/js
+# file for manual attribution.
 echo "## Images colocated with vendored front-end libs (need manual attribution)"
 if [[ -z "$img_matches" ]]; then
   echo "(none found)"
