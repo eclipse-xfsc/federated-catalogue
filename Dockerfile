@@ -14,6 +14,8 @@ COPY openapi openapi
 
 COPY pom.xml pom.xml
 COPY lombok.config lombok.config
+COPY license-template license-template
+COPY .mvn .mvn
 
 RUN mvn clean install -DskipTests -Dcheckstyle.skip
 

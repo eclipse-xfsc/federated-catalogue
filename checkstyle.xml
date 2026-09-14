@@ -39,6 +39,13 @@
     <property name="eachLine" value="true"/>
   </module>
 
+  <!-- Catches CRLF drift early, at validate time, instead of leaving it to be silently
+       rewritten to LF as a side effect of the next license:update-file-header sweep (see
+       pom.xml license-maven-plugin comment on lineSeparator). -->
+  <module name="LineEnding">
+    <property name="lineEnding" value="lf"/>
+  </module>
+
   <module name="LineLength">
     <property name="fileExtensions" value="java"/>
     <property name="max" value="120"/>
