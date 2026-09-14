@@ -197,7 +197,7 @@
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
                     <excludes>target/**/*</excludes>
-                    <encoding>UTF-8</encoding>
+                    <inputEncoding>UTF-8</inputEncoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
                     <violationSeverity>warning</violationSeverity>

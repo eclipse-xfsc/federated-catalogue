@@ -134,8 +134,8 @@
         <plugin.openapi-generator.version>7.12.0</plugin.openapi-generator.version>
         <plugin.jib.version>3.4.0</plugin.jib.version>
         <plugin.maven-license.version>2.4.0</plugin.maven-license.version>
-        <plugin.checkstyle.version>3.1.2</plugin.checkstyle.version>
-        <plugin.checkstyle.puppycrawl.version>10.3.1</plugin.checkstyle.puppycrawl.version>
+        <plugin.checkstyle.version>3.6.0</plugin.checkstyle.version>
+        <plugin.checkstyle.puppycrawl.version>14.1.0</plugin.checkstyle.puppycrawl.version>
         <plugin.dependency-check.version>12.2.2</plugin.dependency-check.version>
         <plugin.enforcer.version>3.5.0</plugin.enforcer.version>
         <!-- OWASP scan: CVSS threshold and NVD API key (supply via -Dnvd.api.key=... or NVD_API_KEY env in CI) -->
