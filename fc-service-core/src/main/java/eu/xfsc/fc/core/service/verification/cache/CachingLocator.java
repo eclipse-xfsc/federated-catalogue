@@ -34,8 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.jena.atlas.web.ContentType;
 import org.apache.jena.atlas.web.TypedInputStream;
-import org.apache.jena.riot.system.stream.Locator;
-import org.apache.jena.riot.system.stream.LocatorHTTP;
+import org.apache.jena.riot.system.streammgr.Locator;
+import org.apache.jena.riot.system.streammgr.LocatorHTTP;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

@@ -47,6 +47,22 @@
             <artifactId>neo4j-java-driver</artifactId>
         </dependency>
 
+        <!-- Must be declared before neosemantics: neosemantics is a fat-jar that bundles old
+             copies of commons-lang3 and commons-io, lacking newer methods (e.g.
+             BasicThreadFactory.builder(), called by Jena's AlarmClock; SystemProperties
+             .getUserName(String); IOUtils.skip(InputStream, long, Supplier)). Without these
+             explicit declarations the shaded versions win classpath order and every
+             embedded-DB @SpringBootTest fails at context load with NoSuchMethodError.
+             fc-service-server carries the same declarations for the same reason. -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+
         <!-- Embedded Neo4j, for tests only: see the scope note in the parent POM. -->
         <dependency>
             <groupId>org.neo4j</groupId>
