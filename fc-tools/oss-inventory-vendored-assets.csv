@@ -1,0 +1,20 @@
+path,component,dash_coordinate
+fc-test-support/performance-testing/user-files/lib/bcpkix-jdk15on-1.70.jar,Bouncy Castle PKIX,maven/mavencentral/org.bouncycastle/bcpkix-jdk15on/1.70
+fc-test-support/performance-testing/user-files/lib/bcprov-jdk18on-1.71.jar,Bouncy Castle Provider,maven/mavencentral/org.bouncycastle/bcprov-jdk18on/1.71
+fc-test-support/performance-testing/user-files/lib/jakarta.json-2.0.0.jar,Jakarta JSON Processing (Default Provider),maven/mavencentral/org.glassfish/jakarta.json/2.0.0
+fc-test-support/performance-testing/user-files/lib/nimbus-jose-jwt-9.9.jar,Connect2id Nimbus JOSE+JWT,maven/mavencentral/com.nimbusds/nimbus-jose-jwt/9.9
+fc-test-support/performance-testing/user-files/lib/rdf-urdna-1.1.jar,setl rdf-urdna,maven/mavencentral/io.setl/rdf-urdna/1.1
+fc-test-support/performance-testing/user-files/lib/titanium-json-ld-1.3.1.jar,Titanium JSON-LD,maven/mavencentral/com.apicatalog/titanium-json-ld/1.3.1
+fc-demo-portal/src/main/resources/static/css/lib/styles.css,Start Bootstrap Simple Sidebar,npm/npmjs/-/startbootstrap-simple-sidebar/6.0.5
+fc-demo-portal/src/main/resources/static/css/lib/styles.css,Bootstrap,npm/npmjs/-/bootstrap/5.1.3
+fc-demo-portal/src/main/resources/static/css/lib/bootstrap-icons.min.css,Bootstrap Icons,npm/npmjs/-/bootstrap-icons/1.11.3
+fc-demo-portal/src/main/resources/static/css/lib/dataTables.min.css,DataTables,npm/npmjs/-/datatables.net/2.3.7
+fc-demo-portal/src/main/resources/static/css/lib/fonts/bootstrap-icons.woff,Bootstrap Icons,npm/npmjs/-/bootstrap-icons/1.11.3
+fc-demo-portal/src/main/resources/static/css/lib/fonts/bootstrap-icons.woff2,Bootstrap Icons,npm/npmjs/-/bootstrap-icons/1.11.3
+fc-demo-portal/src/main/resources/static/js/lib/bootstrap.bundle.min.js,Bootstrap (bundle incl. Popper),npm/npmjs/-/bootstrap/5.3.8
+fc-demo-portal/src/main/resources/static/js/lib/dataTables.min.js,DataTables,npm/npmjs/-/datatables.net/2.3.7
+fc-demo-portal/src/main/resources/static/js/lib/jquery.min.js,jQuery,npm/npmjs/-/jquery/3.7.1
+fc-service-server/src/main/resources/static/css/bootstrap.min.css,Bootstrap,npm/npmjs/-/bootstrap/5.2.3
+fc-service-server/src/main/resources/static/css/jquery-ui.min.css,jQuery UI,npm/npmjs/-/jquery-ui/1.13.2
+fc-service-server/src/main/resources/static/js/jquery-3.6.3.min.js,jQuery,npm/npmjs/-/jquery/3.6.3
+fc-service-server/src/main/resources/static/js/jquery-ui.min.js,jQuery UI,npm/npmjs/-/jquery-ui/1.13.2

@@ -26,3 +26,40 @@ jobs:
     with:
       java_version: '21'
       release_tag: ${{ inputs.release_tag }}
+
+  vendored-assets-dash-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Build Dash coordinates file for vendored assets
+        run: ./fc-tools/scan-vendored-assets.sh --dash-coordinates > /tmp/vendored.deps
+
+      - name: Download Eclipse Dash license tool
+        run: |
+          curl -sSfL --proto '=https' --proto-redir '=https' \
+            -o dash-licenses.jar \
+            "https://repo.eclipse.org/service/rest/v1/search/assets/download?sort=version&repository=dash-maven2-releases&maven.groupId=org.eclipse.dash&maven.artifactId=org.eclipse.dash.licenses&maven.extension=jar"
+          file dash-licenses.jar
+
+      # Dash exits non-zero when any coordinate resolves unresolved/restricted -
+      # deliberately not swallowed here (no continue-on-error, no `|| true`).
+      # 3 of the current vendored coordinates resolve `restricted` pending
+      # Eclipse IP Team review, so this job is expected to stay red - including
+      # on the monthly cron below - until that clears. Do not "fix" the red by
+      # adding continue-on-error; the per-coordinate status is in the summary
+      # artifact uploaded by the always() step below.
+      - name: Run Dash scan against vendored-asset coordinates
+        run: |
+          java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar dash-licenses.jar /tmp/vendored.deps \
+            -summary vendored-assets-DEPENDENCIES
+
+      - name: Upload vendored-assets Dash summary
+        if: always() && hashFiles('vendored-assets-DEPENDENCIES') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendored-assets-dependencies-summary
+          path: vendored-assets-DEPENDENCIES
+          retention-days: 90
+          if-no-files-found: error
