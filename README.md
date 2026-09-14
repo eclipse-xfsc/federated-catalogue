@@ -36,6 +36,7 @@ Postman, …) for a per-endpoint workspace that stays in sync with the spec.
 | Topic                                                       | Location                                                                                                       |
 |-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
 | Architecture, requirements, deployment, ADRs (canonical)    | [Architecture Document](https://github.com/eclipse-xfsc/docs/tree/main/federated-catalogue)                    |
+| Architecture Document, rendered (PDF / HTML download)        | [Latest release](https://github.com/eclipse-xfsc/docs/blob/main/federated-catalogue/README.md#download)        |
 | API reference                                               | [docs/api-docs.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/api-docs.md)             |
 | Operator guide (trust framework, Loire, credential formats) | [docs/operator-guide.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/operator-guide.md) |
 | CI / CD workflows                                           | [docs/ci-cd.md](https://github.com/eclipse-xfsc/federated-catalogue/blob/main/docs/ci-cd.md)                   |
