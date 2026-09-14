@@ -16,13 +16,13 @@ import eu.xfsc.fc.api.generated.model.RebuildStatus;
 import eu.xfsc.fc.api.generated.model.SwitchGraphDatabaseRequest;
 import eu.xfsc.fc.core.dao.adminconfig.AdminConfigEntry;
 import eu.xfsc.fc.core.dao.adminconfig.AdminConfigRepository;
-import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.AssetFilter;
 import eu.xfsc.fc.core.pojo.GraphBackendType;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildProgress;
 import eu.xfsc.fc.core.service.graphdb.GraphRebuildService;
+import eu.xfsc.fc.core.service.graphdb.GraphRebuildService.RebuildAssetCounts;
 import eu.xfsc.fc.core.service.graphdb.GraphStore;
 import eu.xfsc.fc.server.generated.controller.AdminGraphApiDelegate;
 import eu.xfsc.fc.server.service.graphdb.RoutingGraphStore;
@@ -126,10 +126,8 @@ public class GraphAdminService implements AdminGraphApiDelegate {
 
     dto.setHealthy(graphStore.isHealthy());
 
-    AssetFilter filter = new AssetFilter();
+    AssetFilter filter = AssetFilter.forCountOnly();
     filter.setStatuses(List.of(AssetStatus.ACTIVE));
-    filter.setLimit(0);
-    filter.setOffset(0);
     long activeAssetCount = assetStore.getByFilter(filter, false, false).getTotalCount();
     long claimCount = graphStore.getClaimCount();
     long assetCountInGraph = graphStore.getRDFAssetCountInGraph();
@@ -172,18 +170,22 @@ public class GraphAdminService implements AdminGraphApiDelegate {
       status.setVersion("unavailable");
       status.setRebuildNeeded(false);
       status.setRdfAssetCount(0L);
+      status.setRebuildableAssetCount(0L);
+      status.setEnrichedAssetCount(0L);
       return ResponseEntity.ok(status);
     }
 
-    // rdfAssetCount comes from the catalogue DB, not the graph backend — independent
-    // of graph-store health so we always try.
-    long rdfAssetCount = 0L;
+    // The asset counts come from the catalogue DB, not the graph backend — independent
+    // of graph-store health so we always try. One call, so all three describe the same instant.
+    RebuildAssetCounts counts = new RebuildAssetCounts(0L, 0L, 0L);
     try {
-      rdfAssetCount = countActiveRdfAssets();
+      counts = graphRebuildService.countRebuildAssets();
     } catch (RuntimeException ex) {
-      log.warn("Failed to count active RDF assets", ex);
+      log.warn("Failed to count active assets", ex);
     }
-    status.setRdfAssetCount(rdfAssetCount);
+    status.setRdfAssetCount(counts.rdfAssetCount());
+    status.setRebuildableAssetCount(counts.rebuildableAssetCount());
+    status.setEnrichedAssetCount(counts.enrichedAssetCount());
 
     // isHealthy() is exception-safe in every current adapter, but wrap defensively
     // so a future adapter that forgets to catch cannot break the status response.
@@ -215,7 +217,7 @@ public class GraphAdminService implements AdminGraphApiDelegate {
       }
 
       status.setRebuildNeeded(claimCount != -1L
-          && computeRebuildNeeded(backendType, claimCount, rdfAssetCount));
+          && computeRebuildNeeded(backendType, claimCount, counts.rebuildableAssetCount()));
     } else {
       status.setClaimCount(-1L);
       status.setVersion("unavailable");
@@ -269,22 +271,11 @@ public class GraphAdminService implements AdminGraphApiDelegate {
   }
 
   private boolean computeRebuildNeeded(GraphBackendType backendType, long claimCount,
-                                       long rdfAssetCount) {
+                                       long rebuildableAssetCount) {
     if (backendType == GraphBackendType.NONE || claimCount != 0L) {
       return false;
     }
-    return rdfAssetCount > 0L;
-  }
-
-  private long countActiveRdfAssets() {
-    // AssetFilter.setLimit(0) means "no limit" — would materialize every row on each
-    // status load. Page size 1 still yields the full totalCount via the COUNT query.
-    AssetFilter filter = new AssetFilter();
-    filter.setStatuses(List.of(AssetStatus.ACTIVE));
-    filter.setContentKinds(List.of(ContentKind.RDF));
-    filter.setLimit(1);
-    filter.setOffset(0);
-    return assetStore.getByFilter(filter, false, false).getTotalCount();
+    return rebuildableAssetCount > 0L;
   }
 
   private String buildVersionString(GraphBackendType backendType) {

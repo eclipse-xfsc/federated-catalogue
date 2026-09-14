@@ -88,6 +88,12 @@ public interface ProvenanceService {
    * {@link ProvenanceVerificationResult}. The aggregated result is {@code isValid=true} only when
    * all credentials pass. Per-credential errors are collected in {@code errors}.</p>
    *
+   * <p>When the asset (or the requested version) has no provenance credentials at all, this
+   * returns {@code isValid=false} with a reason in {@code errors} rather than a vacuous
+   * {@code isValid=true} — nothing was verified, so this is distinguishable from a genuine
+   * verified-and-invalid result by {@code verificationTimestamp} staying {@code null} instead of
+   * being stamped.</p>
+   *
    * @param assetId logical asset IRI
    * @param version 1-based Envers ordinal to scope the batch, or {@code null} for all versions
    * @return aggregated verification result

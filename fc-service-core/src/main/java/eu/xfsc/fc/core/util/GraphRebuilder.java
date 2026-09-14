@@ -1,6 +1,8 @@
 package eu.xfsc.fc.core.util;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.dao.assets.AssetRepository;
+import eu.xfsc.fc.core.dao.validation.GraphSyncStatus;
 import eu.xfsc.fc.core.dao.validation.ValidationResult;
 import eu.xfsc.fc.core.pojo.AssetType;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
@@ -12,7 +14,6 @@ import eu.xfsc.fc.core.service.validation.ValidationResultStore;
 import eu.xfsc.fc.core.service.verification.CredentialFormatDetector;
 import eu.xfsc.fc.core.service.verification.EnvelopedCredentialResolver;
 import eu.xfsc.fc.core.service.verification.ProtectedNamespaceFilter;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import eu.xfsc.fc.core.service.verification.claims.ClaimExtractionService;
 
 import java.util.List;
@@ -195,9 +196,9 @@ public class GraphRebuilder {
 
   private List<RdfClaim> extractClaims(AssetMetadata assetMetaData) {
         String contentType = assetMetaData.getContentType();
-        if (VerificationConstants.MEDIA_TYPE_NTRIPLES.equals(contentType)
-                || VerificationConstants.MEDIA_TYPE_TURTLE.equals(contentType)
-                || VerificationConstants.MEDIA_TYPE_RDF_XML.equals(contentType)) {
+        if (FcMediaTypes.NTRIPLES_VALUE.equals(contentType)
+                || FcMediaTypes.TURTLE_VALUE.equals(contentType)
+                || FcMediaTypes.RDF_XML_VALUE.equals(contentType)) {
             return claimExtractionService.extractAllTriples(assetMetaData.getContentAccessor());
         }
     // Parity with the upload path: JWT-secured credentials must be decoded to JSON-LD
@@ -220,7 +221,10 @@ public class GraphRebuilder {
    *
    * <p>Iterates through all {@link ValidationResult} entities and re-projects their
    * {@code fcmeta:} triples to the graph store. Updates {@code graph_sync_status} to
-   * {@code SYNCED} on success; leaves as {@code FAILED} if graph write fails.</p>
+   * {@code SYNCED} on success; leaves as {@code FAILED} if graph write fails. Rows with
+   * {@code graph_sync_status=EXCLUDED} are skipped — they were deliberately never projected to
+   * the graph because they are not claims about an asset, and rebuild must not resurrect that
+   * ambiguity by projecting them anyway.</p>
    *
    * <p>This pass runs after asset claim restoration to ensure validation result IRIs
    * can reference existing asset subjects.</p>
@@ -233,6 +237,7 @@ public class GraphRebuilder {
     long totalProcessed = 0;
     long totalSucceeded = 0;
     long totalFailed = 0;
+    long totalSkipped = 0;
 
     Page<ValidationResult> page;
     do {
@@ -241,6 +246,14 @@ public class GraphRebuilder {
           pageNumber - 1, page.getNumberOfElements());
 
       for (ValidationResult result : page.getContent()) {
+        if (result.getGraphSyncStatus() == GraphSyncStatus.EXCLUDED) {
+          // Not counted in progressCallback either, matching the sibling asset-rebuild pass's
+          // convention of only ticking progress for items that did graph work.
+          totalSkipped++;
+          log.debug("rebuildValidationResults; skipping result id={} (graphSyncStatus=EXCLUDED)",
+              result.getId());
+          continue;
+        }
         Exception caught = null;
         try {
           validationResultStore.syncToGraph(result, graphStore);
@@ -259,8 +272,8 @@ public class GraphRebuilder {
       }
     } while (page.hasNext());
 
-    log.info("rebuildValidationResults; complete. Processed: {}, Succeeded: {}, Failed: {}",
-        totalProcessed, totalSucceeded, totalFailed);
+    log.info("rebuildValidationResults; complete. Processed: {}, Succeeded: {}, Failed: {}, Skipped: {}",
+        totalProcessed, totalSucceeded, totalFailed, totalSkipped);
   }
 
 }

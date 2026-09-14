@@ -34,8 +34,8 @@ The following parameters should be specified:
 - m/vmethod: the VerificationMethod value to be used in the signed credential Proof. Default value is `did:web:compliance.lab.gaia-x.eu`
 - puk/public-key: path to the public key file
 - prk/private-key: path to the private key file. Default value is `src/main/resources/prk.ss.pem`
-- sd/self-description/credential: path to credential file to be signed. Default value is `src/main/resources/vc.json`
-- ssd/signed-description/signed-credential: path to signed credential file. Default value is `<credential path/name>.signed.<credential ext>`
+- credential: path to credential file to be signed (`sd` and `self-description` are kept as backwards-compatible aliases). Default value is `src/main/resources/vc.json`
+- signed-credential: path to signed credential file (`ssd` and `signed-description` are kept as backwards-compatible aliases). Default value is `<credential path/name>.signed.<credential ext>`
 ```
 ## Known Issues
 

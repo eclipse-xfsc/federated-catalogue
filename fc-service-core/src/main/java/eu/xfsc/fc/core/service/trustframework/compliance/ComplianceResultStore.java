@@ -33,4 +33,26 @@ public interface ComplianceResultStore {
    * @return page of results; never {@code null}
    */
   Page<ValidationResult> findByAssetId(String assetId, Pageable pageable);
+
+  /**
+   * Persists an audit record for a compliance-check attempt that never produced an outcome because
+   * the trust service could not be reached or did not respond in time. The record is written with
+   * {@code conforms=false} — an unreachable service is an infrastructure failure, not a verdict that
+   * the asset is non-compliant.
+   *
+   * <p>Writes the audit row only; it neither throws a replacement exception on success nor
+   * suppresses the originating transport failure — that failure is the caller's concern.
+   *
+   * @param assetId            IRI of the asset the attempt targeted
+   * @param frameworkProfileId profile the attempt used
+   * @param familyId           trust-framework family the profile belongs to
+   * @param category           {@link FailureCategory#SERVICE_UNREACHABLE} or
+   *                           {@link FailureCategory#SERVICE_TIMEOUT}; never
+   *                           {@link FailureCategory#UNVERIFIABLE_ATTESTATION}
+   * @param failureDetail      human-readable detail (e.g. the originating exception message);
+   *                           may be {@code null}
+   * @return the ID of the stored record; never {@code null}
+   */
+  Long storeFailedAttempt(String assetId, String frameworkProfileId, String familyId,
+                          FailureCategory category, String failureDetail);
 }

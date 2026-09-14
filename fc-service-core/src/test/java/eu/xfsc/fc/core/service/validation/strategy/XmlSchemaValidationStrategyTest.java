@@ -38,6 +38,31 @@ class XmlSchemaValidationStrategyTest {
 
   private static final String NON_CONFORMING_XML = "<root><unknown>x</unknown></root>";
 
+  // An XSD in the RDF/XML namespace, matching the shape produced when an RDF asset is serialised
+  // as RDF/XML (root element rdf:RDF, per RdfAssetParser's RDF/XML detection prefix).
+  private static final String RDF_XML_XSD =
+      "<?xml version=\"1.0\"?>"
+      + "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" "
+      + "xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\" "
+      + "targetNamespace=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
+      + "  <xs:element name=\"RDF\">"
+      + "    <xs:complexType><xs:sequence><xs:element ref=\"rdf:Description\"/></xs:sequence></xs:complexType>"
+      + "  </xs:element>"
+      + "  <xs:element name=\"Description\">"
+      + "    <xs:complexType><xs:sequence><xs:element name=\"name\" type=\"xs:string\"/></xs:sequence></xs:complexType>"
+      + "  </xs:element>"
+      + "</xs:schema>";
+
+  // A RDF/XML-serialised RDF asset (rdf:RDF root) — the XML Schema part of a combined
+  // SHACL + XML Schema validation request runs against this representation as-is.
+  private static final String CONFORMING_RDF_XML =
+      "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
+      + "<rdf:Description><name>test</name></rdf:Description></rdf:RDF>";
+
+  private static final String NON_CONFORMING_RDF_XML =
+      "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">"
+      + "<rdf:Description><label>test</label></rdf:Description></rdf:RDF>";
+
   // FileStore is not called in these tests — assets have contentAccessor pre-loaded.
   private final ObjectProvider<DocumentBuilderFactory> documentBuilderFactoryProvider =
       createProviderFor(createSecureDocumentBuilderFactory());
@@ -65,6 +90,27 @@ class XmlSchemaValidationStrategyTest {
     ValidationReport report = strategy.validate(
         List.of(buildAsset(NON_CONFORMING_XML)),
         List.of(new ContentAccessorDirect(VALID_XSD)));
+
+    assertFalse(report.getConforms());
+    assertFalse(report.getViolations().isEmpty());
+  }
+
+  @Test
+  void validate_rdfXmlRepresentation_conformingSchema_returnsConforming() {
+    ValidationReport report = strategy.validate(
+        List.of(buildAsset(CONFORMING_RDF_XML)),
+        List.of(new ContentAccessorDirect(RDF_XML_XSD)));
+
+    assertTrue(report.getConforms());
+    assertNotNull(report.getViolations());
+    assertTrue(report.getViolations().isEmpty());
+  }
+
+  @Test
+  void validate_rdfXmlRepresentation_nonConformingSchema_returnsViolation() {
+    ValidationReport report = strategy.validate(
+        List.of(buildAsset(NON_CONFORMING_RDF_XML)),
+        List.of(new ContentAccessorDirect(RDF_XML_XSD)));
 
     assertFalse(report.getConforms());
     assertFalse(report.getViolations().isEmpty());

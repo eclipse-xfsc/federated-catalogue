@@ -8,10 +8,10 @@ public enum ValidatorType {
   /** On-demand SHACL validation of RDF assets. */
   SHACL,
 
-  /** On-demand JSON Schema validation of non-RDF JSON assets. */
+  /** On-demand JSON Schema validation of non-RDF JSON assets, and of RDF assets serialised in JSON-LD. */
   JSON_SCHEMA,
 
-  /** On-demand XML Schema validation of non-RDF XML assets. */
+  /** On-demand XML Schema validation of non-RDF XML assets, and of RDF assets serialised in RDF/XML. */
   XML_SCHEMA,
 
   /**

@@ -694,6 +694,27 @@
           "SCHEMA_READ"
         ]
       }
+    },
+    {
+      "username": "fc-asset-creator-test",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CHANGE_ME_dev_only1",
+          "temporary": false
+        }
+      ],
+      "attributes": { "participantId": ["did:web:compliance.lab.gaia-x.eu"] },
+      "realmRoles": [
+        "default-roles-federated-catalogue-realm"
+      ],
+      "clientRoles": {
+        "federated-catalogue": [
+          "ASSET_CREATE"
+        ]
+      }
     }
   ],
   "scopeMappings": [
@@ -1022,7 +1043,7 @@
         "role",
         "phone",
         "query",
-        "self-description",
+        "asset",
         "profile",
         "offline_access",
         "microprofile-jwt",
@@ -1569,7 +1590,7 @@
     },
     {
       "id": "04dc57f5-1b19-4b3a-871d-e07af3a21d09",
-      "name": "self-description",
+      "name": "asset",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",

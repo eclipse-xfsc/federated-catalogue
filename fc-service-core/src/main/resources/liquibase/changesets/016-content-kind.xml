@@ -32,6 +32,13 @@
     <!-- Make the column non-nullable in assets table -->
     <addNotNullConstraint tableName="assets" columnName="content_kind" columnDataType="varchar(10)"/>
 
+    <comment>Backfill assets_aud from the now-populated assets table; content_kind never changes across an asset's revisions</comment>
+    <sql>
+      UPDATE assets_aud a
+         SET content_kind = (SELECT s.content_kind FROM assets s WHERE s.id = a.id)
+       WHERE a.content_kind IS NULL
+    </sql>
+
   </changeSet>
 
 </databaseChangeLog>

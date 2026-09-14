@@ -11,6 +11,8 @@ import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -64,17 +66,7 @@ public class GraphRebuildService {
     try {
       executor.submit(() -> {
         try {
-          AssetFilter filter = new AssetFilter();
-          filter.setStatuses(List.of(AssetStatus.ACTIVE));
-          // The rebuilder only adds claims for RDF-content assets; non-RDF assets are
-          // skipped inside addAssetToGraph. Counting RDF only here keeps `total` in
-          // sync with the work actually performed and with the rdfAssetCount field
-          // returned by GET /admin/graph-database.
-          filter.setContentKinds(List.of(ContentKind.RDF));
-          filter.setLimit(0);
-          filter.setOffset(0);
-          long total = assetStore.getByFilter(filter, false, false).getTotalCount();
-          status.setTotal(total);
+          status.setTotal(countRebuildableAssets());
           graphRebuilder.rebuildGraphDb(chunkCount, chunkId, threads, batchSize,
               (count, error) -> {
                 status.incrementProcessed();
@@ -96,6 +88,65 @@ public class GraphRebuildService {
       throw e;
     }
     return true;
+  }
+
+  /**
+   * Counts the assets a rebuild would process.
+   *
+   * <p>This is the {@code total} a rebuild reports, and it must select exactly the assets that tick
+   * the progress callback: {@code addAssetToGraph} ticks for every walked asset that holds content
+   * to extract claims from. Content kind is the wrong predicate for that — it records how an asset
+   * was uploaded and is left unchanged by enrichment, so an asset uploaded as NON_RDF and later
+   * enriched holds content and is processed while a content-kind filter excludes it, which is how
+   * processed came to exceed total. The asset walk itself filters on status only.</p>
+   *
+   * <p>The predicate keeps a single definition here; {@link #countRebuildAssets()} reuses it when a
+   * caller needs the same total broken down.</p>
+   *
+   * @return the number of active assets holding content
+   */
+  public long countRebuildableAssets() {
+    return countActive(null, true);
+  }
+
+  /**
+   * Counts the rebuildable set and its two parts in a single repeatable-read snapshot.
+   *
+   * <p>The parts sum to the rebuildable total under the invariant the upload path maintains, that
+   * an asset of content kind RDF always holds content. {@code rdfAssetCount} counts what the
+   * catalogue holds rather than what a rebuild processes, so it does not itself filter on content;
+   * a legacy row of kind RDF with no content would count towards it while being excluded from the
+   * total. Nothing enforces that, so treat the parts as a breakdown rather than an arithmetic
+   * identity.</p>
+   *
+   * <p>One snapshot rather than separately timed reads: deriving a part by subtracting another from
+   * the total goes wrong when an upload lands between two counts, and in the wrong order makes the
+   * remainder negative. The graph-backend claim count is deliberately left out — it is not a
+   * database read and cannot join this snapshot.</p>
+   *
+   * @return the rebuildable total together with its credential and enriched parts
+   */
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+  public RebuildAssetCounts countRebuildAssets() {
+    return new RebuildAssetCounts(
+        countActive(List.of(ContentKind.RDF), null),
+        countActive(null, true),
+        countActive(List.of(ContentKind.NON_RDF), true));
+  }
+
+  /**
+   * Counts active assets matching the given content predicate.
+   *
+   * @param contentKinds the content kinds to include, or {@code null} for any
+   * @param hasContent whether the asset must hold content, or {@code null} for either
+   * @return the number of matching active assets
+   */
+  private long countActive(List<ContentKind> contentKinds, Boolean hasContent) {
+    AssetFilter filter = AssetFilter.forCountOnly();
+    filter.setStatuses(List.of(AssetStatus.ACTIVE));
+    filter.setContentKinds(contentKinds);
+    filter.setHasContent(hasContent);
+    return assetStore.getByFilter(filter, false, false).getTotalCount();
   }
 
   /**
@@ -121,4 +172,14 @@ public class GraphRebuildService {
       Thread.currentThread().interrupt();
     }
   }
+
+  /**
+   * The asset counts describing a rebuild, all read from one snapshot.
+   *
+   * @param rdfAssetCount active assets uploaded as credentials
+   * @param rebuildableAssetCount active assets holding content, which a rebuild processes
+   * @param enrichedAssetCount active assets uploaded as non-RDF that hold content from enrichment
+   */
+  public record RebuildAssetCounts(long rdfAssetCount, long rebuildableAssetCount,
+                                   long enrichedAssetCount) {}
 }

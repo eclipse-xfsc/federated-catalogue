@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import eu.xfsc.fc.core.dao.validation.GraphSyncStatus;
@@ -56,7 +58,7 @@ class ValidationResultStoreImplTest {
 
     ArgumentCaptor<ValidationResult> captor = ArgumentCaptor.forClass(ValidationResult.class);
     // Called twice: first save (PostgreSQL commit), second save (status update to SYNCED)
-    verify(repository, org.mockito.Mockito.times(2)).save(captor.capture());
+    verify(repository, times(2)).save(captor.capture());
     List<ValidationResult> savedEntities = captor.getAllValues();
     assertEquals(GraphSyncStatus.SYNCED,
         savedEntities.get(1).getGraphSyncStatus());
@@ -88,8 +90,30 @@ class ValidationResultStoreImplTest {
     service.store(record);
 
     // Two saves: initial PG commit + FAILED status update
-    verify(repository, org.mockito.Mockito.times(2)).save(any());
+    verify(repository, times(2)).save(any());
     assertEquals(GraphSyncStatus.FAILED, saved.getGraphSyncStatus());
+  }
+
+  // ===== storeWithoutGraphSync =====
+
+  @Test
+  void storeWithoutGraphSync_neverInteractsWithGraph() {
+    ValidationResultRecord record = buildRecord(false);
+    ValidationResult saved = buildEntityWithId(3L);
+    when(hasher.hash(any())).thenReturn("ddeeff");
+    when(repository.save(any())).thenReturn(saved);
+
+    Long id = service.storeWithoutGraphSync(record);
+
+    assertEquals(3L, id);
+    // Exactly one save: the relational INSERT, with graphSyncStatus already EXCLUDED. No
+    // status-update save, because no graph write (successful or failed) is ever attempted —
+    // proving no triples are produced, and marking the row so graph rebuild skips it too.
+    ArgumentCaptor<ValidationResult> captor = ArgumentCaptor.forClass(ValidationResult.class);
+    verify(repository, times(1)).save(captor.capture());
+    assertEquals(GraphSyncStatus.EXCLUDED, captor.getValue().getGraphSyncStatus());
+    verifyNoInteractions(graphWriter);
+    verifyNoInteractions(graphStore);
   }
 
   // ===== getByAssetId =====
@@ -156,7 +180,7 @@ class ValidationResultStoreImplTest {
     service.deleteByAssetId("https://example.org/asset/unknown");
 
     verify(repository).deleteAllByAssetId("https://example.org/asset/unknown");
-    org.mockito.Mockito.verifyNoInteractions(graphStore);
+    verifyNoInteractions(graphStore);
   }
 
   @Test
@@ -181,6 +205,7 @@ class ValidationResultStoreImplTest {
         ValidatorType.SHACL,
         conforms,
         Instant.parse("2024-06-01T12:00:00Z"),
+        null,
         null);
   }
 

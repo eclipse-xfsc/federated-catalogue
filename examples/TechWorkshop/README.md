@@ -20,9 +20,9 @@
 # Exercises
 
 ## Querying the Catalogue
-These example queries are designed to help you to understand how to query the Self-Descriptions (SDs) stored in the Catalogue using the [web UI](https://fc-server.gxfs.dev/query).
+These example queries are designed to help you to understand how to query the credentials stored in the Catalogue using the query page of the Admin UI.
 
-The results may vary depending on what SDs are in the shared demo instance of the Catalogue at the given point in time; however, most queries are designed to provide reasonable output regardless of what is in the Catalogue.
+The results may vary depending on what credentials are in the shared demo instance of the Catalogue at the given point in time; however, most queries are designed to provide reasonable output regardless of what is in the Catalogue.
 
 * The initial queries are useful for a first exploration of what's in the Catalogue.
 * The further queries are useful for a close inspection of a concrete entity of interest.

@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
+import eu.xfsc.fc.core.exception.ServiceErrorException;
 import eu.xfsc.fc.core.exception.ServiceUnavailableException;
 import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
@@ -147,6 +148,19 @@ class ComplianceCheckOrchestratorTest {
     when(mockClient.check(any(), any())).thenThrow(new ServiceUnavailableException("unreachable"));
 
     assertThrows(ServiceUnavailableException.class,
+        () -> orchestrator.check(ASSET_ID, PROFILE_ID, ASSET_PAYLOAD));
+  }
+
+  @Test
+  void check_clientThrowsServiceErrorException_propagatesAsSubtype() {
+    // ServiceErrorException is a ServiceUnavailableException subtype; the multi-catch that
+    // rethrows ServiceUnavailableException unchanged must not widen it to the base type.
+    when(profileResolver.getProfileConfig(PROFILE_ID)).thenReturn(Optional.of(MOCK_CONFIG));
+    when(tfService.isEnabled(FAMILY_ID)).thenReturn(true);
+    when(clientRegistry.resolve("jwt-vc-compliance")).thenReturn(mockClient);
+    when(mockClient.check(any(), any())).thenThrow(new ServiceErrorException("server error", null));
+
+    assertThrows(ServiceErrorException.class,
         () -> orchestrator.check(ASSET_ID, PROFILE_ID, ASSET_PAYLOAD));
   }
 

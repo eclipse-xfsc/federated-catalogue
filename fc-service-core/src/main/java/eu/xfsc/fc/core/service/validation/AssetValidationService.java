@@ -25,10 +25,16 @@ public interface AssetValidationService {
   /**
    * Validates one or more stored assets against stored schemas.
    *
-   * <p>If {@code assetIds} contains a single entry, the asset is dispatched through the
-   * full type-based pipeline (SHACL for RDF, JSON Schema for JSON, XML Schema for XML).
-   * If {@code assetIds} contains multiple entries, all assets are merged into a single
-   * data graph and validated via SHACL only.</p>
+   * <p>If {@code assetIds} contains a single entry and {@code schemaIds} is given explicitly, each
+   * schema is matched to a strategy by type: SHACL for any RDF asset, JSON Schema for a non-RDF
+   * JSON asset or an RDF asset serialised in JSON-LD, and XML Schema for a non-RDF XML asset or
+   * an RDF asset serialised in RDF/XML. If instead {@code validateAgainstAllSchemas} is set, an
+   * RDF asset (JSON-LD or RDF/XML) is validated by SHACL only, against the composite of all
+   * stored shapes; JSON Schema and XML Schema are never auto-selected for an RDF asset, since,
+   * unlike SHACL's composite shape, there is no principled way to pick "the" applicable schema
+   * for it — a non-RDF JSON or XML asset is instead validated against its latest stored JSON or
+   * XML Schema, respectively. If {@code assetIds} contains multiple entries, all assets are
+   * merged into a single data graph and validated via SHACL only, regardless of serialisation.</p>
    *
    * @param request asset IRIs and schema selection (schemaIds or validateAgainstAllSchemas)
    * @return validation response with result ID(s) and optional report

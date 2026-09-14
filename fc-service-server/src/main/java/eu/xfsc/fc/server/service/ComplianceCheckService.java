@@ -9,10 +9,14 @@ import org.springframework.stereotype.Service;
 import eu.xfsc.fc.api.generated.model.ComplianceCheckRequest;
 import eu.xfsc.fc.api.generated.model.ComplianceCheckResult;
 import eu.xfsc.fc.api.generated.model.StoredValidationResult;
+import eu.xfsc.fc.core.exception.ServiceErrorException;
+import eu.xfsc.fc.core.exception.ServiceUnavailableException;
+import eu.xfsc.fc.core.exception.TimeoutException;
 import eu.xfsc.fc.core.service.trustframework.TrustFrameworkProfileResolver;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOrchestrator;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceCheckOutcome;
 import eu.xfsc.fc.core.service.trustframework.compliance.ComplianceResultStore;
+import eu.xfsc.fc.core.service.trustframework.compliance.FailureCategory;
 import eu.xfsc.fc.core.service.trustframework.compliance.IssuedAttestation;
 import eu.xfsc.fc.core.service.trustframework.compliance.UnverifiableAttestation;
 import eu.xfsc.fc.server.generated.controller.ComplianceApiDelegate;
@@ -39,13 +43,19 @@ public class ComplianceCheckService implements ComplianceApiDelegate {
     log.debug("runComplianceCheck; assetId={}, frameworkProfileId={}", assetId,
         request.getFrameworkProfileId());
 
-    ComplianceCheckOutcome outcome = orchestrator.check(assetId, request.getFrameworkProfileId(),
-        request.getCredential());
+    ComplianceCheckOutcome outcome;
+    try {
+      outcome = orchestrator.check(assetId, request.getFrameworkProfileId(), request.getCredential());
+    } catch (ServiceUnavailableException | TimeoutException e) {
+      // The trust service could not be reached, timed out, or (ServiceErrorException) was reached
+      // but responded with an error — in every case no ComplianceCheckOutcome exists to store.
+      // Persist a failed-attempt audit record, then rethrow unchanged so the client still
+      // receives the original 503/504 response.
+      persistFailedAttempt(assetId, request.getFrameworkProfileId(), e);
+      throw e;
+    }
 
-    String familyId = profileResolver.getProfileConfig(request.getFrameworkProfileId())
-        .map(TrustFrameworkProfileConfig::familyId)
-        .orElse(request.getFrameworkProfileId());
-
+    String familyId = resolveFamilyId(request.getFrameworkProfileId());
     resultStore.store(assetId, request.getFrameworkProfileId(), familyId, outcome);
 
     return ResponseEntity.ok(toDto(outcome));
@@ -67,6 +77,35 @@ public class ComplianceCheckService implements ComplianceApiDelegate {
             .toList();
 
     return ResponseEntity.ok(results);
+  }
+
+  private String resolveFamilyId(String frameworkProfileId) {
+    return profileResolver.getProfileConfig(frameworkProfileId)
+        .map(TrustFrameworkProfileConfig::familyId)
+        .orElse(frameworkProfileId);
+  }
+
+  /**
+   * Persists a failed-attempt audit record for a compliance check that produced no outcome —
+   * whether the trust service was unreachable, timed out, or was reached but responded with an
+   * error. A failure to persist this record is logged and swallowed rather than propagated: the
+   * original service-unavailable/timeout failure is the one the caller must see, and letting a
+   * secondary persistence error replace or mask it would hide the real cause from the client and
+   * from this audit trail alike.
+   */
+  private void persistFailedAttempt(String assetId, String frameworkProfileId, RuntimeException cause) {
+    try {
+      FailureCategory category = switch (cause) {
+        case TimeoutException te -> FailureCategory.SERVICE_TIMEOUT;
+        case ServiceErrorException see -> FailureCategory.SERVICE_ERROR;
+        default -> FailureCategory.SERVICE_UNREACHABLE;
+      };
+      String familyId = resolveFamilyId(frameworkProfileId);
+      resultStore.storeFailedAttempt(assetId, frameworkProfileId, familyId, category, cause.getMessage());
+    } catch (RuntimeException persistError) {
+      log.error("Failed to persist failed-attempt audit record for assetId={}, frameworkProfileId={}; "
+          + "original failure was: {}", assetId, frameworkProfileId, cause.getMessage(), persistError);
+    }
   }
 
   private ComplianceCheckResult toDto(ComplianceCheckOutcome outcome) {

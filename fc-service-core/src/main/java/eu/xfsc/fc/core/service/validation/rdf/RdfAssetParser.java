@@ -2,6 +2,7 @@ package eu.xfsc.fc.core.service.validation.rdf;
 
 import com.apicatalog.jsonld.loader.DocumentLoader;
 import com.apicatalog.jsonld.loader.SchemeRouter;
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
 import eu.xfsc.fc.core.pojo.ContentAccessor;
@@ -40,8 +41,8 @@ import org.springframework.stereotype.Service;
  * </ul>
  *
  * <p>The helper methods {@link #isJsonLd(AssetMetadata)} and {@link #isRdfXml(AssetMetadata)}
- * are separate from parse-branching and are used only by validation strategies to determine
- * applicability.</p>
+ * are separate from parse-branching: they classify an asset's RDF serialisation format for
+ * schema-applicability decisions, without parsing or validating its content.</p>
  */
 @Slf4j
 @Service
@@ -118,23 +119,29 @@ public class RdfAssetParser {
   /**
    * Returns {@code true} if the asset content is JSON-LD (content starts with '{').
    * Falls back to content-type inspection for assets without a content accessor.
+   *
+   * <p>Stateless: depends on no instance fields, so it is declared {@code static} and can
+   * be invoked without an instance of this Spring-managed bean.</p>
    */
-  public boolean isJsonLd(AssetMetadata asset) {
+  public static boolean isJsonLd(AssetMetadata asset) {
     ContentAccessor content = asset.getContentAccessor();
     if (content != null) {
       return content.getContentAsString().strip().startsWith(FormatDetectionConstants.JSON_LD_PREFIX);
     }
     String ct = asset.getContentType();
-    return ct != null && (ct.contains(VerificationConstants.MEDIA_TYPE_LD_JSON)
-        || ct.contains(VerificationConstants.MEDIA_TYPE_VC_LD_JSON)
-        || ct.contains(VerificationConstants.MEDIA_TYPE_VP_LD_JSON));
+    return ct != null && (ct.contains(FcMediaTypes.LD_JSON_VALUE)
+        || ct.contains(FcMediaTypes.VC_LD_JSON_VALUE)
+        || ct.contains(FcMediaTypes.VP_LD_JSON_VALUE));
   }
 
   /**
    * Returns {@code true} if the asset content is RDF/XML (content starts with {@code "<?xml"}
    * or {@code "<rdf:RDF"}). Falls back to content-type inspection for assets without a content accessor.
+   *
+   * <p>Stateless: depends on no instance fields, so it is declared {@code static} and can
+   * be invoked without an instance of this Spring-managed bean.</p>
    */
-  public boolean isRdfXml(AssetMetadata asset) {
+  public static boolean isRdfXml(AssetMetadata asset) {
     ContentAccessor content = asset.getContentAccessor();
     if (content != null) {
       String raw = content.getContentAsString().strip();
@@ -142,7 +149,7 @@ public class RdfAssetParser {
           || raw.startsWith(FormatDetectionConstants.RDF_XML_PREFIX_2);
     }
     String ct = asset.getContentType();
-    return ct != null && ct.contains(VerificationConstants.MEDIA_TYPE_RDF_XML);
+    return ct != null && ct.contains(FcMediaTypes.RDF_XML_VALUE);
   }
 
   private Model parseRdfContent(ContentAccessor content, Lang lang) {

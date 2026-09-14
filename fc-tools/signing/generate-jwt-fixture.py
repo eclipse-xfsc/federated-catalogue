@@ -37,6 +37,9 @@ Usage:
   # Override auto-detected headers
   python3 scripts/generate-jwt-fixture.py --payload my-vc.jsonld --typ vc+jwt --cty vc
 
+  # Override the JWS protected header 'iss' (defaults to the payload's own "iss" claim)
+  python3 scripts/generate-jwt-fixture.py --payload my-vc.jsonld --iss did:web:other-issuer.example.com
+
   # Produce an EnvelopedVerifiableCredential JSON-LD fixture (Gaia-X ICAM 24.07):
   # Signs the VC JWT and wraps it in an EVC envelope (data:application/vc+ld+json+jwt,<JWT>).
   python3 scripts/generate-jwt-fixture.py --payload fixtures/loire/valid/participant.loire.jsonld \
@@ -78,6 +81,21 @@ except ImportError:
 
 ISSUER_DID = "did:web:did-server"
 KEY_ID = f"{ISSUER_DID}#jwt-key-1"
+
+# JWS protected header parameter names (RFC 7515 §4.1 for kid/typ/cty). "iss"
+# is a JOSE header parameter registered by RFC 7519 §10.4.1 for JWE usage; we
+# replicate it into our signed-only JWS headers as an informational issuer
+# hint mirroring the payload's top-level "iss" claim. FC's signature
+# verification and issuer resolution read the payload claim, not this header.
+# Danubetech-style ("vc"/"vp"-wrapped) payloads have no top-level "iss" claim
+# to mirror, so the param is omitted for those.
+HEADER_KID = "kid"
+HEADER_TYP = "typ"
+HEADER_CTY = "cty"
+HEADER_ISS = "iss"
+
+# JWT claims-set key holding the issuer DID (Loire top-level "iss" claim).
+PAYLOAD_ISS_CLAIM = "iss"
 
 
 # --- Key management ---
@@ -145,11 +163,25 @@ def detect_headers(payload: dict) -> tuple[str, str | None]:
 
 
 def sign_jwt(payload: dict, key: Ed25519PrivateKey, kid: str,
-             typ: str = "JWT", cty: str | None = None) -> str:
-    headers = {"kid": kid, "typ": typ}
+             typ: str = "JWT", cty: str | None = None, iss: str | None = None) -> str:
+    headers = {HEADER_KID: kid, HEADER_TYP: typ}
     if cty is not None:
-        headers["cty"] = cty
+        headers[HEADER_CTY] = cty
+    if iss is not None:
+        headers[HEADER_ISS] = iss
     return pyjwt.encode(payload, key, algorithm="EdDSA", headers=headers)
+
+
+def resolve_header_iss(cli_iss: str | None, payload: dict) -> str | None:
+    """Resolve the JWS protected header 'iss' value.
+
+    Defaults to the payload's own issuer claim (Loire top-level "iss") so the
+    protected header and the claims set agree without requiring callers to
+    repeat the issuer; --iss overrides this for both outer and embedded VC.
+    """
+    if cli_iss is not None:
+        return cli_iss
+    return payload.get(PAYLOAD_ISS_CLAIM)
 
 
 # --- Payload resolution ---
@@ -267,6 +299,9 @@ def main() -> None:
                         help="(VP) JSON-LD file for inner VC — signed first, then injected via {{VC_JWT}} placeholder")
     parser.add_argument("--typ", help="JWT typ header (auto-detected from payload if omitted)")
     parser.add_argument("--cty", help="JWT cty header (auto-detected from payload if omitted)")
+    parser.add_argument("--iss", help="JWS protected header 'iss' value "
+                        "(default: the payload's own issuer claim; applied to both "
+                        "the outer JWT and, when --embed-vc is used, the inner VC JWT)")
     parser.add_argument("--key", help="Ed25519 private key PEM (generates new key if omitted)")
     parser.add_argument("--save-key", help="Save generated key to this PEM path")
     parser.add_argument("--kid", default=KEY_ID, help=f"Key ID (default: {KEY_ID})")
@@ -296,18 +331,20 @@ def main() -> None:
         vc_payload_path = Path(args.embed_vc)
         vc_payload = load_payload(vc_payload_path)
         vc_typ, vc_cty = detect_headers(vc_payload)
-        vc_jwt = sign_jwt(vc_payload, key, args.kid, typ=vc_typ, cty=vc_cty)
+        vc_iss = resolve_header_iss(args.iss, vc_payload)
+        vc_jwt = sign_jwt(vc_payload, key, args.kid, typ=vc_typ, cty=vc_cty, iss=vc_iss)
         payload = embed_inner_vc(payload, vc_jwt)
-        print(f"Embedded inner VC: {vc_payload_path} (typ={vc_typ}, cty={vc_cty})")
+        print(f"Embedded inner VC: {vc_payload_path} (typ={vc_typ}, cty={vc_cty}, iss={vc_iss or '(none)'})")
 
     # Headers
     auto_typ, auto_cty = detect_headers(payload)
     typ = args.typ or auto_typ
     cty = args.cty or auto_cty
-    print(f"Headers: typ={typ}, cty={cty or '(none)'}")
+    iss = resolve_header_iss(args.iss, payload)
+    print(f"Headers: typ={typ}, cty={cty or '(none)'}, iss={iss or '(none)'}")
 
     # Sign
-    compact_jwt = sign_jwt(payload, key, args.kid, typ=typ, cty=cty)
+    compact_jwt = sign_jwt(payload, key, args.kid, typ=typ, cty=cty, iss=iss)
 
     # Output
     if args.wrap_as:

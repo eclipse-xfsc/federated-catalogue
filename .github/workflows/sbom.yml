@@ -7,8 +7,9 @@ on:
     - cron: '0 0 1 * *'
   workflow_dispatch:
 
+# contents: write is required so the reusable dev-ops workflow can upload the generated SBOM to the GitHub release
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 jobs:

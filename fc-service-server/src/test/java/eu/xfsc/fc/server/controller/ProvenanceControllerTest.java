@@ -4,6 +4,8 @@ import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_READ_WITH_PREFIX;
 import static eu.xfsc.fc.server.util.TestCommonConstants.ASSET_UPDATE_WITH_PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,13 +21,18 @@ import com.c4_soft.springaddons.security.oauth2.test.annotations.OpenIdClaims;
 import com.c4_soft.springaddons.security.oauth2.test.annotations.StringClaim;
 import com.c4_soft.springaddons.security.oauth2.test.annotations.WithMockJwtAuth;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.xfsc.fc.api.generated.model.AssetStatus;
 import eu.xfsc.fc.api.generated.model.ProvenanceCredential;
 import eu.xfsc.fc.api.generated.model.ProvenanceCredentials;
 import eu.xfsc.fc.api.generated.model.ProvenanceVerificationResult;
+import eu.xfsc.fc.core.dao.assets.AssetDao;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.ClientException;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetMetadata;
+import eu.xfsc.fc.core.pojo.ContentAccessorDirect;
+import eu.xfsc.fc.core.service.assetstore.AssetRecord;
 import eu.xfsc.fc.core.service.assetstore.AssetStore;
 import eu.xfsc.fc.core.service.provenance.ProvenanceService;
 import io.zonky.test.db.AutoConfigureEmbeddedDatabase;
@@ -73,6 +80,8 @@ public class ProvenanceControllerTest {
   private static final String TEST_ISSUER = "did:web:example.org:provenance-test";
   private static final String ASSET_IRI = "did:web:example.org:prov-test-asset";
   private static final String CREDENTIAL_ID = "did:vc:prov-cred-001";
+  private static final String ZERO_CREDENTIAL_ASSET_IRI = "did:web:example.org:prov-zero-cred-asset";
+  private static final String NO_CREDENTIALS_REASON = "No provenance credentials present for this asset";
 
   private static final String PROVENANCE_URL = "/assets/%s/provenance";
   private static final String SINGLE_CREDENTIAL_URL = "/assets/%s/provenance/%s";
@@ -90,6 +99,8 @@ public class ProvenanceControllerTest {
   private ProvenanceService provenanceService;
   @MockitoSpyBean
   private AssetStore assetStorePublisher;
+  @Autowired
+  private AssetDao assetDao;
 
   @BeforeAll
   void setup() {
@@ -487,6 +498,62 @@ public class ProvenanceControllerTest {
             .with(csrf())
             .accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isUnauthorized());
+  }
+
+  // ===== POST /assets/{id}/provenance/verify — zero-credential path, real service =====
+
+  /**
+   * Drives the zero-credential path through the real {@link ProvenanceService} (no stubbing of
+   * {@code verifyAll}, only a spy) so the actual response body — as serialized to the wire — is
+   * asserted, not a hand-built stub. This is the test that would have caught the OpenAPI
+   * "absent vs. null" documentation mismatch: the raw JSON must carry an explicit
+   * {@code "verificationTimestamp":null}, not omit the field.
+   */
+  @Test
+  @WithMockJwtAuth(authorities = {ASSET_UPDATE_WITH_PREFIX}, claims = @OpenIdClaims(otherClaims = @Claims(
+      stringClaims = {@StringClaim(name = PARTICIPANT_ID, value = TEST_ISSUER)})))
+  void verifyAllProvenanceCredentials_realServiceNoCredentials_returnsIsValidFalseWithNullTimestampField()
+      throws Exception {
+    assetDao.insert(AssetRecord.builder()
+        .assetHash("hash-prov-controller-zero-cred")
+        .id(ZERO_CREDENTIAL_ASSET_IRI)
+        .issuer(TEST_ISSUER)
+        .uploadTime(Instant.now())
+        .statusTime(Instant.now())
+        .expirationTime(null)
+        .status(AssetStatus.ACTIVE)
+        .content(new ContentAccessorDirect("{}"))
+        .validatorDids(List.of())
+        .contentType("application/ld+json")
+        .fileSize(2L)
+        .originalFilename("zero-cred.jsonld")
+        .contentKind(ContentKind.RDF)
+        .build());
+
+    final var result = mockMvc.perform(MockMvcRequestBuilders
+            .post(String.format(VERIFY_ALL_URL, encode(ZERO_CREDENTIAL_ASSET_IRI)))
+            .with(csrf())
+            .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andReturn();
+
+    final String body = result.getResponse().getContentAsString();
+    assertTrue(body.contains("\"verificationTimestamp\":null"),
+        () -> "verificationTimestamp must be serialized as an explicit null, not omitted from the "
+            + "response body — actual body: " + body);
+
+    final var verResult = objectMapper.readValue(body, ProvenanceVerificationResult.class);
+    assertEquals(Boolean.FALSE, verResult.getIsValid());
+    assertNull(verResult.getVerificationTimestamp());
+    assertEquals(List.of(NO_CREDENTIALS_REASON), verResult.getErrors());
+
+    /* every other nullable field is unset on the aggregated result too — pinned so a mapper
+     * regression can't accidentally default one of them to non-null without a test noticing. */
+    assertNull(verResult.getVerificationMethod());
+    assertNull(verResult.getIssuerResolutionStatus());
+    assertNull(verResult.getIssuedDateTime());
+    assertNull(verResult.getSignatureValid());
+    assertNull(verResult.getCredentialExpiryValid());
   }
 
   // ===== POST /assets/{id}/provenance/verify — boundary tests =====

@@ -1,5 +1,6 @@
 package eu.xfsc.fc.core.service.assetstore;
 
+import eu.xfsc.fc.api.FcMediaTypes;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
 import eu.xfsc.fc.core.config.VerificationStackTestConfig;
 import eu.xfsc.fc.core.service.verification.VerificationServiceImpl;
@@ -19,7 +20,6 @@ import eu.xfsc.fc.core.service.schemastore.SchemaStoreImpl;
 import eu.xfsc.fc.core.service.validation.ValidationResultGraphWriter;
 import eu.xfsc.fc.core.service.validation.ValidationResultHasher;
 import eu.xfsc.fc.core.service.validation.ValidationResultStore;
-import eu.xfsc.fc.core.service.verification.VerificationConstants;
 import eu.xfsc.fc.core.util.GraphRebuilder;
 import eu.xfsc.fc.graphdb.config.EmbeddedNeo4JConfig;
 import eu.xfsc.fc.graphdb.service.Neo4jGraphStore;
@@ -266,7 +266,7 @@ public class AssetStoreCompositeTest {
         final String nTriples = "<" + subjectUri + "> "
                 + "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "
                 + "<http://example.org/non-credential-test/Resource> .";
-        ContentAccessorDirect content = new ContentAccessorDirect(nTriples, VerificationConstants.MEDIA_TYPE_NTRIPLES);
+        ContentAccessorDirect content = new ContentAccessorDirect(nTriples, FcMediaTypes.NTRIPLES_VALUE);
 
         CredentialVerificationResult result = verificationService.verifyCredential(content, false, false, false);
         Assertions.assertInstanceOf(NonCredentialVerificationResult.class, result,
@@ -275,7 +275,7 @@ public class AssetStoreCompositeTest {
                 "N-Triples content must yield at least one extracted claim");
 
         AssetMetadata assetMeta = new AssetMetadata(subjectUri, null, null, content);
-        assetMeta.setContentType(VerificationConstants.MEDIA_TYPE_NTRIPLES);
+        assetMeta.setContentType(FcMediaTypes.NTRIPLES_VALUE);
         assetStorePublisher.storeCredential(assetMeta, result);
 
         // Verify initial graph storage
@@ -309,7 +309,7 @@ public class AssetStoreCompositeTest {
     schemaStore.addSchema(getAccessor("Schema-Tests/gx-2511-test-ontology.ttl"));
     String vpJson = getAccessor("Claims-Extraction-Tests/providerTest.jsonld").getContentAsString();
     ContentAccessor content =
-        new ContentAccessorDirect(danubetechVpJwt(vpJson), VerificationConstants.MEDIA_TYPE_VP_JWT);
+        new ContentAccessorDirect(danubetechVpJwt(vpJson), FcMediaTypes.VP_JWT_VALUE);
 
     // Upload path: unwrap JWT → extract claims
     CredentialVerificationResult result = verificationService.verifyCredential(content, true, false, false);

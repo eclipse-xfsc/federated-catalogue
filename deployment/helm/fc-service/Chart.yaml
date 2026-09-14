@@ -1,7 +1,7 @@
 apiVersion: v2
 name: fc-service
-home: https://gitlab.com/gaia-x/data-infrastructure-federation-services/cat/fc-service
-description: A Helm chart for GXFS Federated Catalogue service.
+home: https://github.com/eclipse-xfsc/federated-catalogue
+description: A Helm chart for the Eclipse XFSC Federated Catalogue service.
 type: application
 
 # This is the chart version. This version number should be incremented each time you make changes

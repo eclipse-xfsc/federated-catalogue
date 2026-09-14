@@ -15,7 +15,7 @@
     <version>${revision}</version>
     <packaging>jar</packaging>
     <name>fc-tools-signer</name>
-    <description>The Self-Description signer tool</description>
+    <description>The credential signer tool</description>
 
     <dependencies>
         <dependency>

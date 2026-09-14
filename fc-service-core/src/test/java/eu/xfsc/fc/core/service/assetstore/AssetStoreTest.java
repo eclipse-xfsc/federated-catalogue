@@ -10,6 +10,7 @@ import eu.xfsc.fc.core.config.ProtectedNamespaceProperties;
 import eu.xfsc.fc.core.config.RdfContentTypeProperties;
 import eu.xfsc.fc.core.dao.assets.AssetAuditRepository;
 import eu.xfsc.fc.core.dao.assets.AssetJpaDao;
+import eu.xfsc.fc.core.dao.assets.ContentKind;
 import eu.xfsc.fc.core.exception.ConflictException;
 import eu.xfsc.fc.core.exception.NotFoundException;
 import eu.xfsc.fc.core.pojo.AssetFilter;
@@ -35,6 +36,7 @@ import io.zonky.test.db.AutoConfigureEmbeddedDatabase.DatabaseProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -190,7 +192,10 @@ public class AssetStoreTest {
         assertThrows(NotFoundException.class, () -> assetStorePublisher.getByHash(hash2));
     }
 
-    //@Test
+    @Test
+    @Disabled("Commented out in 9af3f50d (2025-11-08, Neo4j split into fc-graphdb-neo4j); reason not recorded. Asserts "
+            + "graphStore.queryData node counts, and the DummyGraphStore wired into this test always returns an empty "
+            + "result. Counterpart test03StoreDuplicateCredential is live in fc-graphdb-neo4j AssetStoreTest.")
     void storeCredential_withDuplicateContent_throwsConflictException() {
         final String content1 = "Some Test Content";
 
@@ -227,7 +232,10 @@ public class AssetStoreTest {
     /**
      * Test storing an asset, and updating the status.
      */
-    //@Test
+    @Test
+    @Disabled("Commented out in 9af3f50d (2025-11-08, Neo4j split into fc-graphdb-neo4j); reason not recorded. Asserts "
+            + "graphStore.queryData node counts, and the DummyGraphStore wired into this test always returns an empty "
+            + "result. Counterpart test04ChangeAssetStatus is live in fc-graphdb-neo4j AssetStoreTest.")
     void updateAssetStatus_withValidTransition_changesStatus() throws Exception {
         final String content = "Some Test Content";
 
@@ -331,6 +339,50 @@ public class AssetStoreTest {
         assetStorePublisher.deleteAsset(hash);
 
         assertThrows(NotFoundException.class, () -> assetStorePublisher.getByHash(hash));
+    }
+
+    /**
+     * Test that the content filter and the content-kind filter select different asset sets once an
+     * asset has been enriched, which is what allows a rebuild to process more assets than a
+     * content-kind-based count reports.
+     */
+    @Test
+    void filter_withHasContent_includesEnrichedNonRdfAssetExcludedByContentKind() {
+        final Instant statusTime = Instant.parse("2022-01-01T12:00:00Z");
+        final Instant uploadTime = Instant.parse("2022-01-02T12:00:00Z");
+        final String issuer = "TestUser/hasContent";
+
+        final AssetMetadata rdfAsset = createAssetMetadata("TestAsset/hasContent-rdf", issuer,
+                statusTime, uploadTime, "Test: RDF asset carrying content from upload");
+        assetStorePublisher.storeCredential(rdfAsset, createVerificationResult(rdfAsset));
+
+        // A non-RDF upload writes its payload to the file store and leaves the content column null.
+        final AssetMetadata nonRdfAsset = createAssetMetadata("TestAsset/hasContent-non-rdf", issuer,
+                statusTime, uploadTime, "Test: non-RDF payload");
+        final String nonRdfId = assetStorePublisher.storeUnverified(nonRdfAsset, "payload.txt").getId();
+
+        final AssetFilter hasContent = new AssetFilter();
+        hasContent.setIssuers(List.of(issuer));
+        hasContent.setHasContent(true);
+        assertEquals(1, assetStorePublisher.getByFilter(hasContent, false, false).getTotalCount(),
+                "before enrichment only the RDF asset holds content");
+
+        // Enrichment writes RDF content without changing the stored content kind.
+        assetStorePublisher.saveEnrichedContent(
+                assetStorePublisher.findEnrichableAsset(nonRdfId).orElseThrow(),
+                "<http://example.org/s> <http://example.org/p> <http://example.org/o> .");
+
+        assertEquals(2, assetStorePublisher.getByFilter(hasContent, false, false).getTotalCount(),
+                "after enrichment both assets hold content and are processed by a rebuild");
+
+        final AssetFilter rdfOnly = new AssetFilter();
+        rdfOnly.setIssuers(List.of(issuer));
+        rdfOnly.setContentKinds(List.of(ContentKind.RDF));
+        assertEquals(1, assetStorePublisher.getByFilter(rdfOnly, false, false).getTotalCount(),
+                "content kind is unchanged by enrichment, so a content-kind count still reports one");
+
+        assetStorePublisher.deleteAsset(rdfAsset.getAssetHash());
+        assetStorePublisher.deleteAsset(nonRdfAsset.getAssetHash());
     }
 
     /**

@@ -151,17 +151,6 @@ public class TrustFrameworkBundleLoader {
   }
 
   /**
-   * Scans the classpath for {@code trustframeworks/<bundleId>/framework.yaml} files and loads each as a bundle.
-   * Non-loadable bundles are skipped with a warning; they do not abort the load of remaining bundles.
-   *
-   * @deprecated Use {@link #load()} instead.
-   */
-  @Deprecated
-  public List<TrustFrameworkBundle> loadFromClasspath() throws IOException {
-    return load();
-  }
-
-  /**
    * Loads bundles from an explicit array of YAML resources.
    * Non-loadable bundles are skipped with a warning; they do not abort the load of remaining bundles.
    * Package-private for testing.

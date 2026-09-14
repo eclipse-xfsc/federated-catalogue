@@ -40,7 +40,7 @@ USAGE
     # Extract the class hierarchy:
     python3 fc-tools/extract-ontology-hierarchy.py \\
         --input  /tmp/gx-full.ttl \\
-        --output fc-service-core/src/main/resources/defaultschema/ontology/gx-2511.ttl \\
+        --output fc-service-core/src/main/resources/trustframeworks/gaia-x-2511/ontology.ttl \\
         --ontology-iri https://w3id.org/gaia-x/2511 \\
         --source-url https://registry.lab.gaia-x.eu/development/owl/2511
 

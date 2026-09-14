@@ -21,9 +21,10 @@ import org.springframework.stereotype.Service;
  * Computes and verifies the tamper-proof SHA-256 hash stored on {@link ValidationResult}.
  *
  * <p>The hash covers: {@code assetIds}, {@code validatorIds}, {@code validatorType},
- * {@code conforms}, {@code validatedAt}. The {@code report} field is excluded — it is
- * large, optional, and may be truncated. Canonicalization uses JCS (RFC 8785) to ensure
- * a deterministic byte representation across JVM instances.</p>
+ * {@code conforms}, {@code validatedAt}, and {@code failureCategory} (omitted when null, so
+ * legacy rows keep verifying). The {@code report} field is excluded — it is large, optional,
+ * and may be truncated. Canonicalization uses JCS (RFC 8785) to ensure a deterministic byte
+ * representation across JVM instances.</p>
  */
 @Slf4j
 @Service
@@ -71,6 +72,9 @@ public class ValidationResultHasher {
         .sorted().toList());
     fields.put("validatorType", result.getValidatorType());
     fields.put("validatedAt", result.getValidatedAt().toString());
+    if (result.getFailureCategory() != null) {
+      fields.put("failureCategory", result.getFailureCategory());
+    }
     try {
       String json = objectMapper.writeValueAsString(fields);
       return new JsonCanonicalizer(json).getEncodedString();

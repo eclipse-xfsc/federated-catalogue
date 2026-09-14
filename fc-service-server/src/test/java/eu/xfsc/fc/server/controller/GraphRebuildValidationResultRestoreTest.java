@@ -8,7 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -277,5 +280,49 @@ class GraphRebuildValidationResultRestoreTest {
       assertEquals(GraphSyncStatus.FAILED, after.getGraphSyncStatus(),
           "graph_sync_status should remain FAILED when graph write throws during rebuild");
     });
+  }
+
+  /**
+   * Tests that a row deliberately excluded from the graph (e.g. a failed compliance-check
+   * attempt, see {@code ComplianceResultStoreImpl#storeFailedAttempt}) is never resurrected as
+   * graph triples by rebuild.
+   *
+   * <p>Rebuild must not treat {@code EXCLUDED} like {@code FAILED} and retry it — that would
+   * recreate the exact ambiguity ({@code SERVICE_UNREACHABLE} indistinguishable from a genuine
+   * non-compliant verdict on the federated query surface) the exclusion exists to prevent.</p>
+   */
+  @Test
+  @WithMockUser(roles = {ADMIN_ALL})
+  void rebuildValidationResults_excludedResult_isNeverProjectedToGraph() throws Exception {
+    Long validationResultId = transactionTemplate.execute(txStatus -> {
+      ValidationResult result = new ValidationResult();
+      result.setAssetIds(new String[]{"did:example:asset-excluded"});
+      result.setValidatorIds(new String[]{"gaia-x-2511", "gaia-x"});
+      result.setValidatorType(ValidatorType.TRUST_FRAMEWORK);
+      result.setConforms(false);
+      result.setValidatedAt(Instant.now());
+      result.setReport("{\"failureCategory\":\"SERVICE_UNREACHABLE\"}");
+      result.setContentHash(validationResultHasher.hash(result));
+      result.setGraphSyncStatus(GraphSyncStatus.EXCLUDED);
+      return validationResultRepository.saveAndFlush(result).getId();
+    });
+
+    GraphRebuildRequest rebuildRequest = new GraphRebuildRequest(
+        REBUILD_CHUNK_COUNT, REBUILD_CHUNK_ID, REBUILD_THREADS, REBUILD_BATCH_SIZE);
+    mockMvc.perform(MockMvcRequestBuilders.post("/actuator/graph-rebuild")
+            .content(jsonMapper.writeValueAsString(rebuildRequest))
+            .contentType(MediaType.APPLICATION_JSON)
+            .with(csrf()))
+        .andExpect(status().isOk());
+
+    await().atMost(10, SECONDS).until(() -> !graphRebuildService.isRunning());
+    assertFalse(graphRebuildService.getStatus().isFailed());
+
+    transactionTemplate.executeWithoutResult(txStatus -> {
+      ValidationResult after = validationResultRepository.findById(validationResultId).orElseThrow();
+      assertEquals(GraphSyncStatus.EXCLUDED, after.getGraphSyncStatus(),
+          "graph_sync_status must remain EXCLUDED; rebuild must not sync or retry this row");
+    });
+    verify(graphWriter, never()).write(argThat(r -> r.getId().equals(validationResultId)), any());
   }
 }
