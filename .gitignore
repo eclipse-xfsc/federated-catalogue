@@ -49,3 +49,4 @@ docker/certs/
 ### Temporary files
 *.tmp
 .*
+!.github/

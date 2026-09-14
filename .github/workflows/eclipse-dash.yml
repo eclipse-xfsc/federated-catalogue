@@ -2,18 +2,27 @@ name: Call Eclipse Dash License Scanner
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release tag to attach the DEPENDENCIES summary to (optional)'
+        required: false
+        type: string
+        default: ''
   schedule:
     - cron: '0 0 1 * *'
   release:
     types: [published]
-    
+
+# contents: write is required so the reusable dev-ops workflow can attach the Eclipse Dash
+# DEPENDENCIES summary to the GitHub release
 permissions:
-  contents: read
+  contents: write
   actions: write
-  
+
 jobs:
   call-remote-dash-workflow:
     uses: eclipse-xfsc/dev-ops/.github/workflows/eclipse-dash-licence-maven.yml@main
     secrets: inherit
-    with: 
+    with:
       java_version: '21'
+      release_tag: ${{ inputs.release_tag }}
