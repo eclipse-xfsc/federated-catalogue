@@ -66,7 +66,7 @@ import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.riot.system.streammgr.StreamManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

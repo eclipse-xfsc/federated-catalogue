@@ -37,7 +37,7 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFParser;
 import org.apache.jena.riot.RiotException;
-import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.riot.system.streammgr.StreamManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 

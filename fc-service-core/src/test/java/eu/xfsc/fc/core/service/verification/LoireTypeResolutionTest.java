@@ -33,7 +33,7 @@ import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_BASE_CLASS_RESOURCE;
 import static eu.xfsc.fc.core.service.trustframework.TestTrustFrameworkConstants.TFW_FAMILY_GAIA_X;
 
-import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.riot.system.streammgr.StreamManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

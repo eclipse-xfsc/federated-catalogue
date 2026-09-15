@@ -411,7 +411,7 @@ fuseki:
   fullnameOverride: fc-fuseki
   image:
     repository: ghcr.io/eclipse-xfsc/federated-catalogue/fc-fuseki
-    tag: "5.5.0"
+    tag: "6.2.0"
   dataset: ds
   javaOptions: "-Xmx1g"
   persistence:

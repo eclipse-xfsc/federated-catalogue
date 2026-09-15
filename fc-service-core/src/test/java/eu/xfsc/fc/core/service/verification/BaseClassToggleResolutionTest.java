@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
-import org.apache.jena.riot.system.stream.StreamManager;
+import org.apache.jena.riot.system.streammgr.StreamManager;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

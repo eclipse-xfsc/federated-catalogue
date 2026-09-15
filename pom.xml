@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.14</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
     
@@ -67,17 +67,26 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- dependencies -->
-        <spring.version>6.2.18</spring.version>
-        <!-- overrides Boot's inherited default for spring-webmvc/spring-expression/spring-web/spring-core (fixes CVE-2026-41842, CVE-2026-41845, CVE-2026-41850) -->
-        <spring-framework.version>6.2.19</spring-framework.version>
-        <spring-boot.version>3.5.14</spring-boot.version>
-        <spring.security.version>6.5.10</spring.security.version>
+        <!-- spring-framework (6.2.19, fixes CVE-2026-41842/41845/41850) and spring-security
+             (6.5.11, fixes CVE-2026-47838/41706) are now the Boot 3.5.16 BOM defaults; the
+             former local overrides `spring.version` and `spring.security.version` were pinned
+             BELOW those defaults and are therefore removed rather than re-asserted. -->
+        <spring-boot.version>3.5.16</spring-boot.version>
         <springdoc.version>2.8.14</springdoc.version>
         <keycloak.version>26.0.3</keycloak.version>
         <liquibase.version>4.33.0</liquibase.version>
-        <!-- most recent 5.x.x version 5.6.0 caused problems with neosemantics 5.18 fat-jar that bundles a conflicting apache-commons-lang3 version -->
-        <jena.version>5.5.0</jena.version>
-        <topbraid.version>1.4.4</topbraid.version>
+        <!-- Jena 6.x: brings shiro 2.2.1 and libthrift 0.24.0 via Jena's own dependency set,
+             replacing the local CVE overrides that previously forced those versions.
+             Requires Java 21 (already the project baseline). Note Jena 6 renamed the package
+             org.apache.jena.riot.system.stream -> .streammgr (undocumented in CHANGES.txt).
+             The docker/fuseki image (ARG JENA_VERSION) and the Helm fuseki image tag must be
+             kept on this same version - client and server are not linked by any mechanism. -->
+        <jena.version>6.2.0</jena.version>
+        <!-- topbraid shacl 1.5.0 targets Jena 6.0.0. Staying on 1.4.4 is NOT an option once Jena
+             is on 6.x: shacl 1.4.4's bytecode references org.apache.jena.mem.GraphMemBase and
+             org.apache.jena.riot.web.LangTag, both removed in Jena 6, and this project excludes
+             shacl's own jena-arq (see the shacl dependencyManagement entry below). -->
+        <topbraid.version>1.5.0</topbraid.version>
         <!-- Neo4j: only the Bolt driver (Apache-2.0) is used by production code, and its version
              is managed by the Spring Boot BOM. The embedded server stack (harness/neosemantics/apoc)
              is test scope only — the harness pulls in Neo4j Community, which is GPL-3.0-or-later and
@@ -95,8 +104,9 @@
         <caffeine.version>3.2.3</caffeine.version>
         <bcpkix-jdk18on.version>1.84</bcpkix-jdk18on.version>
         <jnats.version>2.23.0</jnats.version>
-        <!-- fixes GHSA-r7wm-3cxj-wff9 (jackson-core), CVE-2026-54512/54513 (jackson-databind) -->
-        <jackson-bom.version>2.21.4</jackson-bom.version>
+        <!-- fixes GHSA-r7wm-3cxj-wff9 (jackson-core), CVE-2026-54512/54513 and
+             CVE-2026-59889 / CVE-2026-54515 / GHSA-mhm7-754m-9p8w (jackson-databind) -->
+        <jackson-bom.version>2.21.5</jackson-bom.version>
         <json-schema-validator.version>2.0.1</json-schema-validator.version>
         <!-- test libs -->
         <junit-platform.version>1.14.1</junit-platform.version>
@@ -109,21 +119,45 @@
         <nimbus-jose-jwt.version>10.9</nimbus-jose-jwt.version>
         <tink.version>1.20.0</tink.version>
         <okhttp.version>5.3.0</okhttp.version>
-        <!-- CVE overrides beyond Spring Boot 3.5.14 BOM: newer patches close High/Critical CVEs. -->
-        <tomcat.version>10.1.55</tomcat.version>
-        <netty.version>4.1.133.Final</netty.version>
-        <postgresql.version>42.7.11</postgresql.version>
-        <libthrift.version>0.23.0</libthrift.version>
+        <!-- CVE overrides beyond the Spring Boot 3.5.16 BOM: newer patches close High/Critical CVEs. -->
+        <!-- tomcat: fixes GHSA-9xv2-5v5q-p794 (9.8), GHSA-h3x4-894j-xpx5 / GHSA-gcx9-497g-6cp6 (9.1).
+             NOTE: the advisories name 10.1.58 as the fix version, but Apache never published
+             10.1.58 - the 10.1.x line goes 10.1.57 -> 10.1.59. -->
+        <tomcat.version>10.1.59</tomcat.version>
+        <!-- netty: fixes GHSA-c4c3-7fpv-j4q5 (9.1), GHSA-3qp7-7mw8-wx86 (8.1),
+             GHSA-jppx-w49h-x2qq / GHSA-558v-64gr-wgg4 / GHSA-5pvg-856g-cp85 / GHSA-676x-f7gg-47vc (8.7)
+             and further High/Medium findings across netty-codec*, netty-handler and netty-resolver-dns. -->
+        <netty.version>4.1.137.Final</netty.version>
+        <!-- postgresql: fixes GHSA-j92g-9f8w-j867 (8.2). -->
+        <postgresql.version>42.7.12</postgresql.version>
+        <!-- httpcomponents (used by Spring's HttpComponentsClientHttpRequestFactory in
+             LoirePolicyEnforcer and JwtVcComplianceClient): fixes GHSA-hf6x-8p5f-cgmf and
+             GHSA-v3jc-474w-2wm6 (7.5) in httpcore5/httpcore5-h2, plus GHSA-hjcp-jmpx-g3qm (5.3)
+             in httpclient5. There is no 5.3.x backport, so the 5.4.x line is required; the Boot
+             BOM manages httpcore5-h2 as ${httpcore5.version}, and httpclient5 5.6.x is the
+             matching client line for httpcore5 5.4.x. -->
+        <!-- jetty: Jena 6.2's Fuseki uses the jetty-ee11 modules (pinned by Jena at 12.1.11),
+             but the Spring Boot BOM pins core jetty to the 12.0.x line. Mixing them fails at
+             runtime with NoSuchMethodError Environment.ensure(String, Class) when FusekiServer
+             builds its servlet context. Jetty enters this build ONLY via jena-fuseki-main - the
+             Spring Boot web stack here is Tomcat - so aligning core jetty with Jena's line is
+             safe. Also closes GHSA-2fvj-hgj9-j2gr (8.7) and the jetty-server/jetty-util findings. -->
+        <jetty.version>12.1.11</jetty.version>
+        <httpcore5.version>5.4.3</httpcore5.version>
+        <httpclient5.version>5.6.4</httpclient5.version>
         <!-- plexus-utils (test-scope, transitive via spring-cloud-contract-wiremock -> maven-resolver):
              pin to 3.6.1 to close CVE-2025-67030 (9.8, Expand.extractFile directory traversal). -->
         <plexus-utils.version>3.6.1</plexus-utils.version>
-        <!-- commons-lang3: Spring Boot 3.5.14 BOM pins 3.17.0, but commons-compress 1.28.0
+        <!-- commons-lang3: the Spring Boot 3.5.16 BOM pins 3.17.0, but commons-compress 1.28.0
              (pulled in by Zonky embedded Postgres for tar extraction) calls
-             SystemProperties.getUserName(String), added in 3.18.0. NOTE: neosemantics fat-jar
+             SystemProperties.getUserName(String), added in 3.18.0. Raised to 3.20.0 to match
+             Jena 6.2.0's own pin - Jena's AlarmClock calls BasicThreadFactory.builder(), and
+             running Jena against an older commons-lang3 than it was built on is what produced
+             the NoSuchMethodError this pin and the fc-graphdb-neo4j dependency ordering fix. NOTE: neosemantics fat-jar
              (see jena.version comment above) bundles its own older commons-lang3.SystemProperties
              and can still win on the classpath at test runtime — fully resolving the
              NoSuchMethodError requires un-shadowing neosemantics, not just this version bump. -->
-        <commons-lang3.version>3.18.0</commons-lang3.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
         <!-- commons-io: pinned so neosemantics' bundled-and-older copy doesn't break Zonky's
              tarball extraction (IOUtils.skip(InputStream, long, Supplier) missing in older). -->
         <commons-io.version>2.21.0</commons-io.version>
@@ -280,16 +314,6 @@
                 <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-                <version>${spring.security.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-tx</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
@@ -315,22 +339,46 @@
                 <version>${caffeine.version}</version>
             </dependency>
                         
+            <!-- Supplies the version for the apache-jena-libs aggregate POM, which
+                 fc-service-core and fc-graphdb-fuseki declare with no version of their own.
+                 This is a plain managed dependency, NOT a BOM import: there is no
+                 <scope>import</scope> here, and apache-jena-libs carries no
+                 dependencyManagement section that could be imported. It is a pure aggregate
+                 with a <dependencies> list. The entry is therefore load-bearing but narrow.
+                 It fixes the version of the aggregate itself, and nothing else. Making every
+                 Jena artifact converge on ${jena.version}, whatever path it arrives by, is
+                 the job of the explicit jena-core/jena-arq pins below. -->
             <dependency>
                 <groupId>org.apache.jena</groupId>
                 <artifactId>apache-jena-libs</artifactId>
                 <version>${jena.version}</version>
                 <type>pom</type>
             </dependency>
+            <!-- Pin the two foundational Jena artifacts explicitly. topbraid shacl pulls
+                 eu.neverblink.jelly:jelly-jena, which declares its own older jena-core/jena-arq;
+                 without these entries that older jena-core wins by nearest-path in the modules
+                 that do not declare apache-jena-libs directly, mixing Jena majors on one
+                 classpath. Deliberately NOT solved by importing org.apache.jena:jena-bom - that
+                 BOM's inherited dependencyManagement also pins Spring Framework to 5.3.x, which
+                 silently downgrades spring-web/spring-context below the Boot BOM. -->
+            <dependency>
+                <groupId>org.apache.jena</groupId>
+                <artifactId>jena-core</artifactId>
+                <version>${jena.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.jena</groupId>
+                <artifactId>jena-arq</artifactId>
+                <version>${jena.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.topbraid</groupId>
                 <artifactId>shacl</artifactId>
+                <!-- shacl declares its own jena-arq. No exclusion is needed: jena-arq is pinned
+                     to ${jena.version} in this dependencyManagement block, which overrides
+                     nearest-wins resolution. Excluding it instead would sever a real dependency
+                     edge that only resolves today because apache-jena-libs happens to supply it. -->
                 <version>${topbraid.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.jena</groupId>
-                        <artifactId>jena-arq</artifactId>
-                    </exclusion>
-                </exclusions>                
             </dependency>
             <dependency>
                 <groupId>com.apicatalog</groupId>
@@ -457,13 +505,6 @@
                 <artifactId>mockwebserver</artifactId>
                 <version>${okhttp.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <!-- Override libthrift (transitive via Apache Jena 5.5.0) to close CVE-2026-43869
-                 (CVSS 7.3, TLS host-mismatch). Not managed by the Spring Boot BOM. -->
-            <dependency>
-                <groupId>org.apache.thrift</groupId>
-                <artifactId>libthrift</artifactId>
-                <version>${libthrift.version}</version>
             </dependency>
             <!-- Override plexus-utils (test-scope transitive) to close CVE-2025-67030 (9.8). -->
             <dependency>
