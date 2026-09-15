@@ -339,11 +339,15 @@
                 <version>${caffeine.version}</version>
             </dependency>
                         
-            <!-- Import Jena's own BOM so EVERY Jena artifact converges on ${jena.version},
-                 whatever path it arrives by. Needed because topbraid shacl 1.5.0 pulls
-                 eu.neverblink.jelly:jelly-jena, which depends on an older jena-core; without
-                 this import that older jena-core wins by nearest-path in the modules that do
-                 not declare apache-jena-libs directly, mixing Jena majors on one classpath. -->
+            <!-- Supplies the version for the apache-jena-libs aggregate POM, which
+                 fc-service-core and fc-graphdb-fuseki declare with no version of their own.
+                 This is a plain managed dependency, NOT a BOM import: there is no
+                 <scope>import</scope> here, and apache-jena-libs carries no
+                 dependencyManagement section that could be imported. It is a pure aggregate
+                 with a <dependencies> list. The entry is therefore load-bearing but narrow.
+                 It fixes the version of the aggregate itself, and nothing else. Making every
+                 Jena artifact converge on ${jena.version}, whatever path it arrives by, is
+                 the job of the explicit jena-core/jena-arq pins below. -->
             <dependency>
                 <groupId>org.apache.jena</groupId>
                 <artifactId>apache-jena-libs</artifactId>
