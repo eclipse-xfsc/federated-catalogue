@@ -19,6 +19,9 @@ PostgreSQL, Fuseki) on a cluster; see the chart's own README for a from-scratch 
 source checkout for development and testing. See [`docker/README.md`](docker/README.md) for the build & test
 procedure.
 
+**The manual Kubernetes manifests under [`deployment/manual/`](deployment/manual/README.md) are unsupported** and
+kept for reference only; they predate the Helm chart and pin versions that are no longer current.
+
 The Keycloak realm name is configurable via the `KEYCLOAK_REALM` env var (default
 `federated-catalogue-realm`). Existing deployments with a pre-existing `gaia-x` realm keep working by setting
 `KEYCLOAK_REALM=gaia-x`. See [Keycloak Realm Configuration](docs/operator-guide.md#keycloak-realm-configuration)
