@@ -16,4 +16,4 @@ jobs:
   call-remote-workflow:
     uses: eclipse-xfsc/dev-ops/.github/workflows/sbom-maven.yml@main
     secrets:
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
