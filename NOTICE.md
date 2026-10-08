@@ -67,6 +67,29 @@ Process / IP Policy), `DEPENDENCIES` follows the Eclipse Dash license tool
 convention and is generated per release rather than committed to the
 repository.
 
+## Superseded Container Images
+
+The `fc-service-server` container images published to GHCR from builds made after the Neo4j code was
+separated into its own module and before that content was removed contain Neo4j Graph Data Science
+2.6.6, which is licensed GPL-3.0. They are retained so that previously reviewed and deployed states
+remain reproducible.
+
+* Affected: `ghcr.io/eclipse-xfsc/federated-catalogue/fc-service-server` images whose `sha-` tag
+  refers to a commit that descends from the module separation and does not yet contain the removal
+  commit. This covers 53 of the 63 tags published at the time of writing, spanning 2026-04-13 to
+  2026-09-09.
+* Not affected: `latest` and `main`, and every `sha-` tag from the removal commit onward. The
+  default pull is free of this content.
+* Recurrence is prevented by the Maven Enforcer rule `ban-copyleft-neo4j-outside-test-scope` in the
+  root `pom.xml`, which fails the build if GPL-licensed Neo4j content appears outside test scope.
+
+These superseded images must not be used in production and must not be redistributed. Use `latest`,
+or an image built from the removal commit or later.
+
+`fc-demo-portal` and `fc-fuseki` images carry the same tag names, because all three images are built
+from the same commits, but they do not contain this content. They are named here only because
+selecting a build by its `sha-` tag selects all three.
+
 ## Cryptography
 
 Content may contain encryption software. The country in which you are currently
