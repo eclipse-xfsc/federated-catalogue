@@ -1,6 +1,7 @@
 # STATUS: unsupported, kept for reference. Not part of the current Helm-based deployment path
-# (deployment/helm/fc-service, which uses PostgreSQL, not Neo4j); no other manifest or document in
-# this repository references it.
+# (deployment/helm/fc-service, which provisions Fuseki as the graph store). No other manifest
+# references it; docs/operator-guide.md mentions this directory only when listing where the
+# KEYCLOAK_REALM variable is honoured. See deployment/manual/README.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
